@@ -1896,6 +1896,21 @@ function MarshalLobbyConsole({ lobby: initialLobby, marshalPassword, lobbyPasswo
     rumena: registered.filter((r) => r.team === "rumena"),
   };
 
+  const reassignFn = useServerFn(spartanopsAdminReassignTeam);
+  const handleSwap = async (playerId: string, currentTeam: RegisteredPlayer["team"]) => {
+    if (!marshalPassword) return;
+    // Enforce 2-faction swap. Lobby players default to modra.
+    const target: "modra" | "rdeca" =
+      currentTeam === "modra" ? "rdeca" : currentTeam === "rdeca" ? "modra" : "modra";
+    // Optimistic UI — realtime will reconcile.
+    setRegistered((prev) => prev.map((p) => p.id === playerId ? { ...p, team: target } : p));
+    try {
+      await reassignFn({ data: { fieldId: lobby.id, password: marshalPassword, checkinId: playerId, team: target } });
+    } catch (e) {
+      console.error("[marshal] swap failed", e);
+    }
+  };
+
   return (
     <div>
       <div style={{ marginBottom: 18 }}>
