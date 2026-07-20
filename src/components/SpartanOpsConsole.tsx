@@ -217,7 +217,7 @@ export function SpartanOpsConsole({ fieldId, password }: { fieldId: string; pass
   useEffect(() => {
     let alive = true;
     const load = async () => {
-      const { data } = await supabase.from("spartanops_captures").select("*").eq("field_id", fieldId).order("captured_at", { ascending: false }).limit(50);
+      const { data } = await supabase.from("spartanops_captures").select("id, point_number, team, player_callsign, captured_at").eq("field_id", fieldId).order("captured_at", { ascending: false }).limit(50);
       if (alive) setCaptures((data ?? []) as unknown as Capture[]);
     };
     load();

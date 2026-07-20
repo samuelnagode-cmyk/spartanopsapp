@@ -1,0 +1,1 @@
+REVOKE EXECUTE ON FUNCTION public.spartanops_get_suspicious_captures(text, text) FROM anon, authenticated, public;

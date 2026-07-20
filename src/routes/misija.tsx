@@ -466,8 +466,9 @@ function MisijaPage() {
     const load = async () => {
       const { data } = await supabase
         .from("spartanops_captures")
-        .select("*")
+        .select("id, point_number, team, player_callsign, captured_at")
         .eq("field_id", field)
+
         .order("captured_at", { ascending: false })
         .limit(50);
       if (alive) setCaptures((data ?? []) as unknown as Capture[]);
