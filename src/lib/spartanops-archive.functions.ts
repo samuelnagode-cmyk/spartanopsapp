@@ -1,10 +1,15 @@
 import { createServerFn } from "@tanstack/react-start";
+import { createHash, timingSafeEqual } from "node:crypto";
 
 function checkMaster(pw: string): boolean {
   const master = process.env.SPARTANOPS_MASTER_PASSWORD;
   if (!master) return false;
   if (typeof pw !== "string" || pw.length === 0 || pw.length > 200) return false;
-  return pw === master;
+  // Constant-time comparison to avoid leaking master-password length/prefix
+  // via response timing on this privileged endpoint.
+  const a = createHash("sha256").update(pw, "utf8").digest();
+  const b = createHash("sha256").update(master, "utf8").digest();
+  return timingSafeEqual(a, b);
 }
 
 export type SpartanOpsArchiveRow = {
