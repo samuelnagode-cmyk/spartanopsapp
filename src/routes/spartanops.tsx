@@ -299,28 +299,35 @@ function formatNumber(n: number) {
 function AnimatedCounter({ value, duration = 1500 }: { value: number; duration?: number }) {
   const [display, setDisplay] = useState(0);
   const ref = useRef<HTMLSpanElement | null>(null);
-  const startedRef = useRef(false);
+  const visibleRef = useRef(false);
+  const fromRef = useRef(0);
 
   useEffect(() => {
     const el = ref.current;
     if (!el) return;
-    const start = () => {
-      if (startedRef.current) return;
-      startedRef.current = true;
-      const t0 = performance.now();
-      const tick = (now: number) => {
-        const p = Math.min(1, (now - t0) / duration);
-        setDisplay(value * easeOutCubic(p));
-        if (p < 1) requestAnimationFrame(tick);
-      };
-      requestAnimationFrame(tick);
-    };
     const io = new IntersectionObserver(
-      (entries) => entries.forEach((e) => e.isIntersecting && start()),
+      (entries) => entries.forEach((e) => { if (e.isIntersecting) visibleRef.current = true; }),
       { threshold: 0.3 },
     );
     io.observe(el);
     return () => io.disconnect();
+  }, []);
+
+  useEffect(() => {
+    const from = fromRef.current;
+    const to = value;
+    if (from === to) return;
+    const t0 = performance.now();
+    let raf = 0;
+    const run = (now: number) => {
+      const p = Math.min(1, (now - t0) / duration);
+      setDisplay(from + (to - from) * easeOutCubic(p));
+      if (p < 1) raf = requestAnimationFrame(run);
+      else fromRef.current = to;
+    };
+    // Small delay for initial visibility observer to attach.
+    raf = requestAnimationFrame(run);
+    return () => cancelAnimationFrame(raf);
   }, [value, duration]);
 
   return <span ref={ref}>{formatNumber(display)}</span>;
