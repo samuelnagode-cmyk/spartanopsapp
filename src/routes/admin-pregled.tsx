@@ -20,7 +20,8 @@ import {
   selectStyle as consoleSelectStyle,
   type GameState,
 } from "@/components/SpartanOpsConsole";
-import { useLang } from "@/lib/i18n";
+import { useLang, useT } from "@/lib/i18n";
+import { usePremium } from "@/lib/premium";
 import { supabase } from "@/integrations/supabase/client";
 import {
   listAllLobbies,
