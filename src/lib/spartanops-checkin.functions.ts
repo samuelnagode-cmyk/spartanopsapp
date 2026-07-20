@@ -260,6 +260,19 @@ export const spartanopsSetRespawnLock = createServerFn({ method: "POST" })
       .update({ respawn_unlock_at: unlockAt, updated_at: new Date().toISOString() } as any)
       .eq("checkin_id", (secret as any).checkin_id);
     if (error) throw new Error(error.message);
+    // Increment public death counter whenever a new respawn lock is opened.
+    if (data.seconds > 0) {
+      const { data: current } = await supabaseAdmin
+        .from("spartanops_checkins")
+        .select("death_count")
+        .eq("id", (secret as any).checkin_id)
+        .maybeSingle();
+      const next = Number((current as any)?.death_count ?? 0) + 1;
+      await supabaseAdmin
+        .from("spartanops_checkins")
+        .update({ death_count: next } as any)
+        .eq("id", (secret as any).checkin_id);
+    }
     return { ok: true as const, unlockAt };
   });
 
