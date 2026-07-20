@@ -46,8 +46,20 @@ export const Route = createFileRoute("/api/send-inquiry")({
           return new Response(JSON.stringify({ error: "Invalid input", details: parsed.error.flatten() }), { status: 400 });
         }
         const d = parsed.data;
+
+        // Abuse throttle: keyed by client IP + submitted email so a single
+        // caller cannot script mass sends through the trusted sender.
+        const rl = checkEmailRateLimit(request, [d.email.toLowerCase()]);
+        if (!rl.ok) {
+          return new Response(JSON.stringify({ error: "Too many requests" }), {
+            status: 429,
+            headers: { "Retry-After": String(rl.retryAfter), "Content-Type": "application/json" },
+          });
+        }
+
         const datesDisplay = d.dates || "Ni podan";
         const firstName = d.name.split(/\s+/)[0] || "spoštovani";
+
 
         const ownerInner = `
           <h2 style="font-family:Georgia,'Times New Roman',serif;color:#3A4A3D;font-size:22px;margin:0 0 16px;">Novo povpraševanje za Glamping Zeleni raj</h2>
@@ -96,16 +108,13 @@ export const Route = createFileRoute("/api/send-inquiry")({
           return new Response(JSON.stringify({ error: "Send failed", status: ownerRes.status, data }), { status: 502 });
         }
 
-        // Best-effort confirmation to guest
-        await send({
-          from: FROM,
-          to: [d.email],
-          reply_to: OWNER,
-          subject: "Hvala za vaše povpraševanje — Glamping Zeleni raj",
-          html: guestHtml,
-        }).catch(() => null);
+        // Guest "confirmation" send removed to prevent using this endpoint
+        // as a spam/phishing relay against arbitrary caller-supplied inboxes.
+        // The owner still receives the inquiry; guests can be replied to
+        // directly via the reply_to header on that message.
 
         return Response.json({ success: true });
+
       },
     },
   },
