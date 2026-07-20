@@ -435,6 +435,8 @@ function MisijaPage() {
   // (first_name / last_initial / club) separately via a server function since
   // the public roster policy no longer exposes those columns.
   const getMyCheckinFn = useServerFn(spartanopsGetMyCheckin);
+  const ackWarningFn = useServerFn(spartanopsAcknowledgeWarning);
+
   useEffect(() => {
     if (preview) return;
     let cancelled = false;
@@ -2750,6 +2752,31 @@ function PointCapturedOverlay({ captures, teamLabelFor, en }: { captures: Captur
     </div>
   );
 }
+
+function WarningModal({ message, en, onAcknowledge }: { message: string; en: boolean; onAcknowledge: () => void | Promise<void> }) {
+  const [busy, setBusy] = useState(false);
+  return (
+    <div className="fixed inset-0 z-[80] flex items-center justify-center p-4" style={{ background: "rgba(0,0,0,0.88)", backdropFilter: "blur(6px)" }}>
+      <div style={{ background: "#141008", border: `2px solid ${ACCENT}`, boxShadow: `0 0 40px ${ACCENT}88`, padding: "28px 24px", maxWidth: 480, width: "100%", textAlign: "center" }}>
+        <p style={{ fontFamily: "'Michroma', monospace", fontSize: 15, color: ACCENT, letterSpacing: "0.16em", marginBottom: 16, textTransform: "uppercase", fontWeight: 700 }}>
+          {en ? "⚠ MARSHAL WARNING" : "⚠ OPOZORILO MARŠALA"}
+        </p>
+        <p className="text-[13px]" style={{ color: INK, lineHeight: 1.7, marginBottom: 22, whiteSpace: "pre-wrap" }}>
+          {message}
+        </p>
+        <button
+          type="button"
+          disabled={busy}
+          onClick={async () => { setBusy(true); try { await onAcknowledge(); } finally { setBusy(false); } }}
+          style={{ width: "100%", background: ACCENT, color: BG, padding: "13px 18px", fontFamily: "'Michroma', monospace", fontSize: 12, letterSpacing: "0.2em", textTransform: "uppercase", fontWeight: 700, cursor: busy ? "wait" : "pointer", border: "none", opacity: busy ? 0.75 : 1 }}
+        >
+          {en ? "// ACKNOWLEDGE & ALIGN" : "// POTRDI IN NADALJUJ"}
+        </button>
+      </div>
+    </div>
+  );
+}
+
 
 
 
