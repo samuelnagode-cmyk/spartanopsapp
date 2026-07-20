@@ -166,15 +166,16 @@ export const spartanopsSpartacusCapture = createServerFn({ method: "POST" })
  *  - decision='ban': rejects the row AND removes the player from the checkin table.
  */
 export const spartanopsSpartacusReview = createServerFn({ method: "POST" })
-  .inputValidator((d: { captureId: string; decision: "approve" | "reject" | "ban"; fieldId: string; password: string }) => ({
+  .inputValidator((d: { captureId: string; decision: "approve" | "reject" | "ban" | "suspend"; fieldId: string; password: string; suspendMinutes?: number }) => ({
     captureId: String(d?.captureId ?? ""),
     decision: d?.decision,
     fieldId: String(d?.fieldId ?? ""),
     password: String(d?.password ?? ""),
+    suspendMinutes: Math.max(1, Math.min(60, Number(d?.suspendMinutes ?? 5))),
   }))
   .handler(async ({ data }) => {
     if (!isField(data.fieldId)) throw new Error("Invalid field");
-    if (!["approve", "reject", "ban"].includes(data.decision)) throw new Error("Invalid decision");
+    if (!["approve", "reject", "ban", "suspend"].includes(data.decision)) throw new Error("Invalid decision");
     if (!data.password || data.password.length > 200) throw new Error("Invalid password");
 
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
@@ -192,7 +193,6 @@ export const spartanopsSpartacusReview = createServerFn({ method: "POST" })
     if (!cap) throw new Error("Capture not found");
 
     if (data.decision === "approve") {
-      // Apply score to game_state directly.
       const { data: state } = await supabaseAdmin
         .from("spartanops_game_state")
         .select("field_id, status, team_scores, node_holders, point_target, winner_team")
@@ -228,6 +228,15 @@ export const spartanopsSpartacusReview = createServerFn({ method: "POST" })
         .from("spartanops_captures")
         .update({ spartacus_status: "rejected" } as any)
         .eq("id", data.captureId);
+
+      if (data.decision === "suspend" && (cap as any).player_checkin_id) {
+        const until = new Date(Date.now() + data.suspendMinutes * 60_000).toISOString();
+        await supabaseAdmin
+          .from("spartanops_checkin_secrets" as any)
+          .update({ respawn_unlock_at: until, updated_at: new Date().toISOString() } as any)
+          .eq("checkin_id", (cap as any).player_checkin_id);
+      }
+
       if (data.decision === "ban" && (cap as any).player_checkin_id) {
         await supabaseAdmin
           .from("spartanops_checkins")
