@@ -574,6 +574,20 @@ function MisijaPage() {
     </div>
   ) : null;
 
+  const warningOverlay = me.warning_message ? (
+    <WarningModal
+      message={me.warning_message}
+      en={en}
+      onAcknowledge={async () => {
+        setMe({ ...me, warning_message: null });
+        try {
+          await ackWarningFn({ data: { fieldId: field, sessionId } });
+        } catch { /* ignore — will re-appear on next poll if still set */ }
+      }}
+    />
+  ) : null;
+
+
   // Force endgame view when timer expires client-side, even if the DB status
   // hasn't flipped to "ended" yet — guarantees the After-Action Report renders.
   const startMsForEnd = state.match_started_at ? new Date(state.match_started_at).getTime() : null;
