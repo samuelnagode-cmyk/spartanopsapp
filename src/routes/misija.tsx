@@ -1116,6 +1116,7 @@ function CheckinForm({ sessionId, fieldId, preview, onGhost, fieldLabel }: { ses
   const [firstName, setFirstName] = useState("");
   const [lastInitial, setLastInitial] = useState("");
   const [club, setClub] = useState("");
+  const [phone, setPhone] = useState("");
   const [exp, setExp] = useState<"slabo" | "dobro" | "zelo_dobro">("dobro");
   const [err, setErr] = useState("");
   const [submitting, setSubmitting] = useState(false);
@@ -1128,6 +1129,7 @@ function CheckinForm({ sessionId, fieldId, preview, onGhost, fieldLabel }: { ses
     callsign: en ? "Callsign / Tactical Moniker *" : "Callsign / Taktični vzdevek *",
     firstName: en ? "First name" : "Ime",
     lastInitial: en ? "Last initial" : "Priimek (črka)",
+    phone: en ? "Phone number (visible only to the marshal)" : "Telefonska številka (vidna samo maršalu)",
     club: en ? "Team / Club (Optional*)" : "Ekipa / Klub (opcijsko*)",
     experience: en ? "Experience level" : "Nivo izkušenj",
     submit: en ? "OK" : "OK",
@@ -1175,11 +1177,19 @@ function CheckinForm({ sessionId, fieldId, preview, onGhost, fieldLabel }: { ses
           fieldId,
           callsign: cs,
           club: club.trim() || null,
+          phoneNumber: phone.trim() || null,
           experienceLevel: exp,
           firstName: firstName.trim() || null,
           lastInitial: li || null,
         },
       });
+      // Force a full reload so iOS Safari (where the realtime channel can lag
+      // right after the POST) reliably hydrates the check-in and drops the
+      // player straight into the team-selection view.
+      if (typeof window !== "undefined") {
+        window.location.reload();
+        return;
+      }
       setSubmitting(false);
     } catch (e: any) {
       setSubmitting(false);
