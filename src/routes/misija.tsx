@@ -1812,9 +1812,23 @@ function PreMatchCountdown({ seconds, polygon, eventName, gamemode, pointTarget,
         {mm}:{ss}
       </div>
       {description && (
-        <p className="max-w-2xl text-[13px]" style={{ color: INK, lineHeight: 1.75, marginTop: 6, whiteSpace: "pre-wrap" }}>
-          {description}
-        </p>
+        <div
+          className="max-w-2xl mt-4"
+          style={{
+            border: `1px solid ${ACCENT}55`,
+            background: "rgba(0,0,0,0.42)",
+            padding: "12px 14px",
+            textAlign: "left",
+            width: "min(640px, 100%)",
+          }}
+        >
+          <p style={{ color: ACCENT, fontFamily: "monospace", fontSize: 9.5, letterSpacing: "0.24em", textTransform: "uppercase", marginBottom: 6 }}>
+            {en ? "// MISSION BRIEFING" : "// NAVODILA MISIJE"}
+          </p>
+          <p style={{ color: INK, fontSize: 13, lineHeight: 1.7, whiteSpace: "pre-wrap" }}>
+            {description}
+          </p>
+        </div>
       )}
       <div className="grid grid-cols-2 gap-3 my-5" style={{ width: "min(560px, 100%)" }}>
         <div style={{ border: `1px solid ${ACCENT}55`, background: "rgba(0,0,0,0.32)", padding: "12px 10px" }}>
