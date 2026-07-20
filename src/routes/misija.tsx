@@ -5,6 +5,8 @@ import { ExperienceBadge, EXPERIENCE_LEVELS } from "@/components/ExperienceBadge
 import { supabase } from "@/integrations/supabase/client";
 import { spartanopsAckTeamChange, spartanopsSelectTeam } from "@/lib/spartanops-game.functions";
 import { spartanopsUpsertCheckin, spartanopsGetMyCheckin, spartanopsDeleteMyCheckin, spartanopsGetParticipantRoster, spartanopsGetServerTime, spartanopsGetRespawnLock } from "@/lib/spartanops-checkin.functions";
+import { spartanopsAcknowledgeWarning } from "@/lib/spartanops-spartacus.functions";
+
 import { OfflineBanner } from "@/components/OfflineBanner";
 import { TacticalCompass } from "@/components/TacticalCompass";
 import { Crosshair, Shield, ArrowUp } from "lucide-react";
@@ -152,6 +154,8 @@ type Checkin = {
   team_changed_flag: boolean;
   first_name?: string | null;
   last_initial?: string | null;
+  warning_message?: string | null;
+
 };
 type Capture = {
   id: string;
@@ -2245,6 +2249,19 @@ function LiveMatch({ state, captures, now, roster }: { state: GameState; capture
           })}
         </div>
       </div>
+
+      {/* Mission description / instructions (rendered under events on Game HUD) */}
+      {((state.settings as any)?.missionDescription as string | undefined)?.trim() && (
+        <div style={{ marginTop: 14, background: PANEL, border: `1px solid ${ACCENT}55`, padding: "12px 14px" }}>
+          <div style={{ fontFamily: "monospace", fontSize: 10, letterSpacing: "0.2em", color: ACCENT, textTransform: "uppercase", marginBottom: 6 }}>
+            ▌ {en ? "MISSION DESCRIPTION / INSTRUCTIONS" : "OPIS MISIJE / NAVODILA"}
+          </div>
+          <p style={{ fontFamily: "monospace", fontSize: 12, color: INK, lineHeight: 1.65, whiteSpace: "pre-wrap", margin: 0 }}>
+            {(state.settings as any).missionDescription}
+          </p>
+        </div>
+      )}
+
 
       {/* Player scoreboard (capture counts per player) */}
       {state.settings?.capturePointsScoring && (
