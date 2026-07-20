@@ -362,6 +362,7 @@ export type Database = {
           created_at: string
           first_name: string | null
           last_initial: string | null
+          phone_number: string | null
           respawn_unlock_at: string | null
           session_id: string
           updated_at: string
@@ -372,6 +373,7 @@ export type Database = {
           created_at?: string
           first_name?: string | null
           last_initial?: string | null
+          phone_number?: string | null
           respawn_unlock_at?: string | null
           session_id: string
           updated_at?: string
@@ -382,6 +384,7 @@ export type Database = {
           created_at?: string
           first_name?: string | null
           last_initial?: string | null
+          phone_number?: string | null
           respawn_unlock_at?: string | null
           session_id?: string
           updated_at?: string
