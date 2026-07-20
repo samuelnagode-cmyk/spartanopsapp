@@ -1335,12 +1335,13 @@ export function SpartacusAlerts({ fieldId, password, en }: { fieldId: string; pa
     return () => { alive = false; supabase.removeChannel(ch); };
   }, [fieldId, password]);
 
-  const decide = async (id: string, decision: "approve" | "reject" | "ban") => {
+  const decide = async (id: string, decision: "approve" | "reject" | "ban" | "suspend") => {
     if (busy) return;
-    if (decision === "ban" && !confirm(en ? "Ban this player from the mission?" : "Izženi tega igralca iz misije?")) return;
+    if (decision === "ban" && !confirm(en ? "Remove this player from the mission?" : "Odstrani tega igralca iz misije?")) return;
+    if (decision === "suspend" && !confirm(en ? "Suspend this player for 5 minutes?" : "Suspendiraj tega igralca za 5 minut?")) return;
     setBusy(id);
     try {
-      await reviewFn({ data: { captureId: id, decision, fieldId, password } });
+      await reviewFn({ data: { captureId: id, decision, fieldId, password, suspendMinutes: 5 } });
       setRows((prev) => prev.filter((r) => r.id !== id));
     } catch (e: any) {
       alert(e?.message ?? "Review failed");
@@ -1390,7 +1391,7 @@ export function SpartacusAlerts({ fieldId, password, en }: { fieldId: string; pa
                 <div><span style={{ color: MUTED }}>{en ? "DISTANCE" : "RAZDALJA"}:</span> <strong style={{ color: RED }}>{r.distance_m.toFixed(1)} m</strong></div>
               )}
             </div>
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 8, marginTop: 12 }}>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginTop: 12 }}>
               <button
                 type="button"
                 disabled={busy === r.id}
@@ -1405,7 +1406,15 @@ export function SpartacusAlerts({ fieldId, password, en }: { fieldId: string; pa
                 onClick={() => decide(r.id, "reject")}
                 style={{ background: "transparent", color: NEON, border: `1px solid ${NEON}`, padding: "8px 10px", fontFamily: "'Michroma', monospace", fontSize: 10, letterSpacing: "0.16em", textTransform: "uppercase", cursor: "pointer" }}
               >
-                {en ? "DISMISS" : "ZAVRNI"}
+                {en ? "SEND WARNING" : "OPOZORI"}
+              </button>
+              <button
+                type="button"
+                disabled={busy === r.id}
+                onClick={() => decide(r.id, "suspend")}
+                style={{ background: "transparent", color: "#ffb020", border: `1px solid #ffb020`, padding: "8px 10px", fontFamily: "'Michroma', monospace", fontSize: 10, letterSpacing: "0.16em", textTransform: "uppercase", cursor: "pointer" }}
+              >
+                {en ? "SUSPEND 5 MIN" : "SUSPENDIRAJ 5 MIN"}
               </button>
               <button
                 type="button"
@@ -1413,7 +1422,7 @@ export function SpartacusAlerts({ fieldId, password, en }: { fieldId: string; pa
                 onClick={() => decide(r.id, "ban")}
                 style={{ background: RED, color: "#fff", border: `1px solid ${RED}`, padding: "8px 10px", fontFamily: "'Michroma', monospace", fontSize: 10, letterSpacing: "0.16em", textTransform: "uppercase", cursor: "pointer", display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 6 }}
               >
-                <ShieldOff size={12} /> {en ? "BAN PLAYER" : "IZŽENI"}
+                <ShieldOff size={12} /> {en ? "REMOVE" : "ODSTRANI"}
               </button>
             </div>
           </div>
