@@ -3,6 +3,7 @@ import { useEffect } from "react";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import { LanguageProvider } from "@/lib/i18n";
+import { PremiumProvider } from "@/lib/premium";
 import { AmbientAudioProvider } from "@/components/AmbientAudio";
 import MissionInProgressModal from "@/components/MissionInProgressModal";
 import SpartacusGpsGate from "@/components/SpartacusGpsGate";
@@ -84,15 +85,17 @@ function RootComponent() {
     pathname.startsWith("/capture");
   return (
     <LanguageProvider>
-      <AmbientAudioProvider>
-        <Header />
-        <main className="min-h-screen">
-          <Outlet />
-        </main>
-        {!hideFooter && <Footer />}
-        <MissionInProgressModal />
-        <SpartacusGpsGate />
-      </AmbientAudioProvider>
+      <PremiumProvider>
+        <AmbientAudioProvider>
+          <Header />
+          <main className="min-h-screen">
+            <Outlet />
+          </main>
+          {!hideFooter && <Footer />}
+          <MissionInProgressModal />
+          <SpartacusGpsGate />
+        </AmbientAudioProvider>
+      </PremiumProvider>
     </LanguageProvider>
   );
 }

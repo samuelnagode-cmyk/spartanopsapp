@@ -367,6 +367,17 @@ export const dict: Dict = {
     sl: "Cene nastanitev si lahko ogledate tudi na Booking.com. Za direktne rezervacije preko obrazca ali telefona pa so cene praviloma približno 15 % nižje.",
     en: "You can also view accommodation prices on Booking.com. For direct reservations via the form or phone, prices are usually approximately 15 % lower.",
   },
+
+  // Premium access framework
+  "premium.enterKeyPlaceholder": { sl: "// VNESI OPERATIVNI KLJUČ", en: "// ENTER OPERATION KEY" },
+  "premium.modalTitle": { sl: "// PREMIUM DOSTOP", en: "// TRANSMISSION: ENCRYPTED MODULE" },
+  "premium.modalDesc": {
+    sl: "Ta modul je zaklenjen. Nadgradi na Premium za odklep naprednih taktičnih operacij, poligonov po meri in scenarijev z več ekipami.",
+    en: "This module is restricted. Upgrade to Premium to unlock advanced tactical gamemodes, custom functions, and multi-team scenarios.",
+  },
+  "premium.modalBtn": { sl: "Zahtevaj dostop", en: "Request Access via Command Network" },
+  "premium.statusFree": { sl: "[ STATUS: OSNOVNI NIVO ]", en: "[ STATUS: CORE TIER ]" },
+  "premium.statusPremium": { sl: "[ STATUS: OPERATIVNI PREMIUM ]", en: "[ STATUS: OPERATIONAL PREMIUM ]" },
 };
 
 const LangContext = createContext<{ lang: Lang; setLang: (l: Lang) => void }>({

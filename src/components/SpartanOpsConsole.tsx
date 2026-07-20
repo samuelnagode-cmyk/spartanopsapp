@@ -17,6 +17,7 @@ import {
 import { spartanopsAdminGetRoster, spartanopsGetServerTime } from "@/lib/spartanops-checkin.functions";
 import { spartanopsSpartacusReview } from "@/lib/spartanops-spartacus.functions";
 import { useLang } from "@/lib/i18n";
+import { usePremium } from "@/lib/premium";
 
 const BG = "#0b0d09";
 const PANEL = "#13160f";
@@ -112,6 +113,7 @@ function RankIcon({ level, size = 16 }: { level: Checkin["experience_level"]; si
 export function SpartanOpsConsole({ fieldId, password }: { fieldId: string; password: string }) {
   const { lang } = useLang();
   const en = lang === "en";
+  const { isPremium, openPremiumModal } = usePremium();
   const TL = en ? TEAM_LABEL_EN : TEAM_LABEL;
   const patchState = useServerFn(spartanopsAdminPatchState);
   const reassign = useServerFn(spartanopsAdminReassignTeam);
@@ -466,12 +468,12 @@ export function SpartanOpsConsole({ fieldId, password }: { fieldId: string; pass
                 }}>
                 ● Domination<br /><span style={{ fontSize: 9, color: MUTED }}>{en ? "Point capture" : "Zavzemanje točk"}</span>
               </button>
-              <button type="button" disabled title={en ? "Coming soon" : "Prihaja kmalu"}
+              <button type="button" onClick={() => { if (!isPremium) openPremiumModal(); }}
                 style={{
                   background: "rgba(255,255,255,0.03)", color: MUTED,
                   border: `1px dashed rgba(236,227,196,0.18)`,
                   padding: "10px 8px", fontFamily: "monospace", fontSize: 11, letterSpacing: "0.12em",
-                  textTransform: "uppercase", cursor: "not-allowed", textAlign: "left", opacity: 0.6,
+                  textTransform: "uppercase", cursor: "pointer", textAlign: "left", opacity: 0.75,
                 }}>
                 🔒 Search & Destroy<br /><span style={{ fontSize: 9 }}>{en ? "Coming soon" : "Prihaja kmalu"}</span>
               </button>
@@ -605,6 +607,7 @@ export function LiveMatchView({ state, captures, now, en }: { state: GameState; 
 }
 
 const RosterBoard = memo(function RosterBoard({ roster, settings, onReassign, onRemove, en }: { roster: Checkin[]; settings?: GameSettings | null; onReassign: (id: string, t: "modra" | "rdeca" | "rumena" | "none") => void; onRemove: (id: string) => void; en: boolean }) {
+  const { isPremium, openPremiumModal } = usePremium();
   const activeTeams = configuredTeams(settings, roster);
   const cols: ("none" | "modra" | "rdeca" | "rumena")[] = ["none", ...activeTeams];
   const [switching, setSwitching] = useState<Checkin | null>(null);
@@ -613,9 +616,7 @@ const RosterBoard = memo(function RosterBoard({ roster, settings, onReassign, on
       <div>
         <button
           type="button"
-          disabled
-          aria-disabled="true"
-          title={en ? "Premium feature — coming soon" : "Premium funkcija — prihaja kmalu"}
+          onClick={() => { if (!isPremium) openPremiumModal(); }}
           style={{
             position: "relative",
             width: "100%",
@@ -627,8 +628,8 @@ const RosterBoard = memo(function RosterBoard({ roster, settings, onReassign, on
             fontSize: 10,
             letterSpacing: "0.16em",
             textTransform: "uppercase",
-            cursor: "not-allowed",
-            opacity: 0.85,
+            cursor: "pointer",
+            opacity: 0.9,
             boxShadow: `0 0 22px ${ACCENT}22`,
           }}
         >

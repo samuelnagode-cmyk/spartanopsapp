@@ -20,7 +20,8 @@ import {
   selectStyle as consoleSelectStyle,
   type GameState,
 } from "@/components/SpartanOpsConsole";
-import { useLang } from "@/lib/i18n";
+import { useLang, useT } from "@/lib/i18n";
+import { usePremium } from "@/lib/premium";
 import { supabase } from "@/integrations/supabase/client";
 import {
   listAllLobbies,
@@ -265,6 +266,10 @@ function upsertAllTimeField(rec: AllTimeFieldRecord) {
 function AdminPage() {
   const { lang } = useLang();
   const en = lang === "en";
+  const t = useT();
+  const { isPremium, activatePremium, openPremiumModal } = usePremium();
+  const [premiumKeyInput, setPremiumKeyInput] = useState("");
+  const [premiumKeyError, setPremiumKeyError] = useState(false);
   const search = useSearch({ from: "/admin-pregled" }) as { edit?: string };
   const [section, setSection] = useState<MainSection>("fields");
   const [fields, setFields] = useState<Field[]>(INITIAL_FIELDS);
@@ -450,6 +455,74 @@ function AdminPage() {
             </p>
           )}
           <div style={{ width: 48, height: 1, background: ACCENT, margin: "12px auto 0", opacity: 0.7 }} />
+
+          {/* Premium access key input */}
+          <div style={{ maxWidth: 380, margin: "18px auto 0" }}>
+            <form
+              onSubmit={(e) => {
+                e.preventDefault();
+                if (isPremium) return;
+                const ok = activatePremium(premiumKeyInput);
+                if (ok) {
+                  setPremiumKeyInput("");
+                  setPremiumKeyError(false);
+                } else {
+                  setPremiumKeyError(true);
+                }
+              }}
+              style={{ display: "flex", gap: 6, alignItems: "stretch" }}
+            >
+              <input
+                type="password"
+                value={premiumKeyInput}
+                onChange={(e) => { setPremiumKeyInput(e.target.value); setPremiumKeyError(false); }}
+                placeholder={t("premium.enterKeyPlaceholder")}
+                disabled={isPremium}
+                style={{
+                  flex: 1,
+                  background: "rgba(0,0,0,0.4)",
+                  color: isPremium ? ACCENT : INK,
+                  border: `1px solid ${premiumKeyError ? DANGER : `${ACCENT}55`}`,
+                  padding: "8px 10px",
+                  fontFamily: "'Michroma', monospace",
+                  fontSize: 10.5,
+                  letterSpacing: "0.10em",
+                }}
+              />
+              <button
+                type="submit"
+                disabled={isPremium || !premiumKeyInput}
+                style={{
+                  background: isPremium ? `${ACCENT}22` : ACCENT,
+                  color: isPremium ? ACCENT : BG,
+                  border: `1px solid ${ACCENT}`,
+                  padding: "8px 12px",
+                  fontFamily: "'Michroma', monospace",
+                  fontSize: 10,
+                  letterSpacing: "0.14em",
+                  textTransform: "uppercase",
+                  cursor: isPremium ? "default" : "pointer",
+                  fontWeight: 700,
+                }}
+              >
+                {isPremium ? "✓" : "→"}
+              </button>
+            </form>
+            <div style={{ marginTop: 8, textAlign: "center" }}>
+              <span
+                style={{
+                  fontFamily: "'Michroma', monospace",
+                  fontSize: 9,
+                  letterSpacing: "0.14em",
+                  color: isPremium ? ACCENT : "rgba(180,190,205,0.75)",
+                  textShadow: isPremium ? `0 0 10px ${ACCENT}88` : "none",
+                }}
+              >
+                {isPremium ? t("premium.statusPremium") : t("premium.statusFree")}
+              </span>
+            </div>
+          </div>
+
         </div>
 
 
@@ -582,6 +655,7 @@ function AdminPage() {
 function CreateFieldForm({ onCancel, onCreated }: { onCancel: () => void; onCreated: (rec: LobbyRecord, pws: { password: string; marshalPassword: string }) => void }) {
   const { lang } = useLang();
   const en = lang === "en";
+  const { isPremium, openPremiumModal } = usePremium();
 
   // Core lobby identity
   const [fieldName, setFieldName] = useState("");
@@ -831,12 +905,12 @@ function CreateFieldForm({ onCancel, onCreated }: { onCancel: () => void; onCrea
               }}>
               ● Domination<br /><span style={{ fontSize: 9, color: MUTED }}>{en ? "Point capture" : "Zavzemanje točk"}</span>
             </button>
-            <button type="button" disabled title={en ? "Coming soon" : "Prihaja kmalu"}
+            <button type="button" onClick={() => { if (!isPremium) openPremiumModal(); }}
               style={{
                 background: "rgba(255,255,255,0.03)", color: MUTED,
                 border: `1px dashed rgba(236,227,196,0.18)`,
                 padding: "10px 8px", fontFamily: "monospace", fontSize: 11, letterSpacing: "0.12em",
-                textTransform: "uppercase", cursor: "not-allowed", textAlign: "left", opacity: 0.6,
+                textTransform: "uppercase", cursor: "pointer", textAlign: "left", opacity: 0.75,
               }}>
               🔒 Search &amp; Destroy<br /><span style={{ fontSize: 9 }}>{en ? "Coming soon" : "Prihaja kmalu"}</span>
             </button>
@@ -1385,6 +1459,7 @@ function MarshalPasswordPrompt({ lobby, onClose, onSuccess }: { lobby: LobbyReco
 function MarshalLobbyConsole({ lobby: initialLobby, marshalPassword, lobbyPasswordCached = "", marshalPasswordCached = "", onBack }: { lobby: LobbyRecord; marshalPassword: string; lobbyPasswordCached?: string; marshalPasswordCached?: string; onBack: () => void }) {
   const { lang } = useLang();
   const en = lang === "en";
+  const { isPremium, openPremiumModal } = usePremium();
   const [lobby, setLobby] = useState<LobbyRecord>(initialLobby);
   type RegisteredPlayer = {
     id: string;
@@ -2078,12 +2153,12 @@ function MarshalLobbyConsole({ lobby: initialLobby, marshalPassword, lobbyPasswo
               }}>
               ● Domination<br /><span style={{ fontSize: 9, color: MUTED }}>{en ? "Point capture" : "Zavzemanje točk"}</span>
             </button>
-            <button type="button" disabled title={en ? "Coming soon" : "Prihaja kmalu"}
+            <button type="button" onClick={() => { if (!isPremium) openPremiumModal(); }}
               style={{
                 background: "rgba(255,255,255,0.03)", color: MUTED,
                 border: `1px dashed rgba(236,227,196,0.18)`,
                 padding: "10px 8px", fontFamily: "monospace", fontSize: 11, letterSpacing: "0.12em",
-                textTransform: "uppercase", cursor: "not-allowed", textAlign: "left", opacity: 0.6,
+                textTransform: "uppercase", cursor: "pointer", textAlign: "left", opacity: 0.75,
               }}>
               🔒 Search &amp; Destroy<br /><span style={{ fontSize: 9 }}>{en ? "Coming soon" : "Prihaja kmalu"}</span>
             </button>
@@ -2371,13 +2446,12 @@ const EXP_LABEL: Record<"slabo" | "dobro" | "zelo_dobro", string> = {
 };
 
 function LockedAutoBalanceButton({ en }: { en: boolean }) {
+  const { isPremium, openPremiumModal } = usePremium();
   return (
     <div style={{ marginBottom: 14 }}>
       <button
         type="button"
-        disabled
-        aria-disabled="true"
-        title={en ? "Premium feature — coming soon" : "Premium funkcija — prihaja kmalu"}
+        onClick={() => { if (!isPremium) openPremiumModal(); }}
         style={{
           position: "relative",
           width: "100%",
@@ -2389,12 +2463,12 @@ function LockedAutoBalanceButton({ en }: { en: boolean }) {
           fontSize: 11,
           letterSpacing: "0.16em",
           textTransform: "uppercase",
-          cursor: "not-allowed",
+          cursor: "pointer",
           opacity: 0.92,
           boxShadow: `0 0 22px ${ACCENT}20`,
         }}
       >
-        🔒 {en ? "AUTO BALANCING TEAMS" : "AVTOMATSKO URAVNOTEŽENJE EKIP"}
+        🔒 {en ? "Auto balance teams" : "Auto balance teams"}
         <span
           style={{
             position: "absolute",
@@ -2578,6 +2652,7 @@ function EditTile({
 function TeamConfigSection({ settings, onPatch, en }: { settings: any; onPatch: (s: any) => void; en: boolean }) {
   const teamNames = (settings?.teamNames ?? {}) as Record<string, string>;
   const teamCount = Number(settings?.teamCount ?? 2);
+  const { isPremium, openPremiumModal } = usePremium();
   const update = (patch: any) => onPatch({ ...settings, ...patch });
   const setName = (key: string, value: string) =>
     onPatch({ ...settings, teamNames: { ...teamNames, [key]: value } });
@@ -2596,8 +2671,15 @@ function TeamConfigSection({ settings, onPatch, en }: { settings: any; onPatch: 
           {en ? "Number of teams" : "Število ekip"}
         </div>
         <select
-          value={teamCount}
-          onChange={(e) => update({ teamCount: Number(e.target.value) })}
+          value={teamCount > 2 && !isPremium ? 2 : teamCount}
+          onChange={(e) => {
+            const next = Number(e.target.value);
+            if (next > 2 && !isPremium) {
+              openPremiumModal();
+              return;
+            }
+            update({ teamCount: next });
+          }}
           style={{
             width: "100%", background: "rgba(0,0,0,0.35)", color: INK,
             border: `1px solid ${ACCENT}55`, padding: "10px 12px",
@@ -2605,9 +2687,9 @@ function TeamConfigSection({ settings, onPatch, en }: { settings: any; onPatch: 
           }}
         >
           <option value={2}>2</option>
-          <option value={3} disabled>3 — 🔒 {en ? "Premium feature" : "Premium funkcija"}</option>
-          <option value={4} disabled>4 — 🔒 {en ? "Premium feature" : "Premium funkcija"}</option>
-          <option value={5} disabled>5 — 🔒 {en ? "Premium feature" : "Premium funkcija"}</option>
+          <option value={3}>3 — 🔒 {en ? "Premium feature" : "Premium funkcija"}</option>
+          <option value={4}>4 — 🔒 {en ? "Premium feature" : "Premium funkcija"}</option>
+          <option value={5}>5 — 🔒 {en ? "Premium feature" : "Premium funkcija"}</option>
         </select>
       </div>
       <div className="grid grid-cols-2 gap-3">
