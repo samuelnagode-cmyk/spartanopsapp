@@ -623,7 +623,7 @@ function MisijaPage() {
   // 1a) PRE-MATCH WINDOW — marshal has scheduled a start in the future.
   // Only players who have already selected a team enter the HUD/countdown.
   const preMatchSecEarly = startMsForEnd && currentTime < startMsForEnd ? Math.ceil((startMsForEnd - currentTime) / 1000) : 0;
-  if (preMatchSecEarly > 0 && me.assigned_team !== "none") {
+  if (preMatchSecEarly > 0) {
     return (
       <div style={{ background: BG, color: INK, minHeight: "100vh" }}>
         <OfflineBanner />
@@ -685,7 +685,7 @@ function MisijaPage() {
       <OfflineBanner />
       {reassignedBanner}
         {warningOverlay}
-      {preMatchSec > 0 && me.assigned_team !== "none" && <PreMatchCountdown seconds={preMatchSec} polygon={fieldTitleFromState(state, field)} eventName={missionTitleFromState(state, field)} gamemode={state.gamemode} pointTarget={state.point_target} settings={state.settings} en={en} state={state} /> }
+      {preMatchSec > 0 && <PreMatchCountdown seconds={preMatchSec} polygon={fieldTitleFromState(state, field)} eventName={missionTitleFromState(state, field)} gamemode={state.gamemode} pointTarget={state.point_target} settings={state.settings} en={en} state={state} /> }
       <div className="max-w-5xl mx-auto px-4 py-8">
         <PlayerHudHeader en={en} />
         <h1
@@ -1686,14 +1686,13 @@ function TeamSelectModal({
 }) {
   const { lang } = useLang();
   const en = lang === "en";
-  const FALLBACK: Record<string, string> = { modra: "ALPHA", rdeca: "BRAVO", rumena: "CHARLIE" };
+  const FALLBACK_EN: Record<string, string> = { modra: "BLUE TEAM", rdeca: "RED TEAM", rumena: "YELLOW TEAM" };
+  const FALLBACK_SL: Record<string, string> = { modra: "MODRA EKIPA", rdeca: "RDEČA EKIPA", rumena: "RUMENA EKIPA" };
   const label = (t: "modra" | "rdeca" | "rumena") => {
     const custom = settings?.teamNames?.[t];
     if (typeof custom === "string" && custom.trim()) return custom.trim().toUpperCase();
-    return FALLBACK[t];
+    return (en ? FALLBACK_EN : FALLBACK_SL)[t];
   };
-  const colorLabel = (t: "modra" | "rdeca" | "rumena") =>
-    en ? TEAM_LABEL_EN[t] : TEAM_LABEL[t];
   return (
     <div
       className="fixed inset-0 z-50 flex items-center justify-center p-4"
@@ -1710,7 +1709,7 @@ function TeamSelectModal({
         >
           {en ? "CHOOSE FACTION" : "IZBERI EKIPO"}
         </h3>
-        <div className="grid gap-2" style={{ gridTemplateColumns: `repeat(${activeTeams(settings).length}, minmax(0, 1fr))` }}>
+        <div className="flex flex-col gap-2">
           {activeTeams(settings).map((t) => (
             <button
               key={t}
@@ -1718,19 +1717,18 @@ function TeamSelectModal({
               style={{
                 background: TEAM_COLOR[t],
                 color: "#fff",
-                padding: "16px 6px",
+                padding: "18px 14px",
                 border: "none",
                 cursor: "pointer",
                 fontFamily: "'Michroma', monospace",
-                fontSize: 12,
-                letterSpacing: "0.08em",
-                display: "flex",
-                flexDirection: "column",
-                gap: 4,
+                fontSize: 14,
+                letterSpacing: "0.10em",
+                fontWeight: 800,
+                textAlign: "center",
+                width: "100%",
               }}
             >
-              <span style={{ fontWeight: 800, fontSize: 13 }}>{label(t)}</span>
-              <span style={{ fontSize: 9, opacity: 0.85, letterSpacing: "0.16em" }}>· {colorLabel(t)} ·</span>
+              {label(t)}
             </button>
           ))}
         </div>
@@ -2232,10 +2230,15 @@ function LiveMatch({ state, captures, now, roster }: { state: GameState; capture
       <PlayerHudHeader en={en} />
       <h1
         className="text-center"
-        style={{ fontFamily: "'Michroma', monospace", fontSize: 18, color: INK, letterSpacing: "0.12em" }}
+        style={{ fontFamily: "'Michroma', monospace", fontSize: 20, color: ACCENT, letterSpacing: "0.14em", textTransform: "uppercase", marginTop: 2 }}
       >
-        SpartanOps: {missionTitleFromState(state, en ? "Active Mission" : "Aktivna misija")}{fieldTitleFromState(state, "") ? ` · ${fieldTitleFromState(state, "")}` : ""}
+        {missionTitleFromState(state, en ? "Active Mission" : "Aktivna misija")}
       </h1>
+      {fieldTitleFromState(state, "") && (
+        <p className="text-center font-mono mt-1 mb-4" style={{ color: MUTED, fontSize: 11, letterSpacing: "0.14em" }}>
+          {en ? "Field" : "Poligon"}: {fieldTitleFromState(state, "")}
+        </p>
+      )}
 
       <p className="text-center font-mono text-[11px] mt-2 mb-6" style={{ color: MUTED, lineHeight: 1.7 }}>
         {en
@@ -2353,9 +2356,17 @@ function LiveMatch({ state, captures, now, roster }: { state: GameState; capture
         </div>
       </div>
 
-      {/* Mission description / instructions (rendered under events on Game HUD) */}
+      {/* Player scoreboard (capture counts per player) */}
+      {state.settings?.capturePointsScoring && (
+        <PlayerScoreboard roster={roster} captures={visibleCaptures} respawn={state.settings?.respawn} en={en} />
+      )}
+
+      {/* Separator between scoreboard and the rest of the HUD */}
+      <div style={{ height: 1, background: `linear-gradient(90deg, transparent, ${ACCENT}66, transparent)`, margin: "24px 0" }} />
+
+      {/* Mission description / instructions — rendered under the scoreboard */}
       {((state.settings as any)?.missionDescription as string | undefined)?.trim() && (
-        <div style={{ marginTop: 14, background: PANEL, border: `1px solid ${ACCENT}55`, padding: "12px 14px" }}>
+        <div style={{ marginTop: 4, background: PANEL, border: `1px solid ${ACCENT}55`, padding: "12px 14px" }}>
           <div style={{ fontFamily: "monospace", fontSize: 10, letterSpacing: "0.2em", color: ACCENT, textTransform: "uppercase", marginBottom: 6 }}>
             ▌ {en ? "MISSION DESCRIPTION / INSTRUCTIONS" : "OPIS MISIJE / NAVODILA"}
           </div>
@@ -2365,13 +2376,7 @@ function LiveMatch({ state, captures, now, roster }: { state: GameState; capture
         </div>
       )}
 
-
-      {/* Player scoreboard (capture counts per player) */}
-      {state.settings?.capturePointsScoring && (
-        <PlayerScoreboard roster={roster} captures={visibleCaptures} respawn={state.settings?.respawn} en={en} />
-      )}
-
-      {/* Respawn rules always visible in-match */}
+      {/* Respawn rules (Timer type) — always visible in-match */}
       <div className="mt-4 flex justify-center">
         <RespawnRulesBlock settings={state.settings} en={en} />
       </div>

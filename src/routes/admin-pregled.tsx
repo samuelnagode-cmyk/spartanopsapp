@@ -3,7 +3,7 @@ import { useEffect, useRef, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import {
   ArrowLeft, Lock, Unlock, ChevronLeft, X, Crosshair, ShieldCheck,
-  Eye, EyeOff, Upload,
+  Eye, EyeOff, Upload, ArrowLeftRight, Phone,
 } from "lucide-react";
 
 import {
@@ -36,7 +36,7 @@ import {
   type LobbyDto,
 } from "@/lib/spartanops-lobbies.functions";
 import { spartanopsUpsertCheckin, spartanopsAdminGetRoster, spartanopsGetServerTime } from "@/lib/spartanops-checkin.functions";
-import { spartanopsAdminVerify } from "@/lib/spartanops-admin.functions";
+import { spartanopsAdminVerify, spartanopsAdminReassignTeam } from "@/lib/spartanops-admin.functions";
 
 
 export const Route = createFileRoute("/admin-pregled")({
@@ -734,10 +734,10 @@ function CreateFieldForm({ onCancel, onCreated }: { onCancel: () => void; onCrea
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (busy) return;
-    if (!missionName.trim() || !password.trim() || !country.trim() || !city.trim() || !marshalPassword.trim()) {
+    if (!missionName.trim() || !fieldName.trim() || !password.trim() || !country.trim() || !city.trim() || !marshalPassword.trim()) {
       setErr(en
-        ? "Mission name, city, country, mission password, and marshal password are required."
-        : "Ime misije, mesto, država, geslo misije in geslo maršala so obvezni.");
+        ? "Mission name, field name, city, country, mission password, and marshal password are required."
+        : "Ime misije, ime poligona, mesto, država, geslo misije in geslo maršala so obvezni.");
       return;
     }
     if (marshalPassword.trim() === password.trim()) {
@@ -747,8 +747,7 @@ function CreateFieldForm({ onCancel, onCreated }: { onCancel: () => void; onCrea
       return;
     }
     const location = `${city.trim()}, ${country.trim()}`;
-    // Field name is optional — fall back to the mission name so the DB row keeps a label.
-    const effectiveFieldName = fieldName.trim() || missionName.trim();
+    const effectiveFieldName = fieldName.trim();
     // Persist mission name / description inside the settings JSON so no DB migration is needed.
     const settingsWithMission = {
       ...settings,
@@ -818,8 +817,8 @@ function CreateFieldForm({ onCancel, onCreated }: { onCancel: () => void; onCrea
 
       {/* ── CARD 1: MISSION AND FIELD ───────────────────────── */}
       <Pane title={en ? "MISSION AND FIELD" : "MISIJA IN POLIGON"}>
-        <FieldRow label={en ? "Field name (optional)" : "Ime poligona (neobvezno)"}>
-          <input value={fieldName} onChange={(e) => setFieldName(e.target.value)} style={consoleInputStyle} placeholder="Poligon Ljubljana" />
+        <FieldRow label={en ? "Field name *" : "Ime poligona *"}>
+          <input required value={fieldName} onChange={(e) => setFieldName(e.target.value)} style={consoleInputStyle} placeholder="Poligon Ljubljana" />
         </FieldRow>
         <FieldRow label={en ? "Mission name" : "Ime misije"}>
           <input value={missionName} onChange={(e) => setMissionName(e.target.value)} style={consoleInputStyle} placeholder={en ? "Operation Fallen Angel" : "Operacija Fallen Angel"} />
@@ -1225,14 +1224,14 @@ function FieldsWelcome({
                       </span>
                     </div>
                     <p style={{ fontFamily: "'Michroma', monospace", fontSize: 12, letterSpacing: "0.14em", color: ACCENT, marginBottom: 8, textTransform: "uppercase" }}>
-                      MISSION: {l.fieldName}
+                      Mission: {l.eventName || l.fieldName}
                     </p>
                     <p style={{ fontSize: 12.5, color: "rgba(236,227,196,0.85)", lineHeight: 1.6 }}>
                       {[city, country].filter(Boolean).join(", ") || l.location}
                     </p>
-                    {l.eventName && (
+                    {l.fieldName && (
                       <p style={{ fontFamily: "monospace", fontSize: 10.5, color: MUTED, letterSpacing: "0.14em", marginTop: 6, textTransform: "uppercase" }}>
-                        // {l.eventName}
+                        // {l.fieldName}
                       </p>
                     )}
                   </button>
@@ -1244,21 +1243,6 @@ function FieldsWelcome({
       </div>
 
 
-      {/* System notice */}
-      <div style={{
-        maxWidth: 720, margin: "0 auto",
-        padding: "14px 16px",
-        border: "1px dashed rgba(224,176,78,0.25)",
-        background: "rgba(224,176,78,0.03)",
-        color: "rgba(224,176,78,0.55)",
-        fontFamily: "monospace",
-        fontSize: 11,
-        letterSpacing: "0.06em",
-        lineHeight: 1.7,
-        textAlign: "center",
-      }}>
-        // SYSTEM PURGE NOTICE: In order to keep servers optimized, fields that remain inactive for more than 14 days are automatically decommissioned. You can deploy a new field from scratch at any time.
-      </div>
     </>
   );
 }
@@ -1502,6 +1486,7 @@ function MarshalLobbyConsole({ lobby: initialLobby, marshalPassword, lobbyPasswo
     lastInitial: string | null;
     experience: "slabo" | "dobro" | "zelo_dobro" | null;
     club: string | null;
+    phoneNumber: string | null;
   };
   const [registered, setRegistered] = useState<RegisteredPlayer[]>([]);
   const state: LobbyState = lobby.state ?? "pending";
@@ -1588,18 +1573,19 @@ function MarshalLobbyConsole({ lobby: initialLobby, marshalPassword, lobbyPasswo
   const startMission = async () => {
     await syncServerClock().catch(() => {});
     const pre = Math.max(0, (lobby.countdownSeconds ?? 300)) * 1000;
+    const serverNow = Date.now() - serverOffset;
     setCaptures([]);
     setGameState((prev) => prev ? {
       ...prev,
       status: "active",
-      match_started_at: new Date(Date.now() + pre).toISOString(),
+      match_started_at: new Date(serverNow + pre).toISOString(),
       team_scores: { modra: 0, rdeca: 0, rumena: 0 },
       node_holders: { ...FREE_NODES },
       winner_team: null,
     } : prev);
     patch({
       state: "active",
-      startedAt: Date.now() + pre,
+      startedAt: serverNow + pre,
       fieldName: lobby.fieldName,
       eventName: lobby.eventName,
       mapUrl: lobby.mapUrl,
@@ -1677,6 +1663,7 @@ function MarshalLobbyConsole({ lobby: initialLobby, marshalPassword, lobbyPasswo
           lastInitial: r.last_initial ?? null,
           experience: r.experience_level ?? null,
           club: r.club ?? null,
+          phoneNumber: r.phone_number ?? null,
         })));
       } catch (e) {
         console.error("[marshal] roster fetch failed", e);
@@ -1909,6 +1896,21 @@ function MarshalLobbyConsole({ lobby: initialLobby, marshalPassword, lobbyPasswo
     rumena: registered.filter((r) => r.team === "rumena"),
   };
 
+  const reassignFn = useServerFn(spartanopsAdminReassignTeam);
+  const handleSwap = async (playerId: string, currentTeam: RegisteredPlayer["team"]) => {
+    if (!marshalPassword) return;
+    // Enforce 2-faction swap. Lobby players default to modra.
+    const target: "modra" | "rdeca" =
+      currentTeam === "modra" ? "rdeca" : currentTeam === "rdeca" ? "modra" : "modra";
+    // Optimistic UI — realtime will reconcile.
+    setRegistered((prev) => prev.map((p) => p.id === playerId ? { ...p, team: target } : p));
+    try {
+      await reassignFn({ data: { fieldId: lobby.id, password: marshalPassword, checkinId: playerId, team: target } });
+    } catch (e) {
+      console.error("[marshal] swap failed", e);
+    }
+  };
+
   return (
     <div>
       <div style={{ marginBottom: 18 }}>
@@ -1918,7 +1920,7 @@ function MarshalLobbyConsole({ lobby: initialLobby, marshalPassword, lobbyPasswo
         </button>
         <div style={{ marginTop: 14, display: "flex", flexWrap: "wrap", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
           <div style={{ fontFamily: "'Michroma', monospace", fontSize: 13, letterSpacing: "0.16em", color: ACCENT, textTransform: "uppercase" }}>
-            MISSION: {lobby.fieldName}
+            Mission: {lobby.eventName || lobby.fieldName}
           </div>
           <span style={{
             display: "inline-flex", alignItems: "center", gap: 6,
@@ -2044,10 +2046,10 @@ function MarshalLobbyConsole({ lobby: initialLobby, marshalPassword, lobbyPasswo
       {/* ROSTER & TEAM BALANCING */}
       <Pane title={en ? "ROSTER & TEAM BALANCING" : "SEZNAM & URAVNOTEŽENJE EKIP"}>
         <LockedAutoBalanceButton en={en} />
-        <RosterRow label="LOBBY"  color="rgba(236,227,196,0.35)" players={roster.lobby} />
-        <RosterRow label="BLUE"   color="#3b82f6" players={roster.modra} />
-        <RosterRow label="RED"    color="#ef4444" players={roster.rdeca} />
-        <RosterRow label="YELLOW" color="#f5b041" players={roster.rumena} />
+        <RosterRow label="LOBBY"  color="rgba(236,227,196,0.35)" players={roster.lobby} teamKey="lobby" onSwap={handleSwap} />
+        <RosterRow label="BLUE"   color="#3b82f6" players={roster.modra} teamKey="modra" onSwap={handleSwap} />
+        <RosterRow label="RED"    color="#ef4444" players={roster.rdeca} teamKey="rdeca" onSwap={handleSwap} />
+        <RosterRow label="YELLOW" color="#f5b041" players={roster.rumena} teamKey="rumena" onSwap={handleSwap} />
       </Pane>
 
       {/* LIVE LEADERBOARD */}
@@ -2485,6 +2487,7 @@ type RosterPlayer = {
   lastInitial?: string | null;
   experience?: "slabo" | "dobro" | "zelo_dobro" | null;
   club?: string | null;
+  phoneNumber?: string | null;
 };
 
 const EXP_LABEL: Record<"slabo" | "dobro" | "zelo_dobro", string> = {
@@ -2550,8 +2553,17 @@ function LockedAutoBalanceButton({ en }: { en: boolean }) {
   );
 }
 
-function RosterRow({ label, color, players }: { label: string; color: string; players: RosterPlayer[] }) {
+function RosterRow({
+  label, color, players, teamKey, onSwap,
+}: {
+  label: string;
+  color: string;
+  players: RosterPlayer[];
+  teamKey?: "lobby" | "modra" | "rdeca" | "rumena";
+  onSwap?: (playerId: string, currentTeam: "lobby" | "modra" | "rdeca" | "rumena") => void;
+}) {
   const neutral = color === "rgba(236,227,196,0.35)";
+  const [openId, setOpenId] = useState<string | null>(null);
   return (
     <div style={{ marginBottom: 10 }}>
       <div style={{
@@ -2577,12 +2589,22 @@ function RosterRow({ label, color, players }: { label: string; color: string; pl
             const li = p.lastInitial?.trim() ? `${p.lastInitial.trim().charAt(0).toUpperCase()}.` : "";
             const real = [p.firstName?.trim(), li].filter(Boolean).join(" ");
             const rank = p.experience ? EXP_LABEL[p.experience] : null;
+            const expanded = openId === p.id;
+            const phone = p.phoneNumber?.trim();
             return (
               <div key={p.id} style={{
                 display: "flex", alignItems: "center", gap: 10, padding: "8px 12px",
                 borderBottom: "1px solid rgba(236,227,196,0.06)",
               }}>
-                <div style={{ display: "flex", flexDirection: "column", minWidth: 0, flex: 1 }}>
+                <button
+                  type="button"
+                  onClick={() => setOpenId(expanded ? null : p.id)}
+                  style={{
+                    background: "transparent", border: "none", padding: 0, cursor: phone ? "pointer" : "default",
+                    display: "flex", flexDirection: "column", minWidth: 0, flex: 1, textAlign: "left", color: "inherit",
+                  }}
+                  title={phone ? "Show phone number" : ""}
+                >
                   <span style={{ color: INK, fontWeight: 700, letterSpacing: "0.06em", fontSize: 12.5, textTransform: "uppercase", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                     {p.callsign}
                   </span>
@@ -2591,8 +2613,17 @@ function RosterRow({ label, color, players }: { label: string; color: string; pl
                       {real}
                     </span>
                   )}
-                </div>
-                <div style={{ display: "flex", gap: 4, flexShrink: 0 }}>
+                  {expanded && phone && (
+                    <a
+                      href={`tel:${phone}`}
+                      onClick={(e) => e.stopPropagation()}
+                      style={{ color: ACCENT, fontSize: 11, marginTop: 4, letterSpacing: "0.05em", display: "inline-flex", alignItems: "center", gap: 4, textDecoration: "none" }}
+                    >
+                      <Phone size={10} /> {phone}
+                    </a>
+                  )}
+                </button>
+                <div style={{ display: "flex", gap: 4, flexShrink: 0, alignItems: "center" }}>
                   {rank && (
                     <span style={{
                       fontSize: 9, letterSpacing: "0.18em", padding: "2px 6px",
@@ -2608,6 +2639,25 @@ function RosterRow({ label, color, players }: { label: string; color: string; pl
                     }}>{p.club.trim()}</span>
                   ) : (
                     <span style={{ fontSize: 9, color: MUTED, padding: "2px 4px" }}>—</span>
+                  )}
+                  {onSwap && teamKey && (
+                    <button
+                      type="button"
+                      onClick={() => onSwap(p.id, teamKey)}
+                      title="Swap team"
+                      style={{
+                        background: "transparent",
+                        border: `1px solid ${ACCENT}55`,
+                        color: ACCENT,
+                        padding: "4px 6px",
+                        cursor: "pointer",
+                        display: "inline-flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                      }}
+                    >
+                      <ArrowLeftRight size={12} />
+                    </button>
                   )}
                 </div>
               </div>
