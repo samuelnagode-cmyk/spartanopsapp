@@ -1865,7 +1865,7 @@ function PreMatchCountdown({ seconds, polygon, eventName, gamemode, pointTarget,
           <p style={{ color: ACCENT, fontFamily: "'Michroma', monospace", fontSize: 18, marginTop: 5 }}>{duration || "—"} MIN</p>
         </div>
       </div>
-      {gamemode !== "search_destroy" && (
+      {gamemode !== "search_destroy" && !description?.trim() && (
         <p className="max-w-2xl text-[12px]" style={{ color: MUTED, lineHeight: 1.7, fontStyle: "italic", marginTop: 0, marginBottom: 14 }}>
           {en
             ? `Your mission is to capture ${pointTarget ?? 50} points on the field and hold them for as long as possible — capture points by scanning the QR codes at the flagged locations.`
