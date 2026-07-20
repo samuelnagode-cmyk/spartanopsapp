@@ -1419,7 +1419,7 @@ export function SpartacusAlerts({ fieldId, password, en }: { fieldId: string; pa
               <button
                 type="button"
                 disabled={busy === r.id}
-                onClick={() => decide(r.id, "reject")}
+                onClick={() => decide(r.id, "warning")}
                 style={{ background: "transparent", color: NEON, border: `1px solid ${NEON}`, padding: "8px 10px", fontFamily: "'Michroma', monospace", fontSize: 10, letterSpacing: "0.16em", textTransform: "uppercase", cursor: "pointer" }}
               >
                 {en ? "SEND WARNING" : "OPOZORI"}
