@@ -6,6 +6,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { spartanopsAckTeamChange, spartanopsSelectTeam } from "@/lib/spartanops-game.functions";
 import { spartanopsUpsertCheckin, spartanopsGetMyCheckin, spartanopsDeleteMyCheckin, spartanopsGetParticipantRoster, spartanopsGetServerTime, spartanopsGetRespawnLock } from "@/lib/spartanops-checkin.functions";
 import { spartanopsAcknowledgeWarning } from "@/lib/spartanops-spartacus.functions";
+import { SpartacusAlerts } from "@/components/SpartanOpsConsole";
 
 import { OfflineBanner } from "@/components/OfflineBanner";
 import { TacticalCompass } from "@/components/TacticalCompass";
@@ -21,6 +22,7 @@ export const Route = createFileRoute("/misija")({
       field: typeof s.field === "string" ? s.field : (typeof s.field_id === "string" ? s.field_id : "zeleni-raj"),
       point: typeof s.point === "string" || typeof s.point === "number" ? String(s.point) : undefined,
       preview: s.preview === "1" || s.preview === 1 || s.preview === true || s.preview === "true" ? true : false,
+      marshal: s.marshal === "1" || s.marshal === 1 || s.marshal === true || s.marshal === "true" ? true : false,
     };
   },
 
@@ -230,7 +232,7 @@ function toDbField(raw: string): string {
 function MisijaPage() {
   const { lang } = useLang();
   const en = lang === "en";
-  const { field: rawField, point: targetPoint, preview } = Route.useSearch();
+  const { field: rawField, point: targetPoint, preview, marshal: marshalMode } = Route.useSearch();
   const field = useMemo(() => toDbField(rawField), [rawField]);
   const ackFn = useServerFn(spartanopsAckTeamChange);
   const selectTeamFn = useServerFn(spartanopsSelectTeam);
@@ -770,7 +772,11 @@ function MisijaPage() {
           />
         )}
       </div>
-      <AbortMissionButton field={field} en={en} />
+      {marshalMode ? (
+        <MarshalHudOverlay fieldId={field} en={en} />
+      ) : (
+        <AbortMissionButton field={field} en={en} />
+      )}
       {preview && <PreviewReturnButton />}
     </div>
   );
@@ -845,6 +851,59 @@ function AbortMissionButton({ field, en }: { field: string; en: boolean }) {
         {en ? "Leave this lobby and delete your data for this field." : "Zapustite lobby in izbrišite svoje podatke za ta poligon."}
       </div>
     </div>
+  );
+}
+
+function MarshalHudOverlay({ fieldId, en }: { fieldId: string; en: boolean }) {
+  const deleteMyCheckinFn = useServerFn(spartanopsDeleteMyCheckin);
+  const [marshalPw, setMarshalPw] = useState<string>("");
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    try {
+      const pw = sessionStorage.getItem(`spartanops:marshal:pw:${fieldId}`) ?? "";
+      setMarshalPw(pw);
+    } catch { /* ignore */ }
+  }, [fieldId]);
+
+  const onReturn = async () => {
+    const msg = en
+      ? "Return to Marshal Command Center? You will be removed from the game as a player, your score will be deleted and you will have to reassign."
+      : "Nazaj v komandni center maršala? Kot igralec boš odstranjen iz igre, tvoj rezultat bo izbrisan in se boš moral znova prijaviti.";
+    if (!confirm(msg)) return;
+    let sid: string | null = null;
+    try { sid = localStorage.getItem(SESSION_KEY); } catch { /* ignore */ }
+    if (sid) {
+      try { await deleteMyCheckinFn({ data: { fieldId, sessionId: sid } }); } catch { /* ignore */ }
+    }
+    if (typeof window !== "undefined") window.location.href = "/admin-pregled";
+  };
+
+  return (
+    <>
+      {marshalPw ? (
+        <SpartacusAlerts fieldId={fieldId} password={marshalPw} en={en} />
+      ) : null}
+      <div style={{ padding: "16px 12px 28px", display: "flex", flexDirection: "column", alignItems: "center", gap: 8 }}>
+        <button
+          type="button"
+          onClick={onReturn}
+          style={{
+            width: "100%", maxWidth: 520,
+            background: "#E0B04E", color: "#0b0d09", border: "none",
+            padding: "16px 18px", fontFamily: "'Michroma', monospace",
+            fontSize: 12, letterSpacing: "0.22em", textTransform: "uppercase", fontWeight: 700, cursor: "pointer",
+            boxShadow: "0 0 18px rgba(224,176,78,0.35)",
+          }}
+        >
+          [ {en ? "RETURN TO MARSHAL COMMAND CENTER" : "NAZAJ V KOMANDNI CENTER MARŠALA"} ]
+        </button>
+        <p style={{ fontFamily: "monospace", fontSize: 11, color: "rgba(236,227,196,0.65)", lineHeight: 1.5, textAlign: "center", maxWidth: 520 }}>
+          {en
+            ? "If you leave you will be removed from the game as a player, your score will be deleted and you will have to reassign."
+            : "Če odideš, boš kot igralec odstranjen iz igre, tvoj rezultat bo izbrisan in se boš moral znova prijaviti."}
+        </p>
+      </div>
+    </>
   );
 }
 
@@ -1039,34 +1098,10 @@ function ChooseFactionButton({ onClick, en }: { onClick: () => void; en: boolean
 }
 
 function SpartacusConsentBlock({ en, onClearedChange }: { en: boolean; onClearedChange: (ok: boolean) => void }) {
+  // Always start in "idle" so both mobile & desktop show the same amber
+  // "AGREE + ACTIVATE GPS" call-to-action. Only an explicit user tap flips
+  // the state — no silent auto-grant from localStorage or the Permissions API.
   const [status, setStatus] = useState<"idle" | "granted" | "denied">("idle");
-
-  useEffect(() => {
-    let live = true;
-    (async () => {
-      try {
-        if (typeof window !== "undefined" && localStorage.getItem(GPS_OK_KEY) === "1") {
-          if (live) {
-            setStatus("granted");
-            onClearedChange(true);
-          }
-          return;
-        }
-        if (typeof navigator !== "undefined" && "permissions" in navigator) {
-          const r = await (navigator as any).permissions.query({ name: "geolocation" });
-          if (!live) return;
-          if (r?.state === "granted") {
-            setStatus("granted");
-            onClearedChange(true);
-          } else if (r?.state === "denied") {
-            setStatus("denied");
-            onClearedChange(false);
-          }
-        }
-      } catch { /* ignore */ }
-    })();
-    return () => { live = false; };
-  }, [onClearedChange]);
 
   const activate = () => {
     if (typeof navigator === "undefined" || !navigator.geolocation) {
@@ -1139,6 +1174,7 @@ function CheckinForm({ sessionId, fieldId, preview, onGhost, fieldLabel }: { ses
   const [firstName, setFirstName] = useState("");
   const [lastInitial, setLastInitial] = useState("");
   const [club, setClub] = useState("");
+  const [phone, setPhone] = useState("");
   const [exp, setExp] = useState<"slabo" | "dobro" | "zelo_dobro">("dobro");
   const [err, setErr] = useState("");
   const [submitting, setSubmitting] = useState(false);
@@ -1151,6 +1187,7 @@ function CheckinForm({ sessionId, fieldId, preview, onGhost, fieldLabel }: { ses
     callsign: en ? "Callsign / Tactical Moniker *" : "Callsign / Taktični vzdevek *",
     firstName: en ? "First name" : "Ime",
     lastInitial: en ? "Last initial" : "Priimek (črka)",
+    phone: en ? "Phone number (visible only to the marshal)" : "Telefonska številka (vidna samo maršalu)",
     club: en ? "Team / Club (Optional*)" : "Ekipa / Klub (opcijsko*)",
     experience: en ? "Experience level" : "Nivo izkušenj",
     submit: en ? "OK" : "OK",
@@ -1198,11 +1235,19 @@ function CheckinForm({ sessionId, fieldId, preview, onGhost, fieldLabel }: { ses
           fieldId,
           callsign: cs,
           club: club.trim() || null,
+          phoneNumber: phone.trim() || null,
           experienceLevel: exp,
           firstName: firstName.trim() || null,
           lastInitial: li || null,
         },
       });
+      // Force a full reload so iOS Safari (where the realtime channel can lag
+      // right after the POST) reliably hydrates the check-in and drops the
+      // player straight into the team-selection view.
+      if (typeof window !== "undefined") {
+        window.location.reload();
+        return;
+      }
       setSubmitting(false);
     } catch (e: any) {
       setSubmitting(false);
@@ -1276,6 +1321,21 @@ function CheckinForm({ sessionId, fieldId, preview, onGhost, fieldLabel }: { ses
                 placeholder="N"
               />
             </div>
+          </div>
+          <div>
+            <label className="block font-mono text-[10px] uppercase tracking-widest mb-1" style={{ color: MUTED }}>
+              {t.phone}
+            </label>
+            <input
+              type="tel"
+              value={phone}
+              onChange={(e) => setPhone(e.target.value)}
+              maxLength={40}
+              style={inputStyle}
+              placeholder="+386 40 123 456"
+              autoComplete="tel"
+              inputMode="tel"
+            />
           </div>
           <div>
             <label className="block font-mono text-[10px] uppercase tracking-widest mb-1" style={{ color: MUTED }}>

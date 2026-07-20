@@ -1613,8 +1613,8 @@ function MarshalLobbyConsole({ lobby: initialLobby, marshalPassword, lobbyPasswo
   };
   const endAndReset = () => {
     if (!confirm(en
-      ? "End current mission and reset scores? Registered players will remain in the lobby."
-      : "Končaj misijo in ponastavi rezultate? Prijavljeni igralci ostanejo v lobbyju."
+      ? "End current mission/debriefing (score display) and reset stats? Registered players will remain in the lobby."
+      : "Končaj trenutno misijo/debriefing (prikaz rezultatov) in ponastavi statistiko? Prijavljeni igralci ostanejo v lobbyju."
     )) return;
     setCaptures([]);
     setGameState((prev) => prev ? {
@@ -1779,7 +1779,14 @@ function MarshalLobbyConsole({ lobby: initialLobby, marshalPassword, lobbyPasswo
     pending: MUTED, active: "#3ddc84", paused: "#f5b041", ended: MUTED,
   };
 
-  const joinUrl = `/misija?field=${encodeURIComponent(lobby.id)}`;
+  const joinUrl = `/misija?field=${encodeURIComponent(lobby.id)}&marshal=1`;
+  const stashMarshalPw = () => {
+    try {
+      if (typeof window !== "undefined" && marshalPassword) {
+        sessionStorage.setItem(`spartanops:marshal:pw:${lobby.id}`, marshalPassword);
+      }
+    } catch { /* ignore */ }
+  };
   const target = lobby.pointTarget ?? 50;
 
   // Marshal auto-registration — cached callsign/faction bypass the modal
@@ -1858,6 +1865,7 @@ function MarshalLobbyConsole({ lobby: initialLobby, marshalPassword, lobbyPasswo
       try {
         setJoinBusy(true);
         await runAutoCheckin(cached);
+        stashMarshalPw();
         window.location.href = joinUrl;
       } catch (e: any) {
         setJoinBusy(false);
@@ -1885,6 +1893,7 @@ function MarshalLobbyConsole({ lobby: initialLobby, marshalPassword, lobbyPasswo
     try {
       await runAutoCheckin(profile);
       try { localStorage.setItem(MARSHAL_CACHE_KEY, JSON.stringify(profile)); } catch {}
+      stashMarshalPw();
       window.location.href = joinUrl;
     } catch (e: any) {
       setJoinBusy(false);

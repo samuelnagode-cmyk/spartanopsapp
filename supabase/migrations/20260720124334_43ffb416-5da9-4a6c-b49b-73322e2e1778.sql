@@ -1,0 +1,1 @@
+ALTER TABLE public.spartanops_checkin_secrets ADD COLUMN IF NOT EXISTS phone_number text;
