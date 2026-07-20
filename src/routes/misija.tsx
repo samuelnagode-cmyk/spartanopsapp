@@ -2929,3 +2929,41 @@ function WarningModal({ message, en, onAcknowledge }: { message: string; en: boo
 
 
 
+
+function PausedOverlay({ en }: { en: boolean }) {
+  const title = en ? "// OPERATION PAUSED" : "// OPERACIJA PREKINJENA";
+  const desc = en
+    ? "The Marshal has temporarily frozen the match. Active telemetry, timers, and QR scanning protocols are suspended until further notice. Remain at your current positions."
+    : "Maršal je začasno zamrznil igro. Aktivna telemetrija, števci in protokoli za skeniranje QR kod so do nadaljnjega onemogočeni. Ostanite na svojih trenutnih položajih.";
+  return (
+    <div
+      role="alertdialog"
+      aria-modal="true"
+      aria-label={title}
+      style={{
+        position: "fixed", inset: 0, zIndex: 90,
+        background: "rgba(4,6,3,0.94)",
+        backdropFilter: "blur(10px)",
+        display: "grid", placeItems: "center", padding: 20,
+        animation: "spops-pause-pulse 2.4s ease-in-out infinite",
+      }}
+    >
+      <div style={{
+        background: "#14100a", border: `2px solid ${ACCENT}`,
+        boxShadow: `0 0 60px ${ACCENT}55, inset 0 0 30px rgba(224,176,78,0.08)`,
+        padding: "34px 26px", maxWidth: 520, width: "100%", textAlign: "center",
+      }}>
+        <p style={{ fontFamily: "monospace", fontSize: 11, letterSpacing: "0.3em", color: ACCENT, textTransform: "uppercase", marginBottom: 8 }}>
+          ⏸ {en ? "MARSHAL COMMAND" : "MARŠALSKA KOMANDA"}
+        </p>
+        <h2 style={{ fontFamily: "'Michroma', monospace", fontSize: "clamp(20px, 4.5vw, 28px)", color: ACCENT, letterSpacing: "0.14em", textTransform: "uppercase", fontWeight: 700, marginTop: 4, marginBottom: 18, textShadow: `0 0 24px ${ACCENT}66` }}>
+          {title}
+        </h2>
+        <p style={{ color: INK, fontSize: 14, lineHeight: 1.75, letterSpacing: "0.02em" }}>
+          {desc}
+        </p>
+      </div>
+      <style>{`@keyframes spops-pause-pulse { 0%,100% { background: rgba(4,6,3,0.94); } 50% { background: rgba(30,20,4,0.94); } }`}</style>
+    </div>
+  );
+}
