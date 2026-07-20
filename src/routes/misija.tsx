@@ -652,6 +652,7 @@ function MisijaPage() {
         <OfflineBanner />
         {reassignedBanner}
         {warningOverlay}
+        {pauseOverlay}
         <PreMatchCountdown seconds={preMatchSecEarly} polygon={state.current_polygon_name} eventName={state.event_name} gamemode={state.gamemode} pointTarget={state.point_target} settings={state.settings} en={en} state={state} />
         {preview && <PreviewReturnButton />}
       </div>
@@ -676,6 +677,7 @@ function MisijaPage() {
         <OfflineBanner />
         {reassignedBanner}
         {warningOverlay}
+        {pauseOverlay}
         <LiveMatch state={state} captures={captures} now={currentTime} roster={roster} />
         <AbortMissionButton field={field} en={en} />
         {preview && <PreviewReturnButton />}
