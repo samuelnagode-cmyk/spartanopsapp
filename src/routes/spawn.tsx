@@ -51,6 +51,7 @@ type RespawnSettings = {
 };
 
 type SpawnGameState = {
+  status?: string | null;
   match_started_at: string | null;
   match_duration_minutes: number | null;
   settings?: { respawn?: RespawnSettings } | null;
