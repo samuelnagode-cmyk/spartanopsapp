@@ -406,8 +406,18 @@ export function SpartanOpsConsole({ fieldId, password }: { fieldId: string; pass
 
 
         <div style={{ marginTop: 14, fontSize: 10, color: MUTED, fontFamily: "monospace", lineHeight: 1.7 }}>
-          <p>{en ? "Registered" : "Prijavljenih"}: <strong style={{ color: INK }}>{roster.length}</strong></p>
+          <p>
+            {en ? "Registered" : "Prijavljenih"}:{" "}
+            <strong style={{ color: roster.length > 30 ? "#ff6b6b" : INK }}>{roster.length}/30</strong>{" "}
+            <span style={{ color: MUTED }}>{en ? "(Core tier cap)" : "(omejitev Core tier)"}</span>
+          </p>
+          {roster.length > 30 && (
+            <p style={{ color: "#ff6b6b", marginTop: 4 }}>
+              {en ? "⚠ Core tier supports up to 30 players." : "⚠ Core tier podpira največ 30 igralcev."}
+            </p>
+          )}
         </div>
+
       </Pane>
 
       {/* 2. ROSTER & TEAM BALANCING */}
@@ -1335,18 +1345,24 @@ export function SpartacusAlerts({ fieldId, password, en }: { fieldId: string; pa
     return () => { alive = false; supabase.removeChannel(ch); };
   }, [fieldId, password]);
 
-  const decide = async (id: string, decision: "approve" | "reject" | "ban" | "suspend") => {
+  const decide = async (id: string, decision: "approve" | "reject" | "ban" | "suspend" | "warning") => {
     if (busy) return;
     if (decision === "ban" && !confirm(en ? "Remove this player from the mission?" : "Odstrani tega igralca iz misije?")) return;
     if (decision === "suspend" && !confirm(en ? "Suspend this player for 5 minutes?" : "Suspendiraj tega igralca za 5 minut?")) return;
     setBusy(id);
     try {
-      await reviewFn({ data: { captureId: id, decision, fieldId, password, suspendMinutes: 5 } });
+      const warningMessage = decision === "warning"
+        ? (en
+            ? "The Marshal has flagged suspicious activity on your last scan. This is an official warning. Please respect fair-play rules and only scan codes within the 10-metre objective radius."
+            : "Maršal je zaznal sumljivo aktivnost pri tvojem zadnjem skenu. To je uradno opozorilo. Prosimo, upoštevaj pravila fair-playa in skeniraj kode le v določenem 10-metrskem območju cilja.")
+        : "";
+      await reviewFn({ data: { captureId: id, decision, fieldId, password, suspendMinutes: 5, warningMessage } as any });
       setRows((prev) => prev.filter((r) => r.id !== id));
     } catch (e: any) {
       alert(e?.message ?? "Review failed");
     } finally { setBusy(null); }
   };
+
 
   if (rows.length === 0) return null;
   const NEON = "#ffb020";
