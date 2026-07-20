@@ -2046,10 +2046,10 @@ function MarshalLobbyConsole({ lobby: initialLobby, marshalPassword, lobbyPasswo
       {/* ROSTER & TEAM BALANCING */}
       <Pane title={en ? "ROSTER & TEAM BALANCING" : "SEZNAM & URAVNOTEŽENJE EKIP"}>
         <LockedAutoBalanceButton en={en} />
-        <RosterRow label="LOBBY"  color="rgba(236,227,196,0.35)" players={roster.lobby} />
-        <RosterRow label="BLUE"   color="#3b82f6" players={roster.modra} />
-        <RosterRow label="RED"    color="#ef4444" players={roster.rdeca} />
-        <RosterRow label="YELLOW" color="#f5b041" players={roster.rumena} />
+        <RosterRow label="LOBBY"  color="rgba(236,227,196,0.35)" players={roster.lobby} teamKey="lobby" onSwap={handleSwap} />
+        <RosterRow label="BLUE"   color="#3b82f6" players={roster.modra} teamKey="modra" onSwap={handleSwap} />
+        <RosterRow label="RED"    color="#ef4444" players={roster.rdeca} teamKey="rdeca" onSwap={handleSwap} />
+        <RosterRow label="YELLOW" color="#f5b041" players={roster.rumena} teamKey="rumena" onSwap={handleSwap} />
       </Pane>
 
       {/* LIVE LEADERBOARD */}
