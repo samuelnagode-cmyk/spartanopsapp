@@ -1,8 +1,9 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
-import { ArrowLeft, MapPin, Archive as ArchiveIcon } from "lucide-react";
-import { listArchivedMissions, type SpartanOpsArchiveRow } from "@/lib/spartanops-archive.functions";
+import { ArrowLeft, MapPin, Archive as ArchiveIcon, Trash2, Lock, Unlock } from "lucide-react";
+import { listArchivedMissions, masterDeleteArchivedMission, type SpartanOpsArchiveRow } from "@/lib/spartanops-archive.functions";
+import { verifyMasterPassword } from "@/lib/spartanops-lobbies.functions";
 
 export const Route = createFileRoute("/archive")({
   head: () => ({
@@ -21,13 +22,24 @@ const ACCENT = "#E0B04E";
 const INK = "#ece3c4";
 const MUTED = "rgba(236,227,196,0.55)";
 const DECOMMISSIONED = "#c86a4a";
+const DANGER = "#ff6b6b";
 const HAIRLINE = "rgba(236,227,196,0.10)";
+
+const MPW_KEY = "spartanops:master_pw";
 
 function ArchivePage() {
   const navigate = useNavigate();
   const getArchive = useServerFn(listArchivedMissions);
+  const deleteArchived = useServerFn(masterDeleteArchivedMission);
+  const verifyMaster = useServerFn(verifyMasterPassword);
   const [rows, setRows] = useState<SpartanOpsArchiveRow[]>([]);
   const [loading, setLoading] = useState(true);
+  const [masterPw, setMasterPw] = useState<string>("");
+  const [unlocked, setUnlocked] = useState(false);
+  const [pwInput, setPwInput] = useState("");
+  const [pwError, setPwError] = useState(false);
+  const [showUnlock, setShowUnlock] = useState(false);
+  const [busyId, setBusyId] = useState<string | null>(null);
 
   useEffect(() => {
     let alive = true;
@@ -45,6 +57,50 @@ function ArchivePage() {
     return () => { alive = false; window.removeEventListener("focus", refresh); };
   }, [getArchive]);
 
+  // Auto-unlock if master password is cached in sessionStorage from admin-pregled
+  useEffect(() => {
+    try {
+      const cached = sessionStorage.getItem(MPW_KEY);
+      if (cached) {
+        verifyMaster({ data: { password: cached } }).then((r) => {
+          if (r?.ok) { setMasterPw(cached); setUnlocked(true); }
+        }).catch(() => {});
+      }
+    } catch {}
+  }, [verifyMaster]);
+
+  const tryUnlock = async () => {
+    setPwError(false);
+    try {
+      const r = await verifyMaster({ data: { password: pwInput } });
+      if (r?.ok) {
+        setMasterPw(pwInput);
+        setUnlocked(true);
+        setShowUnlock(false);
+        setPwInput("");
+        try { sessionStorage.setItem(MPW_KEY, pwInput); } catch {}
+      } else {
+        setPwError(true);
+      }
+    } catch {
+      setPwError(true);
+    }
+  };
+
+  const handleDelete = async (id: string, label: string) => {
+    if (!unlocked) return;
+    if (!confirm(`Permanently delete archived mission "${label}"? This cannot be undone.`)) return;
+    setBusyId(id);
+    try {
+      await deleteArchived({ data: { id, masterPassword: masterPw } });
+      setRows((prev) => prev.filter((r) => r.id !== id));
+    } catch (e: any) {
+      alert(e?.message || "Delete failed");
+    } finally {
+      setBusyId(null);
+    }
+  };
+
   return (
     <div style={{ background: BG, color: INK, minHeight: "100vh", padding: "95px 16px 80px" }}>
       <div style={{ maxWidth: 900, margin: "0 auto" }}>
@@ -60,7 +116,7 @@ function ArchivePage() {
           </span>
         </div>
 
-        <div style={{ textAlign: "center", marginBottom: 32 }}>
+        <div style={{ textAlign: "center", marginBottom: 24 }}>
           <p style={{ fontFamily: "monospace", fontSize: 11, letterSpacing: "0.30em", color: ACCENT, marginBottom: 10, textTransform: "uppercase" }}>
             // HISTORICAL LOG
           </p>
@@ -70,6 +126,54 @@ function ArchivePage() {
           <p style={{ color: MUTED, fontSize: 13, marginTop: 10, lineHeight: 1.6 }}>
             Read-only log of concluded and decommissioned nodes.
           </p>
+        </div>
+
+        {/* Master admin unlock */}
+        <div style={{ marginBottom: 22, display: "flex", justifyContent: "center" }}>
+          {unlocked ? (
+            <span style={{ fontFamily: "monospace", fontSize: 10, letterSpacing: "0.22em", color: ACCENT, textTransform: "uppercase", display: "inline-flex", alignItems: "center", gap: 6, border: `1px solid ${ACCENT}55`, padding: "6px 10px" }}>
+              <Unlock size={11} /> Admin unlocked — permanent delete available
+            </span>
+          ) : showUnlock ? (
+            <form
+              onSubmit={(e) => { e.preventDefault(); void tryUnlock(); }}
+              style={{ display: "flex", gap: 6 }}
+            >
+              <input
+                type="password"
+                value={pwInput}
+                onChange={(e) => { setPwInput(e.target.value); setPwError(false); }}
+                placeholder="Master password"
+                autoFocus
+                style={{
+                  background: "rgba(0,0,0,0.4)", color: INK,
+                  border: `1px solid ${pwError ? DANGER : `${ACCENT}55`}`,
+                  padding: "8px 10px", fontFamily: "monospace", fontSize: 11, letterSpacing: "0.12em", minWidth: 220,
+                }}
+              />
+              <button
+                type="submit"
+                style={{ background: ACCENT, color: BG, border: `1px solid ${ACCENT}`, padding: "8px 12px", fontFamily: "monospace", fontSize: 10, letterSpacing: "0.16em", textTransform: "uppercase", cursor: "pointer", fontWeight: 700 }}
+              >
+                Unlock
+              </button>
+              <button
+                type="button"
+                onClick={() => { setShowUnlock(false); setPwInput(""); setPwError(false); }}
+                style={{ background: "transparent", color: MUTED, border: `1px solid ${HAIRLINE}`, padding: "8px 10px", fontFamily: "monospace", fontSize: 10, letterSpacing: "0.16em", textTransform: "uppercase", cursor: "pointer" }}
+              >
+                Cancel
+              </button>
+            </form>
+          ) : (
+            <button
+              type="button"
+              onClick={() => setShowUnlock(true)}
+              style={{ background: "transparent", color: MUTED, border: `1px dashed ${HAIRLINE}`, padding: "6px 10px", fontFamily: "monospace", fontSize: 10, letterSpacing: "0.22em", textTransform: "uppercase", cursor: "pointer", display: "inline-flex", alignItems: "center", gap: 6 }}
+            >
+              <Lock size={11} /> Admin: unlock permanent delete
+            </button>
+          )}
         </div>
 
         {loading ? (
@@ -94,8 +198,7 @@ function ArchivePage() {
                   background: PANEL,
                   border: `1px solid ${HAIRLINE}`,
                   padding: "16px 18px",
-                  opacity: 0.85,
-                  cursor: "default",
+                  opacity: 0.9,
                 }}
               >
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
@@ -113,15 +216,36 @@ function ArchivePage() {
                       </p>
                     </div>
                   </div>
-                  <span style={{
-                    fontFamily: "monospace", fontSize: 10, letterSpacing: "0.24em",
-                    color: DECOMMISSIONED, border: `1px solid ${DECOMMISSIONED}55`,
-                    padding: "4px 8px", textTransform: "uppercase",
-                    display: "inline-flex", alignItems: "center", gap: 6,
-                  }}>
-                    <span style={{ width: 6, height: 6, borderRadius: "50%", background: DECOMMISSIONED, display: "inline-block" }} />
-                    Decommissioned
-                  </span>
+                  <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                    <span style={{
+                      fontFamily: "monospace", fontSize: 10, letterSpacing: "0.24em",
+                      color: DECOMMISSIONED, border: `1px solid ${DECOMMISSIONED}55`,
+                      padding: "4px 8px", textTransform: "uppercase",
+                      display: "inline-flex", alignItems: "center", gap: 6,
+                    }}>
+                      <span style={{ width: 6, height: 6, borderRadius: "50%", background: DECOMMISSIONED, display: "inline-block" }} />
+                      Decommissioned
+                    </span>
+                    {unlocked && (
+                      <button
+                        type="button"
+                        disabled={busyId === r.id}
+                        onClick={() => void handleDelete(r.id, r.eventName || r.fieldName)}
+                        title="Permanently delete from archive"
+                        aria-label="Permanently delete from archive"
+                        style={{
+                          background: "transparent", color: DANGER,
+                          border: `1px solid ${DANGER}55`, padding: "6px 8px",
+                          cursor: busyId === r.id ? "wait" : "pointer",
+                          fontFamily: "monospace", fontSize: 10, letterSpacing: "0.16em",
+                          textTransform: "uppercase", display: "inline-flex", alignItems: "center", gap: 6,
+                          opacity: busyId === r.id ? 0.5 : 1,
+                        }}
+                      >
+                        <Trash2 size={12} /> {busyId === r.id ? "…" : "Delete"}
+                      </button>
+                    )}
+                  </div>
                 </div>
               </div>
             ))}

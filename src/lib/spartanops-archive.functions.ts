@@ -1,5 +1,12 @@
 import { createServerFn } from "@tanstack/react-start";
 
+function checkMaster(pw: string): boolean {
+  const master = process.env.SPARTANOPS_MASTER_PASSWORD;
+  if (!master) return false;
+  if (typeof pw !== "string" || pw.length === 0 || pw.length > 200) return false;
+  return pw === master;
+}
+
 export type SpartanOpsArchiveRow = {
   id: string;
   lobbyId: string;
@@ -43,3 +50,20 @@ export const listArchivedMissions = createServerFn({ method: "GET" }).handler(as
     decommissionedAt: r.decommissioned_at,
   }));
 });
+/** Master-admin: permanently remove an archived mission row. */
+export const masterDeleteArchivedMission = createServerFn({ method: "POST" })
+  .inputValidator((d: { id: string; masterPassword: string }) => ({
+    id: String(d?.id ?? ""),
+    masterPassword: String(d?.masterPassword ?? ""),
+  }))
+  .handler(async ({ data }) => {
+    if (!checkMaster(data.masterPassword)) throw new Error("Unauthorized");
+    if (!data.id) throw new Error("id required");
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { error } = await supabaseAdmin
+      .from("spartanops_archived_missions" as any)
+      .delete()
+      .eq("id", data.id);
+    if (error) throw new Error(error.message);
+    return { ok: true as const };
+  });
