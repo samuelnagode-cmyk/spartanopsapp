@@ -2,10 +2,9 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { CheckCircle2, AlertTriangle } from "lucide-react";
-import captureTrack from "@/assets/spartanops-capture-levelup.mp3.asset.json";
 import { spartanopsSpartacusCapture } from "@/lib/spartanops-spartacus.functions";
 import { spartanopsResolveSessionField } from "@/lib/spartanops-checkin.functions";
-import { useLang } from "@/lib/i18n";
+import { useLang, useT } from "@/lib/i18n";
 
 export const Route = createFileRoute("/capture")({
   head: () => ({
@@ -100,13 +99,8 @@ function placeholderError(en: boolean): string {
     : "Ta QR koda še vedno vsebuje predlogo za ID misije. Ponovno jo ustvarite/natisnite s pravim UUID misije ali naj se igralec najprej pridruži misiji, da SpartanOps prepozna aktivno misijo.";
 }
 
-function playCaptureTrack() {
-  try {
-    const audio = new Audio(captureTrack.url);
-    audio.volume = 0.95;
-    audio.play().catch(() => {});
-  } catch { /* ignore */ }
-}
+const CAPTURE_SFX_MS = 6000;
+
 
 function CapturePage() {
   const { lang } = useLang();
