@@ -155,6 +155,8 @@ type Checkin = {
   first_name?: string | null;
   last_initial?: string | null;
   warning_message?: string | null;
+  death_count?: number | null;
+  respawn_unlock_at?: string | null;
 
 };
 type Capture = {
@@ -2331,10 +2333,11 @@ function PlayerScoreboard({ roster, captures, respawn, en = false }: { roster: C
               {en ? `${teamLabelFor(t)} TEAM SCOREBOARD` : `${teamLabelFor(t)} · SCOREBOARD`}
             </div>
             <div className="divide-y" style={{ borderColor: "rgba(236,227,196,0.08)" }}>
-              <div className="grid gap-2 px-3 py-1 text-[9px] font-mono uppercase tracking-widest" style={{ color: MUTED, gridTemplateColumns: `28px minmax(0,1fr) 56px${respawn?.enabled ? " 46px" : ""}` }}>
+              <div className="grid gap-2 px-3 py-1 text-[9px] font-mono uppercase tracking-widest" style={{ color: MUTED, gridTemplateColumns: `28px minmax(0,1fr) 56px${respawn?.publicDeaths ? " 40px" : ""}${respawn?.enabled ? " 70px" : ""}` }}>
                 <span></span>
                 <span>{en ? "Callsign" : "Callsign"}</span>
-                <span style={{ textAlign: "right" }}>{en ? "POINTS" : "TOČ"}</span>
+                <span style={{ textAlign: "right" }}>{en ? "PTS" : "TOČ"}</span>
+                {respawn?.publicDeaths && <span style={{ textAlign: "right" }} title={en ? "Deaths" : "Smrti"}>☠</span>}
                 {respawn?.enabled && <span style={{ textAlign: "right" }}>RSP</span>}
               </div>
               {players.length === 0 && (
@@ -2342,8 +2345,13 @@ function PlayerScoreboard({ roster, captures, respawn, en = false }: { roster: C
               )}
               {players.map((p) => {
                 const real = [p.first_name?.trim(), p.last_initial?.trim() ? `${p.last_initial.trim().charAt(0).toUpperCase()}.` : null].filter(Boolean).join(" ");
+                const unlockMs = p.respawn_unlock_at ? Date.parse(p.respawn_unlock_at) : NaN;
+                const showTimer = respawn?.enabled && respawn?.visibility === "all" && Number.isFinite(unlockMs) && unlockMs > Date.now();
+                const leftSec = showTimer ? Math.max(0, Math.ceil((unlockMs - Date.now()) / 1000)) : 0;
+                const tmm = String(Math.floor(leftSec / 60)).padStart(2, "0");
+                const tss = String(leftSec % 60).padStart(2, "0");
                 return (
-                  <div key={p.id} className="grid gap-2 items-center px-3 py-2 text-[12px] font-mono" style={{ gridTemplateColumns: `28px minmax(0,1fr) 56px${respawn?.enabled ? " 46px" : ""}` }}>
+                  <div key={p.id} className="grid gap-2 items-center px-3 py-2 text-[12px] font-mono" style={{ gridTemplateColumns: `28px minmax(0,1fr) 56px${respawn?.publicDeaths ? " 40px" : ""}${respawn?.enabled ? " 70px" : ""}` }}>
                     <span style={{ color: ACCENT, display: "inline-flex", alignItems: "center" }}>
                       <ExperienceBadge level={p.experience_level} size={14} />
                     </span>
@@ -2352,8 +2360,15 @@ function PlayerScoreboard({ roster, captures, respawn, en = false }: { roster: C
                       {real && <span style={{ color: MUTED, fontWeight: 400, fontSize: 10, marginLeft: 4 }}>({real})</span>}
                     </span>
                     <span style={{ color: TEAM_COLOR[t], fontWeight: 700, textAlign: "right" }}>{p.pts}</span>
+                    {respawn?.publicDeaths && (
+                      <span style={{ color: "#ff7070", textAlign: "right", fontSize: 11, letterSpacing: "0.06em" }}>☠ {p.death_count ?? 0}</span>
+                    )}
                     {respawn?.enabled && (
-                      <span style={{ color: "#9eff3d", textAlign: "right", fontSize: 9, letterSpacing: "0.14em" }}>ALIVE</span>
+                      showTimer ? (
+                        <span style={{ color: "#ff9a3d", textAlign: "right", fontSize: 10, letterSpacing: "0.08em", fontWeight: 700 }}>☠ {tmm}:{tss}</span>
+                      ) : (
+                        <span style={{ color: "#9eff3d", textAlign: "right", fontSize: 9, letterSpacing: "0.14em" }}>ALIVE</span>
+                      )
                     )}
                   </div>
                 );

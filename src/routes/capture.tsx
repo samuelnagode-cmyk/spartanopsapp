@@ -117,7 +117,7 @@ function CapturePage() {
   const navigate = useNavigate();
   const applyCapture = useServerFn(spartanopsSpartacusCapture);
   const resolveSessionField = useServerFn(spartanopsResolveSessionField);
-  const [state, setState] = useState<"loading" | "success" | "error">("loading");
+  const [state, setState] = useState<"loading" | "success" | "error" | "already_held">("loading");
   const [errMsg, setErrMsg] = useState("");
   const [team, setTeam] = useState<string | null>(null);
 
@@ -171,6 +171,11 @@ function CapturePage() {
       try {
         const { lat, lng } = await getPosition();
         const result = await applyCapture({ data: { fieldId: effectiveField, point, sessionId: session, lat, lng } });
+        if ((result as any)?.ok && (result as any)?.already_held) {
+          setState("already_held");
+          setTimeout(() => navigate({ to: "/misija", search: { field: effectiveRouteField }, replace: true }), 2600);
+          return;
+        }
         if (!result?.ok) {
           const errCode = (result as any)?.error ?? "";
           // Game not currently capturable → silently return the player to
@@ -213,6 +218,26 @@ function CapturePage() {
           <AlertTriangle size={42} style={{ color: "#ff3b3b" }} className="mx-auto mb-3" />
           <h2 style={{ color: "#ffd6d6", fontFamily: "'Michroma', monospace", fontSize: 14 }}>Skeniranje ni uspelo</h2>
           <p className="text-sm mt-3" style={{ color: MUTED }}>{errMsg}</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (state === "already_held") {
+    const pointName = point ? (["ALPHA", "BETA", "GAMMA", "DELTA", "EPSILON"][point - 1] ?? String(point)) : "";
+    return (
+      <div style={{ background: BG, color: INK, minHeight: "100vh" }} className="flex items-center justify-center p-6">
+        <div className="max-w-md w-full text-center rounded-xl p-8" style={{ background: `${ACCENT}0a`, border: `2px solid ${ACCENT}`, boxShadow: `0 0 60px -10px ${ACCENT}88` }}>
+          <CheckCircle2 size={48} style={{ color: ACCENT }} className="mx-auto mb-3" />
+          <p className="font-mono uppercase text-[11px] tracking-[0.22em]" style={{ color: ACCENT }}>▌ {en ? "SECTOR SECURED" : "SEKTOR ZAVAROVAN"}</p>
+          <h2 style={{ fontFamily: "'Michroma', monospace", fontSize: 15, color: INK, fontWeight: 700, marginTop: 10, letterSpacing: "0.06em", lineHeight: 1.4 }}>
+            {en
+              ? `Sector ${pointName} is already under your team's control!`
+              : `Sektor ${pointName} je že pod nadzorom vaše ekipe!`}
+          </h2>
+          <p className="text-xs mt-4 font-mono uppercase tracking-[0.2em]" style={{ color: MUTED }}>
+            {en ? "Returning to HUD..." : "Vračam v HUD..."}
+          </p>
         </div>
       </div>
     );

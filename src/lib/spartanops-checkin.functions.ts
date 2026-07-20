@@ -260,6 +260,19 @@ export const spartanopsSetRespawnLock = createServerFn({ method: "POST" })
       .update({ respawn_unlock_at: unlockAt, updated_at: new Date().toISOString() } as any)
       .eq("checkin_id", (secret as any).checkin_id);
     if (error) throw new Error(error.message);
+    // Increment public death counter whenever a new respawn lock is opened.
+    if (data.seconds > 0) {
+      const { data: current } = await supabaseAdmin
+        .from("spartanops_checkins")
+        .select("death_count")
+        .eq("id", (secret as any).checkin_id)
+        .maybeSingle();
+      const next = Number((current as any)?.death_count ?? 0) + 1;
+      await supabaseAdmin
+        .from("spartanops_checkins")
+        .update({ death_count: next } as any)
+        .eq("id", (secret as any).checkin_id);
+    }
     return { ok: true as const, unlockAt };
   });
 
@@ -324,7 +337,7 @@ export const spartanopsAdminGetRoster = createServerFn({ method: "POST" })
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { data: rows, error } = await supabaseAdmin
       .from("spartanops_checkins")
-      .select("id, field_id, callsign, experience_level, assigned_team, team_changed_flag, created_at")
+      .select("id, field_id, callsign, experience_level, assigned_team, team_changed_flag, death_count, created_at")
       .eq("field_id", data.fieldId)
       .order("created_at", { ascending: true });
     if (error) throw new Error(error.message);
@@ -333,7 +346,7 @@ export const spartanopsAdminGetRoster = createServerFn({ method: "POST" })
     if (ids.length > 0) {
       const { data: secrets } = await supabaseAdmin
         .from("spartanops_checkin_secrets" as any)
-        .select("checkin_id, session_id, first_name, last_initial, club")
+        .select("checkin_id, session_id, first_name, last_initial, club, respawn_unlock_at")
         .in("checkin_id", ids);
       for (const s of (secrets ?? []) as any[]) {
         secretsMap.set(s.checkin_id, s);
@@ -347,6 +360,7 @@ export const spartanopsAdminGetRoster = createServerFn({ method: "POST" })
         first_name: s?.first_name ?? null,
         last_initial: s?.last_initial ?? null,
         club: s?.club ?? null,
+        respawn_unlock_at: s?.respawn_unlock_at ?? null,
       };
     });
     return { ok: true as const, rows: merged };
@@ -383,7 +397,7 @@ export const spartanopsGetParticipantRoster = createServerFn({ method: "POST" })
 
     const { data: rows, error } = await supabaseAdmin
       .from("spartanops_checkins")
-      .select("id, field_id, callsign, experience_level, assigned_team, team_changed_flag, created_at")
+      .select("id, field_id, callsign, experience_level, assigned_team, team_changed_flag, death_count, created_at")
       .eq("field_id", data.fieldId)
       .order("created_at", { ascending: true });
     if (error) throw new Error(error.message);
@@ -393,7 +407,7 @@ export const spartanopsGetParticipantRoster = createServerFn({ method: "POST" })
     if (ids.length > 0) {
       const { data: secrets } = await supabaseAdmin
         .from("spartanops_checkin_secrets" as any)
-        .select("checkin_id, first_name, last_initial, club")
+        .select("checkin_id, first_name, last_initial, club, respawn_unlock_at")
         .in("checkin_id", ids);
       for (const s of (secrets ?? []) as any[]) secretsMap.set(s.checkin_id, s);
     }
@@ -407,6 +421,7 @@ export const spartanopsGetParticipantRoster = createServerFn({ method: "POST" })
           first_name: s?.first_name ?? null,
           last_initial: s?.last_initial ?? null,
           club: s?.club ?? null,
+          respawn_unlock_at: s?.respawn_unlock_at ?? null,
         };
       }),
     };
