@@ -223,6 +223,26 @@ function CapturePage() {
     );
   }
 
+  if (state === "already_held") {
+    const pointName = point ? (["ALPHA", "BETA", "GAMMA", "DELTA", "EPSILON"][point - 1] ?? String(point)) : "";
+    return (
+      <div style={{ background: BG, color: INK, minHeight: "100vh" }} className="flex items-center justify-center p-6">
+        <div className="max-w-md w-full text-center rounded-xl p-8" style={{ background: `${ACCENT}0a`, border: `2px solid ${ACCENT}`, boxShadow: `0 0 60px -10px ${ACCENT}88` }}>
+          <CheckCircle2 size={48} style={{ color: ACCENT }} className="mx-auto mb-3" />
+          <p className="font-mono uppercase text-[11px] tracking-[0.22em]" style={{ color: ACCENT }}>▌ {en ? "SECTOR SECURED" : "SEKTOR ZAVAROVAN"}</p>
+          <h2 style={{ fontFamily: "'Michroma', monospace", fontSize: 15, color: INK, fontWeight: 700, marginTop: 10, letterSpacing: "0.06em", lineHeight: 1.4 }}>
+            {en
+              ? `Sector ${pointName} is already under your team's control!`
+              : `Sektor ${pointName} je že pod nadzorom vaše ekipe!`}
+          </h2>
+          <p className="text-xs mt-4 font-mono uppercase tracking-[0.2em]" style={{ color: MUTED }}>
+            {en ? "Returning to HUD..." : "Vračam v HUD..."}
+          </p>
+        </div>
+      </div>
+    );
+  }
+
   const c = team ? TEAM_COLOR[team] : ACCENT;
   const label = team ? TEAM_LABEL[team] : "";
 
