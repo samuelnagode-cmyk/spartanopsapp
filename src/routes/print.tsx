@@ -131,10 +131,10 @@ function PrintStation() {
   };
 
   return (
-    <div style={{ background: BG, color: INK, minHeight: "100vh", paddingTop: 96 }}>
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-12 md:py-16">
+    <div style={{ background: BG, color: INK, minHeight: "100vh", paddingTop: 80 }}>
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-6 md:py-8">
         {/* Header */}
-        <div className="mb-12 md:mb-16">
+        <div className="mb-8 md:mb-10">
           <p
             className="font-mono uppercase mb-3"
             style={{ fontSize: 11, letterSpacing: "0.32em", color: ACCENT }}

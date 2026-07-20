@@ -177,7 +177,7 @@ function AirsoftDogodkiPage() {
   ];
 
   return (
-    <div style={{ background: BG, color: INK, minHeight: "100vh", paddingTop: 90 }}>
+    <div style={{ background: BG, color: INK, minHeight: "100vh", paddingTop: 80 }}>
       {/* Tactical noise/texture */}
       <div
         aria-hidden
