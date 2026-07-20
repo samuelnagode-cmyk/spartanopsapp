@@ -632,7 +632,7 @@ const RosterBoard = memo(function RosterBoard({ roster, settings, onReassign, on
             boxShadow: `0 0 22px ${ACCENT}22`,
           }}
         >
-          🔒 {en ? "AUTO BALANCING TEAMS" : "AVTOMATSKO URAVNOTEŽENJE EKIP"}
+          🔒 Auto balance teams
           <span
             style={{
               position: "absolute",
