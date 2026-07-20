@@ -1938,7 +1938,7 @@ function TacticalMapContent({ state, en, nodeHoldersOverride }: { state: GameSta
   }
   return (
     <div style={{ position: "relative" }}>
-      <img src={state.compressed_map_url} alt="Map" className="w-full block" loading="lazy" decoding="async" />
+      <img src={state.compressed_map_url} alt="Map" className="w-full block" loading="eager" fetchPriority="high" decoding="async" />
       {[1, 2, 3, 4, 5].map((n) => {
         const p = positions[String(n)];
         if (!p) return null;
