@@ -405,6 +405,7 @@ export type Database = {
           field_id: string
           id: string
           team_changed_flag: boolean
+          warning_message: string | null
         }
         Insert: {
           assigned_team?: string
@@ -414,6 +415,7 @@ export type Database = {
           field_id?: string
           id?: string
           team_changed_flag?: boolean
+          warning_message?: string | null
         }
         Update: {
           assigned_team?: string
@@ -423,6 +425,7 @@ export type Database = {
           field_id?: string
           id?: string
           team_changed_flag?: boolean
+          warning_message?: string | null
         }
         Relationships: []
       }
