@@ -172,14 +172,18 @@ function CapturePage() {
         const { lat, lng } = await getPosition();
         const result = await applyCapture({ data: { fieldId: effectiveField, point, sessionId: session, lat, lng } });
         if (!result?.ok) {
+          const errCode = (result as any)?.error ?? "";
+          // Game not currently capturable → silently return the player to
+          // /misija so they see the same screen everyone else sees
+          // (pre-start countdown or debriefing) without capturing the point.
+          if (errCode === "pre_start_locked" || errCode === "match_not_active") {
+            navigate({ to: "/misija", search: { field: effectiveRouteField }, replace: true });
+            return;
+          }
           const msg: Record<string, string> = {
             not_checked_in: "Niste prijavljeni v misijo.",
             no_team: "Nimate dodeljene ekipe.",
-            match_not_active: "Misija ni aktivna.",
             invalid_point: "Neveljavna točka.",
-            pre_start_locked: en
-              ? "Point QR codes unlock only when the pre-start countdown reaches zero."
-              : "QR kode za točke se odklenejo šele, ko pred-štartni odštevalnik doseže nič.",
             gps_required: en
               ? "Spartacus protection requires active GPS to verify your capture. Please enable location services to proceed."
               : "Spartacus zaščita zahteva aktivno GPS povezavo za potrditev tvoje lokacije ob zavzetju. Prosimo, omogoči lokacijske storitve za nadaljevanje.",
@@ -187,7 +191,7 @@ function CapturePage() {
               ? "⚠ Spartacus flagged this scan as suspicious. Awaiting marshal review."
               : "⚠ Spartacus je označil ta sken kot sumljiv. Čaka pregled maršala.",
           };
-          setErrMsg(msg[(result as any)?.error ?? ""] ?? "Napaka."); setState("error"); return;
+          setErrMsg(msg[errCode] ?? "Napaka."); setState("error"); return;
         }
         setTeam((result as any).team ?? null);
         setState("success");
