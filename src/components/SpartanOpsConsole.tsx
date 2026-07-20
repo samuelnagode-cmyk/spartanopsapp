@@ -1309,20 +1309,21 @@ export function SpartacusAlerts({ fieldId, password, en }: { fieldId: string; pa
   const reviewFn = useServerFn(spartanopsSpartacusReview);
   const seen = useRef<Set<string>>(new Set());
 
+  const listSuspiciousFn = useServerFn(spartanopsListSuspiciousCaptures);
   useEffect(() => {
     let alive = true;
     const load = async () => {
       if (!password) return;
-      const { data } = await supabase.rpc("spartanops_get_suspicious_captures" as any, {
-        p_field_id: fieldId,
-        p_marshal_password: password,
-      });
-      if (!alive) return;
-      const list = ((data ?? []) as unknown as SuspiciousRow[]);
-      setRows(list);
-      list.forEach((r) => seen.current.add(r.id));
+      try {
+        const res = await listSuspiciousFn({ data: { fieldId, password } });
+        if (!alive) return;
+        const list = ((res?.rows ?? []) as unknown as SuspiciousRow[]);
+        setRows(list);
+        list.forEach((r) => seen.current.add(r.id));
+      } catch { /* ignore */ }
     };
     load();
+
     const ch = supabase
       .channel(`spartacus_alerts_${fieldId}`)
       .on("postgres_changes", { event: "INSERT", schema: "public", table: "spartanops_captures", filter: `field_id=eq.${fieldId}` }, (p) => {
