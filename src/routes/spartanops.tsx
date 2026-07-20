@@ -521,9 +521,25 @@ function Locations() {
         </div>
       )}
       <div className="mt-10 flex justify-center">
-        <BtnOutline to="/join">
-          View All Locations <ArrowRight size={14} />
-        </BtnOutline>
+        <button
+          type="button"
+          onClick={() => navigate({ to: "/join", search: { browse: "1" } as any })}
+          className="inline-flex items-center justify-center gap-2 font-mono uppercase transition-all hover:brightness-125"
+          style={{
+            background: "transparent",
+            color: ACCENT,
+            letterSpacing: "0.22em",
+            fontSize: 12,
+            padding: "14px 22px",
+            minWidth: 200,
+            height: 48,
+            borderRadius: 0,
+            border: `1px solid ${ACCENT_SOFT}`,
+            cursor: "pointer",
+          }}
+        >
+          ACTIVE MISSIONS LIST <ArrowRight size={14} />
+        </button>
       </div>
     </SectionShell>
   );
