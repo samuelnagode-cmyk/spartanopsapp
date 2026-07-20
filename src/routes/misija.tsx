@@ -2230,10 +2230,15 @@ function LiveMatch({ state, captures, now, roster }: { state: GameState; capture
       <PlayerHudHeader en={en} />
       <h1
         className="text-center"
-        style={{ fontFamily: "'Michroma', monospace", fontSize: 18, color: INK, letterSpacing: "0.12em" }}
+        style={{ fontFamily: "'Michroma', monospace", fontSize: 20, color: ACCENT, letterSpacing: "0.14em", textTransform: "uppercase", marginTop: 2 }}
       >
-        SpartanOps: {missionTitleFromState(state, en ? "Active Mission" : "Aktivna misija")}{fieldTitleFromState(state, "") ? ` · ${fieldTitleFromState(state, "")}` : ""}
+        {missionTitleFromState(state, en ? "Active Mission" : "Aktivna misija")}
       </h1>
+      {fieldTitleFromState(state, "") && (
+        <p className="text-center font-mono mt-1 mb-4" style={{ color: MUTED, fontSize: 11, letterSpacing: "0.14em" }}>
+          {en ? "Field" : "Poligon"}: {fieldTitleFromState(state, "")}
+        </p>
+      )}
 
       <p className="text-center font-mono text-[11px] mt-2 mb-6" style={{ color: MUTED, lineHeight: 1.7 }}>
         {en
@@ -2351,9 +2356,17 @@ function LiveMatch({ state, captures, now, roster }: { state: GameState; capture
         </div>
       </div>
 
-      {/* Mission description / instructions (rendered under events on Game HUD) */}
+      {/* Player scoreboard (capture counts per player) */}
+      {state.settings?.capturePointsScoring && (
+        <PlayerScoreboard roster={roster} captures={visibleCaptures} respawn={state.settings?.respawn} en={en} />
+      )}
+
+      {/* Separator between scoreboard and the rest of the HUD */}
+      <div style={{ height: 1, background: `linear-gradient(90deg, transparent, ${ACCENT}66, transparent)`, margin: "24px 0" }} />
+
+      {/* Mission description / instructions — rendered under the scoreboard */}
       {((state.settings as any)?.missionDescription as string | undefined)?.trim() && (
-        <div style={{ marginTop: 14, background: PANEL, border: `1px solid ${ACCENT}55`, padding: "12px 14px" }}>
+        <div style={{ marginTop: 4, background: PANEL, border: `1px solid ${ACCENT}55`, padding: "12px 14px" }}>
           <div style={{ fontFamily: "monospace", fontSize: 10, letterSpacing: "0.2em", color: ACCENT, textTransform: "uppercase", marginBottom: 6 }}>
             ▌ {en ? "MISSION DESCRIPTION / INSTRUCTIONS" : "OPIS MISIJE / NAVODILA"}
           </div>
@@ -2363,13 +2376,7 @@ function LiveMatch({ state, captures, now, roster }: { state: GameState; capture
         </div>
       )}
 
-
-      {/* Player scoreboard (capture counts per player) */}
-      {state.settings?.capturePointsScoring && (
-        <PlayerScoreboard roster={roster} captures={visibleCaptures} respawn={state.settings?.respawn} en={en} />
-      )}
-
-      {/* Respawn rules always visible in-match */}
+      {/* Respawn rules (Timer type) — always visible in-match */}
       <div className="mt-4 flex justify-center">
         <RespawnRulesBlock settings={state.settings} en={en} />
       </div>
