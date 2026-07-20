@@ -1040,34 +1040,10 @@ function ChooseFactionButton({ onClick, en }: { onClick: () => void; en: boolean
 }
 
 function SpartacusConsentBlock({ en, onClearedChange }: { en: boolean; onClearedChange: (ok: boolean) => void }) {
+  // Always start in "idle" so both mobile & desktop show the same amber
+  // "AGREE + ACTIVATE GPS" call-to-action. Only an explicit user tap flips
+  // the state — no silent auto-grant from localStorage or the Permissions API.
   const [status, setStatus] = useState<"idle" | "granted" | "denied">("idle");
-
-  useEffect(() => {
-    let live = true;
-    (async () => {
-      try {
-        if (typeof window !== "undefined" && localStorage.getItem(GPS_OK_KEY) === "1") {
-          if (live) {
-            setStatus("granted");
-            onClearedChange(true);
-          }
-          return;
-        }
-        if (typeof navigator !== "undefined" && "permissions" in navigator) {
-          const r = await (navigator as any).permissions.query({ name: "geolocation" });
-          if (!live) return;
-          if (r?.state === "granted") {
-            setStatus("granted");
-            onClearedChange(true);
-          } else if (r?.state === "denied") {
-            setStatus("denied");
-            onClearedChange(false);
-          }
-        }
-      } catch { /* ignore */ }
-    })();
-    return () => { live = false; };
-  }, [onClearedChange]);
 
   const activate = () => {
     if (typeof navigator === "undefined" || !navigator.geolocation) {
