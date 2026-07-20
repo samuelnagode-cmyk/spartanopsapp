@@ -334,11 +334,24 @@ function AnimatedCounter({ value, duration = 1500 }: { value: number; duration?:
 }
 
 function LiveTracker() {
+  const fetchTelemetry = useServerFn(getOperationalTelemetry);
+  const [t, setT] = useState<OperationalTelemetry>({ operators: 24, scans: 125, respawns: 115, missions: 3 });
+
+  useEffect(() => {
+    let alive = true;
+    const load = async () => {
+      try { const data = await fetchTelemetry(); if (alive) setT(data); } catch {}
+    };
+    void load();
+    const id = window.setInterval(load, 20000);
+    return () => { alive = false; window.clearInterval(id); };
+  }, [fetchTelemetry]);
+
   const items: Array<{ label: string; value: number; Icon: typeof CheckCircle2; live: boolean }> = [
-    { label: "Operators Deployed", value: 0, Icon: Users, live: false },
-    { label: "QR Codes Scanned", value: 0, Icon: QrCode, live: false },
-    { label: "Respawns Processed", value: 0, Icon: RefreshCw, live: true },
-    { label: "Missions Completed", value: 0, Icon: Target, live: false },
+    { label: "Operators Deployed", value: t.operators, Icon: Users, live: false },
+    { label: "QR Codes Scanned", value: t.scans, Icon: QrCode, live: false },
+    { label: "Respawns Processed", value: t.respawns, Icon: RefreshCw, live: true },
+    { label: "Missions Completed", value: t.missions, Icon: Target, live: false },
   ];
   return (
     <SectionShell>
