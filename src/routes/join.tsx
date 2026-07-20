@@ -234,7 +234,7 @@ function LobbyCard({ lobby, isSystem, onJoin }: { lobby: LobbyRecord; isSystem: 
           fontSize: 11, letterSpacing: "0.20em", textTransform: "uppercase", fontWeight: 700, cursor: "pointer",
         }}
       >
-        [ DEPLOY TO {lobby.fieldName.split(" ")[0]} ]
+        [ DEPLOY ]
       </button>
       <style>{`@keyframes join-pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.35; } }`}</style>
     </div>

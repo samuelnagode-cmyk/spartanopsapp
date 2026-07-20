@@ -1613,8 +1613,8 @@ function MarshalLobbyConsole({ lobby: initialLobby, marshalPassword, lobbyPasswo
   };
   const endAndReset = () => {
     if (!confirm(en
-      ? "End current mission and reset scores? Registered players will remain in the lobby."
-      : "Končaj misijo in ponastavi rezultate? Prijavljeni igralci ostanejo v lobbyju."
+      ? "End current mission/debriefing (score display) and reset stats? Registered players will remain in the lobby."
+      : "Končaj trenutno misijo/debriefing (prikaz rezultatov) in ponastavi statistiko? Prijavljeni igralci ostanejo v lobbyju."
     )) return;
     setCaptures([]);
     setGameState((prev) => prev ? {
