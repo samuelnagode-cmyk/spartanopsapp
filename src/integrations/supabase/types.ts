@@ -401,6 +401,7 @@ export type Database = {
           assigned_team: string
           callsign: string
           created_at: string
+          death_count: number
           experience_level: string
           field_id: string
           id: string
@@ -411,6 +412,7 @@ export type Database = {
           assigned_team?: string
           callsign: string
           created_at?: string
+          death_count?: number
           experience_level?: string
           field_id?: string
           id?: string
@@ -421,6 +423,7 @@ export type Database = {
           assigned_team?: string
           callsign?: string
           created_at?: string
+          death_count?: number
           experience_level?: string
           field_id?: string
           id?: string

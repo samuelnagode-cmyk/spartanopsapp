@@ -1,0 +1,1 @@
+ALTER TABLE public.spartanops_checkins ADD COLUMN IF NOT EXISTS death_count integer NOT NULL DEFAULT 0;
