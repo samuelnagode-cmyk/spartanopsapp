@@ -222,6 +222,13 @@ function SpawnPage() {
         // everyone else and no respawn timer is started.
         const gsStatus = (gs as any)?.status as string | undefined;
         const startMs = (gs as any)?.match_started_at ? Date.parse((gs as any).match_started_at) : NaN;
+        if (gsStatus === "paused") {
+          alert(en
+            ? "The Marshal has paused the match — QR scanning is suspended until the match resumes."
+            : "Maršal je prekinil tekmo — skeniranje QR kod je onemogočeno, dokler se tekma ne nadaljuje.");
+          navigate({ to: "/misija", search: { field: effectiveRouteField }, replace: true });
+          return;
+        }
         const notRunning =
           gsStatus !== "active" ||
           !Number.isFinite(startMs) ||
