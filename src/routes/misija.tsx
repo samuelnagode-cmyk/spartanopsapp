@@ -604,6 +604,7 @@ function MisijaPage() {
       <div style={{ background: BG, color: INK, minHeight: "100vh" }}>
         <OfflineBanner />
         {reassignedBanner}
+        {warningOverlay}
         <PreMatchCountdown seconds={preMatchSecEarly} polygon={state.current_polygon_name} eventName={state.event_name} gamemode={state.gamemode} pointTarget={state.point_target} settings={state.settings} en={en} state={state} />
         {preview && <PreviewReturnButton />}
       </div>
@@ -617,6 +618,7 @@ function MisijaPage() {
         <div style={{ background: BG, color: INK, minHeight: "100vh" }}>
           <OfflineBanner />
           {reassignedBanner}
+        {warningOverlay}
           <RespawnLockScreen until={respawnUntil} field={field} sessionId={sessionId} serverOffset={serverOffset} en={en} />
           <AbortMissionButton field={field} en={en} />
         </div>
@@ -626,6 +628,7 @@ function MisijaPage() {
       <div style={{ background: BG, color: INK, minHeight: "100vh" }}>
         <OfflineBanner />
         {reassignedBanner}
+        {warningOverlay}
         <LiveMatch state={state} captures={captures} now={currentTime} roster={roster} />
         <AbortMissionButton field={field} en={en} />
         {preview && <PreviewReturnButton />}
@@ -640,6 +643,7 @@ function MisijaPage() {
       <div style={{ background: BG, color: INK, minHeight: "100vh" }}>
         <OfflineBanner />
         {reassignedBanner}
+        {warningOverlay}
         <EndgameSoundtrackTrigger />
         <EndgameReport state={state} roster={roster} captures={captures} en={en} now={currentTime} />
         <AbortMissionButton field={field} en={en} />
@@ -656,6 +660,7 @@ function MisijaPage() {
     <div style={{ background: BG, color: INK, minHeight: "100vh", paddingTop: 112 }}>
       <OfflineBanner />
       {reassignedBanner}
+        {warningOverlay}
       {preMatchSec > 0 && me.assigned_team !== "none" && <PreMatchCountdown seconds={preMatchSec} polygon={fieldTitleFromState(state, field)} eventName={missionTitleFromState(state, field)} gamemode={state.gamemode} pointTarget={state.point_target} settings={state.settings} en={en} state={state} /> }
       <div className="max-w-5xl mx-auto px-4 py-8">
         <PlayerHudHeader en={en} />
