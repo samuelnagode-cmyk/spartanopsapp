@@ -655,6 +655,7 @@ function AdminPage() {
 function CreateFieldForm({ onCancel, onCreated }: { onCancel: () => void; onCreated: (rec: LobbyRecord, pws: { password: string; marshalPassword: string }) => void }) {
   const { lang } = useLang();
   const en = lang === "en";
+  const { isPremium, openPremiumModal } = usePremium();
 
   // Core lobby identity
   const [fieldName, setFieldName] = useState("");
@@ -1458,6 +1459,7 @@ function MarshalPasswordPrompt({ lobby, onClose, onSuccess }: { lobby: LobbyReco
 function MarshalLobbyConsole({ lobby: initialLobby, marshalPassword, lobbyPasswordCached = "", marshalPasswordCached = "", onBack }: { lobby: LobbyRecord; marshalPassword: string; lobbyPasswordCached?: string; marshalPasswordCached?: string; onBack: () => void }) {
   const { lang } = useLang();
   const en = lang === "en";
+  const { isPremium, openPremiumModal } = usePremium();
   const [lobby, setLobby] = useState<LobbyRecord>(initialLobby);
   type RegisteredPlayer = {
     id: string;
