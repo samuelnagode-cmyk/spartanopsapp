@@ -263,6 +263,77 @@ function upsertAllTimeField(rec: AllTimeFieldRecord) {
   saveAllTimeFields(filtered);
 }
 
+function PremiumStatusToggle({
+  isPremium, keyInput, setKeyInput, keyError, setKeyError, activatePremium, t,
+}: {
+  isPremium: boolean;
+  keyInput: string;
+  setKeyInput: (v: string) => void;
+  keyError: boolean;
+  setKeyError: (v: boolean) => void;
+  activatePremium: (k: string) => boolean;
+  t: (k: string) => string;
+}) {
+  const [open, setOpen] = useState(false);
+  useEffect(() => { if (isPremium) setOpen(false); }, [isPremium]);
+  const label = isPremium ? t("premium.statusPremium") : t("premium.statusFree");
+  const color = isPremium ? ACCENT : "rgba(180,190,205,0.75)";
+  const glow = isPremium ? `0 0 10px ${ACCENT}88` : "none";
+  return (
+    <div style={{ maxWidth: 360, margin: "14px auto 0", textAlign: "center" }}>
+      <button
+        type="button"
+        onClick={() => { if (!isPremium) setOpen((v) => !v); }}
+        aria-expanded={open}
+        style={{
+          display: "inline-flex", alignItems: "center", gap: 8,
+          background: "transparent", border: "none", padding: "4px 6px",
+          fontFamily: "'Michroma', monospace", fontSize: 9.5, letterSpacing: "0.16em",
+          color, textShadow: glow, cursor: isPremium ? "default" : "pointer",
+        }}
+      >
+        <span>{label}</span>
+        {!isPremium && (
+          <span aria-hidden style={{ fontSize: 9, opacity: 0.7 }}>{open ? "▲" : "▼"}</span>
+        )}
+      </button>
+      {!isPremium && open && (
+        <form
+          onSubmit={(e) => {
+            e.preventDefault();
+            const ok = activatePremium(keyInput);
+            if (ok) { setKeyInput(""); setKeyError(false); } else { setKeyError(true); }
+          }}
+          style={{ display: "flex", gap: 6, alignItems: "stretch", marginTop: 8 }}
+        >
+          <input
+            type="password"
+            autoFocus
+            value={keyInput}
+            onChange={(e) => { setKeyInput(e.target.value); setKeyError(false); }}
+            placeholder={t("premium.enterKeyPlaceholder")}
+            style={{
+              flex: 1, background: "rgba(0,0,0,0.4)", color: INK,
+              border: `1px solid ${keyError ? DANGER : `${ACCENT}55`}`,
+              padding: "7px 9px", fontFamily: "'Michroma', monospace",
+              fontSize: 10, letterSpacing: "0.10em",
+            }}
+          />
+          <button
+            type="submit"
+            disabled={!keyInput}
+            style={{
+              background: ACCENT, color: BG, border: `1px solid ${ACCENT}`,
+              padding: "7px 11px", fontFamily: "'Michroma', monospace",
+              fontSize: 10, letterSpacing: "0.14em", cursor: "pointer", fontWeight: 700,
+            }}
+          >→</button>
+        </form>
+      )}
+    </div>
+  );
+}
+
 function AdminPage() {
   const { lang } = useLang();
   const en = lang === "en";
