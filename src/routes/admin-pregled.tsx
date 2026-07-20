@@ -455,6 +455,74 @@ function AdminPage() {
             </p>
           )}
           <div style={{ width: 48, height: 1, background: ACCENT, margin: "12px auto 0", opacity: 0.7 }} />
+
+          {/* Premium access key input */}
+          <div style={{ maxWidth: 380, margin: "18px auto 0" }}>
+            <form
+              onSubmit={(e) => {
+                e.preventDefault();
+                if (isPremium) return;
+                const ok = activatePremium(premiumKeyInput);
+                if (ok) {
+                  setPremiumKeyInput("");
+                  setPremiumKeyError(false);
+                } else {
+                  setPremiumKeyError(true);
+                }
+              }}
+              style={{ display: "flex", gap: 6, alignItems: "stretch" }}
+            >
+              <input
+                type="password"
+                value={premiumKeyInput}
+                onChange={(e) => { setPremiumKeyInput(e.target.value); setPremiumKeyError(false); }}
+                placeholder={t("premium.enterKeyPlaceholder")}
+                disabled={isPremium}
+                style={{
+                  flex: 1,
+                  background: "rgba(0,0,0,0.4)",
+                  color: isPremium ? ACCENT : INK,
+                  border: `1px solid ${premiumKeyError ? DANGER : `${ACCENT}55`}`,
+                  padding: "8px 10px",
+                  fontFamily: "'Michroma', monospace",
+                  fontSize: 10.5,
+                  letterSpacing: "0.10em",
+                }}
+              />
+              <button
+                type="submit"
+                disabled={isPremium || !premiumKeyInput}
+                style={{
+                  background: isPremium ? `${ACCENT}22` : ACCENT,
+                  color: isPremium ? ACCENT : BG,
+                  border: `1px solid ${ACCENT}`,
+                  padding: "8px 12px",
+                  fontFamily: "'Michroma', monospace",
+                  fontSize: 10,
+                  letterSpacing: "0.14em",
+                  textTransform: "uppercase",
+                  cursor: isPremium ? "default" : "pointer",
+                  fontWeight: 700,
+                }}
+              >
+                {isPremium ? "✓" : "→"}
+              </button>
+            </form>
+            <div style={{ marginTop: 8, textAlign: "center" }}>
+              <span
+                style={{
+                  fontFamily: "'Michroma', monospace",
+                  fontSize: 9,
+                  letterSpacing: "0.14em",
+                  color: isPremium ? ACCENT : "rgba(180,190,205,0.75)",
+                  textShadow: isPremium ? `0 0 10px ${ACCENT}88` : "none",
+                }}
+              >
+                {isPremium ? t("premium.statusPremium") : t("premium.statusFree")}
+              </span>
+            </div>
+          </div>
+
         </div>
 
 
