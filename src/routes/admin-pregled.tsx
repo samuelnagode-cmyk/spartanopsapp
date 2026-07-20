@@ -904,12 +904,12 @@ function CreateFieldForm({ onCancel, onCreated }: { onCancel: () => void; onCrea
               }}>
               ● Domination<br /><span style={{ fontSize: 9, color: MUTED }}>{en ? "Point capture" : "Zavzemanje točk"}</span>
             </button>
-            <button type="button" disabled title={en ? "Coming soon" : "Prihaja kmalu"}
+            <button type="button" onClick={() => { if (!isPremium) openPremiumModal(); }}
               style={{
                 background: "rgba(255,255,255,0.03)", color: MUTED,
                 border: `1px dashed rgba(236,227,196,0.18)`,
                 padding: "10px 8px", fontFamily: "monospace", fontSize: 11, letterSpacing: "0.12em",
-                textTransform: "uppercase", cursor: "not-allowed", textAlign: "left", opacity: 0.6,
+                textTransform: "uppercase", cursor: "pointer", textAlign: "left", opacity: 0.75,
               }}>
               🔒 Search &amp; Destroy<br /><span style={{ fontSize: 9 }}>{en ? "Coming soon" : "Prihaja kmalu"}</span>
             </button>
@@ -2151,12 +2151,12 @@ function MarshalLobbyConsole({ lobby: initialLobby, marshalPassword, lobbyPasswo
               }}>
               ● Domination<br /><span style={{ fontSize: 9, color: MUTED }}>{en ? "Point capture" : "Zavzemanje točk"}</span>
             </button>
-            <button type="button" disabled title={en ? "Coming soon" : "Prihaja kmalu"}
+            <button type="button" onClick={() => { if (!isPremium) openPremiumModal(); }}
               style={{
                 background: "rgba(255,255,255,0.03)", color: MUTED,
                 border: `1px dashed rgba(236,227,196,0.18)`,
                 padding: "10px 8px", fontFamily: "monospace", fontSize: 11, letterSpacing: "0.12em",
-                textTransform: "uppercase", cursor: "not-allowed", textAlign: "left", opacity: 0.6,
+                textTransform: "uppercase", cursor: "pointer", textAlign: "left", opacity: 0.75,
               }}>
               🔒 Search &amp; Destroy<br /><span style={{ fontSize: 9 }}>{en ? "Coming soon" : "Prihaja kmalu"}</span>
             </button>
