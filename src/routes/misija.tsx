@@ -2234,14 +2234,19 @@ function LiveMatch({ state, captures, now, roster }: { state: GameState; capture
     return t.toUpperCase();
   };
   const startMs = state.match_started_at ? new Date(state.match_started_at).getTime() : null;
-  const preMatchSec = startMs && now < startMs ? Math.ceil((startMs - now) / 1000) : 0;
+  // Freeze scoring + countdown while the marshal has paused the match.
+  const pausedAtMs = state.status === "paused" && state.updated_at
+    ? new Date(state.updated_at).getTime()
+    : null;
+  const effectiveNow = pausedAtMs ?? now;
+  const preMatchSec = startMs && effectiveNow < startMs ? Math.ceil((startMs - effectiveNow) / 1000) : 0;
 
   const remaining = useMemo(() => {
     if (!startMs) return state.match_duration_minutes * 60;
-    if (now < startMs) return state.match_duration_minutes * 60;
-    const elapsed = Math.floor((now - startMs) / 1000);
+    if (effectiveNow < startMs) return state.match_duration_minutes * 60;
+    const elapsed = Math.floor((effectiveNow - startMs) / 1000);
     return Math.max(0, state.match_duration_minutes * 60 - elapsed);
-  }, [startMs, state.match_duration_minutes, now]);
+  }, [startMs, state.match_duration_minutes, effectiveNow]);
 
   const mm = String(Math.floor(remaining / 60)).padStart(2, "0");
   const ss = String(remaining % 60).padStart(2, "0");
@@ -2256,8 +2261,8 @@ function LiveMatch({ state, captures, now, roster }: { state: GameState; capture
   );
   const visibleNodeHolders = useMemo(() => nodeHoldersFromCaptures(visibleCaptures), [visibleCaptures]);
   const dynamicScores = useMemo(
-    () => computeDynamicScores(visibleCaptures, visibleNodeHolders, startMs, now, matchEndMs, target),
-    [visibleCaptures, visibleNodeHolders, startMs, now, matchEndMs, target],
+    () => computeDynamicScores(visibleCaptures, visibleNodeHolders, startMs, effectiveNow, matchEndMs, target),
+    [visibleCaptures, visibleNodeHolders, startMs, effectiveNow, matchEndMs, target],
   );
   const scoreFor = (t: string) => Math.floor(dynamicScores[t] ?? 0);
 
