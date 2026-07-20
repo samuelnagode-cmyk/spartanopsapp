@@ -1035,13 +1035,13 @@ export function RespawnQrConfig({ settings, onPatch, en }: { settings: GameSetti
               </Field>
             </div>
           )}
-          <Field label={en ? "Timer visibility" : "Vidnost časovnikov"}>
+          <Field label={en ? "Respawn time display" : "Prikaz respawn časovnika"}>
             <ConfigToggle value={respawn.visibility} onChange={(v) => update({ visibility: v })} options={[
               { v: "all", l: en ? "All players" : "Vsi igralci" },
               { v: "team", l: en ? "Team only" : "Samo ekipa" },
             ]} />
           </Field>
-          <Field label={en ? "Public death display on scoreboard" : "Javni prikaz smrti v scoreboardu"}>
+          <Field label={en ? "Count number of deaths and display them publicly to players" : "Beleži število smrti in jih javno prikaži igralcem"}>
             <ConfigToggle value={respawn.publicDeaths ? "da" : "ne"} onChange={(v) => update({ publicDeaths: v === "da" })} options={YN} />
           </Field>
         </>
