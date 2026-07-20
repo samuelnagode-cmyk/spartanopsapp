@@ -2,8 +2,9 @@ import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { type ReactNode, useEffect, useRef, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { Crosshair, QrCode, Users, ClipboardList, MapPin, ArrowRight, Printer, CheckCircle2, Flag, RefreshCw, Target } from "lucide-react";
-import { loadFieldsRegistryWithSystem, loadLobbies, SYSTEM_FIELD, type AllTimeFieldRecord } from "./admin-pregled";
+import { loadFieldsRegistryWithSystem, loadLobbies, SYSTEM_FIELD, dtoToRecord, type AllTimeFieldRecord } from "./admin-pregled";
 import { getOperationalTelemetry, type OperationalTelemetry } from "@/lib/spartanops-telemetry.functions";
+import { listPublishedLobbies } from "@/lib/spartanops-lobbies.functions";
 
 export const Route = createFileRoute("/spartanops")({
   head: () => ({
@@ -414,39 +415,47 @@ function LiveTracker() {
   );
 }
 
-/* ---------- 3. OPERATION LOCATIONS ---------- */
+/* ---------- 3. ACTIVE OPERATIONS ---------- */
 function Locations() {
   const navigate = useNavigate();
+  const listFn = useServerFn(listPublishedLobbies);
   const [rows, setRows] = useState<Array<{ id: string; name: string; region: string; status: "ACTIVE" | "DECOMMISSIONED" }>>([]);
 
   useEffect(() => {
-    const refresh = () => {
-      const all: AllTimeFieldRecord[] = loadFieldsRegistryWithSystem();
-      const lobbies = loadLobbies();
-      const activeIds = new Set(lobbies.map((l) => l.id));
-      // Homepage shows ONLY currently active fields (decommissioned live on /archive).
-      const activeOnly = all.filter((r) => activeIds.has(r.id) && r.id !== SYSTEM_FIELD.id && r.system !== true);
-      const sorted = [...activeOnly].sort((a, b) => b.createdAt - a.createdAt).slice(0, 5);
-      setRows(sorted.map((r) => ({
-        id: r.id,
-        name: r.fieldName,
-        region: [r.city, r.country].filter(Boolean).join(", "),
-        status: "ACTIVE" as const,
-      })));
+    let alive = true;
+    const refresh = async () => {
+      try {
+        const dtos = await listFn();
+        if (!alive) return;
+        const records = dtos
+          .map(dtoToRecord)
+          .filter((r) => r.id !== SYSTEM_FIELD.id)
+          .sort((a, b) => b.createdAt - a.createdAt)
+          .slice(0, 3);
+        setRows(records.map((r) => ({
+          id: r.id,
+          name: r.fieldName,
+          region: r.location || "",
+          status: "ACTIVE" as const,
+        })));
+      } catch {
+        if (alive) setRows([]);
+      }
     };
     refresh();
-    window.addEventListener("focus", refresh);
-    return () => window.removeEventListener("focus", refresh);
-  }, []);
+    const onFocus = () => refresh();
+    window.addEventListener("focus", onFocus);
+    return () => { alive = false; window.removeEventListener("focus", onFocus); };
+  }, [listFn]);
 
-  const goJoin = () => navigate({ to: "/join" });
+  const goJoin = () => navigate({ to: "/join", search: { browse: "1" } as any });
 
   return (
     <SectionShell>
       <SectionHeader
         eyebrow="// RECON"
-        title="ACTIVE OPERATION LOCATIONS"
-        sub="Fields currently running or archived on the SpartanOps command network."
+        title="ACTIVE OPERATIONS"
+        sub="Latest missions currently deployed on the SpartanOps command network."
       />
       {rows.length === 0 ? (
         <HudCard className="p-8 text-center">
