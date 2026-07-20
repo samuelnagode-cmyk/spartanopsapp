@@ -5,6 +5,30 @@ export type Lang = "sl" | "en";
 type Dict = Record<string, { sl: string; en: string }>;
 
 export const dict: Dict = {
+  // Print Station
+  "print.kicker": { sl: "// ENOTA ZA OSKRBO", en: "// FIELD SUPPLY POST" },
+  "print.title": { sl: "TISKARSKA POSTAJA", en: "PRINT STATION" },
+  "print.heroTitle": { sl: "Popolni taktični operativni paket in priročnik", en: "Complete Tactical Operation Pack and manual" },
+  "print.heroDesc": {
+    sl: "Dostopajte do naše uradne oblačne shrambe za prenos poenotenega paketa misijskih sredstev. Vsebuje univerzalne QR kode za vse igralne načine, pristopne kartice za igralski HUD, kartice za Marshal Command Center in univerzalne banerje za respawn ekip, vse v visokokakovostni PDF obliki.",
+    en: "Access our official cloud repository to download the unified mission asset bundle. Contains universal QR codes for all game modes, Player HUD Access Cards, Marshal Command Center Cards, and Universal Team Respawn Banners, all provided in high-quality PDF format.",
+  },
+  "print.accessFiles": { sl: "DOSTOP DO DATOTEK", en: "ACCESS FILES" },
+  "printNoticeText": {
+    sl: "// OPERATIVNO OBVESTILO: V Google Drive mapi boste našli 2 možnosti za optimalni tisk in pripravo, prilagojeni posebej za vas, vaš klub in vaš poligon:",
+    en: "// DEPLOYMENT NOTICE: Inside the Google Drive folder, you will find the 2 options for optimal print and preparation guide tailored specifically for you, your club, and your field:",
+  },
+  "optionATitle": { sl: "MOŽNOST A: OSNOVNO (Prijazno do proračuna)", en: "OPTION A: BASIC (Budget Friendly)" },
+  "optionADesc": {
+    sl: "Natisnite na standardni papir velikosti A4 s katerim koli pisarniškim tiskalnikom.",
+    en: "Print on standard A4 paper using any office printer.",
+  },
+  "optionBTitle": { sl: "MOŽNOST B: PRO (Komercialni poligoni)", en: "OPTION B: PRO (Commercial Fields)" },
+  "optionBDesc": {
+    sl: "Te prenesene datoteke odnesite v lokalno tiskarno.",
+    en: "Take these downloaded files to your local print shop.",
+  },
+
   // Nav
   "nav.glamping": { sl: "Glamping", en: "Glamping" },
   "nav.aktivnosti": { sl: "Aktivnosti", en: "Activities" },
