@@ -532,6 +532,13 @@ function MisijaPage() {
 
     const startAt = state.match_started_at ? Date.parse(state.match_started_at) : NaN;
     const preStartLocked = !Number.isFinite(startAt) || currentTime < startAt;
+    if (state.status === "paused") {
+      alert(en
+        ? "The Marshal has paused the match — QR scanning is suspended until the match resumes."
+        : "Maršal je prekinil tekmo — skeniranje QR kod je onemogočeno, dokler se tekma ne nadaljuje.");
+      window.history.replaceState({}, document.title, window.location.pathname + `?field=${rawField}`);
+      return;
+    }
     if (state.status !== "active" || preStartLocked) {
       alert("Zavzemanje točk ni mogoče, ker igra trenutno ni aktivna!");
       window.history.replaceState({}, document.title, window.location.pathname + `?field=${rawField}`);
@@ -545,7 +552,7 @@ function MisijaPage() {
     }
 
     window.location.replace(`/capture?field=${encodeURIComponent(field)}&point=${encodeURIComponent(targetPoint)}`);
-  }, [targetPoint, me, state, field, rawField, preview, currentTime]);
+  }, [targetPoint, me, state, field, rawField, preview, currentTime, en]);
 
   const ackTeamChange = async () => {
     await ackFn({ data: { fieldId: field, sessionId } });
@@ -573,27 +580,40 @@ function MisijaPage() {
     );
 
   // Fullscreen forced-team-change interrupt (must be acknowledged)
+  const teamColorNow = me.assigned_team !== "none" ? TEAM_COLOR[me.assigned_team] : "#ff5050";
+  const teamLabelNow = me.assigned_team !== "none"
+    ? (en ? TEAM_LABEL_EN[me.assigned_team] : TEAM_LABEL[me.assigned_team])
+    : "";
+  const colorWordEn = me.assigned_team === "modra" ? "BLUE" : me.assigned_team === "rdeca" ? "RED" : me.assigned_team === "rumena" ? "YELLOW" : "";
   const reassignedBanner = me.team_changed_flag ? (
     <div
       className="fixed inset-0 z-[70] flex items-center justify-center p-4"
       style={{ background: "rgba(0,0,0,0.85)", backdropFilter: "blur(6px)", animation: "spops-alert-flash 1.6s ease-in-out infinite" }}
     >
-      <div style={{ background: "#141008", border: `2px solid ${me.assigned_team !== "none" ? TEAM_COLOR[me.assigned_team] : "#ff5050"}`, boxShadow: `0 0 32px ${me.assigned_team !== "none" ? TEAM_COLOR[me.assigned_team] : "#ff5050"}80`, padding: "28px 24px", maxWidth: 460, width: "100%", textAlign: "center" }}>
+      <div style={{ background: "#141008", border: `2px solid ${teamColorNow}`, boxShadow: `0 0 32px ${teamColorNow}80`, padding: "28px 24px", maxWidth: 460, width: "100%", textAlign: "center" }}>
         <p style={{ fontFamily: "'Michroma', monospace", fontSize: 15, color: ACCENT, letterSpacing: "0.14em", marginBottom: 14, textTransform: "uppercase", fontWeight: 700 }}>
-          ⚠️ POZOR: PRIŠLA JE NOVA KOMANDA
+          {en ? "⚠️ WARNING: NEW COMMAND RECEIVED" : "⚠️ POZOR: PRIŠLA JE NOVA KOMANDA"}
         </p>
         <p className="text-[13px]" style={{ color: INK, lineHeight: 1.7, marginBottom: 22 }}>
-          Maršal vam je z namenom uravnoteženja ekip spremenil ekipo. Od sedaj naprej zasedate položaje in osvajate točke za{" "}
-          <strong style={{ color: me.assigned_team !== "none" ? TEAM_COLOR[me.assigned_team] : ACCENT }}>
-            {me.assigned_team !== "none" ? `${TEAM_LABEL[me.assigned_team]}` : ""}
-          </strong>{" "}
-          ekipo.
+          {en ? (
+            <>
+              Marshal has decided to balance the teams and placed you into{" "}
+              <strong style={{ color: teamColorNow }}>{teamLabelNow} {colorWordEn && `(${colorWordEn})`}</strong>{" "}
+              team. From now on, you hold positions and capture points for this faction.
+            </>
+          ) : (
+            <>
+              Maršal vam je z namenom uravnoteženja ekip spremenil ekipo. Od sedaj naprej zasedate položaje in osvajate točke za{" "}
+              <strong style={{ color: teamColorNow }}>{teamLabelNow}</strong>{" "}
+              ekipo.
+            </>
+          )}
         </p>
         <button
           onClick={ackTeamChange}
           style={{ width: "100%", background: ACCENT, color: BG, padding: "13px 18px", fontFamily: "'Michroma', monospace", fontSize: 12, letterSpacing: "0.2em", textTransform: "uppercase", fontWeight: 700, cursor: "pointer", border: "none" }}
         >
-          RAZUMEM IN SE STRINJAM
+          {en ? "UNDERSTAND AND AGREE" : "RAZUMEM IN SE STRINJAM"}
         </button>
       </div>
       <style>{`@keyframes spops-alert-flash { 0%,100% { background: rgba(0,0,0,0.82); } 50% { background: rgba(80,0,0,0.85); } }`}</style>

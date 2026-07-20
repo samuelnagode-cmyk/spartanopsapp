@@ -329,8 +329,8 @@ export function SpartanOpsConsole({ fieldId, password }: { fieldId: string; pass
     if (isActive || isPaused) { await togglePause(); return; }
     await startMatch();
   };
-  const mainLabel = isActive ? (en ? "PAUSE" : "PREMOR (PAUSE)") : isPaused ? (en ? "RESUME MISSION" : "NADALJUJ MISIJO") : (en ? "START MISSION" : "ZAČNI MISIJO");
-  const mainColor = isActive ? ACCENT : "#9eff3d";
+  const mainLabel = isActive ? (en ? "PAUSE MATCH" : "PREKINI TEKMO") : isPaused ? (en ? "RESUME MATCH" : "NADALJUJ TEKMO") : (en ? "START MATCH" : "ZAČNI MISIJO");
+  const mainColor = isActive ? ACCENT : isPaused ? "#9eff3d" : "#9eff3d";
   const mainIcon = isActive ? <Pause size={14} /> : <Play size={14} />;
 
   return (

@@ -5,6 +5,23 @@ export type Lang = "sl" | "en";
 type Dict = Record<string, { sl: string; en: string }>;
 
 export const dict: Dict = {
+  // Match Pause
+  "pauseButtonText": { sl: "PREKINI TEKMO", en: "PAUSE MATCH" },
+  "resumeButtonText": { sl: "NADALJUJ TEKMO", en: "RESUME MATCH" },
+  "startButtonText": { sl: "ZAČNI MISIJO", en: "START MATCH" },
+  "pauseModalTitle": { sl: "// OPERACIJA PREKINJENA", en: "// OPERATION PAUSED" },
+  "pauseModalDesc": {
+    sl: "Maršal je začasno zamrznil igro. Aktivna telemetrija, števci in protokoli za skeniranje QR kod so do nadaljnjega onemogočeni. Ostanite na svojih trenutnih položajih.",
+    en: "The Marshal has temporarily frozen the match. Active telemetry, timers, and QR scanning protocols are suspended until further notice. Remain at your current positions.",
+  },
+
+  // Team change forced by marshal
+  "teamChangeTitle": {
+    sl: "⚠️ POZOR: PRIŠLA JE NOVA KOMANDA",
+    en: "⚠️ WARNING: NEW COMMAND RECEIVED",
+  },
+  "teamChangeAck": { sl: "RAZUMEM IN SE STRINJAM", en: "UNDERSTAND AND AGREE" },
+
   // Capture Success Popup
   "captureSuccessTitle": { sl: "SEKTOR ZAVZET", en: "SECTOR SECURED" },
   "captureSuccessSubtitle": {
