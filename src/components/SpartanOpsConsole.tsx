@@ -1335,12 +1335,13 @@ export function SpartacusAlerts({ fieldId, password, en }: { fieldId: string; pa
     return () => { alive = false; supabase.removeChannel(ch); };
   }, [fieldId, password]);
 
-  const decide = async (id: string, decision: "approve" | "reject" | "ban") => {
+  const decide = async (id: string, decision: "approve" | "reject" | "ban" | "suspend") => {
     if (busy) return;
-    if (decision === "ban" && !confirm(en ? "Ban this player from the mission?" : "Izženi tega igralca iz misije?")) return;
+    if (decision === "ban" && !confirm(en ? "Remove this player from the mission?" : "Odstrani tega igralca iz misije?")) return;
+    if (decision === "suspend" && !confirm(en ? "Suspend this player for 5 minutes?" : "Suspendiraj tega igralca za 5 minut?")) return;
     setBusy(id);
     try {
-      await reviewFn({ data: { captureId: id, decision, fieldId, password } });
+      await reviewFn({ data: { captureId: id, decision, fieldId, password, suspendMinutes: 5 } });
       setRows((prev) => prev.filter((r) => r.id !== id));
     } catch (e: any) {
       alert(e?.message ?? "Review failed");
