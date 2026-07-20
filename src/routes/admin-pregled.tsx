@@ -1486,6 +1486,7 @@ function MarshalLobbyConsole({ lobby: initialLobby, marshalPassword, lobbyPasswo
     lastInitial: string | null;
     experience: "slabo" | "dobro" | "zelo_dobro" | null;
     club: string | null;
+    phoneNumber: string | null;
   };
   const [registered, setRegistered] = useState<RegisteredPlayer[]>([]);
   const state: LobbyState = lobby.state ?? "pending";
@@ -1662,6 +1663,7 @@ function MarshalLobbyConsole({ lobby: initialLobby, marshalPassword, lobbyPasswo
           lastInitial: r.last_initial ?? null,
           experience: r.experience_level ?? null,
           club: r.club ?? null,
+          phoneNumber: r.phone_number ?? null,
         })));
       } catch (e) {
         console.error("[marshal] roster fetch failed", e);
@@ -1903,7 +1905,7 @@ function MarshalLobbyConsole({ lobby: initialLobby, marshalPassword, lobbyPasswo
         </button>
         <div style={{ marginTop: 14, display: "flex", flexWrap: "wrap", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
           <div style={{ fontFamily: "'Michroma', monospace", fontSize: 13, letterSpacing: "0.16em", color: ACCENT, textTransform: "uppercase" }}>
-            MISSION: {lobby.fieldName}
+            Mission: {lobby.eventName || lobby.fieldName}
           </div>
           <span style={{
             display: "inline-flex", alignItems: "center", gap: 6,
