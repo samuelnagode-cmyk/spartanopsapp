@@ -155,6 +155,8 @@ type Checkin = {
   first_name?: string | null;
   last_initial?: string | null;
   warning_message?: string | null;
+  death_count?: number | null;
+  respawn_unlock_at?: string | null;
 
 };
 type Capture = {
