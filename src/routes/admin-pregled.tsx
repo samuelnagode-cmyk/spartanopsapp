@@ -266,6 +266,10 @@ function upsertAllTimeField(rec: AllTimeFieldRecord) {
 function AdminPage() {
   const { lang } = useLang();
   const en = lang === "en";
+  const t = useT();
+  const { isPremium, activatePremium, openPremiumModal } = usePremium();
+  const [premiumKeyInput, setPremiumKeyInput] = useState("");
+  const [premiumKeyError, setPremiumKeyError] = useState(false);
   const search = useSearch({ from: "/admin-pregled" }) as { edit?: string };
   const [section, setSection] = useState<MainSection>("fields");
   const [fields, setFields] = useState<Field[]>(INITIAL_FIELDS);
