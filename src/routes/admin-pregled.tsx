@@ -3,7 +3,7 @@ import { useEffect, useRef, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import {
   ArrowLeft, Lock, Unlock, ChevronLeft, X, Crosshair, ShieldCheck,
-  Eye, EyeOff, Upload,
+  Eye, EyeOff, Upload, ArrowLeftRight, Phone,
 } from "lucide-react";
 
 import {
@@ -36,7 +36,7 @@ import {
   type LobbyDto,
 } from "@/lib/spartanops-lobbies.functions";
 import { spartanopsUpsertCheckin, spartanopsAdminGetRoster, spartanopsGetServerTime } from "@/lib/spartanops-checkin.functions";
-import { spartanopsAdminVerify } from "@/lib/spartanops-admin.functions";
+import { spartanopsAdminVerify, spartanopsAdminReassignTeam } from "@/lib/spartanops-admin.functions";
 
 
 export const Route = createFileRoute("/admin-pregled")({
