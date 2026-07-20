@@ -378,7 +378,20 @@ export const dict: Dict = {
   "premium.modalBtn": { sl: "Zahtevaj dostop", en: "Request Access via Command Network" },
   "premium.statusFree": { sl: "[ STATUS: OSNOVNI NIVO ]", en: "[ STATUS: CORE TIER ]" },
   "premium.statusPremium": { sl: "[ STATUS: OPERATIVNI PREMIUM ]", en: "[ STATUS: OPERATIONAL PREMIUM ]" },
+
+  // Marshal actions on Spartacus alert
+  "action.warning": { sl: "OPOZORI", en: "SEND WARNING" },
+  "warning.modalTitle": { sl: "⚠ OPOZORILO MARŠALA", en: "⚠ MARSHAL WARNING" },
+  "warning.modalDesc": {
+    sl: "Maršal je zaznal sumljivo aktivnost pri tvojem zadnjem skenu. To je uradno opozorilo. Prosimo, upoštevaj pravila fair-playa in skeniraj kode le v določenem 10-metrskem območju cilja.",
+    en: "The Marshal has flagged suspicious activity on your last scan. This is an official warning. Please respect fair-play rules and only scan codes within the 10-metre objective radius.",
+  },
+  "warning.acknowledge": { sl: "// POTRDI IN NADALJUJ", en: "// ACKNOWLEDGE & ALIGN" },
+
+  // Core tier player cap
+  "console.coreTierCap": { sl: "Core tier: največ 30 igralcev.", en: "Core tier: max 30 players." },
 };
+
 
 const LangContext = createContext<{ lang: Lang; setLang: (l: Lang) => void }>({
   lang: "sl",

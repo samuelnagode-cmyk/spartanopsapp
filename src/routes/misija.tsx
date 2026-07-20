@@ -5,6 +5,8 @@ import { ExperienceBadge, EXPERIENCE_LEVELS } from "@/components/ExperienceBadge
 import { supabase } from "@/integrations/supabase/client";
 import { spartanopsAckTeamChange, spartanopsSelectTeam } from "@/lib/spartanops-game.functions";
 import { spartanopsUpsertCheckin, spartanopsGetMyCheckin, spartanopsDeleteMyCheckin, spartanopsGetParticipantRoster, spartanopsGetServerTime, spartanopsGetRespawnLock } from "@/lib/spartanops-checkin.functions";
+import { spartanopsAcknowledgeWarning } from "@/lib/spartanops-spartacus.functions";
+
 import { OfflineBanner } from "@/components/OfflineBanner";
 import { TacticalCompass } from "@/components/TacticalCompass";
 import { Crosshair, Shield, ArrowUp } from "lucide-react";
@@ -152,6 +154,8 @@ type Checkin = {
   team_changed_flag: boolean;
   first_name?: string | null;
   last_initial?: string | null;
+  warning_message?: string | null;
+
 };
 type Capture = {
   id: string;
@@ -431,6 +435,8 @@ function MisijaPage() {
   // (first_name / last_initial / club) separately via a server function since
   // the public roster policy no longer exposes those columns.
   const getMyCheckinFn = useServerFn(spartanopsGetMyCheckin);
+  const ackWarningFn = useServerFn(spartanopsAcknowledgeWarning);
+
   useEffect(() => {
     if (preview) return;
     let cancelled = false;
@@ -570,6 +576,20 @@ function MisijaPage() {
     </div>
   ) : null;
 
+  const warningOverlay = me.warning_message ? (
+    <WarningModal
+      message={me.warning_message}
+      en={en}
+      onAcknowledge={async () => {
+        setMe({ ...me, warning_message: null });
+        try {
+          await ackWarningFn({ data: { fieldId: field, sessionId } });
+        } catch { /* ignore — will re-appear on next poll if still set */ }
+      }}
+    />
+  ) : null;
+
+
   // Force endgame view when timer expires client-side, even if the DB status
   // hasn't flipped to "ended" yet — guarantees the After-Action Report renders.
   const startMsForEnd = state.match_started_at ? new Date(state.match_started_at).getTime() : null;
@@ -584,6 +604,7 @@ function MisijaPage() {
       <div style={{ background: BG, color: INK, minHeight: "100vh" }}>
         <OfflineBanner />
         {reassignedBanner}
+        {warningOverlay}
         <PreMatchCountdown seconds={preMatchSecEarly} polygon={state.current_polygon_name} eventName={state.event_name} gamemode={state.gamemode} pointTarget={state.point_target} settings={state.settings} en={en} state={state} />
         {preview && <PreviewReturnButton />}
       </div>
@@ -597,6 +618,7 @@ function MisijaPage() {
         <div style={{ background: BG, color: INK, minHeight: "100vh" }}>
           <OfflineBanner />
           {reassignedBanner}
+        {warningOverlay}
           <RespawnLockScreen until={respawnUntil} field={field} sessionId={sessionId} serverOffset={serverOffset} en={en} />
           <AbortMissionButton field={field} en={en} />
         </div>
@@ -606,6 +628,7 @@ function MisijaPage() {
       <div style={{ background: BG, color: INK, minHeight: "100vh" }}>
         <OfflineBanner />
         {reassignedBanner}
+        {warningOverlay}
         <LiveMatch state={state} captures={captures} now={currentTime} roster={roster} />
         <AbortMissionButton field={field} en={en} />
         {preview && <PreviewReturnButton />}
@@ -620,6 +643,7 @@ function MisijaPage() {
       <div style={{ background: BG, color: INK, minHeight: "100vh" }}>
         <OfflineBanner />
         {reassignedBanner}
+        {warningOverlay}
         <EndgameSoundtrackTrigger />
         <EndgameReport state={state} roster={roster} captures={captures} en={en} now={currentTime} />
         <AbortMissionButton field={field} en={en} />
@@ -636,6 +660,7 @@ function MisijaPage() {
     <div style={{ background: BG, color: INK, minHeight: "100vh", paddingTop: 112 }}>
       <OfflineBanner />
       {reassignedBanner}
+        {warningOverlay}
       {preMatchSec > 0 && me.assigned_team !== "none" && <PreMatchCountdown seconds={preMatchSec} polygon={fieldTitleFromState(state, field)} eventName={missionTitleFromState(state, field)} gamemode={state.gamemode} pointTarget={state.point_target} settings={state.settings} en={en} state={state} /> }
       <div className="max-w-5xl mx-auto px-4 py-8">
         <PlayerHudHeader en={en} />
@@ -2246,6 +2271,19 @@ function LiveMatch({ state, captures, now, roster }: { state: GameState; capture
         </div>
       </div>
 
+      {/* Mission description / instructions (rendered under events on Game HUD) */}
+      {((state.settings as any)?.missionDescription as string | undefined)?.trim() && (
+        <div style={{ marginTop: 14, background: PANEL, border: `1px solid ${ACCENT}55`, padding: "12px 14px" }}>
+          <div style={{ fontFamily: "monospace", fontSize: 10, letterSpacing: "0.2em", color: ACCENT, textTransform: "uppercase", marginBottom: 6 }}>
+            ▌ {en ? "MISSION DESCRIPTION / INSTRUCTIONS" : "OPIS MISIJE / NAVODILA"}
+          </div>
+          <p style={{ fontFamily: "monospace", fontSize: 12, color: INK, lineHeight: 1.65, whiteSpace: "pre-wrap", margin: 0 }}>
+            {(state.settings as any).missionDescription}
+          </p>
+        </div>
+      )}
+
+
       {/* Player scoreboard (capture counts per player) */}
       {state.settings?.capturePointsScoring && (
         <PlayerScoreboard roster={roster} captures={visibleCaptures} respawn={state.settings?.respawn} en={en} />
@@ -2719,6 +2757,31 @@ function PointCapturedOverlay({ captures, teamLabelFor, en }: { captures: Captur
     </div>
   );
 }
+
+function WarningModal({ message, en, onAcknowledge }: { message: string; en: boolean; onAcknowledge: () => void | Promise<void> }) {
+  const [busy, setBusy] = useState(false);
+  return (
+    <div className="fixed inset-0 z-[80] flex items-center justify-center p-4" style={{ background: "rgba(0,0,0,0.88)", backdropFilter: "blur(6px)" }}>
+      <div style={{ background: "#141008", border: `2px solid ${ACCENT}`, boxShadow: `0 0 40px ${ACCENT}88`, padding: "28px 24px", maxWidth: 480, width: "100%", textAlign: "center" }}>
+        <p style={{ fontFamily: "'Michroma', monospace", fontSize: 15, color: ACCENT, letterSpacing: "0.16em", marginBottom: 16, textTransform: "uppercase", fontWeight: 700 }}>
+          {en ? "⚠ MARSHAL WARNING" : "⚠ OPOZORILO MARŠALA"}
+        </p>
+        <p className="text-[13px]" style={{ color: INK, lineHeight: 1.7, marginBottom: 22, whiteSpace: "pre-wrap" }}>
+          {message}
+        </p>
+        <button
+          type="button"
+          disabled={busy}
+          onClick={async () => { setBusy(true); try { await onAcknowledge(); } finally { setBusy(false); } }}
+          style={{ width: "100%", background: ACCENT, color: BG, padding: "13px 18px", fontFamily: "'Michroma', monospace", fontSize: 12, letterSpacing: "0.2em", textTransform: "uppercase", fontWeight: 700, cursor: busy ? "wait" : "pointer", border: "none", opacity: busy ? 0.75 : 1 }}
+        >
+          {en ? "// ACKNOWLEDGE & ALIGN" : "// POTRDI IN NADALJUJ"}
+        </button>
+      </div>
+    </div>
+  );
+}
+
 
 
 

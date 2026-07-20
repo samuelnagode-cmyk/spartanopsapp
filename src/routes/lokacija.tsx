@@ -21,7 +21,7 @@ const INK = "#ece3c4";
 
 function AirsoftLokacijaPage() {
   return (
-    <div style={{ background: "#1b2211", color: INK, minHeight: "100vh", paddingTop: 96 }}>
+    <div style={{ background: "#1b2211", color: INK, minHeight: "100vh", paddingTop: 80 }}>
       <div className="max-w-5xl mx-auto px-4 sm:px-6 py-8 md:py-12">
         {/* Header */}
         <div className="text-center mb-8 md:mb-10">
