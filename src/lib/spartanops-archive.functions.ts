@@ -1,5 +1,12 @@
 import { createServerFn } from "@tanstack/react-start";
 
+function checkMaster(pw: string): boolean {
+  const master = process.env.SPARTANOPS_MASTER_PASSWORD;
+  if (!master) return false;
+  if (typeof pw !== "string" || pw.length === 0 || pw.length > 200) return false;
+  return pw === master;
+}
+
 export type SpartanOpsArchiveRow = {
   id: string;
   lobbyId: string;
