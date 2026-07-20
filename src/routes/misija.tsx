@@ -853,6 +853,59 @@ function AbortMissionButton({ field, en }: { field: string; en: boolean }) {
   );
 }
 
+function MarshalHudOverlay({ fieldId, en }: { fieldId: string; en: boolean }) {
+  const deleteMyCheckinFn = useServerFn(spartanopsDeleteMyCheckin);
+  const [marshalPw, setMarshalPw] = useState<string>("");
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    try {
+      const pw = sessionStorage.getItem(`spartanops:marshal:pw:${fieldId}`) ?? "";
+      setMarshalPw(pw);
+    } catch { /* ignore */ }
+  }, [fieldId]);
+
+  const onReturn = async () => {
+    const msg = en
+      ? "Return to Marshal Command Center? You will be removed from the game as a player, your score will be deleted and you will have to reassign."
+      : "Nazaj v komandni center maršala? Kot igralec boš odstranjen iz igre, tvoj rezultat bo izbrisan in se boš moral znova prijaviti.";
+    if (!confirm(msg)) return;
+    let sid: string | null = null;
+    try { sid = localStorage.getItem(SESSION_KEY); } catch { /* ignore */ }
+    if (sid) {
+      try { await deleteMyCheckinFn({ data: { fieldId, sessionId: sid } }); } catch { /* ignore */ }
+    }
+    if (typeof window !== "undefined") window.location.href = "/admin-pregled";
+  };
+
+  return (
+    <>
+      {marshalPw ? (
+        <SpartacusAlerts fieldId={fieldId} password={marshalPw} en={en} />
+      ) : null}
+      <div style={{ padding: "16px 12px 28px", display: "flex", flexDirection: "column", alignItems: "center", gap: 8 }}>
+        <button
+          type="button"
+          onClick={onReturn}
+          style={{
+            width: "100%", maxWidth: 520,
+            background: "#E0B04E", color: "#0b0d09", border: "none",
+            padding: "16px 18px", fontFamily: "'Michroma', monospace",
+            fontSize: 12, letterSpacing: "0.22em", textTransform: "uppercase", fontWeight: 700, cursor: "pointer",
+            boxShadow: "0 0 18px rgba(224,176,78,0.35)",
+          }}
+        >
+          [ {en ? "RETURN TO MARSHAL COMMAND CENTER" : "NAZAJ V KOMANDNI CENTER MARŠALA"} ]
+        </button>
+        <p style={{ fontFamily: "monospace", fontSize: 11, color: "rgba(236,227,196,0.65)", lineHeight: 1.5, textAlign: "center", maxWidth: 520 }}>
+          {en
+            ? "If you leave you will be removed from the game as a player, your score will be deleted and you will have to reassign."
+            : "Če odideš, boš kot igralec odstranjen iz igre, tvoj rezultat bo izbrisan in se boš moral znova prijaviti."}
+        </p>
+      </div>
+    </>
+  );
+}
+
 function RespawnLockScreen({ until, field, sessionId, serverOffset, en }: { until: number; field: string; sessionId: string; serverOffset: number; en: boolean }) {
   const [left, setLeft] = useState(() => Math.max(0, Math.ceil((until - (Date.now() - serverOffset)) / 1000)));
 
