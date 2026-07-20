@@ -282,3 +282,24 @@ export const spartanopsAcknowledgeWarning = createServerFn({ method: "POST" })
     return { ok: true as const };
   });
 
+/**
+ * Marshal-only: list pending suspicious captures for a field. Marshal password
+ * is verified server-side; the RPC is no longer callable from anon/authenticated.
+ */
+export const spartanopsListSuspiciousCaptures = createServerFn({ method: "POST" })
+  .inputValidator((d: { fieldId: string; password: string }) => ({
+    fieldId: String(d?.fieldId ?? ""),
+    password: String(d?.password ?? ""),
+  }))
+  .handler(async ({ data }) => {
+    if (!isField(data.fieldId)) throw new Error("Invalid field");
+    if (!data.password || data.password.length > 200) throw new Error("Invalid password");
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data: rows, error } = await supabaseAdmin.rpc("spartanops_get_suspicious_captures" as any, {
+      p_field_id: data.fieldId,
+      p_marshal_password: data.password,
+    });
+    if (error) throw new Error(error.message);
+    return { ok: true as const, rows: (rows ?? []) as any[] };
+  });
+
