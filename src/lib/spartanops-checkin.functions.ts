@@ -41,6 +41,7 @@ type CheckinInput = {
   firstName?: string | null;
   lastInitial?: string | null;
   club?: string | null;
+  phoneNumber?: string | null;
   experienceLevel: string;
   assignedTeam?: string;
 };
@@ -74,6 +75,7 @@ export const spartanopsUpsertCheckin = createServerFn({ method: "POST" })
       firstName: clip(d.firstName, 80),
       lastInitial: clip(d.lastInitial, 4),
       club: clip(d.club, 80),
+      phoneNumber: clip(d.phoneNumber, 40),
       experienceLevel: exp,
       assignedTeam: team,
     };
@@ -126,6 +128,7 @@ export const spartanopsUpsertCheckin = createServerFn({ method: "POST" })
           first_name: data.firstName,
           last_initial: data.lastInitial,
           club: data.club,
+          phone_number: data.phoneNumber,
           updated_at: new Date().toISOString(),
         } as any,
         { onConflict: "checkin_id" },
@@ -346,7 +349,7 @@ export const spartanopsAdminGetRoster = createServerFn({ method: "POST" })
     if (ids.length > 0) {
       const { data: secrets } = await supabaseAdmin
         .from("spartanops_checkin_secrets" as any)
-        .select("checkin_id, session_id, first_name, last_initial, club, respawn_unlock_at")
+        .select("checkin_id, session_id, first_name, last_initial, club, phone_number, respawn_unlock_at")
         .in("checkin_id", ids);
       for (const s of (secrets ?? []) as any[]) {
         secretsMap.set(s.checkin_id, s);
@@ -360,6 +363,7 @@ export const spartanopsAdminGetRoster = createServerFn({ method: "POST" })
         first_name: s?.first_name ?? null,
         last_initial: s?.last_initial ?? null,
         club: s?.club ?? null,
+        phone_number: s?.phone_number ?? null,
         respawn_unlock_at: s?.respawn_unlock_at ?? null,
       };
     });
