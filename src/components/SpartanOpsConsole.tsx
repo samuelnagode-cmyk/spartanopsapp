@@ -1,6 +1,6 @@
 import { memo, useEffect, useRef, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
-import { Award, ChevronUp, ChevronsUp, Compass, Pause, Play, RotateCcw, Square, Trash2, Upload, MapPin, Copy, Check, AlertTriangle, ShieldOff, ShieldCheck } from "lucide-react";
+import { Award, ChevronUp, ChevronsUp, Compass, Pause, Play, RotateCcw, Square, Trash2, Upload, MapPin, Copy, Check, AlertTriangle, ShieldOff, ShieldCheck, ArrowLeftRight } from "lucide-react";
 import { QRCodeSVG } from "qrcode.react";
 import { TacticalCompass } from "@/components/TacticalCompass";
 
@@ -232,7 +232,6 @@ export function SpartanOpsConsole({ fieldId, password }: { fieldId: string; pass
   };
 
   const doReassign = async (id: string, team: "modra" | "rdeca" | "rumena" | "none") => {
-    if (team === "rumena" && !confirm(en ? "Are you sure there will be 3 teams in the game?" : "Ali ste prepričani, da bodo v igri 3 ekipe?")) return;
     await reassign({ data: { fieldId, password, checkinId: id, team } });
     setRoster((items) => items.map((p) => (p.id === id ? { ...p, assigned_team: team, team_changed_flag: true } : p)));
   };
@@ -633,7 +632,7 @@ const RosterBoard = memo(function RosterBoard({ roster, settings, onReassign, on
             boxShadow: `0 0 22px ${ACCENT}22`,
           }}
         >
-          🔒 {en ? "AUTO BALANCING TEAMS" : "AVTOMATSKO URAVNOTEŽENJE EKIP"}
+          🔒 Auto balance teams
           <span
             style={{
               position: "absolute",
@@ -681,10 +680,23 @@ const RosterBoard = memo(function RosterBoard({ roster, settings, onReassign, on
                   </div>
                   <button
                     type="button"
-                    onClick={() => setSwitching(p)}
-                    style={{ background: BG, color: INK, border: `1px solid ${TEAM_COLOR[p.assigned_team]}66`, fontSize: 10, padding: "5px 7px", fontFamily: "monospace", textTransform: "uppercase" }}
+                    onClick={() => {
+                      const opposing = activeTeams.find((t) => t !== p.assigned_team) ?? activeTeams[0];
+                      if (opposing) onReassign(p.id, opposing);
+                    }}
+                    title={en ? "Switch to opposing team" : "Premesti v nasprotno ekipo"}
+                    aria-label={en ? "Switch team" : "Premesti ekipo"}
+                    style={{ background: BG, color: ACCENT, border: `1px solid ${TEAM_COLOR[p.assigned_team]}66`, padding: "5px 7px", cursor: "pointer", display: "inline-flex", alignItems: "center", justifyContent: "center" }}
                   >
-                    {en ? "SWITCH" : "PREMESTI"}
+                    <ArrowLeftRight size={12} />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setSwitching(p)}
+                    style={{ background: "transparent", color: MUTED, border: `1px solid ${MUTED}44`, fontSize: 9, padding: "5px 6px", fontFamily: "monospace", textTransform: "uppercase", letterSpacing: "0.1em", cursor: "pointer" }}
+                    title={en ? "More options" : "Več možnosti"}
+                  >
+                    …
                   </button>
                   <button onClick={() => onRemove(p.id)} style={{ background: "transparent", border: "none", color: "#ff7070", cursor: "pointer", padding: 4 }}>
                     <Trash2 size={12} />
