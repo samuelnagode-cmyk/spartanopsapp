@@ -36,6 +36,8 @@ import {
   type LobbyDto,
 } from "@/lib/spartanops-lobbies.functions";
 import { spartanopsUpsertCheckin, spartanopsAdminGetRoster, spartanopsGetServerTime } from "@/lib/spartanops-checkin.functions";
+import { spartanopsAdminVerify } from "@/lib/spartanops-admin.functions";
+
 
 export const Route = createFileRoute("/admin-pregled")({
   validateSearch: (s: Record<string, unknown>) => ({
@@ -97,7 +99,8 @@ export type LobbyRecord = {
   location: string;
   country?: string;
   city?: string;
-  password: string;
+  password?: string;
+
   marshalPassword?: string;
   gamemode: "domination" | "search_destroy";
   mapUrl?: string;
@@ -270,10 +273,11 @@ function PremiumStatusToggle({
   setKeyInput: (v: string) => void;
   keyError: boolean;
   setKeyError: (v: boolean) => void;
-  activatePremium: (k: string) => boolean;
+  activatePremium: (k: string) => Promise<boolean>;
   t: (k: string) => string;
 }) {
   const [open, setOpen] = useState(false);
+  const [busy, setBusy] = useState(false);
   useEffect(() => { if (isPremium) setOpen(false); }, [isPremium]);
   const label = isPremium ? t("premium.statusPremium") : t("premium.statusFree");
   const color = isPremium ? ACCENT : "rgba(180,190,205,0.75)";
@@ -298,11 +302,18 @@ function PremiumStatusToggle({
       </button>
       {!isPremium && open && (
         <form
-          onSubmit={(e) => {
+          onSubmit={async (e) => {
             e.preventDefault();
-            const ok = activatePremium(keyInput);
-            if (ok) { setKeyInput(""); setKeyError(false); } else { setKeyError(true); }
+            if (busy) return;
+            setBusy(true);
+            try {
+              const ok = await activatePremium(keyInput);
+              if (ok) { setKeyInput(""); setKeyError(false); } else { setKeyError(true); }
+            } finally {
+              setBusy(false);
+            }
           }}
+
           style={{ display: "flex", gap: 6, alignItems: "stretch", marginTop: 8 }}
         >
           <input
