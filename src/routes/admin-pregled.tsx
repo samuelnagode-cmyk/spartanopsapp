@@ -2487,6 +2487,7 @@ type RosterPlayer = {
   lastInitial?: string | null;
   experience?: "slabo" | "dobro" | "zelo_dobro" | null;
   club?: string | null;
+  phoneNumber?: string | null;
 };
 
 const EXP_LABEL: Record<"slabo" | "dobro" | "zelo_dobro", string> = {
@@ -2552,8 +2553,17 @@ function LockedAutoBalanceButton({ en }: { en: boolean }) {
   );
 }
 
-function RosterRow({ label, color, players }: { label: string; color: string; players: RosterPlayer[] }) {
+function RosterRow({
+  label, color, players, teamKey, onSwap,
+}: {
+  label: string;
+  color: string;
+  players: RosterPlayer[];
+  teamKey?: "lobby" | "modra" | "rdeca" | "rumena";
+  onSwap?: (playerId: string, currentTeam: "lobby" | "modra" | "rdeca" | "rumena") => void;
+}) {
   const neutral = color === "rgba(236,227,196,0.35)";
+  const [openId, setOpenId] = useState<string | null>(null);
   return (
     <div style={{ marginBottom: 10 }}>
       <div style={{
@@ -2579,12 +2589,22 @@ function RosterRow({ label, color, players }: { label: string; color: string; pl
             const li = p.lastInitial?.trim() ? `${p.lastInitial.trim().charAt(0).toUpperCase()}.` : "";
             const real = [p.firstName?.trim(), li].filter(Boolean).join(" ");
             const rank = p.experience ? EXP_LABEL[p.experience] : null;
+            const expanded = openId === p.id;
+            const phone = p.phoneNumber?.trim();
             return (
               <div key={p.id} style={{
                 display: "flex", alignItems: "center", gap: 10, padding: "8px 12px",
                 borderBottom: "1px solid rgba(236,227,196,0.06)",
               }}>
-                <div style={{ display: "flex", flexDirection: "column", minWidth: 0, flex: 1 }}>
+                <button
+                  type="button"
+                  onClick={() => setOpenId(expanded ? null : p.id)}
+                  style={{
+                    background: "transparent", border: "none", padding: 0, cursor: phone ? "pointer" : "default",
+                    display: "flex", flexDirection: "column", minWidth: 0, flex: 1, textAlign: "left", color: "inherit",
+                  }}
+                  title={phone ? "Show phone number" : ""}
+                >
                   <span style={{ color: INK, fontWeight: 700, letterSpacing: "0.06em", fontSize: 12.5, textTransform: "uppercase", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                     {p.callsign}
                   </span>
@@ -2593,8 +2613,17 @@ function RosterRow({ label, color, players }: { label: string; color: string; pl
                       {real}
                     </span>
                   )}
-                </div>
-                <div style={{ display: "flex", gap: 4, flexShrink: 0 }}>
+                  {expanded && phone && (
+                    <a
+                      href={`tel:${phone}`}
+                      onClick={(e) => e.stopPropagation()}
+                      style={{ color: ACCENT, fontSize: 11, marginTop: 4, letterSpacing: "0.05em", display: "inline-flex", alignItems: "center", gap: 4, textDecoration: "none" }}
+                    >
+                      <Phone size={10} /> {phone}
+                    </a>
+                  )}
+                </button>
+                <div style={{ display: "flex", gap: 4, flexShrink: 0, alignItems: "center" }}>
                   {rank && (
                     <span style={{
                       fontSize: 9, letterSpacing: "0.18em", padding: "2px 6px",
@@ -2610,6 +2639,25 @@ function RosterRow({ label, color, players }: { label: string; color: string; pl
                     }}>{p.club.trim()}</span>
                   ) : (
                     <span style={{ fontSize: 9, color: MUTED, padding: "2px 4px" }}>—</span>
+                  )}
+                  {onSwap && teamKey && (
+                    <button
+                      type="button"
+                      onClick={() => onSwap(p.id, teamKey)}
+                      title="Swap team"
+                      style={{
+                        background: "transparent",
+                        border: `1px solid ${ACCENT}55`,
+                        color: ACCENT,
+                        padding: "4px 6px",
+                        cursor: "pointer",
+                        display: "inline-flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                      }}
+                    >
+                      <ArrowLeftRight size={12} />
+                    </button>
                   )}
                 </div>
               </div>
