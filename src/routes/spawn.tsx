@@ -189,6 +189,18 @@ function SpawnPage() {
         setTimeout(() => navigate({ to: "/misija", search: { field: effectiveRouteField }, replace: true }), 2200);
         return;
       }
+      // Back-button / history-navigation guard: if the browser re-loads this
+      // route with the exact same respawn payload we just processed, redirect
+      // silently to /misija instead of re-arming the respawn lock.
+      const spawnKey = `spartanops:spawn:${effectiveField}:${session}`;
+      try {
+        const last = Number(sessionStorage.getItem(spawnKey) ?? 0);
+        if (last && Date.now() - last < 60000) {
+          navigate({ to: "/misija", search: { field: effectiveRouteField }, replace: true });
+          return;
+        }
+        sessionStorage.setItem(spawnKey, String(Date.now()));
+      } catch { /* ignore */ }
       try {
         const res = await getMyCheckin({ data: { fieldId: effectiveField, sessionId: session } });
         const t = res?.row?.assigned_team ?? "none";
@@ -196,6 +208,7 @@ function SpawnPage() {
           setState("unassigned");
           return;
         }
+
         setTeam(t);
         setReturnField(effectiveRouteField);
         const { data: gs } = await supabase

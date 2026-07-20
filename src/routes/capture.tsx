@@ -159,15 +159,20 @@ function CapturePage() {
         setTimeout(() => navigate({ to: "/misija", search: { field: effectiveRouteField }, replace: true }), 2200);
         return;
       }
+      // Back-button / history-navigation guard: if the browser re-loads this
+      // route with the exact same scan payload we just processed, redirect
+      // silently to /misija instead of re-submitting the capture. The token
+      // is set BEFORE the network call so a rapid back-forward can't race.
       const captureKey = `spartanops:capture:${effectiveField}:${point}`;
       try {
         const last = Number(sessionStorage.getItem(captureKey) ?? 0);
-        if (last && Date.now() - last < 30000) {
-          setState("success");
-          setTimeout(() => navigate({ to: "/misija", search: { field: effectiveRouteField }, replace: true }), 700);
+        if (last && Date.now() - last < 60000) {
+          navigate({ to: "/misija", search: { field: effectiveRouteField }, replace: true });
           return;
         }
+        sessionStorage.setItem(captureKey, String(Date.now()));
       } catch { /* ignore */ }
+
       try {
         const { lat, lng } = await getPosition();
         const result = await applyCapture({ data: { fieldId: effectiveField, point, sessionId: session, lat, lng } });
@@ -205,9 +210,13 @@ function CapturePage() {
         try { window.dispatchEvent(new CustomEvent("spartanops:capture-success", { detail: { localPlaybackStarted: true } })); } catch {}
         setTimeout(() => navigate({ to: "/misija", search: { field: effectiveRouteField }, replace: true }), 5500);
       } catch (e: any) {
+        // A network/server failure means the capture did not actually land —
+        // clear the guard so the player can retry by re-scanning the QR.
+        try { sessionStorage.removeItem(captureKey); } catch { /* ignore */ }
         setErrMsg(e?.message ?? "Napaka pri shranjevanju zavzema."); setState("error");
       }
     };
+
     run();
   }, [point, field, resolvedField, dbField, navigate, applyCapture, resolveSessionField, en]);
 

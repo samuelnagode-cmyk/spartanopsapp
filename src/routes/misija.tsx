@@ -504,6 +504,25 @@ function MisijaPage() {
     };
   }, [state?.status, me?.assigned_team]);
 
+  // Guard against accidental swipe-to-refresh / hard reload while a match is
+  // live. The browser shows its standard confirmation dialog; the custom
+  // message is legacy but we still set returnValue for older engines.
+  useEffect(() => {
+    if (typeof window === "undefined" || preview) return;
+    const matchLive = state?.status === "active" || state?.status === "paused";
+    const inGame = matchLive && !!me && me.assigned_team !== "none";
+    if (!inGame) return;
+    const handler = (e: BeforeUnloadEvent) => {
+      const msg = "Are you sure you want to leave the active deployment? Your tactical telemetry might be temporarily interrupted.";
+      e.preventDefault();
+      e.returnValue = msg;
+      return msg;
+    };
+    window.addEventListener("beforeunload", handler);
+    return () => window.removeEventListener("beforeunload", handler);
+  }, [state?.status, me?.assigned_team, preview]);
+
+
   // --- INTERCEPT QR SCAN EVENT (AUTOMATIC CAPTURE LOGIC) ---
   useEffect(() => {
     if (preview) return; // ghost preview: never write to DB
