@@ -117,7 +117,7 @@ function CapturePage() {
   const navigate = useNavigate();
   const applyCapture = useServerFn(spartanopsSpartacusCapture);
   const resolveSessionField = useServerFn(spartanopsResolveSessionField);
-  const [state, setState] = useState<"loading" | "success" | "error">("loading");
+  const [state, setState] = useState<"loading" | "success" | "error" | "already_held">("loading");
   const [errMsg, setErrMsg] = useState("");
   const [team, setTeam] = useState<string | null>(null);
 
