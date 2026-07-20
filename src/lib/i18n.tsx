@@ -393,7 +393,7 @@ export const dict: Dict = {
   },
 
   // Premium access framework
-  "premium.enterKeyPlaceholder": { sl: "// VNESI OPERATIVNI KLJUČ", en: "// ENTER OPERATION KEY" },
+  "premium.enterKeyPlaceholder": { sl: "VNESI PREMIUM DOSTOPNI KLJUČ", en: "ENTER PREMIUM ACCESS KEY" },
   "premium.modalTitle": { sl: "// PREMIUM DOSTOP", en: "// TRANSMISSION: ENCRYPTED MODULE" },
   "premium.modalDesc": {
     sl: "Ta modul je zaklenjen. Nadgradi na Premium za odklep naprednih taktičnih operacij, poligonov po meri in scenarijev z več ekipami.",

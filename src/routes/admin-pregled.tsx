@@ -734,10 +734,10 @@ function CreateFieldForm({ onCancel, onCreated }: { onCancel: () => void; onCrea
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (busy) return;
-    if (!missionName.trim() || !password.trim() || !country.trim() || !city.trim() || !marshalPassword.trim()) {
+    if (!missionName.trim() || !fieldName.trim() || !password.trim() || !country.trim() || !city.trim() || !marshalPassword.trim()) {
       setErr(en
-        ? "Mission name, city, country, mission password, and marshal password are required."
-        : "Ime misije, mesto, država, geslo misije in geslo maršala so obvezni.");
+        ? "Mission name, field name, city, country, mission password, and marshal password are required."
+        : "Ime misije, ime poligona, mesto, država, geslo misije in geslo maršala so obvezni.");
       return;
     }
     if (marshalPassword.trim() === password.trim()) {
@@ -747,8 +747,7 @@ function CreateFieldForm({ onCancel, onCreated }: { onCancel: () => void; onCrea
       return;
     }
     const location = `${city.trim()}, ${country.trim()}`;
-    // Field name is optional — fall back to the mission name so the DB row keeps a label.
-    const effectiveFieldName = fieldName.trim() || missionName.trim();
+    const effectiveFieldName = fieldName.trim();
     // Persist mission name / description inside the settings JSON so no DB migration is needed.
     const settingsWithMission = {
       ...settings,
@@ -818,8 +817,8 @@ function CreateFieldForm({ onCancel, onCreated }: { onCancel: () => void; onCrea
 
       {/* ── CARD 1: MISSION AND FIELD ───────────────────────── */}
       <Pane title={en ? "MISSION AND FIELD" : "MISIJA IN POLIGON"}>
-        <FieldRow label={en ? "Field name (optional)" : "Ime poligona (neobvezno)"}>
-          <input value={fieldName} onChange={(e) => setFieldName(e.target.value)} style={consoleInputStyle} placeholder="Poligon Ljubljana" />
+        <FieldRow label={en ? "Field name *" : "Ime poligona *"}>
+          <input required value={fieldName} onChange={(e) => setFieldName(e.target.value)} style={consoleInputStyle} placeholder="Poligon Ljubljana" />
         </FieldRow>
         <FieldRow label={en ? "Mission name" : "Ime misije"}>
           <input value={missionName} onChange={(e) => setMissionName(e.target.value)} style={consoleInputStyle} placeholder={en ? "Operation Fallen Angel" : "Operacija Fallen Angel"} />
@@ -1225,14 +1224,14 @@ function FieldsWelcome({
                       </span>
                     </div>
                     <p style={{ fontFamily: "'Michroma', monospace", fontSize: 12, letterSpacing: "0.14em", color: ACCENT, marginBottom: 8, textTransform: "uppercase" }}>
-                      MISSION: {l.fieldName}
+                      Mission: {l.eventName || l.fieldName}
                     </p>
                     <p style={{ fontSize: 12.5, color: "rgba(236,227,196,0.85)", lineHeight: 1.6 }}>
                       {[city, country].filter(Boolean).join(", ") || l.location}
                     </p>
-                    {l.eventName && (
+                    {l.fieldName && (
                       <p style={{ fontFamily: "monospace", fontSize: 10.5, color: MUTED, letterSpacing: "0.14em", marginTop: 6, textTransform: "uppercase" }}>
-                        // {l.eventName}
+                        // {l.fieldName}
                       </p>
                     )}
                   </button>
@@ -1244,21 +1243,6 @@ function FieldsWelcome({
       </div>
 
 
-      {/* System notice */}
-      <div style={{
-        maxWidth: 720, margin: "0 auto",
-        padding: "14px 16px",
-        border: "1px dashed rgba(224,176,78,0.25)",
-        background: "rgba(224,176,78,0.03)",
-        color: "rgba(224,176,78,0.55)",
-        fontFamily: "monospace",
-        fontSize: 11,
-        letterSpacing: "0.06em",
-        lineHeight: 1.7,
-        textAlign: "center",
-      }}>
-        // SYSTEM PURGE NOTICE: In order to keep servers optimized, fields that remain inactive for more than 14 days are automatically decommissioned. You can deploy a new field from scratch at any time.
-      </div>
     </>
   );
 }
@@ -1588,18 +1572,19 @@ function MarshalLobbyConsole({ lobby: initialLobby, marshalPassword, lobbyPasswo
   const startMission = async () => {
     await syncServerClock().catch(() => {});
     const pre = Math.max(0, (lobby.countdownSeconds ?? 300)) * 1000;
+    const serverNow = Date.now() - serverOffset;
     setCaptures([]);
     setGameState((prev) => prev ? {
       ...prev,
       status: "active",
-      match_started_at: new Date(Date.now() + pre).toISOString(),
+      match_started_at: new Date(serverNow + pre).toISOString(),
       team_scores: { modra: 0, rdeca: 0, rumena: 0 },
       node_holders: { ...FREE_NODES },
       winner_team: null,
     } : prev);
     patch({
       state: "active",
-      startedAt: Date.now() + pre,
+      startedAt: serverNow + pre,
       fieldName: lobby.fieldName,
       eventName: lobby.eventName,
       mapUrl: lobby.mapUrl,
