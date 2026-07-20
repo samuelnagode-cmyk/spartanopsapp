@@ -2652,6 +2652,7 @@ function EditTile({
 function TeamConfigSection({ settings, onPatch, en }: { settings: any; onPatch: (s: any) => void; en: boolean }) {
   const teamNames = (settings?.teamNames ?? {}) as Record<string, string>;
   const teamCount = Number(settings?.teamCount ?? 2);
+  const { isPremium, openPremiumModal } = usePremium();
   const update = (patch: any) => onPatch({ ...settings, ...patch });
   const setName = (key: string, value: string) =>
     onPatch({ ...settings, teamNames: { ...teamNames, [key]: value } });
@@ -2670,8 +2671,15 @@ function TeamConfigSection({ settings, onPatch, en }: { settings: any; onPatch: 
           {en ? "Number of teams" : "Število ekip"}
         </div>
         <select
-          value={teamCount}
-          onChange={(e) => update({ teamCount: Number(e.target.value) })}
+          value={teamCount > 2 && !isPremium ? 2 : teamCount}
+          onChange={(e) => {
+            const next = Number(e.target.value);
+            if (next > 2 && !isPremium) {
+              openPremiumModal();
+              return;
+            }
+            update({ teamCount: next });
+          }}
           style={{
             width: "100%", background: "rgba(0,0,0,0.35)", color: INK,
             border: `1px solid ${ACCENT}55`, padding: "10px 12px",
@@ -2679,9 +2687,9 @@ function TeamConfigSection({ settings, onPatch, en }: { settings: any; onPatch: 
           }}
         >
           <option value={2}>2</option>
-          <option value={3} disabled>3 — 🔒 {en ? "Premium feature" : "Premium funkcija"}</option>
-          <option value={4} disabled>4 — 🔒 {en ? "Premium feature" : "Premium funkcija"}</option>
-          <option value={5} disabled>5 — 🔒 {en ? "Premium feature" : "Premium funkcija"}</option>
+          <option value={3}>3 — 🔒 {en ? "Premium feature" : "Premium funkcija"}</option>
+          <option value={4}>4 — 🔒 {en ? "Premium feature" : "Premium funkcija"}</option>
+          <option value={5}>5 — 🔒 {en ? "Premium feature" : "Premium funkcija"}</option>
         </select>
       </div>
       <div className="grid grid-cols-2 gap-3">
