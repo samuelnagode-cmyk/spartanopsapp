@@ -1,6 +1,8 @@
 import { createFileRoute } from "@tanstack/react-router";
 import "@tanstack/react-start";
 import { z } from "zod";
+import { checkEmailRateLimit } from "@/lib/email-rate-limit";
+
 
 const GATEWAY_URL = "https://connector-gateway.lovable.dev/resend";
 
@@ -41,6 +43,15 @@ export const Route = createFileRoute("/api/send-reservation")({
           return new Response(JSON.stringify({ error: "Invalid input", details: parsed.error.flatten() }), { status: 400 });
         }
         const d = parsed.data;
+
+        const rl = checkEmailRateLimit(request, [d.email.toLowerCase()]);
+        if (!rl.ok) {
+          return new Response(JSON.stringify({ error: "Too many requests" }), {
+            status: 429,
+            headers: { "Retry-After": String(rl.retryAfter), "Content-Type": "application/json" },
+          });
+        }
+
 
         const html = `
           <h2>Nova rezervacija — Zeleni raj</h2>

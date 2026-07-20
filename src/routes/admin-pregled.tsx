@@ -36,6 +36,8 @@ import {
   type LobbyDto,
 } from "@/lib/spartanops-lobbies.functions";
 import { spartanopsUpsertCheckin, spartanopsAdminGetRoster, spartanopsGetServerTime } from "@/lib/spartanops-checkin.functions";
+import { spartanopsAdminVerify } from "@/lib/spartanops-admin.functions";
+
 
 export const Route = createFileRoute("/admin-pregled")({
   validateSearch: (s: Record<string, unknown>) => ({
@@ -73,7 +75,6 @@ type Field = {
   key: FieldKey;
   title: string;
   subtitle: string;
-  password: string;
 };
 
 const INITIAL_FIELDS: Field[] = [
@@ -81,9 +82,9 @@ const INITIAL_FIELDS: Field[] = [
     key: "zeleni-raj",
     title: "FIELD: ZELENI RAJ",
     subtitle: "Vače, Slovenia • Active zone",
-    password: "spartanjenajaci123",
   },
 ];
+
 
 import type { GameSettings } from "@/components/SpartanOpsConsole";
 
@@ -98,7 +99,8 @@ export type LobbyRecord = {
   location: string;
   country?: string;
   city?: string;
-  password: string;
+  password?: string;
+
   marshalPassword?: string;
   gamemode: "domination" | "search_destroy";
   mapUrl?: string;
@@ -224,8 +226,8 @@ export function dtoToRecord(d: LobbyDto): LobbyRecord {
     location: d.location,
     country: d.country ?? undefined,
     city: d.city ?? undefined,
-    password: "", // never leaves the server; client keeps hash-verified state via server fns
     marshalPassword: undefined,
+
     gamemode: d.gamemode,
     mapUrl: d.mapUrl ?? undefined,
     matchDurationMinutes: d.matchDurationMinutes,
@@ -271,10 +273,11 @@ function PremiumStatusToggle({
   setKeyInput: (v: string) => void;
   keyError: boolean;
   setKeyError: (v: boolean) => void;
-  activatePremium: (k: string) => boolean;
+  activatePremium: (k: string) => Promise<boolean>;
   t: (k: string) => string;
 }) {
   const [open, setOpen] = useState(false);
+  const [busy, setBusy] = useState(false);
   useEffect(() => { if (isPremium) setOpen(false); }, [isPremium]);
   const label = isPremium ? t("premium.statusPremium") : t("premium.statusFree");
   const color = isPremium ? ACCENT : "rgba(180,190,205,0.75)";
@@ -299,11 +302,18 @@ function PremiumStatusToggle({
       </button>
       {!isPremium && open && (
         <form
-          onSubmit={(e) => {
+          onSubmit={async (e) => {
             e.preventDefault();
-            const ok = activatePremium(keyInput);
-            if (ok) { setKeyInput(""); setKeyError(false); } else { setKeyError(true); }
+            if (busy) return;
+            setBusy(true);
+            try {
+              const ok = await activatePremium(keyInput);
+              if (ok) { setKeyInput(""); setKeyError(false); } else { setKeyError(true); }
+            } finally {
+              setBusy(false);
+            }
           }}
+
           style={{ display: "flex", gap: 6, alignItems: "stretch", marginTop: 8 }}
         >
           <input
@@ -1278,7 +1288,7 @@ function FieldConsole({
       </div>
 
       {!authedPw ? (
-        <FieldPasswordGate label={field.title} expected={field.password} onSuccess={onAuth} />
+        <FieldPasswordGate label={field.title} fieldKey={field.key} onSuccess={onAuth} />
       ) : (
         <SpartanOpsConsole fieldId={field.key} password={authedPw} />
       )}
@@ -1286,20 +1296,32 @@ function FieldConsole({
   );
 }
 
-function FieldPasswordGate({ label, expected, onSuccess }: { label: string; expected: string; onSuccess: (pw: string) => void }) {
+function FieldPasswordGate({ label, fieldKey, onSuccess }: { label: string; fieldKey: string; onSuccess: (pw: string) => void }) {
   const { lang } = useLang();
   const en = lang === "en";
   const [password, setPassword] = useState("");
   const [err, setErr] = useState("");
+  const [busy, setBusy] = useState(false);
+  const verifyFn = useServerFn(spartanopsAdminVerify);
 
-  const submit = (e: React.FormEvent) => {
+  const submit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (password === expected) {
-      onSuccess(password);
-    } else {
-      setErr(en ? "Wrong password." : "Napačno geslo.");
+    if (busy) return;
+    setBusy(true);
+    try {
+      const res = await verifyFn({ data: { tab: fieldKey, password } });
+      if (res?.ok) {
+        onSuccess(password);
+      } else {
+        setErr(en ? "Wrong password." : "Napačno geslo.");
+      }
+    } catch {
+      setErr(en ? "Verification failed." : "Preverjanje ni uspelo.");
+    } finally {
+      setBusy(false);
     }
   };
+
 
   return (
     <div style={{ display: "flex", justifyContent: "center", padding: "40px 16px" }}>

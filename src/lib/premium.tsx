@@ -1,19 +1,19 @@
 import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from "react";
+import { useServerFn } from "@tanstack/react-start";
 import { useT } from "@/lib/i18n";
+import { verifyPremiumKey } from "@/lib/premium.functions";
 
 /**
- * Premium Access Framework (MVP — local/session validation).
- * Master key is hardcoded per spec; premium state lives only for the current
- * browser session (sessionStorage) so it resets on tab close.
+ * Premium Access Framework — key validation happens server-side against a
+ * secret env var. Premium state lives only for the current browser session.
  */
-export const PREMIUM_MASTER_KEY = "spartanjenajaci123";
 const PREMIUM_STORAGE_KEY = "spartanops:premium";
 const CONTACT_EMAIL = "info@spartanopsapp.com";
 const REQUEST_SUBJECT = "SpartanOps Premium Access Request";
 
 type PremiumContextValue = {
   isPremium: boolean;
-  activatePremium: (key: string) => boolean;
+  activatePremium: (key: string) => Promise<boolean>;
   deactivatePremium: () => void;
   openPremiumModal: () => void;
   closePremiumModal: () => void;
@@ -21,7 +21,7 @@ type PremiumContextValue = {
 
 const PremiumContext = createContext<PremiumContextValue>({
   isPremium: false,
-  activatePremium: () => false,
+  activatePremium: async () => false,
   deactivatePremium: () => {},
   openPremiumModal: () => {},
   closePremiumModal: () => {},
@@ -30,6 +30,7 @@ const PremiumContext = createContext<PremiumContextValue>({
 export function PremiumProvider({ children }: { children: ReactNode }) {
   const [isPremium, setIsPremium] = useState(false);
   const [modalOpen, setModalOpen] = useState(false);
+  const verifyFn = useServerFn(verifyPremiumKey);
 
   useEffect(() => {
     try {
@@ -37,14 +38,17 @@ export function PremiumProvider({ children }: { children: ReactNode }) {
     } catch {}
   }, []);
 
-  const activatePremium = useCallback((key: string) => {
-    if (key.trim() === PREMIUM_MASTER_KEY) {
-      setIsPremium(true);
-      try { sessionStorage.setItem(PREMIUM_STORAGE_KEY, "1"); } catch {}
-      return true;
-    }
+  const activatePremium = useCallback(async (key: string) => {
+    try {
+      const res = await verifyFn({ data: { key: key.trim() } });
+      if (res?.ok) {
+        setIsPremium(true);
+        try { sessionStorage.setItem(PREMIUM_STORAGE_KEY, "1"); } catch {}
+        return true;
+      }
+    } catch {}
     return false;
-  }, []);
+  }, [verifyFn]);
 
   const deactivatePremium = useCallback(() => {
     setIsPremium(false);
@@ -67,6 +71,7 @@ export function PremiumProvider({ children }: { children: ReactNode }) {
 export function usePremium() {
   return useContext(PremiumContext);
 }
+
 
 function PremiumUpgradeModal({ onClose }: { onClose: () => void }) {
   const t = useT();
