@@ -1391,7 +1391,7 @@ export function SpartacusAlerts({ fieldId, password, en }: { fieldId: string; pa
                 <div><span style={{ color: MUTED }}>{en ? "DISTANCE" : "RAZDALJA"}:</span> <strong style={{ color: RED }}>{r.distance_m.toFixed(1)} m</strong></div>
               )}
             </div>
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 8, marginTop: 12 }}>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginTop: 12 }}>
               <button
                 type="button"
                 disabled={busy === r.id}
@@ -1406,7 +1406,15 @@ export function SpartacusAlerts({ fieldId, password, en }: { fieldId: string; pa
                 onClick={() => decide(r.id, "reject")}
                 style={{ background: "transparent", color: NEON, border: `1px solid ${NEON}`, padding: "8px 10px", fontFamily: "'Michroma', monospace", fontSize: 10, letterSpacing: "0.16em", textTransform: "uppercase", cursor: "pointer" }}
               >
-                {en ? "DISMISS" : "ZAVRNI"}
+                {en ? "SEND WARNING" : "OPOZORI"}
+              </button>
+              <button
+                type="button"
+                disabled={busy === r.id}
+                onClick={() => decide(r.id, "suspend")}
+                style={{ background: "transparent", color: "#ffb020", border: `1px solid #ffb020`, padding: "8px 10px", fontFamily: "'Michroma', monospace", fontSize: 10, letterSpacing: "0.16em", textTransform: "uppercase", cursor: "pointer" }}
+              >
+                {en ? "SUSPEND 5 MIN" : "SUSPENDIRAJ 5 MIN"}
               </button>
               <button
                 type="button"
@@ -1414,7 +1422,7 @@ export function SpartacusAlerts({ fieldId, password, en }: { fieldId: string; pa
                 onClick={() => decide(r.id, "ban")}
                 style={{ background: RED, color: "#fff", border: `1px solid ${RED}`, padding: "8px 10px", fontFamily: "'Michroma', monospace", fontSize: 10, letterSpacing: "0.16em", textTransform: "uppercase", cursor: "pointer", display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 6 }}
               >
-                <ShieldOff size={12} /> {en ? "BAN PLAYER" : "IZŽENI"}
+                <ShieldOff size={12} /> {en ? "REMOVE" : "ODSTRANI"}
               </button>
             </div>
           </div>
