@@ -1,7 +1,9 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { type ReactNode, useEffect, useRef, useState } from "react";
+import { useServerFn } from "@tanstack/react-start";
 import { Crosshair, QrCode, Users, ClipboardList, MapPin, ArrowRight, Printer, CheckCircle2, Flag, RefreshCw, Target } from "lucide-react";
 import { loadFieldsRegistryWithSystem, loadLobbies, SYSTEM_FIELD, type AllTimeFieldRecord } from "./admin-pregled";
+import { getOperationalTelemetry, type OperationalTelemetry } from "@/lib/spartanops-telemetry.functions";
 
 export const Route = createFileRoute("/spartanops")({
   head: () => ({
