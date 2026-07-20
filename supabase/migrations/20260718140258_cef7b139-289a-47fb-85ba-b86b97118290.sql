@@ -1,0 +1,1 @@
+ALTER TABLE public.spartanops_game_state REPLICA IDENTITY FULL;

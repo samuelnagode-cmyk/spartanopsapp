@@ -1,0 +1,2 @@
+ALTER PUBLICATION supabase_realtime DROP TABLE public.spartanops_game_state;
+ALTER PUBLICATION supabase_realtime ADD TABLE public.spartanops_game_state;

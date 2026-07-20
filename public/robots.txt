@@ -1,0 +1,10 @@
+User-agent: *
+Allow: /
+Disallow: /admin-pregled
+Disallow: /misija
+Disallow: /capture
+Disallow: /spawn
+Disallow: /scan
+Disallow: /qr-generator
+
+Sitemap: https://spartanopsapp.com/sitemap.xml

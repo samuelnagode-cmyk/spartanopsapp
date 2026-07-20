@@ -1,0 +1,1 @@
+ALTER TABLE public.spartanops_game_state ADD COLUMN IF NOT EXISTS settings JSONB NOT NULL DEFAULT '{}'::jsonb;

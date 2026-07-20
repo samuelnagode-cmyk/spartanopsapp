@@ -1,0 +1,239 @@
+import { createServerFn } from "@tanstack/react-start";
+
+const LEGACY_FIELDS = new Set(["zeleni-raj", "field-1", "field-2", "field-3"]);
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+function isField(x: string): boolean {
+  return LEGACY_FIELDS.has(x) || UUID_RE.test(x);
+}
+
+const ANCHOR_RADIUS_M = 10;
+
+function haversineMeters(a: { lat: number; lng: number }, b: { lat: number; lng: number }): number {
+  const R = 6371000;
+  const toRad = (d: number) => (d * Math.PI) / 180;
+  const dLat = toRad(b.lat - a.lat);
+  const dLng = toRad(b.lng - a.lng);
+  const s = Math.sin(dLat / 2) ** 2 + Math.cos(toRad(a.lat)) * Math.cos(toRad(b.lat)) * Math.sin(dLng / 2) ** 2;
+  return 2 * R * Math.asin(Math.sqrt(s));
+}
+
+/**
+ * Spartacus-aware capture. Behaviour:
+ *  - Reads game_state.settings.spartacusEnabled. If disabled, delegates to the
+ *    normal spartanops_apply_capture RPC (unchanged behaviour).
+ *  - If enabled and no lat/lng supplied → returns { ok:false, error:'gps_required' }.
+ *  - If no anchor exists yet for (field, point), the current scan anchors it and
+ *    proceeds as a normal capture.
+ *  - If an anchor exists and distance ≤ 10m, proceeds as a normal capture (with
+ *    coordinates saved on the row).
+ *  - If distance > 10m, inserts a *suspicious* capture row (spartacus_status='pending',
+ *    suspicious=true) WITHOUT updating the live scoreboard/holders. Marshals then
+ *    review it.
+ */
+export const spartanopsSpartacusCapture = createServerFn({ method: "POST" })
+  .inputValidator((d: { fieldId: string; point: number; sessionId: string; lat?: number | null; lng?: number | null }) => ({
+    fieldId: String(d?.fieldId ?? ""),
+    point: Number(d?.point),
+    sessionId: String(d?.sessionId ?? ""),
+    lat: typeof d?.lat === "number" && isFinite(d.lat) ? d.lat : null,
+    lng: typeof d?.lng === "number" && isFinite(d.lng) ? d.lng : null,
+  }))
+  .handler(async ({ data }) => {
+    if (!isField(data.fieldId)) throw new Error("Invalid field");
+    if (![1, 2, 3, 4, 5].includes(data.point)) throw new Error("Invalid point");
+    if (!data.sessionId || data.sessionId.length > 100) throw new Error("Invalid session");
+
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+
+    const { data: state } = await supabaseAdmin
+      .from("spartanops_game_state")
+      .select("field_id, status, settings, match_started_at")
+      .eq("field_id", data.fieldId)
+      .maybeSingle();
+
+    const spartacusEnabled = !!((state?.settings as any)?.spartacusEnabled);
+
+    if (!spartacusEnabled) {
+      const { data: r, error } = await supabaseAdmin.rpc("spartanops_apply_capture" as any, {
+        p_field_id: data.fieldId,
+        p_point: data.point,
+        p_session_id: data.sessionId,
+      });
+      if (error) throw new Error(error.message);
+      return { ...(r as any), spartacus: false };
+    }
+
+    if (data.lat == null || data.lng == null) {
+      return { ok: false, error: "gps_required", spartacus: true } as const;
+    }
+    if (state?.status !== "active") return { ok: false, error: "match_not_active", spartacus: true } as const;
+    const matchStart = (state as any)?.match_started_at ? Date.parse((state as any).match_started_at) : NaN;
+    if (!Number.isFinite(matchStart) || matchStart > Date.now()) {
+      return { ok: false, error: "pre_start_locked", spartacus: true } as const;
+    }
+
+    const { data: secret } = await supabaseAdmin
+      .from("spartanops_checkin_secrets" as any)
+      .select("checkin_id")
+      .eq("session_id", data.sessionId)
+      .maybeSingle();
+    if (!secret) return { ok: false, error: "not_checked_in", spartacus: true } as const;
+    const { data: checkin } = await supabaseAdmin
+      .from("spartanops_checkins")
+      .select("id, callsign, assigned_team")
+      .eq("field_id", data.fieldId)
+      .eq("id", (secret as any).checkin_id)
+      .maybeSingle();
+    if (!checkin) return { ok: false, error: "not_checked_in", spartacus: true } as const;
+    if ((checkin as any).assigned_team === "none") return { ok: false, error: "no_team", spartacus: true } as const;
+
+    const { data: anchor } = await supabaseAdmin
+      .from("spartanops_qr_anchors")
+      .select("latitude, longitude")
+      .eq("field_id", data.fieldId)
+      .eq("point_number", data.point)
+      .maybeSingle();
+
+    if (!anchor) {
+      await supabaseAdmin.from("spartanops_qr_anchors").insert({
+        field_id: data.fieldId,
+        point_number: data.point,
+        latitude: data.lat,
+        longitude: data.lng,
+        anchored_by_callsign: (checkin as any).callsign,
+      } as any);
+      const { data: r, error } = await supabaseAdmin.rpc("spartanops_apply_capture" as any, {
+        p_field_id: data.fieldId,
+        p_point: data.point,
+        p_session_id: data.sessionId,
+      });
+      if (error) throw new Error(error.message);
+      // annotate the newest capture row with GPS
+      await supabaseAdmin
+        .from("spartanops_captures")
+        .update({ latitude: data.lat, longitude: data.lng, distance_m: 0 } as any)
+        .eq("field_id", data.fieldId)
+        .eq("point_number", data.point)
+        .eq("player_callsign", (checkin as any).callsign)
+        .order("captured_at", { ascending: false })
+        .limit(1);
+      return { ...(r as any), spartacus: true, anchored: true };
+    }
+
+    const dist = haversineMeters(
+      { lat: (anchor as any).latitude, lng: (anchor as any).longitude },
+      { lat: data.lat, lng: data.lng },
+    );
+
+    if (dist > ANCHOR_RADIUS_M) {
+      await supabaseAdmin.from("spartanops_captures").insert({
+        field_id: data.fieldId,
+        point_number: data.point,
+        team: (checkin as any).assigned_team,
+        player_checkin_id: (checkin as any).id,
+        player_callsign: (checkin as any).callsign,
+        latitude: data.lat,
+        longitude: data.lng,
+        distance_m: dist,
+        suspicious: true,
+        spartacus_status: "pending",
+      } as any);
+      return { ok: false, suspicious: true, spartacus: true, error: "spartacus_flagged", distance_m: dist } as const;
+    }
+
+    const { data: r, error } = await supabaseAdmin.rpc("spartanops_apply_capture" as any, {
+      p_field_id: data.fieldId,
+      p_point: data.point,
+      p_session_id: data.sessionId,
+    });
+    if (error) throw new Error(error.message);
+    await supabaseAdmin
+      .from("spartanops_captures")
+      .update({ latitude: data.lat, longitude: data.lng, distance_m: dist } as any)
+      .eq("field_id", data.fieldId)
+      .eq("point_number", data.point)
+      .eq("player_callsign", (checkin as any).callsign)
+      .order("captured_at", { ascending: false })
+      .limit(1);
+    return { ...(r as any), spartacus: true, distance_m: dist };
+  });
+
+/**
+ * Marshal review of a suspicious Spartacus capture.
+ *  - decision='approve': applies the capture to game_state (score + holder),
+ *    marks the row spartacus_status='approved' and suspicious=false.
+ *  - decision='reject': marks the row spartacus_status='rejected'; no score change.
+ *  - decision='ban': rejects the row AND removes the player from the checkin table.
+ */
+export const spartanopsSpartacusReview = createServerFn({ method: "POST" })
+  .inputValidator((d: { captureId: string; decision: "approve" | "reject" | "ban"; fieldId: string; password: string }) => ({
+    captureId: String(d?.captureId ?? ""),
+    decision: d?.decision,
+    fieldId: String(d?.fieldId ?? ""),
+    password: String(d?.password ?? ""),
+  }))
+  .handler(async ({ data }) => {
+    if (!isField(data.fieldId)) throw new Error("Invalid field");
+    if (!["approve", "reject", "ban"].includes(data.decision)) throw new Error("Invalid decision");
+    if (!data.password || data.password.length > 200) throw new Error("Invalid password");
+
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data: ok } = await supabaseAdmin.rpc("verify_field_password" as any, {
+      p_field_id: data.fieldId,
+      p_password: data.password,
+    });
+    if (ok !== true) throw new Error("Unauthorized");
+
+    const { data: cap } = await supabaseAdmin
+      .from("spartanops_captures")
+      .select("id, field_id, point_number, team, player_checkin_id, player_callsign")
+      .eq("id", data.captureId)
+      .maybeSingle();
+    if (!cap) throw new Error("Capture not found");
+
+    if (data.decision === "approve") {
+      // Apply score to game_state directly.
+      const { data: state } = await supabaseAdmin
+        .from("spartanops_game_state")
+        .select("field_id, status, team_scores, node_holders, point_target, winner_team")
+        .eq("field_id", (cap as any).field_id)
+        .maybeSingle();
+      if (state) {
+        const scores = { ...(((state as any).team_scores as Record<string, number>) ?? {}) };
+        const holders = { ...(((state as any).node_holders as Record<string, string | null>) ?? {}) };
+        const team = (cap as any).team as string;
+        const p = String((cap as any).point_number);
+        if (holders[p] !== team) {
+          holders[p] = team;
+          scores[team] = (scores[team] ?? 0) + 1;
+        }
+        const target = (state as any).point_target ?? 50;
+        let winner = (state as any).winner_team ?? null;
+        let status = (state as any).status ?? "active";
+        if ((scores[team] ?? 0) >= target) {
+          winner = team;
+          status = "ended";
+        }
+        await supabaseAdmin
+          .from("spartanops_game_state")
+          .update({ team_scores: scores, node_holders: holders, winner_team: winner, status, updated_at: new Date().toISOString() } as any)
+          .eq("field_id", (cap as any).field_id);
+      }
+      await supabaseAdmin
+        .from("spartanops_captures")
+        .update({ suspicious: false, spartacus_status: "approved" } as any)
+        .eq("id", data.captureId);
+    } else {
+      await supabaseAdmin
+        .from("spartanops_captures")
+        .update({ spartacus_status: "rejected" } as any)
+        .eq("id", data.captureId);
+      if (data.decision === "ban" && (cap as any).player_checkin_id) {
+        await supabaseAdmin
+          .from("spartanops_checkins")
+          .delete()
+          .eq("id", (cap as any).player_checkin_id);
+      }
+    }
+    return { ok: true as const };
+  });

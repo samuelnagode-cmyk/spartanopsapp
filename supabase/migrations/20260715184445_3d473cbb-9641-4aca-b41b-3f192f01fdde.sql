@@ -1,0 +1,2 @@
+REVOKE SELECT ON public.spartanops_checkins FROM anon, authenticated;
+GRANT SELECT (id, field_id, callsign, assigned_team, team_changed_flag, experience_level, created_at) ON public.spartanops_checkins TO anon, authenticated;
