@@ -30,7 +30,12 @@ export const getOperationalTelemetry = createServerFn({ method: "GET" }).handler
     supabaseAdmin
       .from("spartanops_checkin_secrets" as any)
       .select("respawn_unlock_at")
-      .not("respawn_unlock_at", "is", null),
+      // Push the lookback window into the DB so we don't drag every stale
+      // respawn row from ended matches into the worker every 20s.
+      .gte("respawn_unlock_at", new Date(Date.now() - RESPAWN_LOOKBACK_MS).toISOString())
+      // Hard cap: even if hundreds of players are respawning at once,
+      // stop the query from ballooning past a reasonable snapshot.
+      .limit(500),
   ]);
 
   const archived = (archivedRes.data as Array<{ player_count: number | null; capture_count: number | null }> | null) ?? [];
@@ -40,13 +45,8 @@ export const getOperationalTelemetry = createServerFn({ method: "GET" }).handler
   const liveCheckins = checkinsRes.count ?? 0;
   const liveCaptures = capturesRes.count ?? 0;
 
-  const now = Date.now();
   const respawnRows = (respawnsRes.data as Array<{ respawn_unlock_at: string | null }> | null) ?? [];
-  const liveRespawns = respawnRows.filter((r) => {
-    if (!r.respawn_unlock_at) return false;
-    const t = Date.parse(r.respawn_unlock_at);
-    return Number.isFinite(t) && t >= now - RESPAWN_LOOKBACK_MS;
-  }).length;
+  const liveRespawns = respawnRows.length;
 
   return {
     operators: BASE.operators + archivedPlayers + liveCheckins,
