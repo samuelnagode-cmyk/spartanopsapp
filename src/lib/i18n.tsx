@@ -5,6 +5,18 @@ export type Lang = "sl" | "en";
 type Dict = Record<string, { sl: string; en: string }>;
 
 export const dict: Dict = {
+  // Capture Success Popup
+  "captureSuccessTitle": { sl: "SEKTOR ZAVZET", en: "SECTOR SECURED" },
+  "captureSuccessSubtitle": {
+    sl: "Točke se že pripisujejo vaši ekipi.",
+    en: "Points are already accumulating for your team.",
+  },
+  "captureAckBtn": { sl: "POTRDI IN NAZAJ V HUD", en: "ACKNOWLEDGE & RETURN TO HUD" },
+  "captureTelemetryNote": {
+    sl: "// SEKTOR ZAVZET. Telemetrija se prenaša v ozadju. Lahko se vrnete na bojišče.",
+    en: "// SECTOR SECURED. Telemetry transmitting in background. You may return to the field.",
+  },
+
   // Print Station
   "print.kicker": { sl: "// ENOTA ZA OSKRBO", en: "// FIELD SUPPLY POST" },
   "print.title": { sl: "TISKARSKA POSTAJA", en: "PRINT STATION" },

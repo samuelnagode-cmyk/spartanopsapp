@@ -43,11 +43,31 @@ function fade(el: HTMLAudioElement, to: number, ms = FADE_MS) {
   requestAnimationFrame(step);
 }
 
+const ENABLED_KEY = "spartanops:audio-enabled";
+
 export function AmbientAudioProvider({ children }: { children: ReactNode }) {
   const { pathname } = useLocation();
   const [enabled, setEnabled] = useState(false);
   const [deployMode, setDeployMode] = useState<DeployMode>("broadcast");
   const [lobbyOverride, setLobbyOverride] = useState<boolean | null>(null);
+
+  // Restore last opt-in choice: player must toggle on the first time, then
+  // the preference carries across QR scans, page reloads, and route jumps.
+  useEffect(() => {
+    try {
+      if (typeof window !== "undefined" && window.localStorage.getItem(ENABLED_KEY) === "1") {
+        setEnabled(true);
+      }
+    } catch { /* ignore */ }
+  }, []);
+  useEffect(() => {
+    try {
+      if (typeof window !== "undefined") {
+        window.localStorage.setItem(ENABLED_KEY, enabled ? "1" : "0");
+      }
+    } catch { /* ignore */ }
+  }, [enabled]);
+
   const track1Ref = useRef<HTMLAudioElement | null>(null);
   const track2Ref = useRef<HTMLAudioElement | null>(null);
   const countdownRef = useRef<HTMLAudioElement | null>(null);
@@ -119,12 +139,17 @@ export function AmbientAudioProvider({ children }: { children: ReactNode }) {
 
   // Switch tracks on enable/route change
   useEffect(() => {
-    const t1 = track1Ref.current, t2 = track2Ref.current, eg = endgameRef.current;
+    const t1 = track1Ref.current, t2 = track2Ref.current, eg = endgameRef.current, cap = captureRef.current, cd = countdownRef.current;
     if (!t1 || !t2) return;
     if (!enabled) {
-      fade(t1, 0);
-      fade(t2, 0);
-      if (eg && endgamePlayingRef.current) { fade(eg, 0); endgamePlayingRef.current = false; }
+      // Hard-stop every audio node — a slow fade left leftover sound after
+      // the mute button was pressed on some browsers.
+      const hardStop = (a: HTMLAudioElement | null) => {
+        if (!a) return;
+        try { a.pause(); a.volume = 0; a.currentTime = 0; } catch { /* ignore */ }
+      };
+      hardStop(t1); hardStop(t2); hardStop(cd); hardStop(cap);
+      if (eg) { hardStop(eg); endgamePlayingRef.current = false; }
       return;
     }
     if (endgamePlayingRef.current) {
@@ -183,11 +208,14 @@ export function AmbientAudioProvider({ children }: { children: ReactNode }) {
       eg.addEventListener("ended", onEnded, { once: true });
     };
     const onDebriefExit = () => stopEndgameAndRestore(true);
-    const onCapture = (e: Event) => {
-      if ((e as CustomEvent<{ localPlaybackStarted?: boolean }>).detail?.localPlaybackStarted) return;
+    const onCapture = () => {
+      // Capture SFX is gated behind the audio toggle: if the player never
+      // opted in, we stay silent. Route the sound through the shared audio
+      // node so muting the app also mutes the capture chime.
       const cap = captureRef.current;
       if (!cap || !enabled) return;
       try { cap.currentTime = 0; } catch {}
+      cap.volume = 0.9;
       cap.play().catch(() => {});
     };
     window.addEventListener("spartanops:countdown", onCountdown);

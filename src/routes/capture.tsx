@@ -2,10 +2,9 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { CheckCircle2, AlertTriangle } from "lucide-react";
-import captureTrack from "@/assets/spartanops-capture-levelup.mp3.asset.json";
 import { spartanopsSpartacusCapture } from "@/lib/spartanops-spartacus.functions";
 import { spartanopsResolveSessionField } from "@/lib/spartanops-checkin.functions";
-import { useLang } from "@/lib/i18n";
+import { useLang, useT } from "@/lib/i18n";
 
 export const Route = createFileRoute("/capture")({
   head: () => ({
@@ -100,16 +99,12 @@ function placeholderError(en: boolean): string {
     : "Ta QR koda še vedno vsebuje predlogo za ID misije. Ponovno jo ustvarite/natisnite s pravim UUID misije ali naj se igralec najprej pridruži misiji, da SpartanOps prepozna aktivno misijo.";
 }
 
-function playCaptureTrack() {
-  try {
-    const audio = new Audio(captureTrack.url);
-    audio.volume = 0.95;
-    audio.play().catch(() => {});
-  } catch { /* ignore */ }
-}
+const CAPTURE_SFX_MS = 6000;
+
 
 function CapturePage() {
   const { lang } = useLang();
+  const t = useT();
   const en = lang === "en";
   const { point, field } = Route.useSearch();
   const resolvedField = useMemo(() => resolveQrField(field), [field]);
@@ -120,6 +115,8 @@ function CapturePage() {
   const [state, setState] = useState<"loading" | "success" | "error" | "already_held">("loading");
   const [errMsg, setErrMsg] = useState("");
   const [team, setTeam] = useState<string | null>(null);
+  const [resolvedRouteField, setResolvedRouteField] = useState<string>(resolvedField);
+
 
   useEffect(() => {
     const getPosition = () =>
@@ -204,11 +201,12 @@ function CapturePage() {
           setErrMsg(msg[errCode] ?? "Napaka."); setState("error"); return;
         }
         setTeam((result as any).team ?? null);
+        setResolvedRouteField(effectiveRouteField);
         setState("success");
         try { sessionStorage.setItem(captureKey, String(Date.now())); } catch { /* ignore */ }
-        playCaptureTrack();
-        try { window.dispatchEvent(new CustomEvent("spartanops:capture-success", { detail: { localPlaybackStarted: true } })); } catch {}
-        setTimeout(() => navigate({ to: "/misija", search: { field: effectiveRouteField }, replace: true }), 5500);
+        // Route the capture chime through the shared audio node so it obeys
+        // the ambient mute toggle. No auto-navigate — the player must ACK.
+        try { window.dispatchEvent(new CustomEvent("spartanops:capture-success")); } catch {}
       } catch (e: any) {
         // A network/server failure means the capture did not actually land —
         // clear the guard so the player can retry by re-scanning the QR.
@@ -253,11 +251,12 @@ function CapturePage() {
   }
 
   const c = team ? TEAM_COLOR[team] : ACCENT;
-  const label = team ? TEAM_LABEL[team] : "";
+  const pointName = point ? (["ALPHA", "BETA", "GAMMA", "DELTA", "EPSILON"][point - 1] ?? String(point)) : "";
+  const ackReturn = () => navigate({ to: "/misija", search: { field: resolvedRouteField }, replace: true });
 
   return (
     <div style={{ background: BG, color: INK, minHeight: "100vh", backgroundImage: `radial-gradient(ellipse at center, ${c}22, transparent 60%)` }} className="flex items-center justify-center p-6">
-      <div className="max-w-md w-full text-center rounded-xl p-8" style={{ background: `${c}0a`, border: `2px solid ${c}`, boxShadow: `0 0 60px -10px ${c}88` }}>
+      <div className="max-w-md w-full text-center rounded-xl p-8" style={{ background: `${c}0a`, border: `2px solid ${c}`, boxShadow: `0 0 60px -10px ${c}88`, position: "relative", overflow: "hidden" }}>
         {state === "loading" ? (
           <>
             <div className="font-mono text-xs tracking-[0.24em] uppercase animate-pulse" style={{ color: c }}>▌ SCANNING...</div>
@@ -266,15 +265,58 @@ function CapturePage() {
         ) : (
           <>
             <CheckCircle2 size={56} style={{ color: c }} className="mx-auto mb-3" />
-            <p className="font-mono uppercase text-[11px] tracking-[0.22em]" style={{ color: c }}>▌ {en ? "CAPTURE CONFIRMED" : "ZAVZEM POTRJEN"}</p>
-            <h2 style={{ fontFamily: "'Michroma', monospace", fontSize: 18, color: INK, fontWeight: 700, marginTop: 10 }}>
-              {en ? "POINT " : "TOČKA "}{point ? (["ALPHA", "BETA", "GAMMA", "DELTA", "EPSILON"][point - 1] ?? point) : ""}{en ? " CAPTURED" : " ZAVZETA"}
+            <p className="font-mono uppercase text-[11px] tracking-[0.22em]" style={{ color: c }}>
+              ▌ {t("captureSuccessTitle")}
+            </p>
+            <h2 style={{ fontFamily: "'Michroma', monospace", fontSize: 18, color: INK, fontWeight: 700, marginTop: 10, letterSpacing: "0.06em" }}>
+              {en ? "POINT " : "TOČKA "}{pointName}{en ? " CAPTURED" : " ZAVZETA"}
             </h2>
-            <p className="text-xs mt-4 font-mono uppercase tracking-[0.2em]" style={{ color: MUTED }}>{en ? "Redirecting to mission..." : "Preusmerjam v misijo..."}</p>
+            <p className="text-sm mt-3" style={{ color: MUTED, lineHeight: 1.6 }}>
+              {t("captureSuccessSubtitle")}
+            </p>
+
+            <button
+              type="button"
+              onClick={ackReturn}
+              className="mt-6 w-full"
+              style={{
+                background: c,
+                color: "#0b0d09",
+                fontFamily: "'Michroma', monospace",
+                fontSize: 12,
+                letterSpacing: "0.16em",
+                textTransform: "uppercase",
+                padding: "14px 12px",
+                border: "none",
+                cursor: "pointer",
+                fontWeight: 700,
+                boxShadow: `0 0 24px -6px ${c}`,
+              }}
+            >
+              {t("captureAckBtn")}
+            </button>
+
+            <p className="mt-5 font-mono text-[10.5px] leading-relaxed" style={{ color: MUTED, letterSpacing: "0.04em" }}>
+              {t("captureTelemetryNote")}
+            </p>
+
+            {/* Telemetry sync bar — matches the ~6s capture SFX duration */}
+            <div style={{ marginTop: 8, height: 3, background: `${c}22`, borderRadius: 2, overflow: "hidden" }}>
+              <div
+                style={{
+                  height: "100%",
+                  width: "100%",
+                  background: c,
+                  boxShadow: `0 0 8px ${c}`,
+                  transformOrigin: "left center",
+                  animation: `spo-fill ${CAPTURE_SFX_MS}ms linear forwards`,
+                }}
+              />
+            </div>
           </>
         )}
       </div>
-      <style>{`@keyframes spo-spin{to{transform:rotate(360deg)}}`}</style>
+      <style>{`@keyframes spo-spin{to{transform:rotate(360deg)}}@keyframes spo-fill{from{transform:scaleX(0)}to{transform:scaleX(1)}}`}</style>
     </div>
   );
 }
