@@ -74,6 +74,7 @@ type Checkin = {
   created_at?: string;
   first_name?: string | null;
   last_initial?: string | null;
+  phone_number?: string | null;
 };
 type Capture = {
   id: string; point_number: number; team: string; player_callsign: string | null; captured_at: string;
@@ -733,7 +734,23 @@ const RosterBoard = memo(function RosterBoard({ roster, settings, onReassign, on
             <p style={{ color: ACCENT, fontFamily: "'Michroma', monospace", fontSize: 12, letterSpacing: "0.16em", textTransform: "uppercase", marginBottom: 12 }}>
               {en ? "SWITCH FACTION" : "PREMESTI FRAKCIJO"}
             </p>
-            <p style={{ color: INK, fontSize: 13, marginBottom: 14 }}>{switching.callsign}</p>
+            <p style={{ color: INK, fontSize: 13, marginBottom: 6 }}>{switching.callsign}</p>
+            <div style={{ marginBottom: 14, fontFamily: "monospace", fontSize: 11.5, color: MUTED, lineHeight: 1.6 }}>
+              {(switching.first_name || switching.last_initial) && (
+                <div>{en ? "Name: " : "Ime: "}<span style={{ color: INK }}>{[switching.first_name, switching.last_initial].filter(Boolean).join(" ")}</span></div>
+              )}
+              {switching.club && (
+                <div>{en ? "Club: " : "Klub: "}<span style={{ color: INK }}>{switching.club}</span></div>
+              )}
+              {switching.phone_number ? (
+                <div>
+                  {en ? "Phone: " : "Telefon: "}
+                  <a href={`tel:${switching.phone_number}`} style={{ color: ACCENT, textDecoration: "underline" }}>{switching.phone_number}</a>
+                </div>
+              ) : (
+                <div style={{ color: "rgba(236,227,196,0.35)" }}>{en ? "Phone: —" : "Telefon: —"}</div>
+              )}
+            </div>
             <div className="grid gap-2">
               <button onClick={() => { onReassign(switching.id, "none"); setSwitching(null); }} style={{ padding: 10, background: "rgba(255,255,255,0.05)", color: MUTED, border: `1px solid ${MUTED}` }}>— {en ? "LOBBY" : "ČAKALNICA"}</button>
               {activeTeams.map((t) => (
