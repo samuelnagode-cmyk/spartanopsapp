@@ -25,7 +25,7 @@ const DECOMMISSIONED = "#c86a4a";
 const DANGER = "#ff6b6b";
 const HAIRLINE = "rgba(236,227,196,0.10)";
 
-const MPW_KEY = "spartanops_master_pw";
+const MPW_KEY = "spartanops:master_pw";
 
 function ArchivePage() {
   const navigate = useNavigate();
