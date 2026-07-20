@@ -16,6 +16,7 @@ export const Route = createFileRoute("/join")({
   validateSearch: (s: Record<string, unknown>) => ({
     lobby: typeof s.lobby === "string" ? s.lobby : undefined,
     field_id: typeof s.field_id === "string" ? s.field_id : undefined,
+    browse: typeof s.browse === "string" ? s.browse : undefined,
   }),
   component: JoinPage,
 });
@@ -78,11 +79,17 @@ function JoinPage() {
     };
 
     (async () => {
-      const s = loadActiveSession();
+      const browseMode = search.browse === "1";
+      if (browseMode) {
+        // Clear any auto-login so browsing the list does not silently deploy
+        // the user back into their previous mission.
+        try { localStorage.removeItem(SESSION_KEY); } catch { /* ignore */ }
+      }
+      const s = browseMode ? null : loadActiveSession();
       const list = (await refresh()) ?? [];
       if (!alive) return;
       // Direct-join via QR: /join?lobby=<id> bypasses lobby search + password
-      if (directLobbyId && list.some((l) => l.id === directLobbyId)) {
+      if (!browseMode && directLobbyId && list.some((l) => l.id === directLobbyId)) {
         saveActiveSession({ lobbyId: directLobbyId, authenticated: true, at: Date.now() });
         navigate({ to: "/misija", search: { field: directLobbyId } as any, replace: true });
         return;
