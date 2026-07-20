@@ -1266,6 +1266,21 @@ function CheckinForm({ sessionId, fieldId, preview, onGhost, fieldLabel }: { ses
           </div>
           <div>
             <label className="block font-mono text-[10px] uppercase tracking-widest mb-1" style={{ color: MUTED }}>
+              {t.phone}
+            </label>
+            <input
+              type="tel"
+              value={phone}
+              onChange={(e) => setPhone(e.target.value)}
+              maxLength={40}
+              style={inputStyle}
+              placeholder="+386 40 123 456"
+              autoComplete="tel"
+              inputMode="tel"
+            />
+          </div>
+          <div>
+            <label className="block font-mono text-[10px] uppercase tracking-widest mb-1" style={{ color: MUTED }}>
               {t.club}
             </label>
             <input
