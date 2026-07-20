@@ -1779,7 +1779,14 @@ function MarshalLobbyConsole({ lobby: initialLobby, marshalPassword, lobbyPasswo
     pending: MUTED, active: "#3ddc84", paused: "#f5b041", ended: MUTED,
   };
 
-  const joinUrl = `/misija?field=${encodeURIComponent(lobby.id)}`;
+  const joinUrl = `/misija?field=${encodeURIComponent(lobby.id)}&marshal=1`;
+  const stashMarshalPw = () => {
+    try {
+      if (typeof window !== "undefined" && marshalPassword) {
+        sessionStorage.setItem(`spartanops:marshal:pw:${lobby.id}`, marshalPassword);
+      }
+    } catch { /* ignore */ }
+  };
   const target = lobby.pointTarget ?? 50;
 
   // Marshal auto-registration — cached callsign/faction bypass the modal
