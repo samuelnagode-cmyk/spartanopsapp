@@ -2655,4 +2655,70 @@ function EndgameReport({ state, roster, captures, en, now }: { state: GameState;
   );
 }
 
+function PointCapturedOverlay({ captures, teamLabelFor, en }: { captures: Capture[]; teamLabelFor: (t: string) => string; en: boolean }) {
+  const [toasts, setToasts] = useState<Array<{ id: string; team: string; node: number; player: string | null }>>([]);
+  const seenRef = useRef<Set<string>>(new Set());
+  const primedRef = useRef(false);
+
+  useEffect(() => {
+    if (!primedRef.current) {
+      captures.forEach((c) => seenRef.current.add(c.id));
+      primedRef.current = true;
+      return;
+    }
+    const fresh = captures.filter((c) => !seenRef.current.has(c.id));
+    if (fresh.length === 0) return;
+    fresh.forEach((c) => seenRef.current.add(c.id));
+    const additions = fresh.slice(-3).map((c) => ({
+      id: c.id,
+      team: c.team,
+      node: c.point_number,
+      player: c.player_callsign,
+    }));
+    setToasts((prev) => [...prev, ...additions]);
+    additions.forEach((a) => {
+      window.setTimeout(() => setToasts((prev) => prev.filter((t) => t.id !== a.id)), 3200);
+    });
+  }, [captures]);
+
+  if (toasts.length === 0) return null;
+  return (
+    <div style={{ position: "fixed", top: 96, left: 0, right: 0, zIndex: 65, display: "flex", flexDirection: "column", alignItems: "center", gap: 8, pointerEvents: "none", padding: "0 16px" }}>
+      {toasts.map((t) => {
+        const col = TEAM_COLOR[t.team] ?? ACCENT;
+        const label = teamLabelFor(t.team);
+        const node = NODE_NAMES[t.node - 1] ?? `#${t.node}`;
+        return (
+          <div
+            key={t.id}
+            style={{
+              background: "rgba(10,12,10,0.92)",
+              border: `1.5px solid ${col}`,
+              borderLeft: `4px solid ${col}`,
+              boxShadow: `0 0 24px -4px ${col}88`,
+              padding: "10px 16px",
+              maxWidth: 420,
+              width: "100%",
+              fontFamily: "'Michroma', monospace",
+              fontSize: 11,
+              color: INK,
+              letterSpacing: "0.14em",
+              textTransform: "uppercase",
+              animation: "spops-capture-toast 320ms ease-out",
+            }}
+          >
+            <span style={{ color: col, fontWeight: 700 }}>🎯 {en ? "POINT CAPTURED" : "TOČKA ZAVZETA"}</span>
+            <div style={{ marginTop: 4, fontSize: 10, letterSpacing: "0.12em", color: MUTED }}>
+              <span style={{ color: col }}>{label}</span> · <strong style={{ color: INK }}>{node}</strong>
+              {t.player ? <> · {t.player}</> : null}
+            </div>
+          </div>
+        );
+      })}
+      <style>{`@keyframes spops-capture-toast{from{opacity:0;transform:translateY(-8px)}to{opacity:1;transform:translateY(0)}}`}</style>
+    </div>
+  );
+}
+
+
 
