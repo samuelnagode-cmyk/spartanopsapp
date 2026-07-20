@@ -771,7 +771,11 @@ function MisijaPage() {
           />
         )}
       </div>
-      <AbortMissionButton field={field} en={en} />
+      {marshalMode ? (
+        <MarshalHudOverlay fieldId={field} en={en} />
+      ) : (
+        <AbortMissionButton field={field} en={en} />
+      )}
       {preview && <PreviewReturnButton />}
     </div>
   );
