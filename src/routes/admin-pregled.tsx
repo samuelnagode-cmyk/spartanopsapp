@@ -2090,6 +2090,18 @@ function MarshalLobbyConsole({ lobby: initialLobby, marshalPassword, lobbyPasswo
         <FieldRow label={en ? "Event name (optional)" : "Ime dogodka (neobvezno)"}>
           <input value={lobby.eventName ?? ""} onChange={(e) => patch({ eventName: e.target.value })} style={consoleInputStyle} placeholder={en ? "e.g. Operation Ares" : "npr. Operacija Ares"} />
         </FieldRow>
+        <FieldRow label={en ? "Mission description / instructions (optional)" : "Opis misije / navodila (neobvezno)"}>
+          <textarea
+            value={(lobby.settings as any)?.missionDescription ?? ""}
+            onChange={(e) => patch({ settings: { ...(lobby.settings ?? {}), missionDescription: e.target.value } as any })}
+            rows={3}
+            style={{ ...consoleInputStyle, resize: "vertical", minHeight: 80, fontFamily: "inherit" }}
+            placeholder={en ? "The players will see this description/instructions before and during the game." : "Igralci bodo videli ta opis/navodila pred in med igro."}
+          />
+          <p style={{ fontSize: 10, color: MUTED, marginTop: 4, fontFamily: "monospace", letterSpacing: "0.06em" }}>
+            // {en ? "Editable any time — updates propagate live to player HUDs." : "Uredljivo kadarkoli — spremembe se v živo prenesejo na igralski HUD."}
+          </p>
+        </FieldRow>
         <div className="grid grid-cols-2 gap-3">
           <FieldRow label={en ? "City (locked)" : "Mesto (zaklenjeno)"}>
             <input value={lobby.city ?? ""} readOnly disabled style={{ ...consoleInputStyle, opacity: 0.65, cursor: "not-allowed" }} />
