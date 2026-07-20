@@ -1,6 +1,6 @@
 import { memo, useEffect, useRef, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
-import { Award, ChevronUp, ChevronsUp, Compass, Pause, Play, RotateCcw, Square, Trash2, Upload, MapPin, Copy, Check, AlertTriangle, ShieldOff, ShieldCheck, ArrowLeftRight } from "lucide-react";
+import { Award, ChevronUp, ChevronsUp, Compass, Pause, Play, RotateCcw, Square, Trash2, Upload, MapPin, Copy, Check, AlertTriangle, ShieldOff, ShieldCheck, ArrowLeftRight, Info } from "lucide-react";
 import { QRCodeSVG } from "qrcode.react";
 import { TacticalCompass } from "@/components/TacticalCompass";
 
@@ -691,7 +691,17 @@ const RosterBoard = memo(function RosterBoard({ roster, settings, onReassign, on
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2" style={{ color: INK, fontWeight: 600 }}>
                       <span className="inline-flex shrink-0" style={{ color: ACCENT }}><RankIcon level={p.experience_level} /></span>
-                      <span className="min-w-0 truncate">{p.callsign}</span>
+                      <button
+                        type="button"
+                        onClick={() => setSwitching(p)}
+                        title={en ? "View player details & phone" : "Poglej podatke igralca in telefon"}
+                        aria-label={en ? "View player details" : "Poglej podatke igralca"}
+                        className="min-w-0 truncate inline-flex items-center gap-1"
+                        style={{ background: "transparent", border: "none", color: INK, padding: 0, cursor: "pointer", font: "inherit", textAlign: "left" }}
+                      >
+                        <span className="min-w-0 truncate">{p.callsign}</span>
+                        <Info size={11} style={{ color: ACCENT, flexShrink: 0 }} aria-hidden="true" />
+                      </button>
                       {p.club && <span style={{ color: MUTED, fontWeight: 400 }}>· {p.club}</span>}
                     </div>
                     <div style={{ fontSize: 10, color: MUTED, fontFamily: "monospace" }}>
