@@ -73,7 +73,6 @@ type Field = {
   key: FieldKey;
   title: string;
   subtitle: string;
-  password: string;
 };
 
 const INITIAL_FIELDS: Field[] = [
@@ -81,9 +80,9 @@ const INITIAL_FIELDS: Field[] = [
     key: "zeleni-raj",
     title: "FIELD: ZELENI RAJ",
     subtitle: "Vače, Slovenia • Active zone",
-    password: "spartanjenajaci123",
   },
 ];
+
 
 import type { GameSettings } from "@/components/SpartanOpsConsole";
 
