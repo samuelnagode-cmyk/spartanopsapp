@@ -1,6 +1,8 @@
 import { createFileRoute } from "@tanstack/react-router";
 import "@tanstack/react-start";
 import { z } from "zod";
+import { checkEmailRateLimit } from "@/lib/email-rate-limit";
+
 
 const GATEWAY_URL = "https://connector-gateway.lovable.dev/resend";
 const FROM = "Zeleni raj <onboarding@resend.dev>";
