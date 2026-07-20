@@ -21,6 +21,7 @@ export const Route = createFileRoute("/misija")({
       field: typeof s.field === "string" ? s.field : (typeof s.field_id === "string" ? s.field_id : "zeleni-raj"),
       point: typeof s.point === "string" || typeof s.point === "number" ? String(s.point) : undefined,
       preview: s.preview === "1" || s.preview === 1 || s.preview === true || s.preview === "true" ? true : false,
+      marshal: s.marshal === "1" || s.marshal === 1 || s.marshal === true || s.marshal === "true" ? true : false,
     };
   },
 
@@ -230,7 +231,7 @@ function toDbField(raw: string): string {
 function MisijaPage() {
   const { lang } = useLang();
   const en = lang === "en";
-  const { field: rawField, point: targetPoint, preview } = Route.useSearch();
+  const { field: rawField, point: targetPoint, preview, marshal: marshalMode } = Route.useSearch();
   const field = useMemo(() => toDbField(rawField), [rawField]);
   const ackFn = useServerFn(spartanopsAckTeamChange);
   const selectTeamFn = useServerFn(spartanopsSelectTeam);
