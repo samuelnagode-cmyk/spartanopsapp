@@ -199,9 +199,23 @@ function SpawnPage() {
         setReturnField(effectiveRouteField);
         const { data: gs } = await supabase
           .from("spartanops_game_state")
-          .select("match_started_at, match_duration_minutes, settings")
+          .select("status, match_started_at, match_duration_minutes, settings")
           .eq("field_id", effectiveField)
           .maybeSingle();
+        // Respawn only counts while the match is actively running. If the
+        // game hasn't started (pre-start) or has already ended (debrief),
+        // send the player back to /misija — they see the same screen as
+        // everyone else and no respawn timer is started.
+        const gsStatus = (gs as any)?.status as string | undefined;
+        const startMs = (gs as any)?.match_started_at ? Date.parse((gs as any).match_started_at) : NaN;
+        const notRunning =
+          gsStatus !== "active" ||
+          !Number.isFinite(startMs) ||
+          startMs > Date.now();
+        if (notRunning) {
+          navigate({ to: "/misija", search: { field: effectiveRouteField }, replace: true });
+          return;
+        }
         const waitSeconds = respawnSeconds((gs as unknown as SpawnGameState | null) ?? null);
         setRespawnEnabled(waitSeconds > 0);
         setRespawnLeft(waitSeconds);
