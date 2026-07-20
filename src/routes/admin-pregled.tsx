@@ -263,6 +263,77 @@ function upsertAllTimeField(rec: AllTimeFieldRecord) {
   saveAllTimeFields(filtered);
 }
 
+function PremiumStatusToggle({
+  isPremium, keyInput, setKeyInput, keyError, setKeyError, activatePremium, t,
+}: {
+  isPremium: boolean;
+  keyInput: string;
+  setKeyInput: (v: string) => void;
+  keyError: boolean;
+  setKeyError: (v: boolean) => void;
+  activatePremium: (k: string) => boolean;
+  t: (k: string) => string;
+}) {
+  const [open, setOpen] = useState(false);
+  useEffect(() => { if (isPremium) setOpen(false); }, [isPremium]);
+  const label = isPremium ? t("premium.statusPremium") : t("premium.statusFree");
+  const color = isPremium ? ACCENT : "rgba(180,190,205,0.75)";
+  const glow = isPremium ? `0 0 10px ${ACCENT}88` : "none";
+  return (
+    <div style={{ maxWidth: 360, margin: "14px auto 0", textAlign: "center" }}>
+      <button
+        type="button"
+        onClick={() => { if (!isPremium) setOpen((v) => !v); }}
+        aria-expanded={open}
+        style={{
+          display: "inline-flex", alignItems: "center", gap: 8,
+          background: "transparent", border: "none", padding: "4px 6px",
+          fontFamily: "'Michroma', monospace", fontSize: 9.5, letterSpacing: "0.16em",
+          color, textShadow: glow, cursor: isPremium ? "default" : "pointer",
+        }}
+      >
+        <span>{label}</span>
+        {!isPremium && (
+          <span aria-hidden style={{ fontSize: 9, opacity: 0.7 }}>{open ? "▲" : "▼"}</span>
+        )}
+      </button>
+      {!isPremium && open && (
+        <form
+          onSubmit={(e) => {
+            e.preventDefault();
+            const ok = activatePremium(keyInput);
+            if (ok) { setKeyInput(""); setKeyError(false); } else { setKeyError(true); }
+          }}
+          style={{ display: "flex", gap: 6, alignItems: "stretch", marginTop: 8 }}
+        >
+          <input
+            type="password"
+            autoFocus
+            value={keyInput}
+            onChange={(e) => { setKeyInput(e.target.value); setKeyError(false); }}
+            placeholder={t("premium.enterKeyPlaceholder")}
+            style={{
+              flex: 1, background: "rgba(0,0,0,0.4)", color: INK,
+              border: `1px solid ${keyError ? DANGER : `${ACCENT}55`}`,
+              padding: "7px 9px", fontFamily: "'Michroma', monospace",
+              fontSize: 10, letterSpacing: "0.10em",
+            }}
+          />
+          <button
+            type="submit"
+            disabled={!keyInput}
+            style={{
+              background: ACCENT, color: BG, border: `1px solid ${ACCENT}`,
+              padding: "7px 11px", fontFamily: "'Michroma', monospace",
+              fontSize: 10, letterSpacing: "0.14em", cursor: "pointer", fontWeight: 700,
+            }}
+          >→</button>
+        </form>
+      )}
+    </div>
+  );
+}
+
 function AdminPage() {
   const { lang } = useLang();
   const en = lang === "en";
@@ -456,72 +527,16 @@ function AdminPage() {
           )}
           <div style={{ width: 48, height: 1, background: ACCENT, margin: "12px auto 0", opacity: 0.7 }} />
 
-          {/* Premium access key input */}
-          <div style={{ maxWidth: 380, margin: "18px auto 0" }}>
-            <form
-              onSubmit={(e) => {
-                e.preventDefault();
-                if (isPremium) return;
-                const ok = activatePremium(premiumKeyInput);
-                if (ok) {
-                  setPremiumKeyInput("");
-                  setPremiumKeyError(false);
-                } else {
-                  setPremiumKeyError(true);
-                }
-              }}
-              style={{ display: "flex", gap: 6, alignItems: "stretch" }}
-            >
-              <input
-                type="password"
-                value={premiumKeyInput}
-                onChange={(e) => { setPremiumKeyInput(e.target.value); setPremiumKeyError(false); }}
-                placeholder={t("premium.enterKeyPlaceholder")}
-                disabled={isPremium}
-                style={{
-                  flex: 1,
-                  background: "rgba(0,0,0,0.4)",
-                  color: isPremium ? ACCENT : INK,
-                  border: `1px solid ${premiumKeyError ? DANGER : `${ACCENT}55`}`,
-                  padding: "8px 10px",
-                  fontFamily: "'Michroma', monospace",
-                  fontSize: 10.5,
-                  letterSpacing: "0.10em",
-                }}
-              />
-              <button
-                type="submit"
-                disabled={isPremium || !premiumKeyInput}
-                style={{
-                  background: isPremium ? `${ACCENT}22` : ACCENT,
-                  color: isPremium ? ACCENT : BG,
-                  border: `1px solid ${ACCENT}`,
-                  padding: "8px 12px",
-                  fontFamily: "'Michroma', monospace",
-                  fontSize: 10,
-                  letterSpacing: "0.14em",
-                  textTransform: "uppercase",
-                  cursor: isPremium ? "default" : "pointer",
-                  fontWeight: 700,
-                }}
-              >
-                {isPremium ? "✓" : "→"}
-              </button>
-            </form>
-            <div style={{ marginTop: 8, textAlign: "center" }}>
-              <span
-                style={{
-                  fontFamily: "'Michroma', monospace",
-                  fontSize: 9,
-                  letterSpacing: "0.14em",
-                  color: isPremium ? ACCENT : "rgba(180,190,205,0.75)",
-                  textShadow: isPremium ? `0 0 10px ${ACCENT}88` : "none",
-                }}
-              >
-                {isPremium ? t("premium.statusPremium") : t("premium.statusFree")}
-              </span>
-            </div>
-          </div>
+          {/* Premium status indicator — click to reveal operation key input */}
+          <PremiumStatusToggle
+            isPremium={isPremium}
+            keyInput={premiumKeyInput}
+            setKeyInput={setPremiumKeyInput}
+            keyError={premiumKeyError}
+            setKeyError={setPremiumKeyError}
+            activatePremium={activatePremium}
+            t={t}
+          />
 
         </div>
 
@@ -797,14 +812,14 @@ function CreateFieldForm({ onCancel, onCreated }: { onCancel: () => void; onCrea
           <input value={fieldName} onChange={(e) => setFieldName(e.target.value)} style={consoleInputStyle} placeholder="Poligon Ljubljana" />
         </FieldRow>
         <FieldRow label={en ? "Mission name" : "Ime misije"}>
-          <input value={missionName} onChange={(e) => setMissionName(e.target.value)} style={consoleInputStyle} placeholder={en ? "Operation Ares" : "Operacija Ares"} />
+          <input value={missionName} onChange={(e) => setMissionName(e.target.value)} style={consoleInputStyle} placeholder={en ? "Operation Fallen Angel" : "Operacija Fallen Angel"} />
         </FieldRow>
-        <FieldRow label={en ? "Mission description (optional)" : "Opis misije (neobvezno)"}>
+        <FieldRow label={en ? "Mission description / instructions (Optional)" : "Opis misije / navodila (Neobvezno)"}>
           <textarea
             value={missionDescription}
             onChange={(e) => setMissionDescription(e.target.value)}
             style={{ ...consoleInputStyle, minHeight: 72, resize: "vertical" }}
-            placeholder={en ? "Brief mission briefing..." : "Kratek opis misije..."}
+            placeholder={en ? "The players will see this description/instructions before and during the game." : "Igralci bodo videli ta opis/navodila pred in med igro."}
           />
         </FieldRow>
         <FieldRow label={en ? "Event name (optional)" : "Ime dogodka (neobvezno)"}>
@@ -1060,10 +1075,6 @@ function CreateFieldForm({ onCancel, onCreated }: { onCancel: () => void; onCrea
           : "Inicializacija lobbyja doda misijo na seznam misij. Igralec se mora nato pridružiti misiji z geslom, ki ste ga ustvarili, se registrirati in izbrati svojo ekipo. Pred začetkom igre lahko ekipe uravnotežite."}
       </p>
 
-      <label style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 20, cursor: "pointer", color: INK, fontSize: 12, fontFamily: "monospace", letterSpacing: "0.08em" }}>
-        <input type="checkbox" checked={publishToLobby} onChange={(e) => setPublishToLobby(e.target.checked)} style={{ accentColor: ACCENT, width: 16, height: 16 }} />
-        {en ? "Publish this lobby to the public /lobby browser (players can join)" : "Objavi ta lobby v javnem /lobby brskalniku (igralci se lahko pridružijo)"}
-      </label>
 
       {err && <p style={{ color: "#d97a6c", fontSize: 12, marginBottom: 10 }}>{err}</p>}
       {ok && <p style={{ color: ACCENT, fontSize: 12, marginBottom: 10, fontFamily: "monospace", letterSpacing: "0.14em" }}>// {en ? "LOBBY INITIALIZED" : "LOBBY INICIALIZIRAN"}</p>}
@@ -2186,6 +2197,11 @@ function MarshalLobbyConsole({ lobby: initialLobby, marshalPassword, lobbyPasswo
           <div style={{ fontSize: 9, letterSpacing: "0.2em", textTransform: "uppercase", color: MUTED, marginBottom: 4, fontFamily: "monospace" }}>
             {en ? "Target points (win when reached)" : "Ciljne točke (zmaga ob doseženem številu)"}
           </div>
+          <p style={{ fontSize: 10, color: MUTED, fontFamily: "monospace", lineHeight: 1.55, marginBottom: 8, fontStyle: "italic" }}>
+            {en
+              ? "Planning note: the system is balanced so a standard game lasts exactly 40 minutes if a team constantly holds the majority (3 of 5 flags)."
+              : "Pojasnilo: sistem je uravnotežen tako, da standardna igra traja natanko 40 minut, če ekipa konstantno drži večino (3 od 5 zastavic)."}
+          </p>
           <select value={target} onChange={(e) => patch({ pointTarget: Number(e.target.value) })} style={consoleSelectStyle}>
             {Array.from({ length: 30 }, (_, i) => (i + 1) * 10).map((p) => (
               <option key={p} value={p}>{p} {en ? "pts" : "točk"}</option>
