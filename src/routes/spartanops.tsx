@@ -1,7 +1,9 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { type ReactNode, useEffect, useRef, useState } from "react";
+import { useServerFn } from "@tanstack/react-start";
 import { Crosshair, QrCode, Users, ClipboardList, MapPin, ArrowRight, Printer, CheckCircle2, Flag, RefreshCw, Target } from "lucide-react";
 import { loadFieldsRegistryWithSystem, loadLobbies, SYSTEM_FIELD, type AllTimeFieldRecord } from "./admin-pregled";
+import { getOperationalTelemetry, type OperationalTelemetry } from "@/lib/spartanops-telemetry.functions";
 
 export const Route = createFileRoute("/spartanops")({
   head: () => ({
@@ -297,39 +299,59 @@ function formatNumber(n: number) {
 function AnimatedCounter({ value, duration = 1500 }: { value: number; duration?: number }) {
   const [display, setDisplay] = useState(0);
   const ref = useRef<HTMLSpanElement | null>(null);
-  const startedRef = useRef(false);
+  const visibleRef = useRef(false);
+  const fromRef = useRef(0);
 
   useEffect(() => {
     const el = ref.current;
     if (!el) return;
-    const start = () => {
-      if (startedRef.current) return;
-      startedRef.current = true;
-      const t0 = performance.now();
-      const tick = (now: number) => {
-        const p = Math.min(1, (now - t0) / duration);
-        setDisplay(value * easeOutCubic(p));
-        if (p < 1) requestAnimationFrame(tick);
-      };
-      requestAnimationFrame(tick);
-    };
     const io = new IntersectionObserver(
-      (entries) => entries.forEach((e) => e.isIntersecting && start()),
+      (entries) => entries.forEach((e) => { if (e.isIntersecting) visibleRef.current = true; }),
       { threshold: 0.3 },
     );
     io.observe(el);
     return () => io.disconnect();
+  }, []);
+
+  useEffect(() => {
+    const from = fromRef.current;
+    const to = value;
+    if (from === to) return;
+    const t0 = performance.now();
+    let raf = 0;
+    const run = (now: number) => {
+      const p = Math.min(1, (now - t0) / duration);
+      setDisplay(from + (to - from) * easeOutCubic(p));
+      if (p < 1) raf = requestAnimationFrame(run);
+      else fromRef.current = to;
+    };
+    // Small delay for initial visibility observer to attach.
+    raf = requestAnimationFrame(run);
+    return () => cancelAnimationFrame(raf);
   }, [value, duration]);
 
   return <span ref={ref}>{formatNumber(display)}</span>;
 }
 
 function LiveTracker() {
+  const fetchTelemetry = useServerFn(getOperationalTelemetry);
+  const [t, setT] = useState<OperationalTelemetry>({ operators: 24, scans: 125, respawns: 115, missions: 3 });
+
+  useEffect(() => {
+    let alive = true;
+    const load = async () => {
+      try { const data = await fetchTelemetry(); if (alive) setT(data); } catch {}
+    };
+    void load();
+    const id = window.setInterval(load, 20000);
+    return () => { alive = false; window.clearInterval(id); };
+  }, [fetchTelemetry]);
+
   const items: Array<{ label: string; value: number; Icon: typeof CheckCircle2; live: boolean }> = [
-    { label: "Operators Deployed", value: 0, Icon: Users, live: false },
-    { label: "QR Codes Scanned", value: 0, Icon: QrCode, live: false },
-    { label: "Respawns Processed", value: 0, Icon: RefreshCw, live: true },
-    { label: "Missions Completed", value: 0, Icon: Target, live: false },
+    { label: "Operators Deployed", value: t.operators, Icon: Users, live: false },
+    { label: "QR Codes Scanned", value: t.scans, Icon: QrCode, live: false },
+    { label: "Respawns Processed", value: t.respawns, Icon: RefreshCw, live: true },
+    { label: "Missions Completed", value: t.missions, Icon: Target, live: false },
   ];
   return (
     <SectionShell>
