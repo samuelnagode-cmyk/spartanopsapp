@@ -155,11 +155,12 @@ export const spartanopsGetMyCheckin = createServerFn({ method: "POST" })
     if (!secret) return { ok: true as const, row: null };
     const { data: row, error } = await supabaseAdmin
       .from("spartanops_checkins")
-      .select("id, field_id, callsign, experience_level, assigned_team, team_changed_flag, created_at")
+      .select("id, field_id, callsign, experience_level, assigned_team, team_changed_flag, created_at, warning_message" as any)
       .eq("id", (secret as any).checkin_id)
       .eq("field_id", data.fieldId)
       .maybeSingle();
     if (error) throw new Error(error.message);
+
     if (!row) return { ok: true as const, row: null };
     const s = secret as any;
     return {

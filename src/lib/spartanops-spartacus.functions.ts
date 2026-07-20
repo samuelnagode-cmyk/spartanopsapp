@@ -166,16 +166,17 @@ export const spartanopsSpartacusCapture = createServerFn({ method: "POST" })
  *  - decision='ban': rejects the row AND removes the player from the checkin table.
  */
 export const spartanopsSpartacusReview = createServerFn({ method: "POST" })
-  .inputValidator((d: { captureId: string; decision: "approve" | "reject" | "ban" | "suspend"; fieldId: string; password: string; suspendMinutes?: number }) => ({
+  .inputValidator((d: { captureId: string; decision: "approve" | "reject" | "ban" | "suspend" | "warning"; fieldId: string; password: string; suspendMinutes?: number; warningMessage?: string }) => ({
     captureId: String(d?.captureId ?? ""),
     decision: d?.decision,
     fieldId: String(d?.fieldId ?? ""),
     password: String(d?.password ?? ""),
     suspendMinutes: Math.max(1, Math.min(60, Number(d?.suspendMinutes ?? 5))),
+    warningMessage: typeof d?.warningMessage === "string" ? d.warningMessage.slice(0, 500) : "",
   }))
   .handler(async ({ data }) => {
     if (!isField(data.fieldId)) throw new Error("Invalid field");
-    if (!["approve", "reject", "ban", "suspend"].includes(data.decision)) throw new Error("Invalid decision");
+    if (!["approve", "reject", "ban", "suspend", "warning"].includes(data.decision)) throw new Error("Invalid decision");
     if (!data.password || data.password.length > 200) throw new Error("Invalid password");
 
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
@@ -229,6 +230,13 @@ export const spartanopsSpartacusReview = createServerFn({ method: "POST" })
         .update({ spartacus_status: "rejected" } as any)
         .eq("id", data.captureId);
 
+      if (data.decision === "warning" && (cap as any).player_checkin_id) {
+        await supabaseAdmin
+          .from("spartanops_checkins")
+          .update({ warning_message: data.warningMessage || "warning" } as any)
+          .eq("id", (cap as any).player_checkin_id);
+      }
+
       if (data.decision === "suspend" && (cap as any).player_checkin_id) {
         const until = new Date(Date.now() + data.suspendMinutes * 60_000).toISOString();
         await supabaseAdmin
@@ -246,3 +254,31 @@ export const spartanopsSpartacusReview = createServerFn({ method: "POST" })
     }
     return { ok: true as const };
   });
+
+/**
+ * Player-side: clear the warning_message for the caller's own checkin so the
+ * dedicated warning modal on the Game HUD can be dismissed.
+ */
+export const spartanopsAcknowledgeWarning = createServerFn({ method: "POST" })
+  .inputValidator((d: { fieldId: string; sessionId: string }) => ({
+    fieldId: String(d?.fieldId ?? ""),
+    sessionId: String(d?.sessionId ?? ""),
+  }))
+  .handler(async ({ data }) => {
+    if (!isField(data.fieldId)) throw new Error("Invalid field");
+    if (!data.sessionId || data.sessionId.length > 100) throw new Error("Invalid session");
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data: secret } = await supabaseAdmin
+      .from("spartanops_checkin_secrets" as any)
+      .select("checkin_id")
+      .eq("session_id", data.sessionId)
+      .maybeSingle();
+    if (!secret) return { ok: true as const };
+    await supabaseAdmin
+      .from("spartanops_checkins")
+      .update({ warning_message: null } as any)
+      .eq("id", (secret as any).checkin_id)
+      .eq("field_id", data.fieldId);
+    return { ok: true as const };
+  });
+
