@@ -4,6 +4,7 @@ import { Menu, X, ChevronLeft, ChevronDown, Globe } from "lucide-react";
 import logoImg from "@/assets/logo-glamping.png";
 const AIRSOFT_LOGO = "https://res.cloudinary.com/dfifiytid/image/upload/v1783765381/SpartanOps%20app%20v1.0/LOGO/SpartanOps_app_LOGO_NO_BACKROUND-05.webp";
 import { useT, useLang, type Lang } from "@/lib/i18n";
+import { PremiumStatusBadge } from "@/lib/premium";
 
 type NavLink = { to: string; label: string; hash?: string };
 
@@ -313,6 +314,7 @@ export default function Header() {
 
 
             <div className="flex items-center justify-end gap-3 sm:gap-5">
+              <PremiumStatusBadge compact />
               {LangSelector()}
               <span
                 aria-hidden="true"
