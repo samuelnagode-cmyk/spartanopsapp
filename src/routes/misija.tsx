@@ -2119,6 +2119,7 @@ function LiveMatch({ state, captures, now, roster }: { state: GameState; capture
 
   return (
     <div className="max-w-5xl mx-auto px-4 py-6" style={{ paddingTop: 112 }}>
+      <PointCapturedOverlay captures={visibleCaptures} teamLabelFor={teamLabelFor} en={en} />
       {preMatchSec > 0 && <PreMatchCountdown seconds={preMatchSec} polygon={fieldTitleFromState(state, "")} eventName={missionTitleFromState(state, "")} gamemode={state.gamemode} pointTarget={state.point_target} settings={state.settings} en={en} state={state} />}
 
       <PlayerHudHeader en={en} />
