@@ -208,11 +208,14 @@ export function AmbientAudioProvider({ children }: { children: ReactNode }) {
       eg.addEventListener("ended", onEnded, { once: true });
     };
     const onDebriefExit = () => stopEndgameAndRestore(true);
-    const onCapture = (e: Event) => {
-      if ((e as CustomEvent<{ localPlaybackStarted?: boolean }>).detail?.localPlaybackStarted) return;
+    const onCapture = () => {
+      // Capture SFX is gated behind the audio toggle: if the player never
+      // opted in, we stay silent. Route the sound through the shared audio
+      // node so muting the app also mutes the capture chime.
       const cap = captureRef.current;
       if (!cap || !enabled) return;
       try { cap.currentTime = 0; } catch {}
+      cap.volume = 0.9;
       cap.play().catch(() => {});
     };
     window.addEventListener("spartanops:countdown", onCountdown);
