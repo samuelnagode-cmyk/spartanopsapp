@@ -620,6 +620,9 @@ function MisijaPage() {
     </div>
   ) : null;
 
+  const pauseOverlay = state.status === "paused" ? <PausedOverlay en={en} /> : null;
+
+
   const warningOverlay = me.warning_message ? (
     <WarningModal
       message={me.warning_message}
