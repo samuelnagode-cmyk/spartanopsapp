@@ -17,6 +17,7 @@ import {
 import { spartanopsAdminGetRoster, spartanopsGetServerTime } from "@/lib/spartanops-checkin.functions";
 import { spartanopsSpartacusReview } from "@/lib/spartanops-spartacus.functions";
 import { useLang } from "@/lib/i18n";
+import { usePremium } from "@/lib/premium";
 
 const BG = "#0b0d09";
 const PANEL = "#13160f";
