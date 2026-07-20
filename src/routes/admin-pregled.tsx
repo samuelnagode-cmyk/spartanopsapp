@@ -2446,13 +2446,12 @@ const EXP_LABEL: Record<"slabo" | "dobro" | "zelo_dobro", string> = {
 };
 
 function LockedAutoBalanceButton({ en }: { en: boolean }) {
+  const { isPremium, openPremiumModal } = usePremium();
   return (
     <div style={{ marginBottom: 14 }}>
       <button
         type="button"
-        disabled
-        aria-disabled="true"
-        title={en ? "Premium feature — coming soon" : "Premium funkcija — prihaja kmalu"}
+        onClick={() => { if (!isPremium) openPremiumModal(); }}
         style={{
           position: "relative",
           width: "100%",
@@ -2464,12 +2463,12 @@ function LockedAutoBalanceButton({ en }: { en: boolean }) {
           fontSize: 11,
           letterSpacing: "0.16em",
           textTransform: "uppercase",
-          cursor: "not-allowed",
+          cursor: "pointer",
           opacity: 0.92,
           boxShadow: `0 0 22px ${ACCENT}20`,
         }}
       >
-        🔒 {en ? "AUTO BALANCING TEAMS" : "AVTOMATSKO URAVNOTEŽENJE EKIP"}
+        🔒 {en ? "Auto balance teams" : "Auto balance teams"}
         <span
           style={{
             position: "absolute",
