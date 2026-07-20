@@ -1,6 +1,6 @@
 import { memo, useEffect, useRef, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
-import { Award, ChevronUp, ChevronsUp, Compass, Pause, Play, RotateCcw, Square, Trash2, Upload, MapPin, Copy, Check, AlertTriangle, ShieldOff, ShieldCheck } from "lucide-react";
+import { Award, ChevronUp, ChevronsUp, Compass, Pause, Play, RotateCcw, Square, Trash2, Upload, MapPin, Copy, Check, AlertTriangle, ShieldOff, ShieldCheck, ArrowLeftRight } from "lucide-react";
 import { QRCodeSVG } from "qrcode.react";
 import { TacticalCompass } from "@/components/TacticalCompass";
 
@@ -232,7 +232,6 @@ export function SpartanOpsConsole({ fieldId, password }: { fieldId: string; pass
   };
 
   const doReassign = async (id: string, team: "modra" | "rdeca" | "rumena" | "none") => {
-    if (team === "rumena" && !confirm(en ? "Are you sure there will be 3 teams in the game?" : "Ali ste prepričani, da bodo v igri 3 ekipe?")) return;
     await reassign({ data: { fieldId, password, checkinId: id, team } });
     setRoster((items) => items.map((p) => (p.id === id ? { ...p, assigned_team: team, team_changed_flag: true } : p)));
   };
