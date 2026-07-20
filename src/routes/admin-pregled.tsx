@@ -1865,6 +1865,7 @@ function MarshalLobbyConsole({ lobby: initialLobby, marshalPassword, lobbyPasswo
       try {
         setJoinBusy(true);
         await runAutoCheckin(cached);
+        stashMarshalPw();
         window.location.href = joinUrl;
       } catch (e: any) {
         setJoinBusy(false);
@@ -1892,6 +1893,7 @@ function MarshalLobbyConsole({ lobby: initialLobby, marshalPassword, lobbyPasswo
     try {
       await runAutoCheckin(profile);
       try { localStorage.setItem(MARSHAL_CACHE_KEY, JSON.stringify(profile)); } catch {}
+      stashMarshalPw();
       window.location.href = joinUrl;
     } catch (e: any) {
       setJoinBusy(false);
