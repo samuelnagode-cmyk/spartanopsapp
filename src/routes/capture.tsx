@@ -4,6 +4,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { CheckCircle2, AlertTriangle } from "lucide-react";
 import { spartanopsSpartacusCapture } from "@/lib/spartanops-spartacus.functions";
 import { spartanopsResolveSessionField } from "@/lib/spartanops-checkin.functions";
+import { supabase } from "@/integrations/supabase/client";
 import { useLang, useT } from "@/lib/i18n";
 
 export const Route = createFileRoute("/capture")({
@@ -156,6 +157,21 @@ function CapturePage() {
         setTimeout(() => navigate({ to: "/misija", search: { field: effectiveRouteField }, replace: true }), 2200);
         return;
       }
+      // Preflight: block scans while the marshal has the match paused.
+      try {
+        const { data: gs } = await supabase
+          .from("spartanops_game_state")
+          .select("status")
+          .eq("field_id", effectiveField)
+          .maybeSingle();
+        if ((gs as any)?.status === "paused") {
+          alert(en
+            ? "The Marshal has paused the match — QR scanning is suspended until the match resumes."
+            : "Maršal je prekinil tekmo — skeniranje QR kod je onemogočeno, dokler se tekma ne nadaljuje.");
+          navigate({ to: "/misija", search: { field: effectiveRouteField }, replace: true });
+          return;
+        }
+      } catch { /* fall through to server-side validation */ }
       // Back-button / history-navigation guard: if the browser re-loads this
       // route with the exact same scan payload we just processed, redirect
       // silently to /misija instead of re-submitting the capture. The token

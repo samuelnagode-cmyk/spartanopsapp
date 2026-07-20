@@ -329,8 +329,8 @@ export function SpartanOpsConsole({ fieldId, password }: { fieldId: string; pass
     if (isActive || isPaused) { await togglePause(); return; }
     await startMatch();
   };
-  const mainLabel = isActive ? (en ? "PAUSE" : "PREMOR (PAUSE)") : isPaused ? (en ? "RESUME MISSION" : "NADALJUJ MISIJO") : (en ? "START MISSION" : "ZAČNI MISIJO");
-  const mainColor = isActive ? ACCENT : "#9eff3d";
+  const mainLabel = isActive ? (en ? "PAUSE MATCH" : "PREKINI TEKMO") : isPaused ? (en ? "RESUME MATCH" : "NADALJUJ TEKMO") : (en ? "START MATCH" : "ZAČNI MISIJO");
+  const mainColor = isActive ? ACCENT : isPaused ? "#9eff3d" : "#9eff3d";
   const mainIcon = isActive ? <Pause size={14} /> : <Play size={14} />;
 
   return (
@@ -553,14 +553,19 @@ export function SpartanOpsConsole({ fieldId, password }: { fieldId: string; pass
 export function LiveMatchView({ state, captures, now, en }: { state: GameState; captures: Capture[]; now: number; en: boolean }) {
   const startMs = state.match_started_at ? new Date(state.match_started_at).getTime() : null;
   const matchIsRunning = (state.status === "active" || state.status === "paused") && !!startMs;
+  // Freeze visible timers/counts while the match is paused.
+  const pausedAtMs = state.status === "paused" && state.updated_at
+    ? new Date(state.updated_at).getTime()
+    : null;
+  const effectiveNow = pausedAtMs ?? now;
   const visibleCaptures = matchIsRunning
     ? captures.filter((c) => !startMs || new Date(c.captured_at).getTime() >= startMs)
     : [];
   const visibleNodeHolders = nodeHoldersFromCaptures(visibleCaptures);
   const remaining = (() => {
     if (!startMs) return state.match_duration_minutes * 60;
-    if (now < startMs) return state.match_duration_minutes * 60;
-    const elapsed = Math.floor((now - startMs) / 1000);
+    if (effectiveNow < startMs) return state.match_duration_minutes * 60;
+    const elapsed = Math.floor((effectiveNow - startMs) / 1000);
     return Math.max(0, state.match_duration_minutes * 60 - elapsed);
   })();
   const mm = String(Math.floor(remaining / 60)).padStart(2, "0");
@@ -820,10 +825,13 @@ function LeaderboardMeta({ state, now, en }: { state: GameState; now: number; en
   if ((state.status === "active" || state.status === "paused") && state.match_started_at) {
     const startMs = new Date(state.match_started_at).getTime();
     const durationSec = (state.match_duration_minutes ?? 0) * 60;
-    // Freeze at full duration during the pre-match countdown window.
-    const secs = now < startMs
+    // Freeze during pause using the state.updated_at timestamp captured at pause time.
+    const effectiveNow = state.status === "paused" && state.updated_at
+      ? new Date(state.updated_at).getTime()
+      : now;
+    const secs = effectiveNow < startMs
       ? durationSec
-      : Math.max(0, Math.floor((startMs + durationSec * 1000 - now) / 1000));
+      : Math.max(0, Math.floor((startMs + durationSec * 1000 - effectiveNow) / 1000));
     remaining = `${String(Math.floor(secs / 60)).padStart(2, "0")}:${String(secs % 60).padStart(2, "0")}`;
   }
   return (
