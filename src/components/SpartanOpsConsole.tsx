@@ -680,10 +680,23 @@ const RosterBoard = memo(function RosterBoard({ roster, settings, onReassign, on
                   </div>
                   <button
                     type="button"
-                    onClick={() => setSwitching(p)}
-                    style={{ background: BG, color: INK, border: `1px solid ${TEAM_COLOR[p.assigned_team]}66`, fontSize: 10, padding: "5px 7px", fontFamily: "monospace", textTransform: "uppercase" }}
+                    onClick={() => {
+                      const opposing = activeTeams.find((t) => t !== p.assigned_team) ?? activeTeams[0];
+                      if (opposing) onReassign(p.id, opposing);
+                    }}
+                    title={en ? "Switch to opposing team" : "Premesti v nasprotno ekipo"}
+                    aria-label={en ? "Switch team" : "Premesti ekipo"}
+                    style={{ background: BG, color: ACCENT, border: `1px solid ${TEAM_COLOR[p.assigned_team]}66`, padding: "5px 7px", cursor: "pointer", display: "inline-flex", alignItems: "center", justifyContent: "center" }}
                   >
-                    {en ? "SWITCH" : "PREMESTI"}
+                    <ArrowLeftRight size={12} />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setSwitching(p)}
+                    style={{ background: "transparent", color: MUTED, border: `1px solid ${MUTED}44`, fontSize: 9, padding: "5px 6px", fontFamily: "monospace", textTransform: "uppercase", letterSpacing: "0.1em", cursor: "pointer" }}
+                    title={en ? "More options" : "Več možnosti"}
+                  >
+                    …
                   </button>
                   <button onClick={() => onRemove(p.id)} style={{ background: "transparent", border: "none", color: "#ff7070", cursor: "pointer", padding: 4 }}>
                     <Trash2 size={12} />
