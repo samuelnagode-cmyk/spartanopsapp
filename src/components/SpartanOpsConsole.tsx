@@ -15,7 +15,7 @@ import {
   spartanopsAdminUploadMap,
 } from "@/lib/spartanops-admin.functions";
 import { spartanopsAdminGetRoster, spartanopsGetServerTime } from "@/lib/spartanops-checkin.functions";
-import { spartanopsSpartacusReview } from "@/lib/spartanops-spartacus.functions";
+import { spartanopsSpartacusReview, spartanopsListSuspiciousCaptures } from "@/lib/spartanops-spartacus.functions";
 import { useLang } from "@/lib/i18n";
 import { usePremium } from "@/lib/premium";
 

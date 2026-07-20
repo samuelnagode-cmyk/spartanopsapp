@@ -300,6 +300,6 @@ export const spartanopsListSuspiciousCaptures = createServerFn({ method: "POST" 
       p_marshal_password: data.password,
     });
     if (error) throw new Error(error.message);
-    return { ok: true as const, rows: (rows ?? []) as unknown[] };
+    return { ok: true as const, rows: (rows ?? []) as any[] };
   });
 
