@@ -171,6 +171,11 @@ function CapturePage() {
       try {
         const { lat, lng } = await getPosition();
         const result = await applyCapture({ data: { fieldId: effectiveField, point, sessionId: session, lat, lng } });
+        if ((result as any)?.ok && (result as any)?.already_held) {
+          setState("already_held");
+          setTimeout(() => navigate({ to: "/misija", search: { field: effectiveRouteField }, replace: true }), 2600);
+          return;
+        }
         if (!result?.ok) {
           const errCode = (result as any)?.error ?? "";
           // Game not currently capturable → silently return the player to
