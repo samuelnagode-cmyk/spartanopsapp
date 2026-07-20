@@ -106,11 +106,12 @@ function ArchivePage() {
       <div style={{ maxWidth: 900, margin: "0 auto" }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 24 }}>
           <button
-            onClick={() => navigate({ to: "/join" })}
+            onClick={() => navigate({ to: "/spartanops" })}
             style={{ background: "transparent", border: "none", color: MUTED, fontSize: 12, letterSpacing: "0.14em", textTransform: "uppercase", cursor: "pointer", display: "inline-flex", alignItems: "center", gap: 6 }}
           >
-            <ArrowLeft size={12} /> Back to Live Operations
+            <ArrowLeft size={12} /> Back to Command Center
           </button>
+
           <span style={{ fontFamily: "monospace", fontSize: 10, letterSpacing: "0.24em", color: ACCENT, textTransform: "uppercase", display: "inline-flex", alignItems: "center", gap: 6 }}>
             <ArchiveIcon size={11} /> ARCHIVE
           </span>

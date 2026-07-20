@@ -126,13 +126,22 @@ export const spartanopsAdminPatchState = createServerFn({ method: "POST" })
       patch.node_holders = FREE_NODES;
       patch.winner_team = null;
     }
-    if (data.patch.status === "closed" || data.patch.status === "lobby") {
+    if (data.patch.status === "closed" || data.patch.status === "lobby" || data.patch.status === "ended") {
+      // End / Reset must return every sector to neutral and zero the scores.
+      // Node positions (the coordinates on the map) are untouched — only the
+      // holder (which faction owns each sector) resets, so a new match starts
+      // with the same layout but no captured points.
       await resetMissionRuntime(supabaseAdmin, data.fieldId);
       patch.match_started_at = null;
       patch.team_scores = freshScores(patch.team_scores);
       patch.node_holders = FREE_NODES;
-      patch.winner_team = null;
+      // Preserve an incoming winner_team only when the caller ended the
+      // match (so debrief can announce it). Closed/lobby always clear it.
+      if (data.patch.status !== "ended" || !("winner_team" in data.patch)) {
+        patch.winner_team = data.patch.status === "ended" ? (data.patch.winner_team ?? null) : null;
+      }
     }
+
     const { error } = await supabaseAdmin
       .from("spartanops_game_state")
       .update({ ...patch, updated_at: serverNowIso } as any)

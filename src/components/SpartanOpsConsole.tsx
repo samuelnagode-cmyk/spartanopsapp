@@ -260,14 +260,23 @@ export function SpartanOpsConsole({ fieldId, password }: { fieldId: string; pass
     } as any);
   };
   const stopMatch = async () => {
-    if (!confirm(en ? "Are you sure you want to STOP the mission? (This will end the match and declare a winner)" : "Ali ste prepričani, da želite ZAUSTAVITI misijo? (To bo zaključilo tekmo in razglasilo zmagovalca)")) return;
+    if (!confirm(en ? "Are you sure you want to STOP the mission? (This will end the match, declare a winner and clear all captured sectors)" : "Ali ste prepričani, da želite ZAUSTAVITI misijo? (To bo zaključilo tekmo, razglasilo zmagovalca in počistilo vse zavzete sektorje)")) return;
     const scores = state?.team_scores ?? {};
     const winner = (["modra", "rdeca", "rumena"] as const).reduce<"modra" | "rdeca" | "rumena" | null>((best, team) => {
       if (!best) return team;
       return (scores[team] ?? 0) > (scores[best] ?? 0) ? team : best;
     }, null);
-    await callPatch({ status: "ended", winner_team: winner });
+    // End resets scores and captured sectors to neutral. Node positions on
+    // the map are preserved, so a new game starts with the same layout.
+    await callPatch({
+      status: "ended",
+      winner_team: winner,
+      team_scores: Object.fromEntries(configuredTeams(state?.settings, roster).map((t) => [t, 0])) as Record<string, number>,
+      node_holders: { "1": null, "2": null, "3": null, "4": null, "5": null },
+    } as any);
+    setCaptures([]);
   };
+
   const togglePause = async () => {
     if (!state) return;
     if (state.status === "active") {
