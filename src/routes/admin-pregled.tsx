@@ -223,8 +223,8 @@ export function dtoToRecord(d: LobbyDto): LobbyRecord {
     location: d.location,
     country: d.country ?? undefined,
     city: d.city ?? undefined,
-    password: "", // never leaves the server; client keeps hash-verified state via server fns
     marshalPassword: undefined,
+
     gamemode: d.gamemode,
     mapUrl: d.mapUrl ?? undefined,
     matchDurationMinutes: d.matchDurationMinutes,
@@ -1277,7 +1277,7 @@ function FieldConsole({
       </div>
 
       {!authedPw ? (
-        <FieldPasswordGate label={field.title} expected={field.password} onSuccess={onAuth} />
+        <FieldPasswordGate label={field.title} fieldKey={field.key} onSuccess={onAuth} />
       ) : (
         <SpartanOpsConsole fieldId={field.key} password={authedPw} />
       )}
@@ -1285,20 +1285,32 @@ function FieldConsole({
   );
 }
 
-function FieldPasswordGate({ label, expected, onSuccess }: { label: string; expected: string; onSuccess: (pw: string) => void }) {
+function FieldPasswordGate({ label, fieldKey, onSuccess }: { label: string; fieldKey: string; onSuccess: (pw: string) => void }) {
   const { lang } = useLang();
   const en = lang === "en";
   const [password, setPassword] = useState("");
   const [err, setErr] = useState("");
+  const [busy, setBusy] = useState(false);
+  const verifyFn = useServerFn(spartanopsAdminVerify);
 
-  const submit = (e: React.FormEvent) => {
+  const submit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (password === expected) {
-      onSuccess(password);
-    } else {
-      setErr(en ? "Wrong password." : "Napačno geslo.");
+    if (busy) return;
+    setBusy(true);
+    try {
+      const res = await verifyFn({ data: { tab: fieldKey, password } });
+      if (res?.ok) {
+        onSuccess(password);
+      } else {
+        setErr(en ? "Wrong password." : "Napačno geslo.");
+      }
+    } catch {
+      setErr(en ? "Verification failed." : "Preverjanje ni uspelo.");
+    } finally {
+      setBusy(false);
     }
   };
+
 
   return (
     <div style={{ display: "flex", justifyContent: "center", padding: "40px 16px" }}>
