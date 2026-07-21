@@ -6,15 +6,36 @@ function isField(x: string): boolean {
   return LEGACY_FIELDS.has(x) || UUID_RE.test(x);
 }
 
-const ANCHOR_RADIUS_M = 15;
-// Per-scan accuracy tolerance ceiling. Real-world urban/forest GPS on iPhone can
-// legitimately report 30-60m accuracy at the same physical spot, so we allow the
-// full reported accuracy as buffer up to this cap.
-const MAX_ACCURACY_BUFFER_M = 75;
-// Accept any fix the device is willing to hand us; the distance check below
-// already factors accuracy into the allowed radius, so we no longer hard-reject
-// "loose" fixes that would otherwise trigger a bogus "enable GPS" prompt.
-const MAX_ACCEPTED_ACCURACY_M = 200;
+async function verifyMarshalAccess(fieldId: string, password: string): Promise<boolean> {
+  if (!password || password.length > 200) return false;
+  const master = process.env.SPARTANOPS_MASTER_PASSWORD;
+  if (master && password === master) return true;
+
+  const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+  const { data: legacyOk } = await supabaseAdmin.rpc("verify_field_password" as any, {
+    p_field_id: fieldId,
+    p_password: password,
+  });
+  if (legacyOk === true) return true;
+
+  if (UUID_RE.test(fieldId)) {
+    const { data: lobbyOk } = await supabaseAdmin.rpc("spartanops_verify_lobby_password" as any, {
+      p_lobby_id: fieldId,
+      p_password: password,
+      p_kind: "marshal",
+    });
+    if (lobbyOk === true) return true;
+  }
+
+  return false;
+}
+
+const ANCHOR_RADIUS_M = 10;
+// Keep the strict physical radius, but use the browser's raw reported accuracy
+// as tolerance. iOS/Android can hand back approximate fixes hundreds of metres
+// away; clamping that value before validation creates false Spartacus flags.
+const MAX_ACCURACY_BUFFER_M = 1000;
+const MAX_ACCEPTED_ACCURACY_M = 1200;
 
 function haversineMeters(a: { lat: number; lng: number }, b: { lat: number; lng: number }): number {
   const R = 6371000;
@@ -27,9 +48,7 @@ function haversineMeters(a: { lat: number; lng: number }, b: { lat: number; lng:
 
 /**
  * Spartacus-aware capture. Behaviour:
- *  - Reads game_state.settings.spartacusEnabled. If disabled, delegates to the
- *    normal spartanops_apply_capture RPC (unchanged behaviour).
- *  - If enabled and no lat/lng supplied → returns { ok:false, error:'gps_required' }.
+ *  - If no lat/lng supplied → returns { ok:false, error:'gps_required' }.
  *  - If no anchor exists yet for (field, point), the current scan anchors it and
  *    proceeds as a normal capture.
  *  - If an anchor exists and distance is inside the operational radius plus a
@@ -45,7 +64,7 @@ export const spartanopsSpartacusCapture = createServerFn({ method: "POST" })
     sessionId: String(d?.sessionId ?? ""),
     lat: typeof d?.lat === "number" && isFinite(d.lat) ? d.lat : null,
     lng: typeof d?.lng === "number" && isFinite(d.lng) ? d.lng : null,
-    accuracy: typeof d?.accuracy === "number" && isFinite(d.accuracy) ? Math.max(0, Math.min(MAX_ACCURACY_BUFFER_M, d.accuracy)) : 0,
+    accuracy: typeof d?.accuracy === "number" && isFinite(d.accuracy) ? Math.max(0, Math.min(MAX_ACCEPTED_ACCURACY_M, d.accuracy)) : 0,
   }))
   .handler(async ({ data }) => {
     if (!isField(data.fieldId)) throw new Error("Invalid field");
@@ -192,16 +211,14 @@ export const spartanopsSpartacusReview = createServerFn({ method: "POST" })
     if (!data.password || data.password.length > 200) throw new Error("Invalid password");
 
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const { data: ok } = await supabaseAdmin.rpc("verify_field_password" as any, {
-      p_field_id: data.fieldId,
-      p_password: data.password,
-    });
-    if (ok !== true) throw new Error("Unauthorized");
+    const ok = await verifyMarshalAccess(data.fieldId, data.password);
+    if (!ok) throw new Error("Unauthorized");
 
     const { data: cap } = await supabaseAdmin
       .from("spartanops_captures")
       .select("id, field_id, point_number, team, player_checkin_id, player_callsign")
       .eq("id", data.captureId)
+      .eq("field_id", data.fieldId)
       .maybeSingle();
     if (!cap) throw new Error("Capture not found");
 
@@ -306,11 +323,17 @@ export const spartanopsListSuspiciousCaptures = createServerFn({ method: "POST" 
   .handler(async ({ data }) => {
     if (!isField(data.fieldId)) throw new Error("Invalid field");
     if (!data.password || data.password.length > 200) throw new Error("Invalid password");
+    const ok = await verifyMarshalAccess(data.fieldId, data.password);
+    if (!ok) throw new Error("Unauthorized");
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const { data: rows, error } = await supabaseAdmin.rpc("spartanops_get_suspicious_captures" as any, {
-      p_field_id: data.fieldId,
-      p_marshal_password: data.password,
-    });
+    const { data: rows, error } = await supabaseAdmin
+      .from("spartanops_captures")
+      .select("id, point_number, team, player_callsign, latitude, longitude, distance_m, captured_at, spartacus_status")
+      .eq("field_id", data.fieldId)
+      .eq("suspicious", true)
+      .eq("spartacus_status", "pending")
+      .order("captured_at", { ascending: false })
+      .limit(50);
     if (error) throw new Error(error.message);
     return { ok: true as const, rows: (rows ?? []) as any[] };
   });
