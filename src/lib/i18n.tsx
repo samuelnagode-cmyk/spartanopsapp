@@ -24,10 +24,7 @@ export const dict: Dict = {
 
   // Capture Success Popup
   "captureSuccessTitle": { sl: "SEKTOR ZAVZET", en: "SECTOR SECURED" },
-  "captureSuccessSubtitle": {
-    sl: "Točke se že pripisujejo vaši ekipi.",
-    en: "Points are already accumulating for your team.",
-  },
+  "captureSuccessSubtitle": { sl: "", en: "" },
   "captureAckBtn": { sl: "POTRDI IN NAZAJ V HUD", en: "ACKNOWLEDGE & RETURN TO HUD" },
   "captureTelemetryNote": {
     sl: "// SEKTOR ZAVZET. Telemetrija se prenaša v ozadju. Lahko se vrnete na bojišče.",

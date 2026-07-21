@@ -12,6 +12,7 @@ import { OfflineBanner } from "@/components/OfflineBanner";
 import { TacticalCompass } from "@/components/TacticalCompass";
 import { Crosshair, Shield, ArrowUp } from "lucide-react";
 import { useLang } from "@/lib/i18n";
+import landingView from "@/assets/landing-view.webp.asset.json";
 
 export const Route = createFileRoute("/misija")({
   head: () => ({
@@ -23,6 +24,7 @@ export const Route = createFileRoute("/misija")({
       point: typeof s.point === "string" || typeof s.point === "number" ? String(s.point) : undefined,
       preview: s.preview === "1" || s.preview === 1 || s.preview === true || s.preview === "true" ? true : false,
       marshal: s.marshal === "1" || s.marshal === 1 || s.marshal === true || s.marshal === "true" ? true : false,
+      preset: typeof s.preset === "string" ? s.preset : undefined,
     };
   },
 
@@ -108,6 +110,7 @@ const RANK_OPTIONS = EXPERIENCE_LEVELS.map((l) => ({
 }));
 
 const SESSION_KEY = "spartanops:session_id";
+const GPS_FIX_KEY = "spartanops:gps_fix";
 
 type RespawnSettings = {
   enabled: boolean;
@@ -229,10 +232,60 @@ function toDbField(raw: string): string {
   return v;
 }
 
+function makePreviewRoster(field: string, sessionId: string): Checkin[] {
+  return [
+    { id: `ghost-${sessionId}`, session_id: sessionId, callsign: "Kozjak_Marko", club: "Zeleni Raj", experience_level: "zelo_dobro", assigned_team: "modra", team_changed_flag: false, first_name: "Marko", last_initial: "K", death_count: 1, respawn_unlock_at: null },
+    { id: `${field}-vipera`, callsign: "Vipera_07", club: "Spartan", experience_level: "dobro", assigned_team: "modra", team_changed_flag: false, first_name: "Ana", last_initial: "V", death_count: 3, respawn_unlock_at: new Date(Date.now() + 47_000).toISOString() },
+    { id: `${field}-falcon`, callsign: "Ghost_Falcon", club: "Raven", experience_level: "zelo_dobro", assigned_team: "rdeca", team_changed_flag: false, first_name: "Tim", last_initial: "F", death_count: 2, respawn_unlock_at: null },
+    { id: `${field}-nightshade`, callsign: "Nightshade", club: null, experience_level: "slabo", assigned_team: "rdeca", team_changed_flag: false, first_name: "Nika", last_initial: "N", death_count: 5, respawn_unlock_at: new Date(Date.now() + 22_000).toISOString() },
+  ];
+}
+
+function makePreviewState(field: string, preset?: string): GameState {
+  const now = Date.now();
+  const active = preset === "hud" || preset === "paused";
+  const prestart = preset === "prestart";
+  return {
+    field_id: field,
+    field_label: "Zeleni Raj",
+    status: preset === "paused" ? "paused" : active || prestart ? "active" : "lobby",
+    team_selection_open: true,
+    current_polygon_name: "Zeleni Raj",
+    event_name: "Operation Fallen Angel",
+    gamemode: "domination",
+    compressed_map_url: landingView.url,
+    countdown_seconds: 60,
+    match_started_at: prestart ? new Date(now + 60_000).toISOString() : active ? new Date(now - 7 * 60_000).toISOString() : null,
+    match_duration_minutes: 40,
+    team_scores: { modra: 7, rdeca: 4, rumena: 0 },
+    node_holders: { "1": "modra", "2": "rdeca", "3": null, "4": "modra", "5": null },
+    node_positions: { "1": { x: 21, y: 28 }, "2": { x: 70, y: 25 }, "3": { x: 50, y: 50 }, "4": { x: 30, y: 72 }, "5": { x: 76, y: 74 } },
+    point_target: 200,
+    winner_team: null,
+    settings: {
+      missionName: "Operation Fallen Angel",
+      missionDescription: "Secure and hold ALPHA and DELTA for a minimum of 6 minutes. Bravo team defends BETA at all costs.",
+      teamCount: 2,
+      teamNames: { modra: "ALPHA", rdeca: "BRAVO" },
+      respawn: { enabled: true, mode: "linear", linearSec: 60, dynStartMin: 1, dynEndMin: 3, visibility: "all", publicDeaths: true },
+      capturePointsScoring: true,
+    },
+  };
+}
+
+function makePreviewCaptures(): Capture[] {
+  const base = Date.now() - 6 * 60_000;
+  return [
+    { id: "preview-c1", point_number: 1, team: "modra", player_callsign: "Kozjak_Marko", captured_at: new Date(base).toISOString() },
+    { id: "preview-c2", point_number: 2, team: "rdeca", player_callsign: "Ghost_Falcon", captured_at: new Date(base + 75_000).toISOString() },
+    { id: "preview-c3", point_number: 4, team: "modra", player_callsign: "Vipera_07", captured_at: new Date(base + 140_000).toISOString() },
+  ];
+}
+
 function MisijaPage() {
   const { lang } = useLang();
   const en = lang === "en";
-  const { field: rawField, point: targetPoint, preview, marshal: marshalMode } = Route.useSearch();
+  const { field: rawField, point: targetPoint, preview, marshal: marshalMode, preset } = Route.useSearch();
   const field = useMemo(() => toDbField(rawField), [rawField]);
   const ackFn = useServerFn(spartanopsAckTeamChange);
   const selectTeamFn = useServerFn(spartanopsSelectTeam);
@@ -291,6 +344,22 @@ function MisijaPage() {
   }, [preview]);
 
   useEffect(() => {
+    if (!preview || !sessionId || !preset) return;
+    const previewRoster = makePreviewRoster(field, sessionId);
+    const primary = previewRoster[0];
+    setState(makePreviewState(field, preset));
+    setCaptures(makePreviewCaptures());
+    setRoster(previewRoster);
+    if (preset === "registration") {
+      setGhostMe(null);
+      setShowTeamSelect(false);
+      return;
+    }
+    setGhostMe({ ...primary, assigned_team: preset === "team" ? "none" : "modra" });
+    setShowTeamSelect(preset === "team");
+  }, [preview, preset, field, sessionId]);
+
+  useEffect(() => {
     if (!sessionId || preview) return;
     const key = respawnLockKey(field, sessionId);
     const readLocal = () => {
@@ -321,7 +390,7 @@ function MisijaPage() {
     readLocal();
     syncRemote();
     const localTimer = setInterval(readLocal, 1000);
-    const remoteTimer = setInterval(syncRemote, 5000);
+    const remoteTimer = setInterval(syncRemote, 1500);
     window.addEventListener("focus", syncRemote);
     window.addEventListener("pageshow", syncRemote);
     return () => {
@@ -337,6 +406,7 @@ function MisijaPage() {
   // Supabase table has no row — we synthesize a lobby state from localStorage
   // so the player is never stuck on "Povezovanje...".
   useEffect(() => {
+    if (preview && preset) return;
     let alive = true;
 
     const synthesizeLocal = (): GameState | null => {
@@ -390,7 +460,7 @@ function MisijaPage() {
     const timeout = setTimeout(() => {
       if (!alive) return;
       setState((prev) => prev ?? synthesizeLocal());
-    }, 1000);
+    }, 2500);
 
     const ch = supabase
       .channel(`misija_state_${field}`)
@@ -410,10 +480,11 @@ function MisijaPage() {
       clearTimeout(timeout);
       supabase.removeChannel(ch);
     };
-  }, [field]);
+  }, [field, preview, preset]);
 
   // Load + subscribe roster (per field)
   useEffect(() => {
+    if (preview && preset) return;
     let alive = true;
     const load = async () => {
       if (!sessionId) return;
@@ -426,14 +497,29 @@ function MisijaPage() {
       .on(
         "postgres_changes",
         { event: "*", schema: "public", table: "spartanops_checkins", filter: `field_id=eq.${field}` },
-        load,
+        (payload: any) => {
+          const next = payload.new as Checkin | undefined;
+          const old = payload.old as Partial<Checkin> | undefined;
+          if (payload.eventType === "DELETE" && old?.id) {
+            setRoster((items) => items.filter((r) => r.id !== old.id));
+          } else if (next?.id) {
+            setRoster((items) => {
+              const exists = items.some((r) => r.id === next.id);
+              return exists ? items.map((r) => (r.id === next.id ? { ...r, ...next } : r)) : [...items, next];
+            });
+            if (next.session_id === sessionId) {
+              setDbMe((prev) => (prev ? { ...prev, ...next } : next));
+            }
+          }
+          window.setTimeout(load, 150);
+        },
       )
       .subscribe();
     return () => {
       alive = false;
       supabase.removeChannel(ch);
     };
-  }, [field, sessionId, getParticipantRosterFn]);
+  }, [field, sessionId, getParticipantRosterFn, preview, preset]);
 
   // Derive my checkin (only for real DB player; ghost is local). Fetch PII
   // (first_name / last_initial / club) separately via a server function since
@@ -442,7 +528,7 @@ function MisijaPage() {
   const ackWarningFn = useServerFn(spartanopsAcknowledgeWarning);
 
   useEffect(() => {
-    if (preview) return;
+    if (preview && preset) return;
     let cancelled = false;
     (async () => {
       try {
@@ -461,9 +547,16 @@ function MisijaPage() {
     return () => { cancelled = true; };
   }, [roster, sessionId, preview, field, getMyCheckinFn]);
 
+  useEffect(() => {
+    if (preview || !dbMe?.id) return;
+    const fresh = roster.find((r) => r.id === dbMe.id);
+    if (fresh) setDbMe((prev) => (prev ? { ...prev, ...fresh } : prev));
+  }, [roster, preview, dbMe?.id]);
+
 
   // Load + subscribe captures (per field)
   useEffect(() => {
+    if (preview) return;
     let alive = true;
     const load = async () => {
       const { data } = await supabase
@@ -488,7 +581,7 @@ function MisijaPage() {
       alive = false;
       supabase.removeChannel(ch);
     };
-  }, [field]);
+  }, [field, preview, preset]);
 
   // Bridge lobby / match transitions to the ambient audio provider so the
   // lobby track plays on entry and fades out when the match actually begins.
@@ -1031,8 +1124,11 @@ function TelemetryStatusStrip({ en }: { en: boolean }) {
   const enable = () => {
     if (typeof navigator === "undefined" || !navigator.geolocation) return;
     navigator.geolocation.getCurrentPosition(
-      () => {
-        try { localStorage.setItem(GPS_OK_KEY, "1"); } catch { /* ignore */ }
+      (pos) => {
+        try {
+          localStorage.setItem(GPS_OK_KEY, "1");
+          localStorage.setItem(GPS_FIX_KEY, JSON.stringify({ lat: pos.coords.latitude, lng: pos.coords.longitude, at: Date.now() }));
+        } catch { /* ignore */ }
         setState("granted");
       },
       () => setState("denied"),
@@ -1135,8 +1231,11 @@ function SpartacusConsentBlock({ en, onClearedChange }: { en: boolean; onCleared
       return;
     }
     navigator.geolocation.getCurrentPosition(
-      () => {
-        try { localStorage.setItem(GPS_OK_KEY, "1"); } catch { /* ignore */ }
+      (pos) => {
+        try {
+          localStorage.setItem(GPS_OK_KEY, "1");
+          localStorage.setItem(GPS_FIX_KEY, JSON.stringify({ lat: pos.coords.latitude, lng: pos.coords.longitude, at: Date.now() }));
+        } catch { /* ignore */ }
         setStatus("granted");
         onClearedChange(true);
       },
@@ -1946,10 +2045,26 @@ function NodeLabel({ text, side }: { text: string; side: LabelSide }) {
 function TacticalMapContent({ state, en, nodeHoldersOverride }: { state: GameState; en: boolean; nodeHoldersOverride?: Record<string, string | null> }) {
   const positions = state.node_positions ?? {};
   const labelSides = useMemo(() => computeLabelPlacements(positions), [positions]);
+  const [localMapUrl, setLocalMapUrl] = useState<string | null>(null);
+  useEffect(() => {
+    if (state.compressed_map_url || !state.field_id) {
+      setLocalMapUrl(null);
+      return;
+    }
+    try {
+      const raw = localStorage.getItem("spartanops.lobbies.v1");
+      const list = raw ? (JSON.parse(raw) as Array<any>) : [];
+      const match = list.find((x) => x?.id === state.field_id);
+      setLocalMapUrl(typeof match?.mapUrl === "string" && match.mapUrl ? match.mapUrl : null);
+    } catch {
+      setLocalMapUrl(null);
+    }
+  }, [state.compressed_map_url, state.field_id]);
   const startMs = state.match_started_at ? new Date(state.match_started_at).getTime() : null;
   const mapIsLive = (state.status === "active" || state.status === "paused") && !!startMs;
   const nodeHolders = nodeHoldersOverride ?? state.node_holders ?? FREE_NODES;
-  if (!state.compressed_map_url) {
+  const mapUrl = state.compressed_map_url || localMapUrl;
+  if (!mapUrl) {
     return (
       <div style={{ paddingTop: "60%", background: "#1c1f17", position: "relative" }}>
         <p
@@ -1963,7 +2078,7 @@ function TacticalMapContent({ state, en, nodeHoldersOverride }: { state: GameSta
   }
   return (
     <div style={{ position: "relative" }}>
-      <img src={state.compressed_map_url} alt="Map" className="w-full block" loading="eager" fetchPriority="high" decoding="async" />
+      <img src={mapUrl} alt="Map" className="w-full block" loading="eager" fetchPriority="high" decoding="async" />
       {[1, 2, 3, 4, 5].map((n) => {
         const p = positions[String(n)];
         if (!p) return null;
