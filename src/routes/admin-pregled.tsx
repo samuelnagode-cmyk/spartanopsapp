@@ -1134,15 +1134,17 @@ function FieldsWelcome({
   onOpenLobby: (id: string) => void;
   onDecommissionLobby: (id: string) => void;
 }) {
+  const { lang } = useLang();
+  const en = lang === "en";
   return (
     <>
       {/* Deployment onboarding */}
       <div style={{ textAlign: "center", maxWidth: 620, margin: "0 auto 28px" }}>
         <p style={{ fontFamily: "monospace", fontSize: 11, letterSpacing: "0.30em", color: ACCENT, marginBottom: 10, textTransform: "uppercase" }}>
-          // CREATE YOUR OPERATIONAL PLAN
+          {en ? "// CREATE YOUR OPERATIONAL PLAN" : "// USTVARITE SVOJ OPERATIVNI NAČRT"}
         </p>
         <p style={{ fontSize: 13, color: MUTED, lineHeight: 1.7 }}>
-          Create a new mission from scratch or resume an existing one.
+          {en ? "Create a new mission from scratch or resume an existing one." : "Ustvarite novo misijo iz nič ali nadaljujte z obstoječo."}
         </p>
       </div>
 
@@ -1157,7 +1159,7 @@ function FieldsWelcome({
             display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 10,
           }}
         >
-          [ + CREATE NEW MISSION ]
+          {en ? "[ + CREATE NEW MISSION ]" : "[ + USTVARI NOVO MISIJO ]"}
         </button>
         <button
           onClick={onUseExisting}
@@ -1172,16 +1174,17 @@ function FieldsWelcome({
         >
           <span>[</span>
           <ShieldCheck size={14} strokeWidth={1.8} />
-          <span>USE EXISTING MISSION ]</span>
+          <span>{en ? "USE EXISTING MISSION ]" : "UPORABI OBSTOJEČO MISIJO ]"}</span>
         </button>
       </div>
 
 
-      {/* Existing fields list */}
+      {/* Existing missions list */}
       <div id="fields-list" style={{ marginBottom: 40 }}>
         <p style={{ fontFamily: "monospace", fontSize: 10, letterSpacing: "0.30em", color: MUTED, marginBottom: 14, textTransform: "uppercase" }}>
-          // ACTIVE FIELDS
+          {en ? "// ACTIVE MISSIONS" : "// AKTIVNE MISIJE"}
         </p>
+
         {!lobbiesLoaded ? (
           <div style={{ padding: "40px 20px", textAlign: "center", border: `1px dashed rgba(236,227,196,0.15)`, color: MUTED, fontSize: 13, fontStyle: "italic", letterSpacing: "0.14em", textTransform: "uppercase", fontFamily: "monospace" }}>
             ⟳ Loading active missions…
