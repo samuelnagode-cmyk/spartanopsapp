@@ -69,6 +69,7 @@ function JoinPage() {
           .map(dtoToRecord)
           .filter((l) => l.id !== SYSTEM_FIELD.id)
           .sort((a, b) => b.createdAt - a.createdAt);
+        try { localStorage.setItem("spartanops.lobbies.v1", JSON.stringify(records)); } catch { /* ignore */ }
         setLobbies(records);
         return records;
       } catch (e) {
@@ -205,6 +206,9 @@ function JoinPage() {
 }
 
 function LobbyCard({ lobby, isSystem, onJoin }: { lobby: LobbyRecord; isSystem: boolean; onJoin: () => void }) {
+  const city = lobby.city || (lobby.location?.split(",")[0]?.trim() ?? "");
+  const country = lobby.country || (lobby.location?.split(",")[1]?.trim() ?? "");
+  const locationText = [city, country].filter(Boolean).join(" ") || lobby.location || "—";
   return (
     <div style={{
       background: "linear-gradient(180deg, rgba(224,176,78,0.05) 0%, rgba(0,0,0,0) 60%), " + PANEL,
@@ -212,7 +216,7 @@ function LobbyCard({ lobby, isSystem, onJoin }: { lobby: LobbyRecord; isSystem: 
     }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8, gap: 12, flexWrap: "wrap" }}>
         <p style={{ fontFamily: "'Michroma', monospace", fontSize: 13, letterSpacing: "0.14em", color: ACCENT, textTransform: "uppercase", lineHeight: 1.45 }}>
-          MISSION: {lobby.eventName || lobby.fieldName} at airsoft field {lobby.fieldName}
+          MISSION: '{lobby.eventName || lobby.fieldName}'
         </p>
         <span style={{
           fontFamily: "monospace", fontSize: 10, letterSpacing: "0.20em",
@@ -223,8 +227,11 @@ function LobbyCard({ lobby, isSystem, onJoin }: { lobby: LobbyRecord; isSystem: 
           Active {isSystem ? "· System" : ""}
         </span>
       </div>
+      <p style={{ fontFamily: "monospace", fontSize: 10.5, color: MUTED, letterSpacing: "0.14em", marginBottom: 8, textTransform: "uppercase" }}>
+        At airsoft field {lobby.fieldName}
+      </p>
       <p style={{ fontSize: 12.5, color: "rgba(236,227,196,0.85)", marginBottom: 12, display: "inline-flex", alignItems: "center", gap: 6 }}>
-        <MapPin size={12} style={{ opacity: 0.7 }} /> {lobby.location}
+        <MapPin size={12} style={{ opacity: 0.7 }} /> Location: {locationText}
       </p>
       <button
         onClick={onJoin}

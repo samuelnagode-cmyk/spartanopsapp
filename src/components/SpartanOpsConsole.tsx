@@ -194,6 +194,7 @@ export function SpartanOpsConsole({ fieldId, password }: { fieldId: string; pass
           if (p.new) {
             const next = p.new as unknown as GameState;
             setState(next);
+            setMapUrl(next.compressed_map_url ?? "");
             if (next.match_started_at) syncServerClock().catch(() => {});
           }
         })
@@ -1167,8 +1168,8 @@ export function SpartacusConfig({ settings, onPatch, en }: { settings: GameSetti
       </div>
       <p style={{ fontSize: 11, color: INK, opacity: 0.75, fontFamily: "monospace", lineHeight: 1.7, marginBottom: 14 }}>
         {en
-          ? "Anti-spoofing protocol engaged. The very first scan of a physical QR code anchors its tactical coordinates. Subsequent scans must fall within a 10-meter operational radius. If a player attempts to scan a photo of the QR from a safe zone or unauthorized location, the system instantly flags the breach on the Marshal's dashboard. The Marshal maintains full command over the incident and can choose to override and approve the capture, dismiss the warning, or penalize the offending player."
-          : "Protokol proti goljufanju je aktiviran. Prvi sken fizične QR kode usidra njene taktične koordinate v sistem. Vsi naslednji skeni morajo biti znotraj 10-metrskega delovnega radija. Če igralec poskuša skenirati fotografijo QR kode iz varne cone ali druge nepooblaščene lokacije, sistem nemudoma sproži alarm na maršalovi nadzorni plošči. Maršal ohranja popolno kontrolo nad incidentom in se lahko odloči, da opozorilo prezre in odobri zavzetje, ali pa igralca kaznuje."}
+          ? "Anti-spoofing protocol engaged. The very first scan of a physical QR code anchors its tactical coordinates. Subsequent scans must fall within the operational objective radius, with GPS accuracy tolerance for field devices. If a player attempts to scan a photo of the QR from a safe zone or unauthorized location, the system flags the breach on the Marshal's dashboard. The Marshal maintains full command over the incident and can choose to override and approve the capture, dismiss the warning, or penalize the offending player."
+          : "Protokol proti goljufanju je aktiviran. Prvi sken fizične QR kode usidra njene taktične koordinate v sistem. Vsi naslednji skeni morajo biti znotraj delovnega radija cilja, z upoštevanjem GPS tolerance terenskih naprav. Če igralec poskuša skenirati fotografijo QR kode iz varne cone ali druge nepooblaščene lokacije, sistem sproži alarm na maršalovi nadzorni plošči. Maršal ohranja popolno kontrolo nad incidentom in se lahko odloči, da opozorilo prezre in odobri zavzetje, ali pa igralca kaznuje."}
       </p>
       <button
         type="button"
@@ -1365,10 +1366,13 @@ export function SpartacusAlerts({ fieldId, password, en }: { fieldId: string; pa
   const [busy, setBusy] = useState<string | null>(null);
   const reviewFn = useServerFn(spartanopsSpartacusReview);
   const seen = useRef<Set<string>>(new Set());
+  const initialized = useRef(false);
 
   const listSuspiciousFn = useServerFn(spartanopsListSuspiciousCaptures);
   useEffect(() => {
     let alive = true;
+    seen.current.clear();
+    initialized.current = false;
     const load = async () => {
       if (!password) return;
       try {
@@ -1376,19 +1380,19 @@ export function SpartacusAlerts({ fieldId, password, en }: { fieldId: string; pa
         if (!alive) return;
         const list = ((res?.rows ?? []) as unknown as SuspiciousRow[]);
         setRows(list);
+        if (initialized.current && list.some((r) => !seen.current.has(r.id))) playSpartacusBeep();
         list.forEach((r) => seen.current.add(r.id));
+        initialized.current = true;
       } catch { /* ignore */ }
     };
     load();
+    const interval = window.setInterval(load, 1500);
 
     const ch = supabase
       .channel(`spartacus_alerts_${fieldId}`)
       .on("postgres_changes", { event: "INSERT", schema: "public", table: "spartanops_captures", filter: `field_id=eq.${fieldId}` }, (p) => {
         const n = p.new as any;
-        if (!n?.suspicious || n?.spartacus_status !== "pending") return;
-        if (seen.current.has(n.id)) return;
-        seen.current.add(n.id);
-        playSpartacusBeep();
+        if (n?.id && seen.current.has(n.id)) return;
         load();
       })
       .on("postgres_changes", { event: "UPDATE", schema: "public", table: "spartanops_captures", filter: `field_id=eq.${fieldId}` }, (p) => {
@@ -1400,8 +1404,8 @@ export function SpartacusAlerts({ fieldId, password, en }: { fieldId: string; pa
         }
       })
       .subscribe();
-    return () => { alive = false; supabase.removeChannel(ch); };
-  }, [fieldId, password]);
+    return () => { alive = false; window.clearInterval(interval); supabase.removeChannel(ch); };
+  }, [fieldId, password, listSuspiciousFn]);
 
   const decide = async (id: string, decision: "approve" | "reject" | "ban" | "suspend" | "warning") => {
     if (busy) return;
@@ -1411,8 +1415,8 @@ export function SpartacusAlerts({ fieldId, password, en }: { fieldId: string; pa
     try {
       const warningMessage = decision === "warning"
         ? (en
-            ? "The Marshal has flagged suspicious activity on your last scan. This is an official warning. Please respect fair-play rules and only scan codes within the 10-metre objective radius."
-            : "Maršal je zaznal sumljivo aktivnost pri tvojem zadnjem skenu. To je uradno opozorilo. Prosimo, upoštevaj pravila fair-playa in skeniraj kode le v določenem 10-metrskem območju cilja.")
+            ? "The Marshal has flagged suspicious activity on your last scan. This is an official warning. Please respect fair-play rules and only scan codes inside the objective area."
+            : "Maršal je zaznal sumljivo aktivnost pri tvojem zadnjem skenu. To je uradno opozorilo. Prosimo, upoštevaj pravila fair-playa in skeniraj kode samo znotraj območja cilja.")
         : "";
       await reviewFn({ data: { captureId: id, decision, fieldId, password, suspendMinutes: 5, warningMessage } as any });
       setRows((prev) => prev.filter((r) => r.id !== id));

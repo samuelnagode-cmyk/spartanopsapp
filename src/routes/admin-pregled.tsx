@@ -1224,16 +1224,16 @@ function FieldsWelcome({
                       </span>
                     </div>
                     <p style={{ fontFamily: "'Michroma', monospace", fontSize: 12, letterSpacing: "0.14em", color: ACCENT, marginBottom: 8, textTransform: "uppercase", lineHeight: 1.55 }}>
-                      Mission: {[l.eventName || l.fieldName, city, country].filter(Boolean).join(" ")}
-                    </p>
-                    <p style={{ fontSize: 12.5, color: "rgba(236,227,196,0.85)", lineHeight: 1.6 }}>
-                      {[city, country].filter(Boolean).join(", ") || l.location}
+                      MISSION: '{l.eventName || l.fieldName}'
                     </p>
                     {l.fieldName && (
                       <p style={{ fontFamily: "monospace", fontSize: 10.5, color: MUTED, letterSpacing: "0.14em", marginTop: 6, textTransform: "uppercase" }}>
-                        // at airsoft field {l.fieldName}
+                        At airsoft field {l.fieldName}
                       </p>
                     )}
+                    <p style={{ fontSize: 12.5, color: "rgba(236,227,196,0.85)", lineHeight: 1.6, marginTop: 8 }}>
+                      Location: {[city, country].filter(Boolean).join(" ") || l.location || "—"}
+                    </p>
                   </button>
                 </div>
               );
@@ -2071,7 +2071,7 @@ function MarshalLobbyConsole({ lobby: initialLobby, marshalPassword, lobbyPasswo
 
       {/* LIVE TACTICAL MAP + EVENT LOG (visible whenever we have live game state) */}
       {gameState && (
-        <LiveMatchView state={gameState} captures={captures as any} now={now} en={en} />
+        <LiveMatchView state={gameState} captures={captures as any} now={now} en={en} mapUrl={lobby.mapUrl || undefined} />
       )}
 
 

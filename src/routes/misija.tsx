@@ -7,6 +7,7 @@ import { spartanopsAckTeamChange, spartanopsSelectTeam } from "@/lib/spartanops-
 import { spartanopsUpsertCheckin, spartanopsGetMyCheckin, spartanopsDeleteMyCheckin, spartanopsGetParticipantRoster, spartanopsGetServerTime, spartanopsGetRespawnLock } from "@/lib/spartanops-checkin.functions";
 import { spartanopsAcknowledgeWarning } from "@/lib/spartanops-spartacus.functions";
 import { SpartacusAlerts } from "@/components/SpartanOpsConsole";
+import { listPublishedLobbies } from "@/lib/spartanops-lobbies.functions";
 
 import { OfflineBanner } from "@/components/OfflineBanner";
 import { TacticalCompass } from "@/components/TacticalCompass";
@@ -292,6 +293,7 @@ function MisijaPage() {
   const getParticipantRosterFn = useServerFn(spartanopsGetParticipantRoster);
   const getServerTimeFn = useServerFn(spartanopsGetServerTime);
   const getRespawnLockFn = useServerFn(spartanopsGetRespawnLock);
+  const listPublishedLobbiesFn = useServerFn(listPublishedLobbies);
 
   const [sessionId, setSessionId] = useState("");
   const [state, setState] = useState<GameState | null>(null);
@@ -448,8 +450,19 @@ function MisijaPage() {
         .eq("field_id", field)
         .maybeSingle();
       if (alive && data) {
-        setState(data as unknown as GameState);
+        const liveState = data as unknown as GameState;
+        setState(liveState);
         if ((data as any).match_started_at) syncServerClock().catch(() => {});
+        if (!liveState.compressed_map_url) {
+          try {
+            const dtos = await listPublishedLobbiesFn();
+            const match = dtos.find((l: any) => l.id === field);
+            if (match?.mapUrl && alive) {
+              try { localStorage.setItem("spartanops.lobbies.v1", JSON.stringify(dtos)); } catch { /* ignore */ }
+              setState((prev) => prev && prev.field_id === field && !prev.compressed_map_url ? { ...prev, compressed_map_url: match.mapUrl } : prev);
+            }
+          } catch { /* keep live state as-is */ }
+        }
       }
     };
     load();
@@ -480,7 +493,7 @@ function MisijaPage() {
       clearTimeout(timeout);
       supabase.removeChannel(ch);
     };
-  }, [field, preview, preset]);
+  }, [field, preview, preset, listPublishedLobbiesFn]);
 
   // Load + subscribe roster (per field)
   useEffect(() => {
@@ -675,7 +688,7 @@ function MisijaPage() {
   // Fullscreen forced-team-change interrupt (must be acknowledged)
   const teamColorNow = me.assigned_team !== "none" ? TEAM_COLOR[me.assigned_team] : "#ff5050";
   const teamLabelNow = me.assigned_team !== "none"
-    ? (en ? TEAM_LABEL_EN[me.assigned_team] : TEAM_LABEL[me.assigned_team])
+    ? teamName(me.assigned_team, state.settings, en)
     : "";
   const colorWordEn = me.assigned_team === "modra" ? "BLUE" : me.assigned_team === "rdeca" ? "RED" : me.assigned_team === "rumena" ? "YELLOW" : "";
   const reassignedBanner = me.team_changed_flag ? (
@@ -692,7 +705,7 @@ function MisijaPage() {
             <>
               Marshal has decided to balance the teams and placed you into{" "}
               <strong style={{ color: teamColorNow }}>{teamLabelNow} {colorWordEn && `(${colorWordEn})`}</strong>{" "}
-              team. From now on, you hold positions and capture points for this faction.
+              team. From now on, you hold position and capture points for this team.
             </>
           ) : (
             <>
@@ -1897,7 +1910,7 @@ function PreMatchCountdown({ seconds, polygon, eventName, gamemode, pointTarget,
   const description = (settings as any)?.missionDescription as string | undefined;
   const configuredMission = (settings as any)?.missionName as string | undefined;
   const missionName = (eventName?.trim() || configuredMission?.trim() || polygon?.trim() || (en ? "ACTIVE MISSION" : "AKTIVNA MISIJA")).toUpperCase();
-  const fieldName = polygon?.trim() && polygon.trim().toUpperCase() !== missionName ? polygon.trim().toUpperCase() : null;
+  const fieldName = (polygon?.trim() || state?.field_label?.trim() || "").toUpperCase();
   const duration = state?.match_duration_minutes ?? 0;
   return (
     <div
@@ -1905,7 +1918,7 @@ function PreMatchCountdown({ seconds, polygon, eventName, gamemode, pointTarget,
       style={{ background: "radial-gradient(circle at 50% 0%, rgba(224,176,78,0.14), rgba(11,13,9,0.99) 34%, #050604 100%)", color: INK, paddingTop: 112, paddingBottom: 40 }}
     >
       <p style={{ color: ACCENT, fontFamily: "monospace", fontSize: 11, letterSpacing: "0.32em", textTransform: "uppercase", marginBottom: 8 }}>
-        SpartanOps
+        SPARTANOPS {modeLabel} MODE
       </p>
       <h2
         style={{
@@ -1919,11 +1932,11 @@ function PreMatchCountdown({ seconds, polygon, eventName, gamemode, pointTarget,
           textTransform: "uppercase",
         }}
       >
-        MISSION: {missionName}
+        MISSION:<br />{missionName}
       </h2>
       {fieldName && (
         <p className="font-mono uppercase mt-2" style={{ color: MUTED, fontSize: 10, letterSpacing: "0.22em" }}>
-          {en ? "FIELD" : "POLIGON"}: {fieldName} · {modeLabel}
+          {fieldName}
         </p>
       )}
       <p className="font-mono text-[10px] uppercase tracking-[0.2em] mt-5" style={{ color: MUTED }}>
@@ -2341,13 +2354,7 @@ function TacticalMap({ state, captures, en, hasPositions }: { state: GameState; 
 function LiveMatch({ state, captures, now, roster }: { state: GameState; captures: Capture[]; now: number; roster: Checkin[] }) {
   const { lang } = useLang();
   const en = lang === "en";
-  const teamLabelFor = (t: string) => {
-    if (!en) return TEAM_LABEL[t] ?? t.toUpperCase();
-    if (t === "modra") return "BLUE";
-    if (t === "rdeca") return "RED";
-    if (t === "rumena") return "YELLOW";
-    return t.toUpperCase();
-  };
+  const teamLabelFor = (t: string) => teamName(t, state.settings, en);
   const startMs = state.match_started_at ? new Date(state.match_started_at).getTime() : null;
   // Freeze scoring + countdown while the marshal has paused the match.
   const pausedAtMs = state.status === "paused" && state.updated_at
@@ -2420,7 +2427,7 @@ function LiveMatch({ state, captures, now, roster }: { state: GameState; capture
               return (
                 <div key={t} style={{ background: PANEL, borderTop: `3px solid ${col}`, padding: "12px 10px 14px", textAlign: "center" }}>
                   <div style={{ fontFamily: "monospace", fontSize: 10, letterSpacing: "0.22em", color: MUTED, textTransform: "uppercase" }}>
-                    {teamLabelFor(t)} {en ? "TEAM" : "EKIPA"}
+                    {teamLabelFor(t)} SCOREBOARD
                   </div>
                   <div
                     style={{
@@ -2517,7 +2524,7 @@ function LiveMatch({ state, captures, now, roster }: { state: GameState; capture
 
       {/* Player scoreboard (capture counts per player) */}
       {state.settings?.capturePointsScoring && (
-        <PlayerScoreboard roster={roster} captures={visibleCaptures} respawn={state.settings?.respawn} en={en} />
+        <PlayerScoreboard roster={roster} captures={visibleCaptures} respawn={state.settings?.respawn} settings={state.settings} en={en} />
       )}
 
       {/* Separator between scoreboard and the rest of the HUD */}
@@ -2543,7 +2550,7 @@ function LiveMatch({ state, captures, now, roster }: { state: GameState; capture
   );
 }
 
-function PlayerScoreboard({ roster, captures, respawn, en = false }: { roster: Checkin[]; captures: Capture[]; respawn?: RespawnSettings; en?: boolean }) {
+function PlayerScoreboard({ roster, captures, respawn, settings, en = false }: { roster: Checkin[]; captures: Capture[]; respawn?: RespawnSettings; settings?: GameSettings | null; en?: boolean }) {
   const captureCounts = useMemo(() => {
     const counts: Record<string, number> = {};
     for (const c of captures) {
@@ -2556,13 +2563,7 @@ function PlayerScoreboard({ roster, captures, respawn, en = false }: { roster: C
   const teams = (["modra", "rdeca", "rumena"] as const).filter(
     (t) => roster.some((r) => r.assigned_team === t)
   );
-  const teamLabelFor = (t: string) => {
-    if (!en) return TEAM_LABEL[t] ?? t.toUpperCase();
-    if (t === "modra") return "BLUE";
-    if (t === "rdeca") return "RED";
-    if (t === "rumena") return "YELLOW";
-    return t.toUpperCase();
-  };
+  const teamLabelFor = (t: string) => teamName(t, settings, en);
 
   return (
     <div className="mt-6 flex flex-col w-full gap-4">
@@ -2574,7 +2575,7 @@ function PlayerScoreboard({ roster, captures, respawn, en = false }: { roster: C
         return (
           <div key={t} className="w-full" style={{ background: PANEL, border: `1px solid ${TEAM_COLOR[t]}66` }}>
             <div style={{ padding: "8px 12px", background: `${TEAM_COLOR[t]}22`, color: TEAM_COLOR[t], fontFamily: "'Michroma', monospace", fontSize: 11, letterSpacing: "0.18em", textTransform: "uppercase" }}>
-              {en ? `${teamLabelFor(t)} TEAM SCOREBOARD` : `${teamLabelFor(t)} · SCOREBOARD`}
+              {teamLabelFor(t)} SCOREBOARD
             </div>
             <div className="divide-y" style={{ borderColor: "rgba(236,227,196,0.08)" }}>
               <div className="grid gap-2 px-3 py-1 text-[9px] font-mono uppercase tracking-widest" style={{ color: MUTED, gridTemplateColumns: `28px minmax(0,1fr) 56px${respawn?.publicDeaths ? " 40px" : ""}${respawn?.enabled ? " 70px" : ""}` }}>
