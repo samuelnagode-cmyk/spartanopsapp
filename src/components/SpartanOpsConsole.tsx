@@ -1371,6 +1371,8 @@ export function SpartacusAlerts({ fieldId, password, en }: { fieldId: string; pa
   const listSuspiciousFn = useServerFn(spartanopsListSuspiciousCaptures);
   useEffect(() => {
     let alive = true;
+    seen.current.clear();
+    initialized.current = false;
     const load = async () => {
       if (!password) return;
       try {
