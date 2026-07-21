@@ -686,6 +686,7 @@ function CreateFieldForm({ onCancel, onCreated }: { onCancel: () => void; onCrea
   const [fieldName, setFieldName] = useState("");
   const [missionName, setMissionName] = useState("");
   const [missionDescription, setMissionDescription] = useState("");
+  const [afterGameInstructions, setAfterGameInstructions] = useState("");
   const [password, setPassword] = useState("");
   const [marshalPassword, setMarshalPassword] = useState("");
   const [showMarshalPassword, setShowMarshalPassword] = useState(true);
@@ -753,6 +754,7 @@ function CreateFieldForm({ onCancel, onCreated }: { onCancel: () => void; onCrea
       ...settings,
       missionName: missionName.trim(),
       missionDescription: missionDescription.trim() || undefined,
+      afterGameInstructions: afterGameInstructions.trim() || undefined,
     } as any;
     setBusy(true);
     setErr("");
@@ -831,8 +833,25 @@ function CreateFieldForm({ onCancel, onCreated }: { onCancel: () => void; onCrea
             placeholder={en ? "The players will see this description/instructions before and during the game." : "Igralci bodo videli ta opis/navodila pred in med igro."}
           />
         </FieldRow>
+        <FieldRow label={en ? "After game instructions" : "Navodila po igri"}>
+          <textarea
+            value={afterGameInstructions}
+            onChange={(e) => setAfterGameInstructions(e.target.value)}
+            style={{ ...consoleInputStyle, minHeight: 72, resize: "vertical" }}
+            placeholder={en ? "Instruction on what the players should do after the game." : "Navodilo, kaj naj igralci naredijo po koncu igre."}
+          />
+        </FieldRow>
         <FieldRow label={en ? "Event name (optional)" : "Ime dogodka (neobvezno)"}>
           <input value={eventName} onChange={(e) => setEventName(e.target.value)} style={consoleInputStyle} placeholder={en ? "e.g. Operation Ares" : "npr. Operacija Ares"} />
+        </FieldRow>
+        <FieldRow label={en ? "After game instructions" : "Navodila po igri"}>
+          <textarea
+            value={(lobby.settings as any)?.afterGameInstructions ?? ""}
+            onChange={(e) => patch({ settings: { ...(lobby.settings ?? {}), afterGameInstructions: e.target.value } as any })}
+            rows={3}
+            style={{ ...consoleInputStyle, resize: "vertical", minHeight: 80, fontFamily: "inherit" }}
+            placeholder={en ? "Instruction on what the players should do after the game." : "Navodilo, kaj naj igralci naredijo po koncu igre."}
+          />
         </FieldRow>
         <div className="grid grid-cols-2 gap-3">
           <FieldRow label={en ? "City" : "Mesto"}>
