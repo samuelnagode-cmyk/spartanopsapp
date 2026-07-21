@@ -2953,52 +2953,50 @@ function PointCapturedOverlay({ captures, teamLabelFor, en }: { captures: Captur
 
   if (toasts.length === 0) return null;
   return (
-    <div style={{ position: "fixed", inset: 0, zIndex: 65, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 12, pointerEvents: "none", padding: "18px" }}>
+    <div style={{ position: "fixed", inset: 0, zIndex: 65, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 14, pointerEvents: "none", padding: "18px" }}>
       {toasts.map((t) => {
-        const label = teamLabelFor(t.team);
+        const teamLabel = teamLabelFor(t.team).toUpperCase();
         const node = NODE_NAMES[t.node - 1] ?? `#${t.node}`;
+        const callsign = t.player ? String(t.player).toUpperCase() : "";
         return (
           <div
             key={t.id}
             style={{
-              background: "rgba(10,12,10,0.94)",
+              background: "rgba(10,12,10,0.96)",
               border: `2px solid ${ACCENT}`,
-              boxShadow: `0 0 34px -6px ${ACCENT}88`,
-              padding: "22px 18px",
-              width: 270,
-              minHeight: 270,
+              boxShadow: `0 0 40px -4px ${ACCENT}aa, inset 0 0 24px rgba(224,176,78,0.08)`,
+              padding: "26px 22px",
+              width: 300,
+              height: 300,
               maxWidth: "calc(100vw - 36px)",
+              maxHeight: "calc(100vw - 36px)",
               display: "flex",
               flexDirection: "column",
               justifyContent: "center",
               alignItems: "center",
               textAlign: "center",
               fontFamily: "'Michroma', monospace",
-              fontSize: 11,
               color: INK,
               letterSpacing: "0.12em",
               textTransform: "uppercase",
               animation: "spops-capture-toast 320ms ease-out",
             }}
           >
-            <span style={{ color: ACCENT, fontSize: 12, fontWeight: 700 }}>🎯 {en ? "POINT CAPTURED" : "TOČKA ZAVZETA"}</span>
-            <div style={{ marginTop: 18, fontSize: 17, lineHeight: 1.5, letterSpacing: "0.1em", color: INK, fontWeight: 800 }}>
-              <span>{en ? "TEAM" : "EKIPA"}</span>
-              <br />
-              <strong style={{ color: ACCENT }}>{label}</strong>
-              <br />
-              <span>{node}</span>
+            <span style={{ color: ACCENT, fontSize: 12, fontWeight: 800, letterSpacing: "0.22em" }}>
+              🎯 {en ? "POINT CAPTURED" : "TOČKA ZAVZETA"}
+            </span>
+            <div style={{ marginTop: 16, width: 48, height: 2, background: ACCENT, boxShadow: `0 0 10px ${ACCENT}` }} />
+            <div style={{ marginTop: 18, fontSize: 20, fontWeight: 900, letterSpacing: "0.14em", lineHeight: 1.2, color: INK }}>
+              {teamLabel}
+              {callsign ? <> &nbsp;<span style={{ color: ACCENT }}>“{callsign}”</span></> : null}
             </div>
-            {t.player ? (
-              <div style={{ marginTop: 14, fontFamily: "monospace", fontSize: 11, letterSpacing: "0.16em", color: MUTED }}>
-                {t.player}
-              </div>
-            ) : null}
-            <div style={{ marginTop: 18, width: 72, height: 2, background: ACCENT, boxShadow: `0 0 10px ${ACCENT}` }} />
+            <div style={{ marginTop: 14, fontSize: 12, letterSpacing: "0.2em", color: MUTED }}>
+              {en ? "SECTOR" : "SEKTOR"} · <span style={{ color: INK, fontWeight: 700 }}>{node}</span>
+            </div>
           </div>
         );
       })}
-      <style>{`@keyframes spops-capture-toast{from{opacity:0;transform:translateY(-8px)}to{opacity:1;transform:translateY(0)}}`}</style>
+      <style>{`@keyframes spops-capture-toast{from{opacity:0;transform:scale(0.94)}to{opacity:1;transform:scale(1)}}`}</style>
     </div>
   );
 }
