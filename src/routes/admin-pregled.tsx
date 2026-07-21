@@ -686,6 +686,7 @@ function CreateFieldForm({ onCancel, onCreated }: { onCancel: () => void; onCrea
   const [fieldName, setFieldName] = useState("");
   const [missionName, setMissionName] = useState("");
   const [missionDescription, setMissionDescription] = useState("");
+  const [afterGameInstructions, setAfterGameInstructions] = useState("");
   const [password, setPassword] = useState("");
   const [marshalPassword, setMarshalPassword] = useState("");
   const [showMarshalPassword, setShowMarshalPassword] = useState(true);
@@ -753,6 +754,7 @@ function CreateFieldForm({ onCancel, onCreated }: { onCancel: () => void; onCrea
       ...settings,
       missionName: missionName.trim(),
       missionDescription: missionDescription.trim() || undefined,
+      afterGameInstructions: afterGameInstructions.trim() || undefined,
     } as any;
     setBusy(true);
     setErr("");
@@ -829,6 +831,14 @@ function CreateFieldForm({ onCancel, onCreated }: { onCancel: () => void; onCrea
             onChange={(e) => setMissionDescription(e.target.value)}
             style={{ ...consoleInputStyle, minHeight: 72, resize: "vertical" }}
             placeholder={en ? "The players will see this description/instructions before and during the game." : "Igralci bodo videli ta opis/navodila pred in med igro."}
+          />
+        </FieldRow>
+        <FieldRow label={en ? "After game instructions" : "Navodila po igri"}>
+          <textarea
+            value={afterGameInstructions}
+            onChange={(e) => setAfterGameInstructions(e.target.value)}
+            style={{ ...consoleInputStyle, minHeight: 72, resize: "vertical" }}
+            placeholder={en ? "Instruction on what the players should do after the game." : "Navodilo, kaj naj igralci naredijo po koncu igre."}
           />
         </FieldRow>
         <FieldRow label={en ? "Event name (optional)" : "Ime dogodka (neobvezno)"}>
@@ -1182,6 +1192,7 @@ function FieldsWelcome({
               const city = l.city || (l.location?.split(",")[0]?.trim() ?? "");
               const country = l.country || (l.location?.split(",")[1]?.trim() ?? "");
               const status = l.published ? "ACTIVE" : "STANDBY";
+              const locationText = [city, country].filter(Boolean).join(", ") || l.location || "—";
               const statusColor = l.published ? "#3ddc84" : ACCENT;
               return (
                 <div key={l.id}
@@ -1224,7 +1235,7 @@ function FieldsWelcome({
                       </span>
                     </div>
                     <p style={{ fontFamily: "'Michroma', monospace", fontSize: 12, letterSpacing: "0.14em", color: ACCENT, marginBottom: 8, textTransform: "uppercase", lineHeight: 1.55 }}>
-                      MISSION: '{l.eventName || l.fieldName}'
+                      MISSION: {l.eventName || l.fieldName}
                     </p>
                     {l.fieldName && (
                       <p style={{ fontFamily: "monospace", fontSize: 10.5, color: MUTED, letterSpacing: "0.14em", marginTop: 6, textTransform: "uppercase" }}>
@@ -1232,7 +1243,7 @@ function FieldsWelcome({
                       </p>
                     )}
                     <p style={{ fontSize: 12.5, color: "rgba(236,227,196,0.85)", lineHeight: 1.6, marginTop: 8 }}>
-                      Location: {[city, country].filter(Boolean).join(" ") || l.location || "—"}
+                      Location: {locationText}
                     </p>
                   </button>
                 </div>
@@ -2101,6 +2112,15 @@ function MarshalLobbyConsole({ lobby: initialLobby, marshalPassword, lobbyPasswo
           <p style={{ fontSize: 10, color: MUTED, marginTop: 4, fontFamily: "monospace", letterSpacing: "0.06em" }}>
             // {en ? "Editable any time — updates propagate live to player HUDs." : "Uredljivo kadarkoli — spremembe se v živo prenesejo na igralski HUD."}
           </p>
+        </FieldRow>
+        <FieldRow label={en ? "After game instructions" : "Navodila po igri"}>
+          <textarea
+            value={(lobby.settings as any)?.afterGameInstructions ?? ""}
+            onChange={(e) => patch({ settings: { ...(lobby.settings ?? {}), afterGameInstructions: e.target.value } as any })}
+            rows={3}
+            style={{ ...consoleInputStyle, resize: "vertical", minHeight: 80, fontFamily: "inherit" }}
+            placeholder={en ? "Instruction on what the players should do after the game." : "Navodilo, kaj naj igralci naredijo po koncu igre."}
+          />
         </FieldRow>
         <div className="grid grid-cols-2 gap-3">
           <FieldRow label={en ? "City (locked)" : "Mesto (zaklenjeno)"}>

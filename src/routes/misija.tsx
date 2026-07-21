@@ -125,6 +125,7 @@ type RespawnSettings = {
 type GameSettings = {
   missionDescription?: string;
   missionName?: string;
+  afterGameInstructions?: string;
   teamCount?: number;
   teamNames?: Record<string, string>;
   respawn?: RespawnSettings;
@@ -482,7 +483,11 @@ function MisijaPage() {
         { event: "*", schema: "public", table: "spartanops_game_state", filter: `field_id=eq.${field}` },
         (p) => {
           if (p.new) {
-            setState(p.new as unknown as GameState);
+            const incoming = p.new as unknown as GameState;
+            setState((prev) => ({
+              ...incoming,
+              compressed_map_url: incoming.compressed_map_url || prev?.compressed_map_url || null,
+            }));
             if ((p.new as any).match_started_at) syncServerClock().catch(() => {});
           }
         },
@@ -1967,6 +1972,23 @@ function PreMatchCountdown({ seconds, polygon, eventName, gamemode, pointTarget,
           </p>
         </div>
       )}
+      <div
+        className="max-w-2xl mt-3"
+        style={{
+          border: `1px solid ${ACCENT}66`,
+          borderLeft: `5px solid ${TEAM_COLOR.modra}`,
+          background: "rgba(59,130,246,0.10)",
+          padding: "10px 14px",
+          textAlign: "left",
+          width: "min(640px, 100%)",
+        }}
+      >
+        <p style={{ color: INK, fontSize: 12.5, lineHeight: 1.65, fontFamily: "monospace", margin: 0 }}>
+          {en
+            ? "You can now move to your spawn points, get ready and wait for the start of the game."
+            : "Zdaj se lahko premaknete na spawn točke, se pripravite in počakate na začetek igre."}
+        </p>
+      </div>
       <div className="grid grid-cols-2 gap-3 my-5" style={{ width: "min(560px, 100%)" }}>
         <div style={{ border: `1px solid ${ACCENT}55`, background: "rgba(0,0,0,0.32)", padding: "12px 10px" }}>
           <p style={{ color: MUTED, fontFamily: "monospace", fontSize: 9, letterSpacing: "0.20em", textTransform: "uppercase" }}>{en ? "Objective" : "Cilj"}</p>
@@ -2669,13 +2691,7 @@ function EndgameReport({ state, roster, captures, en, now }: { state: GameState;
       try { window.dispatchEvent(new Event("spartanops:debrief-exit")); } catch { /* ignore */ }
     };
   }, []);
-  const teamLabelFor = (t: string) => {
-    if (!en) return TEAM_LABEL[t] ?? t.toUpperCase();
-    if (t === "modra") return "BLUE";
-    if (t === "rdeca") return "RED";
-    if (t === "rumena") return "YELLOW";
-    return t.toUpperCase();
-  };
+  const teamLabelFor = (t: string) => teamName(t, state.settings, en);
   const counts: Record<string, number> = {};
   for (const c of captures) counts[c.player_callsign ?? "—"] = (counts[c.player_callsign ?? "—"] ?? 0) + 1;
 
@@ -2723,6 +2739,7 @@ function EndgameReport({ state, roster, captures, en, now }: { state: GameState;
   };
 
   const winnerColor = winner ? TEAM_COLOR[winner] ?? ACCENT : "#eab308";
+  const afterGameInstructions = state.settings?.afterGameInstructions?.trim();
 
   return (
     <div className="max-w-4xl mx-auto px-4 py-10" style={{ paddingTop: 112 }}>
@@ -2763,7 +2780,7 @@ function EndgameReport({ state, roster, captures, en, now }: { state: GameState;
           {isTie
             ? (en ? "IT'S A TIE! NO DOMINANT FACTION ESTABLISHED." : "NEODLOČENO! NOBENA EKIPA NI PREVLADALA.")
             : winner
-              ? `${teamLabelFor(winner)} ${en ? "TEAM HAS WON THE OPERATION!" : "EKIPA JE ZMAGALA OPERACIJO!"}`
+              ? `${en ? "TEAM" : "EKIPA"} ${teamLabelFor(winner)} ${en ? "HAS WON THE MISSION" : "JE ZMAGALA MISIJO"}`
               : (en ? "OPERATION COMPLETED" : "OPERACIJA KONČANA")}
         </p>
       </div>
@@ -2886,69 +2903,46 @@ function EndgameReport({ state, roster, captures, en, now }: { state: GameState;
 
 
 
-      {/* GLOBAL LEADERBOARD */}
-      <div style={{ background: PANEL, border: `1px solid ${ACCENT}44` }}>
-        <div
-          style={{
-            padding: "10px 14px",
-            borderBottom: `1px solid ${ACCENT}33`,
-            fontFamily: "'Michroma', monospace",
-            fontSize: 12,
-            letterSpacing: "0.2em",
-            color: ACCENT,
-            textTransform: "uppercase",
-          }}
-        >
-          ▌ {en ? "GLOBAL LEADERBOARD" : "SKUPNA LESTVICA"}
-        </div>
-        <div className="grid gap-2 px-3 py-2 text-[9px] font-mono uppercase tracking-widest" style={{ color: MUTED, gridTemplateColumns: "32px minmax(0,1fr) 70px 60px" }}>
-          <span>#</span>
-          <span>Callsign</span>
-          <span style={{ textAlign: "center" }}>{en ? "TEAM" : "EKIPA"}</span>
-          <span style={{ textAlign: "right" }}>{en ? "POINTS" : "TOČ"}</span>
-        </div>
-        <div style={{ maxHeight: 420, overflowY: "auto" }}>
-          {enriched.length === 0 && (
-            <p className="text-center py-6 font-mono text-[11px]" style={{ color: MUTED }}>
-              {en ? "— no operators —" : "— brez podatkov —"}
-            </p>
-          )}
-          {enriched.map((p, idx) => {
-            const teamCol = TEAM_COLOR[p.assigned_team] ?? "#666";
-            const real = fmtName(p);
-            return (
-              <div
-                key={p.id}
-                className="grid gap-2 items-center px-3 py-2 text-[12px] font-mono"
-                style={{
-                  gridTemplateColumns: "32px minmax(0,1fr) 70px 60px",
-                  borderTop: "1px solid rgba(236,227,196,0.06)",
-                  background: idx < 3 ? `linear-gradient(90deg, ${teamCol}12, transparent)` : "transparent",
-                }}
-              >
-                <span style={{ color: idx < 3 ? ACCENT : MUTED, fontWeight: 700 }}>#{idx + 1}</span>
-                <span style={{ color: INK, fontWeight: 700, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", minWidth: 0 }}>
-                  {p.callsign}
-                  {real && <span style={{ color: MUTED, fontWeight: 400, fontSize: 10, marginLeft: 6 }}>({real})</span>}
-                </span>
-                <span
-                  style={{
-                    textAlign: "center",
-                    color: teamCol,
-                    fontWeight: 700,
-                    fontSize: 10,
-                    letterSpacing: "0.14em",
-                    textTransform: "uppercase",
-                  }}
-                >
-                  {teamLabelFor(p.assigned_team)}
-                </span>
-                <span style={{ color: INK, fontWeight: 700, textAlign: "right" }}>{p.pts}</span>
+      <div className="grid gap-4 md:grid-cols-2">
+        {activeTeams.map((team) => {
+          const teamCol = TEAM_COLOR[team] ?? ACCENT;
+          const members = enriched.filter((p) => p.assigned_team === team);
+          return (
+            <div key={team} style={{ background: PANEL, border: `1px solid ${teamCol}66` }}>
+              <div style={{ padding: "10px 14px", borderBottom: `1px solid ${teamCol}44`, fontFamily: "'Michroma', monospace", fontSize: 12, letterSpacing: "0.16em", color: teamCol, textTransform: "uppercase" }}>
+                ▌ {teamLabelFor(team)} {en ? "SCOREBOARD" : "LESTVICA"}
               </div>
-            );
-          })}
-        </div>
+              <div className="grid gap-2 px-3 py-2 text-[9px] font-mono uppercase tracking-widest" style={{ color: MUTED, gridTemplateColumns: "minmax(0,1fr) 56px 70px" }}>
+                <span>Callsign</span>
+                <span style={{ textAlign: "right" }}>{en ? "Points" : "Točke"}</span>
+                <span style={{ textAlign: "right" }}>{en ? "Deaths" : "Smrti"}</span>
+              </div>
+              {members.length === 0 ? (
+                <p className="text-center py-6 font-mono text-[11px]" style={{ color: MUTED }}>—</p>
+              ) : members.map((p) => {
+                const real = fmtName(p);
+                return (
+                  <div key={p.id} className="grid gap-2 items-center px-3 py-2 text-[12px] font-mono" style={{ gridTemplateColumns: "minmax(0,1fr) 56px 70px", borderTop: "1px solid rgba(236,227,196,0.06)" }}>
+                    <span style={{ color: INK, fontWeight: 700, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", minWidth: 0 }}>
+                      {p.callsign}{real && <span style={{ color: MUTED, fontWeight: 400, fontSize: 10, marginLeft: 6 }}>({real})</span>}
+                    </span>
+                    <span style={{ color: INK, fontWeight: 700, textAlign: "right" }}>{p.pts}</span>
+                    <span style={{ color: "#ff7070", textAlign: "right", fontWeight: 700 }}>☠ {p.death_count ?? 0}</span>
+                  </div>
+                );
+              })}
+            </div>
+          );
+        })}
       </div>
+      {afterGameInstructions && (
+        <div style={{ marginTop: 18, background: PANEL, border: `1px solid ${ACCENT}55`, padding: "14px 16px" }}>
+          <div style={{ fontFamily: "monospace", fontSize: 10, letterSpacing: "0.2em", color: ACCENT, textTransform: "uppercase", marginBottom: 8 }}>
+            ▌ {en ? "AFTER GAME INSTRUCTIONS" : "NAVODILA PO IGRI"}
+          </div>
+          <p style={{ color: INK, fontFamily: "monospace", fontSize: 12, lineHeight: 1.7, whiteSpace: "pre-wrap", margin: 0 }}>{afterGameInstructions}</p>
+        </div>
+      )}
     </div>
   );
 }

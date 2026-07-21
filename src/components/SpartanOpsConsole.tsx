@@ -31,6 +31,7 @@ const FREE_NODES: Record<string, string | null> = { "1": null, "2": null, "3": n
 
 export type GameSettings = {
   missionDescription?: string;
+  afterGameInstructions?: string;
   teamCount?: number;
   teamNames?: Record<string, string>;
   respawn?: {
@@ -488,6 +489,14 @@ export function SpartanOpsConsole({ fieldId, password }: { fieldId: string; pass
           </Field>
           <Field label={en ? "Event name" : "Ime dogodka"}>
             <input value={eventName} onChange={(e) => setEventName(e.target.value)} style={inputStyle} placeholder={en ? "e.g. Operation Ares" : "npr. Operacija Ares"} />
+          </Field>
+          <Field label={en ? "After game instructions" : "Navodila po igri"}>
+            <textarea
+              value={state.settings?.afterGameInstructions ?? ""}
+              onChange={(e) => callPatch({ settings: { ...(state.settings ?? {}), afterGameInstructions: e.target.value } as any })}
+              style={{ ...inputStyle, minHeight: 78, resize: "vertical" }}
+              placeholder={en ? "Instruction on what the players should do after the game." : "Navodilo, kaj naj igralci naredijo po koncu igre."}
+            />
           </Field>
           <Field label={en ? "Game mode selection" : "Izbira igralnega načina (Gamemode)"}>
             <div className="grid grid-cols-2 gap-2">

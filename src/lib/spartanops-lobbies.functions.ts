@@ -85,6 +85,10 @@ const FREE_NODES = { "1": null, "2": null, "3": null, "4": null, "5": null };
 
 async function resetMissionRuntime(supabaseAdmin: any, lobbyId: string) {
   const { error } = await supabaseAdmin.rpc("spartanops_reset_match_runtime" as any, { p_field_id: lobbyId });
+  await supabaseAdmin
+    .from("spartanops_qr_anchors" as any)
+    .delete()
+    .eq("field_id", lobbyId);
   if (error) {
     const { error: capturesError } = await supabaseAdmin
       .from("spartanops_captures")
