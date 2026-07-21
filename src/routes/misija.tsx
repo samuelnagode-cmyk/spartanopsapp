@@ -573,7 +573,7 @@ function MisijaPage() {
         .from("spartanops_captures")
         .select("id, point_number, team, player_callsign, captured_at")
         .eq("field_id", field)
-
+        .eq("suspicious", false)
         .order("captured_at", { ascending: false })
         .limit(50);
       if (alive) setCaptures((data ?? []) as unknown as Capture[]);
@@ -2953,9 +2953,8 @@ function PointCapturedOverlay({ captures, teamLabelFor, en }: { captures: Captur
 
   if (toasts.length === 0) return null;
   return (
-    <div style={{ position: "fixed", top: 96, left: 0, right: 0, zIndex: 65, display: "flex", flexDirection: "column", alignItems: "center", gap: 8, pointerEvents: "none", padding: "0 16px" }}>
+    <div style={{ position: "fixed", inset: 0, zIndex: 65, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 12, pointerEvents: "none", padding: "18px" }}>
       {toasts.map((t) => {
-        const col = TEAM_COLOR[t.team] ?? ACCENT;
         const label = teamLabelFor(t.team);
         const node = NODE_NAMES[t.node - 1] ?? `#${t.node}`;
         return (
@@ -2963,25 +2962,37 @@ function PointCapturedOverlay({ captures, teamLabelFor, en }: { captures: Captur
             key={t.id}
             style={{
               background: "rgba(10,12,10,0.92)",
-              border: `1.5px solid ${col}`,
-              borderLeft: `4px solid ${col}`,
-              boxShadow: `0 0 24px -4px ${col}88`,
-              padding: "10px 16px",
-              maxWidth: 420,
+              border: `2px solid ${ACCENT}`,
+              boxShadow: `0 0 34px -6px ${ACCENT}88`,
+              padding: "22px 18px",
+              maxWidth: 310,
+              minHeight: 230,
               width: "100%",
+              display: "flex",
+              flexDirection: "column",
+              justifyContent: "center",
+              alignItems: "center",
+              textAlign: "center",
               fontFamily: "'Michroma', monospace",
               fontSize: 11,
               color: INK,
-              letterSpacing: "0.14em",
+              letterSpacing: "0.12em",
               textTransform: "uppercase",
               animation: "spops-capture-toast 320ms ease-out",
             }}
           >
-            <span style={{ color: col, fontWeight: 700 }}>🎯 {en ? "POINT CAPTURED" : "TOČKA ZAVZETA"}</span>
-            <div style={{ marginTop: 4, fontSize: 10, letterSpacing: "0.12em", color: MUTED }}>
-              <span style={{ color: col }}>{label}</span> · <strong style={{ color: INK }}>{node}</strong>
-              {t.player ? <> · {t.player}</> : null}
+            <span style={{ color: ACCENT, fontSize: 12, fontWeight: 700 }}>🎯 {en ? "POINT CAPTURED" : "TOČKA ZAVZETA"}</span>
+            <div style={{ marginTop: 16, fontSize: 18, lineHeight: 1.45, letterSpacing: "0.1em", color: INK, fontWeight: 800 }}>
+              {label}
+              <br />
+              <strong style={{ color: ACCENT }}>{node}</strong>
             </div>
+            {t.player ? (
+              <div style={{ marginTop: 14, fontFamily: "monospace", fontSize: 11, letterSpacing: "0.16em", color: MUTED }}>
+                {t.player}
+              </div>
+            ) : null}
+            <div style={{ marginTop: 18, width: 72, height: 2, background: ACCENT, boxShadow: `0 0 10px ${ACCENT}` }} />
           </div>
         );
       })}

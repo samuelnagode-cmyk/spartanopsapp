@@ -113,8 +113,9 @@ function readCachedGpsFix(): { lat: number | null; lng: number | null; accuracy?
     const lat = typeof parsed.lat === "number" ? parsed.lat : NaN;
     const lng = typeof parsed.lng === "number" ? parsed.lng : NaN;
     const at = typeof parsed.at === "number" ? parsed.at : 0;
-    if (!Number.isFinite(lat) || !Number.isFinite(lng) || Date.now() - at > 60 * 1000) return null;
-    return { lat, lng, accuracy: typeof parsed.accuracy === "number" && Number.isFinite(parsed.accuracy) ? parsed.accuracy : null };
+    const accuracy = typeof parsed.accuracy === "number" && Number.isFinite(parsed.accuracy) ? parsed.accuracy : NaN;
+    if (!Number.isFinite(lat) || !Number.isFinite(lng) || !Number.isFinite(accuracy) || Date.now() - at > 15 * 1000) return null;
+    return { lat, lng, accuracy };
   } catch {
     return null;
   }
@@ -125,7 +126,7 @@ function readCachedGpsFix(): { lat: number | null; lng: number | null; accuracy?
  *  - Uses watchPosition + high accuracy + maximumAge:0 to force a fresh fix.
  *  - Accepts a high-precision fix (<=20m) immediately.
  *  - After 3s of silent retries, accepts best-so-far up to 45m.
- *  - Hard cap at 8s, then falls back to any recent cached fix.
+ *  - Hard cap at 8s, then falls back only to a very recent precise cached fix.
  *  - Emits progress events so the UI can surface a "Acquiring precise GPS..." notice.
  */
 function getFreshGpsPosition(): Promise<{ lat: number | null; lng: number | null; accuracy?: number | null }> {

@@ -6,15 +6,12 @@ function isField(x: string): boolean {
   return LEGACY_FIELDS.has(x) || UUID_RE.test(x);
 }
 
-const ANCHOR_RADIUS_M = 15;
-// Per-scan accuracy tolerance ceiling. Real-world urban/forest GPS on iPhone can
-// legitimately report 30-60m accuracy at the same physical spot, so we allow the
-// full reported accuracy as buffer up to this cap.
-const MAX_ACCURACY_BUFFER_M = 75;
-// Accept any fix the device is willing to hand us; the distance check below
-// already factors accuracy into the allowed radius, so we no longer hard-reject
-// "loose" fixes that would otherwise trigger a bogus "enable GPS" prompt.
-const MAX_ACCEPTED_ACCURACY_M = 200;
+const ANCHOR_RADIUS_M = 10;
+// Keep the strict physical radius, but use the browser's raw reported accuracy
+// as tolerance. iOS/Android can hand back approximate fixes hundreds of metres
+// away; clamping that value before validation creates false Spartacus flags.
+const MAX_ACCURACY_BUFFER_M = 1000;
+const MAX_ACCEPTED_ACCURACY_M = 1200;
 
 function haversineMeters(a: { lat: number; lng: number }, b: { lat: number; lng: number }): number {
   const R = 6371000;
@@ -45,7 +42,7 @@ export const spartanopsSpartacusCapture = createServerFn({ method: "POST" })
     sessionId: String(d?.sessionId ?? ""),
     lat: typeof d?.lat === "number" && isFinite(d.lat) ? d.lat : null,
     lng: typeof d?.lng === "number" && isFinite(d.lng) ? d.lng : null,
-    accuracy: typeof d?.accuracy === "number" && isFinite(d.accuracy) ? Math.max(0, Math.min(MAX_ACCURACY_BUFFER_M, d.accuracy)) : 0,
+    accuracy: typeof d?.accuracy === "number" && isFinite(d.accuracy) ? Math.max(0, Math.min(MAX_ACCEPTED_ACCURACY_M, d.accuracy)) : 0,
   }))
   .handler(async ({ data }) => {
     if (!isField(data.fieldId)) throw new Error("Invalid field");
