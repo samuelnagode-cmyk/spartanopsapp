@@ -325,9 +325,6 @@ function CapturePage() {
             <h2 style={{ fontFamily: "'Michroma', monospace", fontSize: 18, color: INK, fontWeight: 700, marginTop: 10, letterSpacing: "0.06em" }}>
               {en ? "POINT " : "TOČKA "}{pointName}{en ? " CAPTURED" : " ZAVZETA"}
             </h2>
-            <p className="text-sm mt-3" style={{ color: MUTED, lineHeight: 1.6 }}>
-              {t("captureSuccessSubtitle")}
-            </p>
 
             <button
               type="button"
