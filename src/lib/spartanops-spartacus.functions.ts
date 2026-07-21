@@ -6,8 +6,8 @@ function isField(x: string): boolean {
   return LEGACY_FIELDS.has(x) || UUID_RE.test(x);
 }
 
-const ANCHOR_RADIUS_M = 35;
-const MAX_ACCURACY_BUFFER_M = 45;
+const ANCHOR_RADIUS_M = 10;
+const MAX_ACCURACY_BUFFER_M = 0;
 
 function haversineMeters(a: { lat: number; lng: number }, b: { lat: number; lng: number }): number {
   const R = 6371000;
