@@ -323,7 +323,7 @@ function CapturePage() {
             const { data: me } = await supabase
               .from("spartanops_checkins")
               .select("callsign, assigned_team")
-              .eq("session_secret", session)
+              .eq("id", session)
               .eq("field_id", effectiveField)
               .maybeSingle();
             const callsign = (me as any)?.callsign;
