@@ -2354,13 +2354,7 @@ function TacticalMap({ state, captures, en, hasPositions }: { state: GameState; 
 function LiveMatch({ state, captures, now, roster }: { state: GameState; captures: Capture[]; now: number; roster: Checkin[] }) {
   const { lang } = useLang();
   const en = lang === "en";
-  const teamLabelFor = (t: string) => {
-    if (!en) return TEAM_LABEL[t] ?? t.toUpperCase();
-    if (t === "modra") return "BLUE";
-    if (t === "rdeca") return "RED";
-    if (t === "rumena") return "YELLOW";
-    return t.toUpperCase();
-  };
+  const teamLabelFor = (t: string) => teamName(t, state.settings, en);
   const startMs = state.match_started_at ? new Date(state.match_started_at).getTime() : null;
   // Freeze scoring + countdown while the marshal has paused the match.
   const pausedAtMs = state.status === "paused" && state.updated_at
@@ -2433,7 +2427,7 @@ function LiveMatch({ state, captures, now, roster }: { state: GameState; capture
               return (
                 <div key={t} style={{ background: PANEL, borderTop: `3px solid ${col}`, padding: "12px 10px 14px", textAlign: "center" }}>
                   <div style={{ fontFamily: "monospace", fontSize: 10, letterSpacing: "0.22em", color: MUTED, textTransform: "uppercase" }}>
-                    {teamLabelFor(t)} {en ? "TEAM" : "EKIPA"}
+                    {teamLabelFor(t)} SCOREBOARD
                   </div>
                   <div
                     style={{
@@ -2530,7 +2524,7 @@ function LiveMatch({ state, captures, now, roster }: { state: GameState; capture
 
       {/* Player scoreboard (capture counts per player) */}
       {state.settings?.capturePointsScoring && (
-        <PlayerScoreboard roster={roster} captures={visibleCaptures} respawn={state.settings?.respawn} en={en} />
+        <PlayerScoreboard roster={roster} captures={visibleCaptures} respawn={state.settings?.respawn} settings={state.settings} en={en} />
       )}
 
       {/* Separator between scoreboard and the rest of the HUD */}
@@ -2556,7 +2550,7 @@ function LiveMatch({ state, captures, now, roster }: { state: GameState; capture
   );
 }
 
-function PlayerScoreboard({ roster, captures, respawn, en = false }: { roster: Checkin[]; captures: Capture[]; respawn?: RespawnSettings; en?: boolean }) {
+function PlayerScoreboard({ roster, captures, respawn, settings, en = false }: { roster: Checkin[]; captures: Capture[]; respawn?: RespawnSettings; settings?: GameSettings | null; en?: boolean }) {
   const captureCounts = useMemo(() => {
     const counts: Record<string, number> = {};
     for (const c of captures) {
@@ -2569,13 +2563,7 @@ function PlayerScoreboard({ roster, captures, respawn, en = false }: { roster: C
   const teams = (["modra", "rdeca", "rumena"] as const).filter(
     (t) => roster.some((r) => r.assigned_team === t)
   );
-  const teamLabelFor = (t: string) => {
-    if (!en) return TEAM_LABEL[t] ?? t.toUpperCase();
-    if (t === "modra") return "BLUE";
-    if (t === "rdeca") return "RED";
-    if (t === "rumena") return "YELLOW";
-    return t.toUpperCase();
-  };
+  const teamLabelFor = (t: string) => teamName(t, settings, en);
 
   return (
     <div className="mt-6 flex flex-col w-full gap-4">
@@ -2587,7 +2575,7 @@ function PlayerScoreboard({ roster, captures, respawn, en = false }: { roster: C
         return (
           <div key={t} className="w-full" style={{ background: PANEL, border: `1px solid ${TEAM_COLOR[t]}66` }}>
             <div style={{ padding: "8px 12px", background: `${TEAM_COLOR[t]}22`, color: TEAM_COLOR[t], fontFamily: "'Michroma', monospace", fontSize: 11, letterSpacing: "0.18em", textTransform: "uppercase" }}>
-              {en ? `${teamLabelFor(t)} TEAM SCOREBOARD` : `${teamLabelFor(t)} · SCOREBOARD`}
+              {teamLabelFor(t)} SCOREBOARD
             </div>
             <div className="divide-y" style={{ borderColor: "rgba(236,227,196,0.08)" }}>
               <div className="grid gap-2 px-3 py-1 text-[9px] font-mono uppercase tracking-widest" style={{ color: MUTED, gridTemplateColumns: `28px minmax(0,1fr) 56px${respawn?.publicDeaths ? " 40px" : ""}${respawn?.enabled ? " 70px" : ""}` }}>
