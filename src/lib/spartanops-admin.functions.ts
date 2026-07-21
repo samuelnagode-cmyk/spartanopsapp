@@ -170,6 +170,12 @@ export const spartanopsAdminPatchState = createServerFn({ method: "POST" })
         .update({ map_url: patch.compressed_map_url || null, updated_at: serverNowIso } as any)
         .eq("id", data.fieldId);
     }
+    if ("node_positions" in patch) {
+      await supabaseAdmin
+        .from("spartanops_lobbies" as any)
+        .update({ node_positions: patch.node_positions ?? {}, updated_at: serverNowIso } as any)
+        .eq("id", data.fieldId);
+    }
     return { ok: true };
   });
 

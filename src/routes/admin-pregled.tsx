@@ -1607,7 +1607,7 @@ function MarshalLobbyConsole({ lobby: initialLobby, marshalPassword, lobbyPasswo
       matchDurationMinutes: lobby.matchDurationMinutes,
       countdownSeconds: lobby.countdownSeconds,
       pointTarget: lobby.pointTarget,
-      nodePositions: lobby.nodePositions,
+      ...(Object.keys(gameState?.node_positions ?? {}).length ? {} : { nodePositions: lobby.nodePositions }),
       gamemode: lobby.gamemode,
       settings: lobby.settings,
     });
