@@ -4,6 +4,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { ArrowLeft, Lock, MapPin, X, Radio } from "lucide-react";
 import { dtoToRecord, SYSTEM_FIELD, type LobbyRecord } from "./admin-pregled";
 import { listPublishedLobbies, verifyLobbyPassword } from "@/lib/spartanops-lobbies.functions";
+import { useLang } from "@/lib/i18n";
 
 export const Route = createFileRoute("/join")({
   head: () => ({
