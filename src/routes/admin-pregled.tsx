@@ -161,8 +161,10 @@ export function loadLobbies(): LobbyRecord[] {
   try {
     const raw = localStorage.getItem(LOBBY_STORAGE_KEY);
     const list = raw ? (JSON.parse(raw) as LobbyRecord[]) : [];
-    const cleaned = list.filter((l) => !isPurged(l as any));
-    if (cleaned.length !== list.length) {
+    const cleaned = list
+      .filter((l) => !isPurged(l as any))
+      .map((l) => (l.mapUrl && l.mapUrl.length > 4096 ? { ...l, mapUrl: undefined } : l));
+    if (cleaned.length !== list.length || cleaned.some((l, i) => l.mapUrl !== list[i]?.mapUrl)) {
       safeSetItem(LOBBY_STORAGE_KEY, JSON.stringify(cleaned));
     }
     return cleaned;
@@ -1241,7 +1243,7 @@ function FieldsWelcome({
                     </p>
                     {l.fieldName && (
                       <p style={{ fontFamily: "monospace", fontSize: 10.5, color: MUTED, letterSpacing: "0.14em", marginTop: 6, textTransform: "uppercase" }}>
-                        At airsoft field {l.fieldName}
+                        Field {l.fieldName}
                       </p>
                     )}
                     <p style={{ fontSize: 12.5, color: "rgba(236,227,196,0.85)", lineHeight: 1.6, marginTop: 8 }}>
