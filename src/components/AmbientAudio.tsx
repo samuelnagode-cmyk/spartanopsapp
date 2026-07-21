@@ -78,7 +78,7 @@ export function AmbientAudioProvider({ children }: { children: ReactNode }) {
   // Route-based fallback: /join is the mission list / pre-lobby surface.
   // /misija is phase-driven below because it can be registration, team select,
   // pre-start, live HUD, respawn lock, or debriefing.
-  const routeRaging = /^\/(|spartanops|archive|arhiv|print|updates)(\b|\/|$)/i.test(pathname);
+  const routeRaging = pathname === "/" || /^\/(spartanops|archive|arhiv|print|updates)(\b|\/|$)/i.test(pathname);
   const routeLobby = /^\/(join|lobby)(\b|\/|$)/i.test(pathname);
   const routeMission = /^\/misija(\b|\/|$)/i.test(pathname);
   const inLobby = lobbyOverride ?? routeLobby;
@@ -172,7 +172,7 @@ export function AmbientAudioProvider({ children }: { children: ReactNode }) {
     if (inLobby) {
       fade(t1, 0);
       fade(t2, 0.55);
-    } else if (routeRaging || routeMission) {
+    } else if (routeRaging) {
       fade(t2, 0);
       fade(t1, 0.5);
     } else {
