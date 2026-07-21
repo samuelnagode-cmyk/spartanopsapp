@@ -1994,8 +1994,8 @@ function PreMatchCountdown({ seconds, polygon, eventName, gamemode, pointTarget,
       {gamemode !== "search_destroy" && !description?.trim() && (
         <p className="max-w-2xl text-[12px]" style={{ color: MUTED, lineHeight: 1.7, fontStyle: "italic", marginTop: 0, marginBottom: 14 }}>
           {en
-            ? `Your mission is to capture ${pointTarget ?? 50} points on the field and hold them for as long as possible — capture points by scanning the QR codes at the flagged locations.`
-            : `Vaša misija je zavzeti ${pointTarget ?? 50} točk na poligonu in jih braniti čim dlje časa — točke zavzamete z skeniranjem QR kod ob označenih lokacijah.`}
+            ? "Your objective is to secure as many sectors as possible via scanning the QR codes in the marked areas."
+            : "Vaš cilj je zavarovati čim več sektorjev s skeniranjem QR kod na označenih lokacijah."}
         </p>
       )}
       {state && (
