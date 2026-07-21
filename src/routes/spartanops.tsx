@@ -556,23 +556,24 @@ type HowStep = {
 };
 
 function HowItWorks() {
+  const t = useT();
   const steps: HowStep[] = [
     {
-      eyebrow: "STEP 01 // COMMENCE OPERATION",
-      title: "JOIN THE LOBBY",
-      body: "Scan the Player HUD card QR (or join via website), claim your callsign, and pick your faction (RED or BLUE).",
+      eyebrow: t("spartan.step1Tag"),
+      title: t("spartan.step1Title"),
+      body: t("spartan.step1Desc"),
       Icon: QrCode,
     },
     {
-      eyebrow: "STEP 02 // ACTIVE MISSION",
-      title: "ACTIVATE OBJECTIVES",
-      body: "Move to spawn points. After the marshal starts the game it is your mission to locate physical QR points across the field and scan them to trigger tactical functions for the active game mode.",
+      eyebrow: t("spartan.step2Tag"),
+      title: t("spartan.step2Title"),
+      body: t("spartan.step2Desc"),
       Icon: Crosshair,
     },
     {
-      eyebrow: "STEP 03 // TRACKING",
-      title: "PLAYER HUD",
-      body: "Track live scores on your Player HUD and follow in-game rules and missions to secure victory.",
+      eyebrow: t("spartan.step3Tag"),
+      title: t("spartan.step3Title"),
+      body: t("spartan.step3Desc"),
       Icon: Flag,
     },
   ];
@@ -580,9 +581,9 @@ function HowItWorks() {
   return (
     <SectionShell>
       <SectionHeader
-        eyebrow="// FIELD MANUAL"
-        title="HOW IT WORKS / OPERATIONAL MANUAL"
-        sub="The universal QR flow that powers every SpartanOps match."
+        eyebrow={t("spartan.tagManual")}
+        title={t("spartan.titleManual")}
+        sub={t("spartan.descManual")}
       />
 
       <ol style={{ listStyle: "none", padding: 0, margin: 0 }}>
@@ -676,6 +677,7 @@ const SECTOR_IMG =
   "https://res.cloudinary.com/dfifiytid/image/upload/v1783854912/SpartanOps%20app%20v1.0/GALERIJA/homepage_asortiman-14.webp";
 
 function SectorShowcase() {
+  const t = useT();
   return (
     <section className="w-full px-4 sm:px-6 lg:px-8 pt-10 md:pt-16 pb-16 md:pb-24 relative overflow-hidden">
       <div className="max-w-6xl mx-auto relative">
@@ -696,7 +698,7 @@ function SectorShowcase() {
             className="font-mono uppercase mb-3"
             style={{ fontSize: 11, letterSpacing: "0.32em", color: ACCENT }}
           >
-            // TACTICAL SIMPLICITY
+            {t("spartan.tagSimplicity")}
           </p>
           <h2
             style={{
@@ -708,7 +710,7 @@ function SectorShowcase() {
               maxWidth: 820,
             }}
           >
-            REVOLUTIONIZE YOUR AIRSOFT FIELD
+            {t("spartan.titleRevolutionize")}
           </h2>
           <img
             src={SECTOR_IMG}
@@ -725,9 +727,7 @@ function SectorShowcase() {
             className="mt-8 text-[14px] md:text-[15px] leading-[1.75]"
             style={{ color: MUTED, maxWidth: 720 }}
           >
-            Airsoft games are incredibly fun, but organizing and tracking objectives on the field is often
-            technically complicated. Traditional electronic props used for real-time sector tracking can be an
-            immense financial burden — especially for smaller clubs and field operators.
+            {t("spartan.descProblem")}
           </p>
 
           <div
@@ -736,16 +736,16 @@ function SectorShowcase() {
           >
             {[
               {
-                k: "// ZERO ELECTRONICS",
-                v: "No expensive props, no batteries, no wiring, no maintenance. Just print, weatherproof, and deploy.",
+                k: t("spartan.featureZeroElecTitle"),
+                v: t("spartan.featureZeroElecDesc"),
               },
               {
-                k: "// LIVE TRACKING",
-                v: "Real-time sector control, live scoring and instant capture feedback for every player on the field.",
+                k: t("spartan.featureLiveTrackingTitle"),
+                v: t("spartan.featureLiveTrackingDesc"),
               },
               {
-                k: "// PURE IMMERSION",
-                v: "High-visibility tactical QR plates and a battle-ready HUD built for outdoor combat scenarios.",
+                k: t("spartan.featurePureImmersionTitle"),
+                v: t("spartan.featurePureImmersionDesc"),
               },
             ].map((b) => (
               <div
@@ -769,7 +769,7 @@ function SectorShowcase() {
 
           <div className="mt-8">
             <BtnOutline to="/print">
-              <Printer size={14} /> Get Print Files
+              <Printer size={14} /> {t("spartan.btnGetPrintFiles")}
             </BtnOutline>
           </div>
         </div>
@@ -780,6 +780,7 @@ function SectorShowcase() {
 
 /* ---------- 5. FIELD SUPPLY ---------- */
 function FieldSupply() {
+  const t = useT();
   return (
     <SectionShell>
       <HudCard className="p-8 md:p-10">
@@ -789,7 +790,7 @@ function FieldSupply() {
               className="font-mono uppercase mb-3"
               style={{ fontSize: 11, letterSpacing: "0.32em", color: ACCENT }}
             >
-              // LOGISTICS
+              {t("spartan.tagLogistics")}
             </p>
             <h2
               style={{
@@ -799,15 +800,15 @@ function FieldSupply() {
                 color: ACCENT,
               }}
             >
-              FIELD SUPPLY POST
+              {t("spartan.titleSupply")}
             </h2>
             <p className="mt-3 text-[14px] md:text-[15px] leading-[1.7]" style={{ color: MUTED, maxWidth: 620 }}>
-              Download ready-to-print field assets, sector markers, and game rules.
+              {t("spartan.descSupply")}
             </p>
           </div>
           <div className="shrink-0">
             <BtnPrimary to="/print">
-              <Printer size={14} /> Access Print Files
+              <Printer size={14} /> {t("spartan.btnAccessPrint")}
             </BtnPrimary>
           </div>
         </div>
