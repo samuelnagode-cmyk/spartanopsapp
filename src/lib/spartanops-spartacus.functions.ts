@@ -6,9 +6,15 @@ function isField(x: string): boolean {
   return LEGACY_FIELDS.has(x) || UUID_RE.test(x);
 }
 
-const ANCHOR_RADIUS_M = 10;
-const MAX_ACCURACY_BUFFER_M = 25;
-const MAX_ACCEPTED_ACCURACY_M = 50;
+const ANCHOR_RADIUS_M = 15;
+// Per-scan accuracy tolerance ceiling. Real-world urban/forest GPS on iPhone can
+// legitimately report 30-60m accuracy at the same physical spot, so we allow the
+// full reported accuracy as buffer up to this cap.
+const MAX_ACCURACY_BUFFER_M = 75;
+// Accept any fix the device is willing to hand us; the distance check below
+// already factors accuracy into the allowed radius, so we no longer hard-reject
+// "loose" fixes that would otherwise trigger a bogus "enable GPS" prompt.
+const MAX_ACCEPTED_ACCURACY_M = 200;
 
 function haversineMeters(a: { lat: number; lng: number }, b: { lat: number; lng: number }): number {
   const R = 6371000;
