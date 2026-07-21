@@ -227,6 +227,7 @@ function CapturePage() {
               ? "⚠ Spartacus flagged this scan as suspicious. Awaiting marshal review."
               : "⚠ Spartacus je označil ta sken kot sumljiv. Čaka pregled maršala.",
           };
+          setIsGpsError(errCode === "gps_required");
           setErrMsg(msg[errCode] ?? "Napaka."); setState("error"); return;
         }
         setTeam((result as any).team ?? null);
