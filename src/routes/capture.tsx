@@ -104,6 +104,16 @@ const CAPTURE_SFX_MS = 6000;
 const GPS_OK_KEY = "spartanops:gps_authorized";
 const GPS_FIX_KEY = "spartanops:gps_fix";
 
+type SpartacusDiagnosticPayload = {
+  player_gps?: { lat: number | null; lng: number | null; accuracy?: number | null };
+  anchor_gps?: { lat: number | null; lng: number | null; accuracy?: number | null };
+  calculated_distance_meters?: number | null;
+  allowed_threshold_meters?: number | null;
+  rpc_response_payload?: unknown;
+  stage?: string;
+  evaluator?: unknown;
+};
+
 function readCachedGpsFix(): { lat: number | null; lng: number | null; accuracy?: number | null } | null {
   if (typeof window === "undefined") return null;
   try {
@@ -193,6 +203,7 @@ function CapturePage() {
   const [resolvedRouteField, setResolvedRouteField] = useState<string>(resolvedField);
   const [acquiringGps, setAcquiringGps] = useState(false);
   const [retryNonce, setRetryNonce] = useState(0);
+  const [debugPayload, setDebugPayload] = useState<SpartacusDiagnosticPayload | null>(null);
 
   useEffect(() => {
     const onAcq = () => setAcquiringGps(true);
@@ -284,10 +295,30 @@ function CapturePage() {
 
       try {
         const { lat, lng, accuracy } = await getPosition();
+        const logDiagnostic = (label: string, response: unknown) => {
+          const diagnostic = ((response as any)?.diagnostic ?? {}) as SpartacusDiagnosticPayload;
+          const payload: SpartacusDiagnosticPayload = {
+            ...diagnostic,
+            player_gps: diagnostic.player_gps ?? { lat, lng, accuracy },
+            rpc_response_payload: response,
+            evaluator: {
+              label,
+              ok: (response as any)?.ok,
+              already_held: (response as any)?.already_held,
+              error: (response as any)?.error,
+              suspicious: (response as any)?.suspicious,
+              state_decision: label,
+            },
+          };
+          console.log("SPARTACUS DIAGNOSTIC:", payload);
+          setDebugPayload(payload);
+        };
         if ((lat == null || lng == null) && readGpsAuthorized()) {
           const cached = readCachedGpsFix();
           if (cached?.lat != null && cached?.lng != null) {
             const result = await applyCapture({ data: { fieldId: effectiveField, point, sessionId: session, lat: cached.lat, lng: cached.lng, accuracy: cached.accuracy ?? 1200 } });
+            console.log("SPARTACUS DIAGNOSTIC:", result);
+            logDiagnostic("cached-gps-result", result);
             if (result?.ok) {
               setTeam((result as any).team ?? null);
               setResolvedRouteField(effectiveRouteField);
@@ -300,6 +331,8 @@ function CapturePage() {
           }
         }
         const result = await applyCapture({ data: { fieldId: effectiveField, point, sessionId: session, lat, lng, accuracy } });
+        console.log("SPARTACUS DIAGNOSTIC:", result);
+        logDiagnostic("fresh-gps-result", result);
         if ((result as any)?.ok && (result as any)?.already_held) {
           setState("already_held");
           setTimeout(() => navigate({ to: "/misija", search: { field: effectiveRouteField }, replace: true }), 2600);
@@ -307,6 +340,7 @@ function CapturePage() {
         }
         if (!result?.ok) {
           const errCode = (result as any)?.error ?? "";
+          logDiagnostic(`error-branch:${errCode || "unknown"}`, result);
           // Game not currently capturable → silently return the player to
           // /misija so they see the same screen everyone else sees
           // (pre-start countdown or debriefing) without capturing the point.
@@ -341,6 +375,7 @@ function CapturePage() {
               if (row && row.suspicious !== true && row.player_callsign === callsign && row.team === team) {
                 const ageMs = Date.now() - new Date(row.captured_at).getTime();
                 if (ageMs >= 0 && ageMs < 20000) {
+                  logDiagnostic("error-overridden-by-db-success-safety-net", result);
                   setTeam(team);
                   setResolvedRouteField(effectiveRouteField);
                   setState("success");
@@ -366,6 +401,7 @@ function CapturePage() {
           setIsGpsError(errCode === "gps_required");
           setErrMsg(msg[errCode] ?? "Napaka."); setState("error"); return;
         }
+        logDiagnostic("success-branch", result);
         setTeam((result as any).team ?? null);
         setResolvedRouteField(effectiveRouteField);
         setState("success");
@@ -377,6 +413,8 @@ function CapturePage() {
         // A network/server failure means the capture did not actually land —
         // clear the guard so the player can retry by re-scanning the QR.
         try { sessionStorage.removeItem(captureKey); } catch { /* ignore */ }
+        console.log("SPARTACUS DIAGNOSTIC:", { thrown_error: e?.message ?? e, stack: e?.stack });
+        setDebugPayload({ stage: "frontend_exception", rpc_response_payload: { message: e?.message ?? String(e) } });
         setErrMsg(e?.message ?? "Napaka pri shranjevanju zavzema."); setState("error");
       }
     };
@@ -436,6 +474,11 @@ function CapturePage() {
               {en ? "JOIN MISSION" : "PRIDRUŽI SE MISIJI"}
             </button>
           )}
+          {import.meta.env.DEV && debugPayload && (
+            <pre className="mt-5 max-h-64 overflow-auto text-left text-[10px] leading-relaxed" style={{ color: "#ffd6d6", background: "rgba(0,0,0,0.35)", border: "1px solid rgba(255,255,255,0.16)", padding: 10, whiteSpace: "pre-wrap" }}>
+              {JSON.stringify(debugPayload, null, 2)}
+            </pre>
+          )}
         </div>
       </div>
     );
@@ -476,6 +519,11 @@ function CapturePage() {
               <p className="mt-5 font-mono text-[11px] leading-relaxed" style={{ color: MUTED, letterSpacing: "0.06em" }}>
                 {t("gpsAcquiringNotice")}
               </p>
+            )}
+            {import.meta.env.DEV && debugPayload && (
+              <pre className="mt-5 max-h-56 overflow-auto text-left text-[10px] leading-relaxed" style={{ color: MUTED, background: "rgba(0,0,0,0.35)", border: "1px solid rgba(255,255,255,0.12)", padding: 10, whiteSpace: "pre-wrap" }}>
+                {JSON.stringify(debugPayload, null, 2)}
+              </pre>
             )}
           </>
         ) : (
@@ -526,6 +574,11 @@ function CapturePage() {
                 }}
               />
             </div>
+            {import.meta.env.DEV && debugPayload && (
+              <pre className="mt-5 max-h-56 overflow-auto text-left text-[10px] leading-relaxed" style={{ color: MUTED, background: "rgba(0,0,0,0.35)", border: "1px solid rgba(255,255,255,0.12)", padding: 10, whiteSpace: "pre-wrap" }}>
+                {JSON.stringify(debugPayload, null, 2)}
+              </pre>
+            )}
           </>
         )}
       </div>
