@@ -286,8 +286,9 @@ function JoinPrompt({ lobby, onClose, onSuccess }: { lobby: LobbyRecord; onClose
           {lobby.fieldName}
         </h2>
         <p style={{ fontSize: 12, color: MUTED, textAlign: "center", marginBottom: 18 }}>
-          Enter the marshal's field password to proceed to check-in.
+          Enter the marshal's mission password to proceed to check-in.
         </p>
+
         <input
           type="password" value={password} onChange={(e) => setPassword(e.target.value)} autoFocus placeholder="••••••••"
           style={{ width: "100%", background: BG, color: INK, border: "1px solid rgba(236,227,196,0.20)", padding: "12px 14px", fontSize: 14, marginBottom: 12, textAlign: "center", letterSpacing: "0.2em" }}
