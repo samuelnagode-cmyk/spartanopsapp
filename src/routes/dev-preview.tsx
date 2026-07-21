@@ -20,6 +20,7 @@ const MUTED = "rgba(236,227,196,0.55)";
 const ACCENT = "#E0B04E";
 
 type TeamKey = "modra" | "rdeca" | "rumena" | "zelena" | "vijolicna";
+type DeviceKey = "android" | "iphone" | "desktop";
 
 const TEAM_COLOR: Record<TeamKey, string> = {
   modra: "#3b82f6",
@@ -77,6 +78,23 @@ function CardShell({ title, sound, children, minHeight = 520 }: { title: string;
         </p>
       )}
     </div>
+  );
+}
+
+function RealMisijaPreview({ preset, device }: { preset: "registration" | "team" | "prestart" | "hud"; device: DeviceKey }) {
+  const src = `/misija?field=dev-preview&preview=1&preset=${preset}`;
+  return (
+    <iframe
+      title={`Misija preview ${preset}`}
+      src={src}
+      style={{
+        width: "100%",
+        height: device === "desktop" ? 720 : 760,
+        border: 0,
+        display: "block",
+        background: BG,
+      }}
+    />
   );
 }
 
@@ -422,7 +440,7 @@ function GamePausedMock({ en }: { en: boolean }) {
 function DevPreviewPage() {
   const [lang, setLang] = useState<"en" | "sl">("en");
   const [team, setTeam] = useState<TeamKey>("modra");
-  const [device, setDevice] = useState<"android" | "iphone" | "desktop">("iphone");
+  const [device, setDevice] = useState<DeviceKey>("iphone");
   const en = lang === "en";
 
   const frameStyle: React.CSSProperties = device !== "desktop"
@@ -430,11 +448,11 @@ function DevPreviewPage() {
     : { width: "100%" };
 
   const cards: { title: string; sound?: string; el: (extra?: React.ReactNode) => React.ReactNode }[] = [
-    { title: en ? "DEPLOYMENT REGISTRATION" : "PRIJAVA V OPERACIJO", sound: "spartanops-lobby.mp3", el: () => <DeploymentRegistrationMock en={en} /> },
-    { title: en ? "TEAM SELECTION" : "IZBIRA EKIPE", sound: "spartanops-lobby.mp3", el: () => <TeamSelectionMock en={en} /> },
+    { title: en ? "DEPLOYMENT REGISTRATION" : "PRIJAVA V OPERACIJO", sound: "spartanops-lobby.mp3", el: () => <RealMisijaPreview preset="registration" device={device} /> },
+    { title: en ? "TEAM SELECTION" : "IZBIRA EKIPE", sound: "spartanops-lobby.mp3", el: () => <RealMisijaPreview preset="team" device={device} /> },
     { title: en ? "TEAM CHANGE NOTIFICATION" : "OBVESTILO O ZAMENJAVI EKIPE", el: () => <TeamChangeNotificationMock en={en} team={team} /> },
-    { title: en ? "PRE-START SCREEN" : "PRED-START", sound: "countdown-10.mp3", el: () => <PreStartMock en={en} /> },
-    { title: en ? "PLAYER HUD (GAME)" : "IGRALSKI HUD (IGRA)", sound: "raging-fires.mp3", el: () => <PlayerHudMock en={en} myTeam={team} /> },
+    { title: en ? "PRE-START SCREEN" : "PRED-START", sound: "countdown-10.mp3", el: () => <RealMisijaPreview preset="prestart" device={device} /> },
+    { title: en ? "PLAYER HUD (GAME)" : "IGRALSKI HUD (IGRA)", sound: "raging-fires.mp3", el: () => <RealMisijaPreview preset="hud" device={device} /> },
     { title: en ? "SUCCESS CAPTURE POPUP" : "USPEŠNO ZAVZETJE", sound: "spartanops-capture-levelup.mp3", el: () => <SuccessCapturePopupMock en={en} team={team} /> },
     { title: en ? "POINT ALREADY TAKEN" : "TOČKA ŽE ZAVZETA", el: () => <PointAlreadyHeldMock en={en} /> },
     { title: en ? "DUPLICATE SCAN NOTICE" : "PODVOJEN SKEN", el: () => <DuplicateScanMock en={en} /> },
