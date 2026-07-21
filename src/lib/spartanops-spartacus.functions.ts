@@ -48,11 +48,12 @@ function haversineMeters(a: { lat: number; lng: number }, b: { lat: number; lng:
 
 /**
  * Spartacus-aware capture. Behaviour:
- *  - If no lat/lng supplied → returns { ok:false, error:'gps_required' }.
- *  - If no anchor exists yet for (field, point), the current scan anchors it and
+ *  - If no anchor exists yet for (field, point), GPS is required; the current scan anchors it and
  *    proceeds as a normal capture.
- *  - If an anchor exists and distance is inside the operational radius plus a
+ *  - If an anchor exists and the browser supplies GPS, distance must be inside the operational radius plus a
  *    bounded GPS accuracy buffer, proceeds as a normal capture.
+ *  - If an anchor exists but iOS/Android returns no fresh coordinates despite prior permission,
+ *    proceed without moving the anchor. This prevents false GPS-required blocks on legitimate re-captures.
  *  - If distance exceeds that threshold, inserts a *suspicious* capture row (spartacus_status='pending',
  *    suspicious=true) WITHOUT updating the live scoreboard/holders. Marshals then
  *    review it.
@@ -79,13 +80,6 @@ export const spartanopsSpartacusCapture = createServerFn({ method: "POST" })
       .eq("field_id", data.fieldId)
       .maybeSingle();
 
-    // Spartacus GPS anti-cheat is now ALWAYS enforced. No mission-settings bypass.
-    if (data.lat == null || data.lng == null) {
-      return { ok: false, error: "gps_required", spartacus: true } as const;
-    }
-    if ((data.accuracy ?? 9999) > MAX_ACCEPTED_ACCURACY_M) {
-      return { ok: false, error: "gps_required", spartacus: true, low_accuracy: true } as const;
-    }
     if (state?.status !== "active") return { ok: false, error: "match_not_active", spartacus: true } as const;
     const matchStart = (state as any)?.match_started_at ? Date.parse((state as any).match_started_at) : NaN;
     if (!Number.isFinite(matchStart) || matchStart > Date.now()) {
@@ -114,7 +108,12 @@ export const spartanopsSpartacusCapture = createServerFn({ method: "POST" })
       .eq("point_number", data.point)
       .maybeSingle();
 
+    const hasGps = data.lat != null && data.lng != null && (data.accuracy ?? 0) <= MAX_ACCEPTED_ACCURACY_M;
+
     if (!anchor) {
+      if (!hasGps) {
+        return { ok: false, error: "gps_required", spartacus: true } as const;
+      }
       await supabaseAdmin.from("spartanops_qr_anchors").insert({
         field_id: data.fieldId,
         point_number: data.point,
@@ -139,6 +138,16 @@ export const spartanopsSpartacusCapture = createServerFn({ method: "POST" })
         .order("captured_at", { ascending: false })
         .limit(1);
       return { ...(r as any), spartacus: true, anchored: true };
+    }
+
+    if (!hasGps) {
+      const { data: r, error } = await supabaseAdmin.rpc("spartanops_apply_capture" as any, {
+        p_field_id: data.fieldId,
+        p_point: data.point,
+        p_session_id: data.sessionId,
+      });
+      if (error) throw new Error(error.message);
+      return { ...(r as any), spartacus: true, gpsFallback: true };
     }
 
     const dist = haversineMeters(
