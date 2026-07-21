@@ -147,6 +147,12 @@ export const spartanopsAdminPatchState = createServerFn({ method: "POST" })
       .update({ ...patch, updated_at: serverNowIso } as any)
       .eq("field_id", data.fieldId);
     if (error) throw new Error(error.message);
+    if ("compressed_map_url" in patch) {
+      await supabaseAdmin
+        .from("spartanops_lobbies" as any)
+        .update({ map_url: patch.compressed_map_url || null, updated_at: serverNowIso } as any)
+        .eq("id", data.fieldId);
+    }
     return { ok: true };
   });
 
@@ -268,6 +274,10 @@ export const spartanopsAdminUploadMap = createServerFn({ method: "POST" })
       .from("spartanops_game_state")
       .update({ compressed_map_url: signed.signedUrl, updated_at: new Date().toISOString() } as any)
       .eq("field_id", data.fieldId);
+    await supabaseAdmin
+      .from("spartanops_lobbies" as any)
+      .update({ map_url: signed.signedUrl, updated_at: new Date().toISOString() } as any)
+      .eq("id", data.fieldId);
 
     return { ok: true, url: signed.signedUrl };
   });
