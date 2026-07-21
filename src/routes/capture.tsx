@@ -120,9 +120,21 @@ function readCachedGpsFix(): { lat: number | null; lng: number | null; accuracy?
   }
 }
 
+/**
+ * iOS-optimized GPS acquisition:
+ *  - Uses watchPosition + high accuracy + maximumAge:0 to force a fresh fix.
+ *  - Accepts a high-precision fix (<=20m) immediately.
+ *  - After 3s of silent retries, accepts best-so-far up to 45m.
+ *  - Hard cap at 8s, then falls back to any recent cached fix.
+ *  - Emits progress events so the UI can surface a "Acquiring precise GPS..." notice.
+ */
 function getFreshGpsPosition(): Promise<{ lat: number | null; lng: number | null; accuracy?: number | null }> {
   return new Promise((resolve) => {
     if (typeof navigator === "undefined" || !navigator.geolocation) return resolve({ lat: null, lng: null });
+    let best: GeolocationPosition | null = null;
+    let settled = false;
+    let watchId: number | null = null;
+    const notifyAcquiring = () => { try { window.dispatchEvent(new Event("spartanops:gps-acquiring")); } catch { /* ignore */ } };
     const accept = (pos: GeolocationPosition) => {
       try {
         localStorage.setItem(GPS_OK_KEY, "1");
@@ -130,27 +142,30 @@ function getFreshGpsPosition(): Promise<{ lat: number | null; lng: number | null
       } catch { /* ignore */ }
       resolve({ lat: pos.coords.latitude, lng: pos.coords.longitude, accuracy: pos.coords.accuracy });
     };
-    const fallback = () => resolve(readCachedGpsFix() ?? { lat: null, lng: null });
-    let settled = false;
-    const done = (fn: () => void) => { if (!settled) { settled = true; fn(); } };
-    const watchId = navigator.geolocation.watchPosition(
+    const finish = (pos: GeolocationPosition | null) => {
+      if (settled) return;
+      settled = true;
+      if (watchId != null) { try { navigator.geolocation.clearWatch(watchId); } catch { /* ignore */ } }
+      if (pos) accept(pos);
+      else resolve(readCachedGpsFix() ?? { lat: null, lng: null });
+    };
+    watchId = navigator.geolocation.watchPosition(
       (pos) => {
-        if ((pos.coords.accuracy ?? 9999) <= 25) {
-          navigator.geolocation.clearWatch(watchId);
-          done(() => accept(pos));
-        }
+        if (!best || (pos.coords.accuracy ?? 9999) < (best.coords.accuracy ?? 9999)) best = pos;
+        if ((pos.coords.accuracy ?? 9999) <= 20) finish(pos);
       },
-      () => { navigator.geolocation.clearWatch(watchId); done(fallback); },
-      { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 },
+      () => { /* swallow individual errors; hard-cap handles fallback */ },
+      { enableHighAccuracy: true, timeout: 8000, maximumAge: 0 },
     );
+    // Show acquiring notice after 1.2s if we still don't have a good fix.
+    window.setTimeout(() => { if (!settled && (!best || (best.coords.accuracy ?? 9999) > 20)) notifyAcquiring(); }, 1200);
+    // At 3s, accept best-so-far if it's within the loose validation window.
     window.setTimeout(() => {
-      navigator.geolocation.clearWatch(watchId);
-      navigator.geolocation.getCurrentPosition(
-        (pos) => done(() => accept(pos)),
-        () => done(fallback),
-        { enableHighAccuracy: true, timeout: 8000, maximumAge: 0 },
-      );
-    }, 9000);
+      if (settled) return;
+      if (best && (best.coords.accuracy ?? 9999) <= 45) finish(best);
+    }, 3000);
+    // Hard cap 8s.
+    window.setTimeout(() => finish(best), 8000);
   });
 }
 
@@ -170,6 +185,13 @@ function CapturePage() {
   const [isGpsError, setIsGpsError] = useState(false);
   const [team, setTeam] = useState<string | null>(null);
   const [resolvedRouteField, setResolvedRouteField] = useState<string>(resolvedField);
+  const [acquiringGps, setAcquiringGps] = useState(false);
+
+  useEffect(() => {
+    const onAcq = () => setAcquiringGps(true);
+    window.addEventListener("spartanops:gps-acquiring", onAcq);
+    return () => window.removeEventListener("spartanops:gps-acquiring", onAcq);
+  }, []);
 
   const enableGpsAndRetry = () => {
     if (typeof navigator === "undefined" || !navigator.geolocation) {
@@ -386,6 +408,11 @@ function CapturePage() {
           <>
             <div className="font-mono text-xs tracking-[0.24em] uppercase animate-pulse" style={{ color: c }}>▌ SCANNING...</div>
             <div className="mt-5 mx-auto rounded-full" style={{ width: 80, height: 80, border: `4px solid ${c}44`, borderTopColor: c, animation: "spo-spin 0.9s linear infinite" }} />
+            {acquiringGps && (
+              <p className="mt-5 font-mono text-[11px] leading-relaxed" style={{ color: MUTED, letterSpacing: "0.06em" }}>
+                {t("gpsAcquiringNotice")}
+              </p>
+            )}
           </>
         ) : (
           <>

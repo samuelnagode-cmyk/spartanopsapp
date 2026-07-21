@@ -10,7 +10,7 @@ import { SpartacusAlerts } from "@/components/SpartanOpsConsole";
 
 import { OfflineBanner } from "@/components/OfflineBanner";
 import { TacticalCompass } from "@/components/TacticalCompass";
-import { Crosshair, Shield, ArrowUp } from "lucide-react";
+import { Crosshair, Shield } from "lucide-react";
 import { useLang } from "@/lib/i18n";
 import landingView from "@/assets/landing-view.webp.asset.json";
 
@@ -1994,8 +1994,8 @@ function PreMatchCountdown({ seconds, polygon, eventName, gamemode, pointTarget,
       {gamemode !== "search_destroy" && !description?.trim() && (
         <p className="max-w-2xl text-[12px]" style={{ color: MUTED, lineHeight: 1.7, fontStyle: "italic", marginTop: 0, marginBottom: 14 }}>
           {en
-            ? `Your mission is to capture ${pointTarget ?? 50} points on the field and hold them for as long as possible — capture points by scanning the QR codes at the flagged locations.`
-            : `Vaša misija je zavzeti ${pointTarget ?? 50} točk na poligonu in jih braniti čim dlje časa — točke zavzamete z skeniranjem QR kod ob označenih lokacijah.`}
+            ? "Your objective is to secure as many sectors as possible via scanning the QR codes in the marked areas."
+            : "Vaš cilj je zavarovati čim več sektorjev s skeniranjem QR kod na označenih lokacijah."}
         </p>
       )}
       {state && (
@@ -2205,23 +2205,6 @@ function TacticalMapContent({ state, en, nodeHoldersOverride }: { state: GameSta
           <TacticalCompass size={80} />
         </div>
       )}
-      <div style={{ position: "absolute", top: 12, right: 12, zIndex: 10, pointerEvents: "none" }}>
-        <div
-          style={{
-            width: 36,
-            height: 36,
-            borderRadius: "50%",
-            background: "rgba(8,10,7,0.78)",
-            border: `1px solid #ff5a5a`,
-            boxShadow: `0 0 10px rgba(255,90,90,0.55), inset 0 0 8px rgba(0,0,0,0.6)`,
-            display: "grid",
-            placeItems: "center",
-          }}
-          title="North"
-        >
-          <ArrowUp size={20} color="#ff5a5a" strokeWidth={2.6} />
-        </div>
-      </div>
       {!positions["compass"] && (
         <div style={{ position: "absolute", bottom: 12, right: 12, zIndex: 10, pointerEvents: "none" }}>
           <TacticalCompass size={72} />
@@ -2928,12 +2911,15 @@ function EndgameReport({ state, roster, captures, en, now }: { state: GameState;
         })}
       </div>
       {afterGameInstructions && (
-        <div style={{ marginTop: 18, background: PANEL, border: `1px solid ${ACCENT}55`, padding: "14px 16px" }}>
-          <div style={{ fontFamily: "monospace", fontSize: 10, letterSpacing: "0.2em", color: ACCENT, textTransform: "uppercase", marginBottom: 8 }}>
-            ▌ {en ? "AFTER GAME INSTRUCTIONS" : "NAVODILA PO IGRI"}
+        <>
+          <div style={{ maxWidth: 720, margin: "28px auto 0", height: 1, background: `linear-gradient(90deg, transparent, ${ACCENT}66, transparent)` }} />
+          <div style={{ maxWidth: 720, margin: "18px auto 0", background: PANEL, border: `1px solid ${ACCENT}55`, padding: "14px 16px" }}>
+            <div style={{ fontFamily: "monospace", fontSize: 10, letterSpacing: "0.2em", color: ACCENT, textTransform: "uppercase", marginBottom: 8 }}>
+              ▌ {en ? "AFTER GAME INSTRUCTIONS" : "NAVODILA PO IGRI"}
+            </div>
+            <p style={{ color: INK, fontFamily: "monospace", fontSize: 12, lineHeight: 1.7, whiteSpace: "pre-wrap", margin: 0 }}>{afterGameInstructions}</p>
           </div>
-          <p style={{ color: INK, fontFamily: "monospace", fontSize: 12, lineHeight: 1.7, whiteSpace: "pre-wrap", margin: 0 }}>{afterGameInstructions}</p>
-        </div>
+        </>
       )}
     </div>
   );
