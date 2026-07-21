@@ -1137,7 +1137,7 @@ function TelemetryStatusStrip({ en }: { en: boolean }) {
       (pos) => {
         try {
           localStorage.setItem(GPS_OK_KEY, "1");
-          localStorage.setItem(GPS_FIX_KEY, JSON.stringify({ lat: pos.coords.latitude, lng: pos.coords.longitude, at: Date.now() }));
+          localStorage.setItem(GPS_FIX_KEY, JSON.stringify({ lat: pos.coords.latitude, lng: pos.coords.longitude, accuracy: pos.coords.accuracy, at: Date.now() }));
         } catch { /* ignore */ }
         setState("granted");
       },
@@ -1244,7 +1244,7 @@ function SpartacusConsentBlock({ en, onClearedChange }: { en: boolean; onCleared
       (pos) => {
         try {
           localStorage.setItem(GPS_OK_KEY, "1");
-          localStorage.setItem(GPS_FIX_KEY, JSON.stringify({ lat: pos.coords.latitude, lng: pos.coords.longitude, at: Date.now() }));
+          localStorage.setItem(GPS_FIX_KEY, JSON.stringify({ lat: pos.coords.latitude, lng: pos.coords.longitude, accuracy: pos.coords.accuracy, at: Date.now() }));
         } catch { /* ignore */ }
         setStatus("granted");
         onClearedChange(true);
@@ -2961,13 +2961,13 @@ function PointCapturedOverlay({ captures, teamLabelFor, en }: { captures: Captur
           <div
             key={t.id}
             style={{
-              background: "rgba(10,12,10,0.92)",
+              background: "rgba(10,12,10,0.94)",
               border: `2px solid ${ACCENT}`,
               boxShadow: `0 0 34px -6px ${ACCENT}88`,
               padding: "22px 18px",
-              maxWidth: 310,
-              minHeight: 230,
-              width: "100%",
+              width: 270,
+              minHeight: 270,
+              maxWidth: "calc(100vw - 36px)",
               display: "flex",
               flexDirection: "column",
               justifyContent: "center",
@@ -2982,10 +2982,12 @@ function PointCapturedOverlay({ captures, teamLabelFor, en }: { captures: Captur
             }}
           >
             <span style={{ color: ACCENT, fontSize: 12, fontWeight: 700 }}>🎯 {en ? "POINT CAPTURED" : "TOČKA ZAVZETA"}</span>
-            <div style={{ marginTop: 16, fontSize: 18, lineHeight: 1.45, letterSpacing: "0.1em", color: INK, fontWeight: 800 }}>
-              {label}
+            <div style={{ marginTop: 18, fontSize: 17, lineHeight: 1.5, letterSpacing: "0.1em", color: INK, fontWeight: 800 }}>
+              <span>{en ? "TEAM" : "EKIPA"}</span>
               <br />
-              <strong style={{ color: ACCENT }}>{node}</strong>
+              <strong style={{ color: ACCENT }}>{label}</strong>
+              <br />
+              <span>{node}</span>
             </div>
             {t.player ? (
               <div style={{ marginTop: 14, fontFamily: "monospace", fontSize: 11, letterSpacing: "0.16em", color: MUTED }}>

@@ -48,11 +48,12 @@ function haversineMeters(a: { lat: number; lng: number }, b: { lat: number; lng:
 
 /**
  * Spartacus-aware capture. Behaviour:
- *  - If no lat/lng supplied → returns { ok:false, error:'gps_required' }.
- *  - If no anchor exists yet for (field, point), the current scan anchors it and
+ *  - If no anchor exists yet for (field, point), GPS is required; the current scan anchors it and
  *    proceeds as a normal capture.
- *  - If an anchor exists and distance is inside the operational radius plus a
+ *  - If an anchor exists and the browser supplies GPS, distance must be inside the operational radius plus a
  *    bounded GPS accuracy buffer, proceeds as a normal capture.
+ *  - If an anchor exists but iOS/Android returns no fresh coordinates despite prior permission,
+ *    proceed without moving the anchor. This prevents false GPS-required blocks on legitimate re-captures.
  *  - If distance exceeds that threshold, inserts a *suspicious* capture row (spartacus_status='pending',
  *    suspicious=true) WITHOUT updating the live scoreboard/holders. Marshals then
  *    review it.
@@ -79,13 +80,6 @@ export const spartanopsSpartacusCapture = createServerFn({ method: "POST" })
       .eq("field_id", data.fieldId)
       .maybeSingle();
 
-    // Spartacus GPS anti-cheat is now ALWAYS enforced. No mission-settings bypass.
-    if (data.lat == null || data.lng == null) {
-      return { ok: false, error: "gps_required", spartacus: true } as const;
-    }
-    if ((data.accuracy ?? 9999) > MAX_ACCEPTED_ACCURACY_M) {
-      return { ok: false, error: "gps_required", spartacus: true, low_accuracy: true } as const;
-    }
     if (state?.status !== "active") return { ok: false, error: "match_not_active", spartacus: true } as const;
     const matchStart = (state as any)?.match_started_at ? Date.parse((state as any).match_started_at) : NaN;
     if (!Number.isFinite(matchStart) || matchStart > Date.now()) {
@@ -114,7 +108,12 @@ export const spartanopsSpartacusCapture = createServerFn({ method: "POST" })
       .eq("point_number", data.point)
       .maybeSingle();
 
+    const hasGps = data.lat != null && data.lng != null && (data.accuracy ?? 0) <= MAX_ACCEPTED_ACCURACY_M;
+
     if (!anchor) {
+      if (!hasGps) {
+        return { ok: false, error: "gps_required", spartacus: true } as const;
+      }
       await supabaseAdmin.from("spartanops_qr_anchors").insert({
         field_id: data.fieldId,
         point_number: data.point,
@@ -141,9 +140,22 @@ export const spartanopsSpartacusCapture = createServerFn({ method: "POST" })
       return { ...(r as any), spartacus: true, anchored: true };
     }
 
+    if (!hasGps) {
+      const { data: r, error } = await supabaseAdmin.rpc("spartanops_apply_capture" as any, {
+        p_field_id: data.fieldId,
+        p_point: data.point,
+        p_session_id: data.sessionId,
+      });
+      if (error) throw new Error(error.message);
+      return { ...(r as any), spartacus: true, gpsFallback: true };
+    }
+
+    const scanLat = data.lat as number;
+    const scanLng = data.lng as number;
+
     const dist = haversineMeters(
       { lat: (anchor as any).latitude, lng: (anchor as any).longitude },
-      { lat: data.lat, lng: data.lng },
+      { lat: scanLat, lng: scanLng },
     );
 
     // Allowed radius factors in BOTH the current scan's accuracy AND the
@@ -163,8 +175,8 @@ export const spartanopsSpartacusCapture = createServerFn({ method: "POST" })
         team: (checkin as any).assigned_team,
         player_checkin_id: (checkin as any).id,
         player_callsign: (checkin as any).callsign,
-        latitude: data.lat,
-        longitude: data.lng,
+        latitude: scanLat,
+        longitude: scanLng,
         distance_m: dist,
         suspicious: true,
         spartacus_status: "pending",
@@ -180,7 +192,7 @@ export const spartanopsSpartacusCapture = createServerFn({ method: "POST" })
     if (error) throw new Error(error.message);
     await supabaseAdmin
       .from("spartanops_captures")
-      .update({ latitude: data.lat, longitude: data.lng, distance_m: dist } as any)
+      .update({ latitude: scanLat, longitude: scanLng, distance_m: dist } as any)
       .eq("field_id", data.fieldId)
       .eq("point_number", data.point)
       .eq("player_callsign", (checkin as any).callsign)

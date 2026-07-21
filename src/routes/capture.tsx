@@ -113,12 +113,17 @@ function readCachedGpsFix(): { lat: number | null; lng: number | null; accuracy?
     const lat = typeof parsed.lat === "number" ? parsed.lat : NaN;
     const lng = typeof parsed.lng === "number" ? parsed.lng : NaN;
     const at = typeof parsed.at === "number" ? parsed.at : 0;
-    const accuracy = typeof parsed.accuracy === "number" && Number.isFinite(parsed.accuracy) ? parsed.accuracy : NaN;
-    if (!Number.isFinite(lat) || !Number.isFinite(lng) || !Number.isFinite(accuracy) || Date.now() - at > 15 * 1000) return null;
+    const accuracy = typeof parsed.accuracy === "number" && Number.isFinite(parsed.accuracy) ? parsed.accuracy : 1200;
+    if (!Number.isFinite(lat) || !Number.isFinite(lng) || Date.now() - at > 5 * 60 * 1000) return null;
     return { lat, lng, accuracy };
   } catch {
     return null;
   }
+}
+
+function readGpsAuthorized(): boolean {
+  if (typeof window === "undefined") return false;
+  try { return localStorage.getItem(GPS_OK_KEY) === "1"; } catch { return false; }
 }
 
 /**
@@ -131,7 +136,7 @@ function readCachedGpsFix(): { lat: number | null; lng: number | null; accuracy?
  */
 function getFreshGpsPosition(): Promise<{ lat: number | null; lng: number | null; accuracy?: number | null }> {
   return new Promise((resolve) => {
-    if (typeof navigator === "undefined" || !navigator.geolocation) return resolve({ lat: null, lng: null });
+    if (typeof navigator === "undefined" || !navigator.geolocation) return resolve(readCachedGpsFix() ?? { lat: null, lng: null });
     let best: GeolocationPosition | null = null;
     let settled = false;
     let watchId: number | null = null;
@@ -163,7 +168,7 @@ function getFreshGpsPosition(): Promise<{ lat: number | null; lng: number | null
     // At 3s, accept best-so-far if it's within the loose validation window.
     window.setTimeout(() => {
       if (settled) return;
-      if (best && (best.coords.accuracy ?? 9999) <= 45) finish(best);
+        if (best && (best.coords.accuracy ?? 9999) <= 1200) finish(best);
     }, 3000);
     // Hard cap 8s.
     window.setTimeout(() => finish(best), 8000);
@@ -187,6 +192,7 @@ function CapturePage() {
   const [team, setTeam] = useState<string | null>(null);
   const [resolvedRouteField, setResolvedRouteField] = useState<string>(resolvedField);
   const [acquiringGps, setAcquiringGps] = useState(false);
+  const [retryNonce, setRetryNonce] = useState(0);
 
   useEffect(() => {
     const onAcq = () => setAcquiringGps(true);
@@ -196,19 +202,23 @@ function CapturePage() {
 
   const enableGpsAndRetry = () => {
     if (typeof navigator === "undefined" || !navigator.geolocation) {
-      window.location.reload();
+      setRetryNonce((n) => n + 1);
       return;
     }
+    setIsGpsError(false);
+    setErrMsg("");
+    setAcquiringGps(true);
+    setState("loading");
     navigator.geolocation.getCurrentPosition(
       (pos) => {
         try {
           localStorage.setItem(GPS_OK_KEY, "1");
           localStorage.setItem(GPS_FIX_KEY, JSON.stringify({ lat: pos.coords.latitude, lng: pos.coords.longitude, accuracy: pos.coords.accuracy, at: Date.now() }));
         } catch { /* ignore */ }
-        window.location.reload();
+        setRetryNonce((n) => n + 1);
       },
-      () => window.location.reload(),
-      { enableHighAccuracy: true, timeout: 10000, maximumAge: 15000 },
+      () => setRetryNonce((n) => n + 1),
+      { enableHighAccuracy: true, timeout: 12000, maximumAge: 0 },
     );
   };
 
@@ -274,6 +284,21 @@ function CapturePage() {
 
       try {
         const { lat, lng, accuracy } = await getPosition();
+        if ((lat == null || lng == null) && readGpsAuthorized()) {
+          const cached = readCachedGpsFix();
+          if (cached?.lat != null && cached?.lng != null) {
+            const result = await applyCapture({ data: { fieldId: effectiveField, point, sessionId: session, lat: cached.lat, lng: cached.lng, accuracy: cached.accuracy ?? 1200 } });
+            if (result?.ok) {
+              setTeam((result as any).team ?? null);
+              setResolvedRouteField(effectiveRouteField);
+              setState("success");
+              try { sessionStorage.setItem(captureKey, String(Date.now())); } catch { /* ignore */ }
+              try { window.dispatchEvent(new CustomEvent("spartanops:capture-success")); } catch {}
+              return;
+            }
+            try { sessionStorage.removeItem(captureKey); } catch { /* ignore */ }
+          }
+        }
         const result = await applyCapture({ data: { fieldId: effectiveField, point, sessionId: session, lat, lng, accuracy } });
         if ((result as any)?.ok && (result as any)?.already_held) {
           setState("already_held");
@@ -281,6 +306,7 @@ function CapturePage() {
           return;
         }
         if (!result?.ok) {
+          try { sessionStorage.removeItem(captureKey); } catch { /* allow retry */ }
           const errCode = (result as any)?.error ?? "";
           // Game not currently capturable → silently return the player to
           // /misija so they see the same screen everyone else sees
@@ -319,7 +345,7 @@ function CapturePage() {
     };
 
     run();
-  }, [point, field, resolvedField, dbField, navigate, applyCapture, resolveSessionField, en]);
+  }, [point, field, resolvedField, dbField, navigate, applyCapture, resolveSessionField, en, retryNonce]);
 
   if (state === "error") {
     return (
