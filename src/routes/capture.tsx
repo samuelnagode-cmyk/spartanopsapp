@@ -185,6 +185,13 @@ function CapturePage() {
   const [isGpsError, setIsGpsError] = useState(false);
   const [team, setTeam] = useState<string | null>(null);
   const [resolvedRouteField, setResolvedRouteField] = useState<string>(resolvedField);
+  const [acquiringGps, setAcquiringGps] = useState(false);
+
+  useEffect(() => {
+    const onAcq = () => setAcquiringGps(true);
+    window.addEventListener("spartanops:gps-acquiring", onAcq);
+    return () => window.removeEventListener("spartanops:gps-acquiring", onAcq);
+  }, []);
 
   const enableGpsAndRetry = () => {
     if (typeof navigator === "undefined" || !navigator.geolocation) {
