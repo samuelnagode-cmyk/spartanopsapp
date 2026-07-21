@@ -109,11 +109,11 @@ function readCachedGpsFix(): { lat: number | null; lng: number | null; accuracy?
   try {
     const raw = localStorage.getItem(GPS_FIX_KEY);
     if (!raw) return null;
-    const parsed = JSON.parse(raw) as { lat?: unknown; lng?: unknown; at?: unknown };
+    const parsed = JSON.parse(raw) as { lat?: unknown; lng?: unknown; accuracy?: unknown; at?: unknown };
     const lat = typeof parsed.lat === "number" ? parsed.lat : NaN;
     const lng = typeof parsed.lng === "number" ? parsed.lng : NaN;
     const at = typeof parsed.at === "number" ? parsed.at : 0;
-    if (!Number.isFinite(lat) || !Number.isFinite(lng) || Date.now() - at > 10 * 60 * 1000) return null;
+    if (!Number.isFinite(lat) || !Number.isFinite(lng) || Date.now() - at > 60 * 1000) return null;
     return { lat, lng, accuracy: typeof parsed.accuracy === "number" && Number.isFinite(parsed.accuracy) ? parsed.accuracy : null };
   } catch {
     return null;
