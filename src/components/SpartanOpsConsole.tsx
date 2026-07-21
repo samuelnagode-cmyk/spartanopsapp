@@ -1366,6 +1366,7 @@ export function SpartacusAlerts({ fieldId, password, en }: { fieldId: string; pa
   const [busy, setBusy] = useState<string | null>(null);
   const reviewFn = useServerFn(spartanopsSpartacusReview);
   const seen = useRef<Set<string>>(new Set());
+  const initialized = useRef(false);
 
   const listSuspiciousFn = useServerFn(spartanopsListSuspiciousCaptures);
   useEffect(() => {
@@ -1376,10 +1377,10 @@ export function SpartacusAlerts({ fieldId, password, en }: { fieldId: string; pa
         const res = await listSuspiciousFn({ data: { fieldId, password } });
         if (!alive) return;
         const list = ((res?.rows ?? []) as unknown as SuspiciousRow[]);
-        const previousIds = new Set(rows.map((r) => r.id));
         setRows(list);
-        if (list.some((r) => !previousIds.has(r.id) && !seen.current.has(r.id))) playSpartacusBeep();
+        if (initialized.current && list.some((r) => !seen.current.has(r.id))) playSpartacusBeep();
         list.forEach((r) => seen.current.add(r.id));
+        initialized.current = true;
       } catch { /* ignore */ }
     };
     load();
@@ -1402,7 +1403,7 @@ export function SpartacusAlerts({ fieldId, password, en }: { fieldId: string; pa
       })
       .subscribe();
     return () => { alive = false; window.clearInterval(interval); supabase.removeChannel(ch); };
-  }, [fieldId, password, listSuspiciousFn, rows]);
+  }, [fieldId, password, listSuspiciousFn]);
 
   const decide = async (id: string, decision: "approve" | "reject" | "ban" | "suspend" | "warning") => {
     if (busy) return;
