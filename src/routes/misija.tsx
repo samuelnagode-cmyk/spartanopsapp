@@ -7,6 +7,7 @@ import { spartanopsAckTeamChange, spartanopsSelectTeam } from "@/lib/spartanops-
 import { spartanopsUpsertCheckin, spartanopsGetMyCheckin, spartanopsDeleteMyCheckin, spartanopsGetParticipantRoster, spartanopsGetServerTime, spartanopsGetRespawnLock } from "@/lib/spartanops-checkin.functions";
 import { spartanopsAcknowledgeWarning } from "@/lib/spartanops-spartacus.functions";
 import { SpartacusAlerts } from "@/components/SpartanOpsConsole";
+import { listPublishedLobbies } from "@/lib/spartanops-lobbies.functions";
 
 import { OfflineBanner } from "@/components/OfflineBanner";
 import { TacticalCompass } from "@/components/TacticalCompass";
@@ -292,6 +293,7 @@ function MisijaPage() {
   const getParticipantRosterFn = useServerFn(spartanopsGetParticipantRoster);
   const getServerTimeFn = useServerFn(spartanopsGetServerTime);
   const getRespawnLockFn = useServerFn(spartanopsGetRespawnLock);
+  const listPublishedLobbiesFn = useServerFn(listPublishedLobbies);
 
   const [sessionId, setSessionId] = useState("");
   const [state, setState] = useState<GameState | null>(null);
@@ -448,8 +450,19 @@ function MisijaPage() {
         .eq("field_id", field)
         .maybeSingle();
       if (alive && data) {
-        setState(data as unknown as GameState);
+        const liveState = data as unknown as GameState;
+        setState(liveState);
         if ((data as any).match_started_at) syncServerClock().catch(() => {});
+        if (!liveState.compressed_map_url) {
+          try {
+            const dtos = await listPublishedLobbiesFn();
+            const match = dtos.find((l: any) => l.id === field);
+            if (match?.mapUrl && alive) {
+              try { localStorage.setItem("spartanops.lobbies.v1", JSON.stringify(dtos)); } catch { /* ignore */ }
+              setState((prev) => prev && prev.field_id === field && !prev.compressed_map_url ? { ...prev, compressed_map_url: match.mapUrl } : prev);
+            }
+          } catch { /* keep live state as-is */ }
+        }
       }
     };
     load();
@@ -480,7 +493,7 @@ function MisijaPage() {
       clearTimeout(timeout);
       supabase.removeChannel(ch);
     };
-  }, [field, preview, preset]);
+  }, [field, preview, preset, listPublishedLobbiesFn]);
 
   // Load + subscribe roster (per field)
   useEffect(() => {
