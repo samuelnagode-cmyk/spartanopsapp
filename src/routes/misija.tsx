@@ -1918,7 +1918,7 @@ function PreMatchCountdown({ seconds, polygon, eventName, gamemode, pointTarget,
       style={{ background: "radial-gradient(circle at 50% 0%, rgba(224,176,78,0.14), rgba(11,13,9,0.99) 34%, #050604 100%)", color: INK, paddingTop: 112, paddingBottom: 40 }}
     >
       <p style={{ color: ACCENT, fontFamily: "monospace", fontSize: 11, letterSpacing: "0.32em", textTransform: "uppercase", marginBottom: 8 }}>
-        SpartanOps
+        SPARTANOPS {modeLabel} MODE
       </p>
       <h2
         style={{
@@ -1932,11 +1932,11 @@ function PreMatchCountdown({ seconds, polygon, eventName, gamemode, pointTarget,
           textTransform: "uppercase",
         }}
       >
-        MISSION: {missionName}
+        MISSION:<br />{missionName}
       </h2>
       {fieldName && (
         <p className="font-mono uppercase mt-2" style={{ color: MUTED, fontSize: 10, letterSpacing: "0.22em" }}>
-          {en ? "FIELD" : "POLIGON"}: {fieldName} · {modeLabel}
+          {fieldName}
         </p>
       )}
       <p className="font-mono text-[10px] uppercase tracking-[0.2em] mt-5" style={{ color: MUTED }}>
