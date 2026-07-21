@@ -408,6 +408,11 @@ function CapturePage() {
           <>
             <div className="font-mono text-xs tracking-[0.24em] uppercase animate-pulse" style={{ color: c }}>▌ SCANNING...</div>
             <div className="mt-5 mx-auto rounded-full" style={{ width: 80, height: 80, border: `4px solid ${c}44`, borderTopColor: c, animation: "spo-spin 0.9s linear infinite" }} />
+            {acquiringGps && (
+              <p className="mt-5 font-mono text-[11px] leading-relaxed" style={{ color: MUTED, letterSpacing: "0.06em" }}>
+                {t("gpsAcquiringNotice")}
+              </p>
+            )}
           </>
         ) : (
           <>
