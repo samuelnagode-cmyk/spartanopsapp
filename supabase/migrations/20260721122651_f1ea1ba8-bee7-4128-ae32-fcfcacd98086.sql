@@ -1,0 +1,1 @@
+ALTER TABLE public.spartanops_qr_anchors ADD COLUMN IF NOT EXISTS anchor_accuracy_m double precision;

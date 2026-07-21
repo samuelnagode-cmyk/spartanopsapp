@@ -6,9 +6,15 @@ function isField(x: string): boolean {
   return LEGACY_FIELDS.has(x) || UUID_RE.test(x);
 }
 
-const ANCHOR_RADIUS_M = 10;
-const MAX_ACCURACY_BUFFER_M = 25;
-const MAX_ACCEPTED_ACCURACY_M = 50;
+const ANCHOR_RADIUS_M = 15;
+// Per-scan accuracy tolerance ceiling. Real-world urban/forest GPS on iPhone can
+// legitimately report 30-60m accuracy at the same physical spot, so we allow the
+// full reported accuracy as buffer up to this cap.
+const MAX_ACCURACY_BUFFER_M = 75;
+// Accept any fix the device is willing to hand us; the distance check below
+// already factors accuracy into the allowed radius, so we no longer hard-reject
+// "loose" fixes that would otherwise trigger a bogus "enable GPS" prompt.
+const MAX_ACCEPTED_ACCURACY_M = 200;
 
 function haversineMeters(a: { lat: number; lng: number }, b: { lat: number; lng: number }): number {
   const R = 6371000;
@@ -84,7 +90,7 @@ export const spartanopsSpartacusCapture = createServerFn({ method: "POST" })
 
     const { data: anchor } = await supabaseAdmin
       .from("spartanops_qr_anchors")
-      .select("latitude, longitude")
+      .select("latitude, longitude, anchor_accuracy_m")
       .eq("field_id", data.fieldId)
       .eq("point_number", data.point)
       .maybeSingle();
@@ -95,6 +101,7 @@ export const spartanopsSpartacusCapture = createServerFn({ method: "POST" })
         point_number: data.point,
         latitude: data.lat,
         longitude: data.lng,
+        anchor_accuracy_m: data.accuracy ?? null,
         anchored_by_callsign: (checkin as any).callsign,
       } as any);
       const { data: r, error } = await supabaseAdmin.rpc("spartanops_apply_capture" as any, {
@@ -120,7 +127,15 @@ export const spartanopsSpartacusCapture = createServerFn({ method: "POST" })
       { lat: data.lat, lng: data.lng },
     );
 
-    const allowedRadius = ANCHOR_RADIUS_M + (data.accuracy ?? 0);
+    // Allowed radius factors in BOTH the current scan's accuracy AND the
+    // accuracy of the fix that originally anchored the point. Without the
+    // anchor-side buffer, a legitimate second scan (e.g. enemy team recap at
+    // the exact same spot) can drift past the threshold whenever the first
+    // player's GPS was imprecise.
+    const scanBuffer = Math.min(MAX_ACCURACY_BUFFER_M, data.accuracy ?? 0);
+    const anchorAcc = typeof (anchor as any).anchor_accuracy_m === "number" ? (anchor as any).anchor_accuracy_m : 0;
+    const anchorBuffer = Math.min(MAX_ACCURACY_BUFFER_M, anchorAcc);
+    const allowedRadius = ANCHOR_RADIUS_M + scanBuffer + anchorBuffer;
 
     if (dist > allowedRadius) {
       await supabaseAdmin.from("spartanops_captures").insert({

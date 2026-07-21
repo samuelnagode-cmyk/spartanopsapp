@@ -590,6 +590,7 @@ export type Database = {
       }
       spartanops_qr_anchors: {
         Row: {
+          anchor_accuracy_m: number | null
           anchored_at: string
           anchored_by_callsign: string | null
           field_id: string
@@ -598,6 +599,7 @@ export type Database = {
           point_number: number
         }
         Insert: {
+          anchor_accuracy_m?: number | null
           anchored_at?: string
           anchored_by_callsign?: string | null
           field_id: string
@@ -606,6 +608,7 @@ export type Database = {
           point_number: number
         }
         Update: {
+          anchor_accuracy_m?: number | null
           anchored_at?: string
           anchored_by_callsign?: string | null
           field_id?: string
