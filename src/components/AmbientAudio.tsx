@@ -2,9 +2,9 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useRef, use
 import { useLocation } from "@tanstack/react-router";
 import { Volume2, VolumeX } from "lucide-react";
 import raging from "@/assets/raging-fires.mp3.asset.json";
-import lobbyTrack from "@/assets/spartanops-lobby.mp3.asset.json";
+import deactivator from "@/assets/deactivator.mp3.asset.json";
 import countdown from "@/assets/countdown-10.mp3.asset.json";
-import debriefing from "@/assets/spartanops-debriefing.mp3.asset.json";
+import endgame from "@/assets/spartanops-endgame.mp3.asset.json";
 import capture from "@/assets/spartanops-capture-levelup.mp3.asset.json";
 
 type DeployMode = "broadcast" | "mute" | "command";
@@ -78,9 +78,12 @@ export function AmbientAudioProvider({ children }: { children: ReactNode }) {
   // Route-based fallback: /join is the mission list / pre-lobby surface.
   // /misija is phase-driven below because it can be registration, team select,
   // pre-start, live HUD, respawn lock, or debriefing.
+  const routeRaging = /^\/(|spartanops|archive|arhiv|print|updates)(\b|\/|$)/i.test(pathname);
   const routeLobby = /^\/(join|lobby)(\b|\/|$)/i.test(pathname);
+  const routeMission = /^\/misija(\b|\/|$)/i.test(pathname);
   const inLobby = lobbyOverride ?? routeLobby;
-  const awaitingMissionPhase = /^\/misija(\b|\/|$)/i.test(pathname) && lobbyOverride === null;
+  const awaitingMissionPhase = routeMission && lobbyOverride === null;
+  const hasRouteAudio = routeRaging || routeLobby || routeMission;
 
   useEffect(() => {
     if (!/^\/misija(\b|\/|$)/i.test(pathname)) setLobbyOverride(null);
@@ -97,21 +100,24 @@ export function AmbientAudioProvider({ children }: { children: ReactNode }) {
     if (!enabled) return;
     const t1 = track1Ref.current, t2 = track2Ref.current;
     const nextLobby = forceLobby ?? inLobby;
-    if (nextLobby) {
+    if (!hasRouteAudio) {
+      if (t1) fade(t1, 0);
+      if (t2) fade(t2, 0);
+    } else if (nextLobby) {
       if (t1) fade(t1, 0);
       if (t2) fade(t2, 0.55);
     } else {
       if (t2) fade(t2, 0);
       if (t1) fade(t1, 0.5);
     }
-  }, [enabled, inLobby]);
+  }, [enabled, inLobby, hasRouteAudio]);
 
   useEffect(() => {
     const t1 = new Audio(raging.url);
     t1.loop = true;
     t1.preload = "auto";
     t1.volume = 0;
-    const t2 = new Audio(lobbyTrack.url);
+    const t2 = new Audio(deactivator.url);
     t2.loop = true;
     t2.preload = "auto";
     t2.volume = 0;
@@ -119,7 +125,7 @@ export function AmbientAudioProvider({ children }: { children: ReactNode }) {
     cd.preload = "auto";
     cd.volume = 1;
     // Debriefing track is large — defer network until match ends.
-    const eg = new Audio(debriefing.url);
+    const eg = new Audio(endgame.url);
     eg.loop = false;
     eg.preload = "none";
     eg.volume = 0;
@@ -158,7 +164,7 @@ export function AmbientAudioProvider({ children }: { children: ReactNode }) {
       fade(t2, 0);
       return;
     }
-    if (awaitingMissionPhase) {
+    if (!hasRouteAudio || awaitingMissionPhase) {
       fade(t1, 0);
       fade(t2, 0);
       return;
@@ -166,11 +172,14 @@ export function AmbientAudioProvider({ children }: { children: ReactNode }) {
     if (inLobby) {
       fade(t1, 0);
       fade(t2, 0.55);
-    } else {
+    } else if (routeRaging || routeMission) {
       fade(t2, 0);
       fade(t1, 0.5);
+    } else {
+      fade(t1, 0);
+      fade(t2, 0);
     }
-  }, [enabled, inLobby, awaitingMissionPhase]);
+  }, [enabled, inLobby, awaitingMissionPhase, hasRouteAudio, routeRaging, routeMission]);
 
   const startCountdown = useCallback(() => {
     const cd = countdownRef.current;

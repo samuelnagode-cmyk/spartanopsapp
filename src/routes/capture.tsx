@@ -120,6 +120,40 @@ function readCachedGpsFix(): { lat: number | null; lng: number | null; accuracy?
   }
 }
 
+function getFreshGpsPosition(): Promise<{ lat: number | null; lng: number | null; accuracy?: number | null }> {
+  return new Promise((resolve) => {
+    if (typeof navigator === "undefined" || !navigator.geolocation) return resolve({ lat: null, lng: null });
+    const accept = (pos: GeolocationPosition) => {
+      try {
+        localStorage.setItem(GPS_OK_KEY, "1");
+        localStorage.setItem(GPS_FIX_KEY, JSON.stringify({ lat: pos.coords.latitude, lng: pos.coords.longitude, accuracy: pos.coords.accuracy, at: Date.now() }));
+      } catch { /* ignore */ }
+      resolve({ lat: pos.coords.latitude, lng: pos.coords.longitude, accuracy: pos.coords.accuracy });
+    };
+    const fallback = () => resolve(readCachedGpsFix() ?? { lat: null, lng: null });
+    let settled = false;
+    const done = (fn: () => void) => { if (!settled) { settled = true; fn(); } };
+    const watchId = navigator.geolocation.watchPosition(
+      (pos) => {
+        if ((pos.coords.accuracy ?? 9999) <= 25) {
+          navigator.geolocation.clearWatch(watchId);
+          done(() => accept(pos));
+        }
+      },
+      () => { navigator.geolocation.clearWatch(watchId); done(fallback); },
+      { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 },
+    );
+    window.setTimeout(() => {
+      navigator.geolocation.clearWatch(watchId);
+      navigator.geolocation.getCurrentPosition(
+        (pos) => done(() => accept(pos)),
+        () => done(fallback),
+        { enableHighAccuracy: true, timeout: 8000, maximumAge: 0 },
+      );
+    }, 9000);
+  });
+}
+
 
 function CapturePage() {
   const { lang } = useLang();
@@ -157,21 +191,7 @@ function CapturePage() {
 
 
   useEffect(() => {
-    const getPosition = () =>
-      new Promise<{ lat: number | null; lng: number | null; accuracy?: number | null }>((resolve) => {
-        if (typeof navigator === "undefined" || !navigator.geolocation) return resolve({ lat: null, lng: null });
-        navigator.geolocation.getCurrentPosition(
-          (pos) => {
-            try {
-              localStorage.setItem(GPS_OK_KEY, "1");
-              localStorage.setItem(GPS_FIX_KEY, JSON.stringify({ lat: pos.coords.latitude, lng: pos.coords.longitude, accuracy: pos.coords.accuracy, at: Date.now() }));
-            } catch { /* ignore */ }
-            resolve({ lat: pos.coords.latitude, lng: pos.coords.longitude, accuracy: pos.coords.accuracy });
-          },
-          () => resolve(readCachedGpsFix() ?? { lat: null, lng: null }),
-          { enableHighAccuracy: true, timeout: 12000, maximumAge: 30000 },
-        );
-      });
+    const getPosition = getFreshGpsPosition;
 
     const run = async () => {
       if (!point) { setErrMsg("Manjka oznaka točke (1-5)."); setState("error"); return; }

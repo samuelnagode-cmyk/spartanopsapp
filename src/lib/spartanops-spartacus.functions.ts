@@ -8,6 +8,7 @@ function isField(x: string): boolean {
 
 const ANCHOR_RADIUS_M = 10;
 const MAX_ACCURACY_BUFFER_M = 0;
+const MAX_ACCEPTED_ACCURACY_M = 25;
 
 function haversineMeters(a: { lat: number; lng: number }, b: { lat: number; lng: number }): number {
   const R = 6371000;
@@ -67,6 +68,9 @@ export const spartanopsSpartacusCapture = createServerFn({ method: "POST" })
 
     if (data.lat == null || data.lng == null) {
       return { ok: false, error: "gps_required", spartacus: true } as const;
+    }
+    if ((data.accuracy ?? 9999) > MAX_ACCEPTED_ACCURACY_M) {
+      return { ok: false, error: "gps_required", spartacus: true, low_accuracy: true } as const;
     }
     if (state?.status !== "active") return { ok: false, error: "match_not_active", spartacus: true } as const;
     const matchStart = (state as any)?.match_started_at ? Date.parse((state as any).match_started_at) : NaN;
