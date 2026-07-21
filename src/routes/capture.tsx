@@ -306,15 +306,52 @@ function CapturePage() {
           return;
         }
         if (!result?.ok) {
-          try { sessionStorage.removeItem(captureKey); } catch { /* allow retry */ }
           const errCode = (result as any)?.error ?? "";
           // Game not currently capturable → silently return the player to
           // /misija so they see the same screen everyone else sees
           // (pre-start countdown or debriefing) without capturing the point.
           if (errCode === "pre_start_locked" || errCode === "match_not_active") {
+            try { sessionStorage.removeItem(captureKey); } catch { /* allow retry */ }
             navigate({ to: "/misija", search: { field: effectiveRouteField }, replace: true });
             return;
           }
+          // FRONTEND SAFETY NET: even if the server responded with a warning
+          // (e.g. spartacus_flagged), the RPC may have already committed the
+          // capture. Verify against the DB — if the latest non-suspicious
+          // capture for this point matches this player, show POINT CAPTURED.
+          try {
+            const { data: me } = await supabase
+              .from("spartanops_checkins")
+              .select("callsign, assigned_team")
+              .eq("session_secret", session)
+              .eq("field_id", effectiveField)
+              .maybeSingle();
+            const callsign = (me as any)?.callsign;
+            const team = (me as any)?.assigned_team;
+            if (callsign && team && team !== "none") {
+              const { data: latest } = await supabase
+                .from("spartanops_captures")
+                .select("team, player_callsign, captured_at, suspicious")
+                .eq("field_id", effectiveField)
+                .eq("point_number", point)
+                .order("captured_at", { ascending: false })
+                .limit(1)
+                .maybeSingle();
+              const row = latest as any;
+              if (row && row.suspicious !== true && row.player_callsign === callsign && row.team === team) {
+                const ageMs = Date.now() - new Date(row.captured_at).getTime();
+                if (ageMs >= 0 && ageMs < 20000) {
+                  setTeam(team);
+                  setResolvedRouteField(effectiveRouteField);
+                  setState("success");
+                  try { sessionStorage.setItem(captureKey, String(Date.now())); } catch { /* ignore */ }
+                  try { window.dispatchEvent(new CustomEvent("spartanops:capture-success")); } catch {}
+                  return;
+                }
+              }
+            }
+          } catch { /* fall through to error UI */ }
+          try { sessionStorage.removeItem(captureKey); } catch { /* allow retry */ }
           const msg: Record<string, string> = {
             not_checked_in: "Niste prijavljeni v misijo.",
             no_team: "Nimate dodeljene ekipe.",
