@@ -1436,7 +1436,9 @@ function MasterPasswordModal({ onClose, onSuccess }: { onClose: () => void; onSu
 }
 
 function MarshalPasswordPrompt({ lobby, onClose, onSuccess }: { lobby: LobbyRecord; onClose: () => void; onSuccess: (pw: string) => void }) {
+  const { lang } = useLang();
   const [password, setPassword] = useState("");
+
   const [err, setErr] = useState("");
   const [busy, setBusy] = useState(false);
   const verifyFn = useServerFn(verifyLobbyPassword);
