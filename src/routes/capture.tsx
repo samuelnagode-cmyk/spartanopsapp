@@ -96,15 +96,15 @@ function resolveQrField(raw: string): string {
 
 function placeholderError(en: boolean): string {
   return en
-    ? "This QR code still contains a placeholder mission ID. Regenerate/print it with the real mission UUID, or have the player join the mission first so SpartanOps can resolve the active mission."
-    : "Ta QR koda še vedno vsebuje predlogo za ID misije. Ponovno jo ustvarite/natisnite s pravim UUID misije ali naj se igralec najprej pridruži misiji, da SpartanOps prepozna aktivno misijo.";
+    ? "You have not been deployed into the mission yet."
+    : "Še niste bili razporejeni v misijo.";
 }
 
 const CAPTURE_SFX_MS = 6000;
 const GPS_OK_KEY = "spartanops:gps_authorized";
 const GPS_FIX_KEY = "spartanops:gps_fix";
 
-function readCachedGpsFix(): { lat: number | null; lng: number | null } | null {
+function readCachedGpsFix(): { lat: number | null; lng: number | null; accuracy?: number | null } | null {
   if (typeof window === "undefined") return null;
   try {
     const raw = localStorage.getItem(GPS_FIX_KEY);
@@ -114,7 +114,7 @@ function readCachedGpsFix(): { lat: number | null; lng: number | null } | null {
     const lng = typeof parsed.lng === "number" ? parsed.lng : NaN;
     const at = typeof parsed.at === "number" ? parsed.at : 0;
     if (!Number.isFinite(lat) || !Number.isFinite(lng) || Date.now() - at > 10 * 60 * 1000) return null;
-    return { lat, lng };
+    return { lat, lng, accuracy: typeof parsed.accuracy === "number" && Number.isFinite(parsed.accuracy) ? parsed.accuracy : null };
   } catch {
     return null;
   }
@@ -146,7 +146,7 @@ function CapturePage() {
       (pos) => {
         try {
           localStorage.setItem(GPS_OK_KEY, "1");
-          localStorage.setItem(GPS_FIX_KEY, JSON.stringify({ lat: pos.coords.latitude, lng: pos.coords.longitude, at: Date.now() }));
+          localStorage.setItem(GPS_FIX_KEY, JSON.stringify({ lat: pos.coords.latitude, lng: pos.coords.longitude, accuracy: pos.coords.accuracy, at: Date.now() }));
         } catch { /* ignore */ }
         window.location.reload();
       },
@@ -158,15 +158,15 @@ function CapturePage() {
 
   useEffect(() => {
     const getPosition = () =>
-      new Promise<{ lat: number | null; lng: number | null }>((resolve) => {
+      new Promise<{ lat: number | null; lng: number | null; accuracy?: number | null }>((resolve) => {
         if (typeof navigator === "undefined" || !navigator.geolocation) return resolve({ lat: null, lng: null });
         navigator.geolocation.getCurrentPosition(
           (pos) => {
             try {
               localStorage.setItem(GPS_OK_KEY, "1");
-              localStorage.setItem(GPS_FIX_KEY, JSON.stringify({ lat: pos.coords.latitude, lng: pos.coords.longitude, at: Date.now() }));
+              localStorage.setItem(GPS_FIX_KEY, JSON.stringify({ lat: pos.coords.latitude, lng: pos.coords.longitude, accuracy: pos.coords.accuracy, at: Date.now() }));
             } catch { /* ignore */ }
-            resolve({ lat: pos.coords.latitude, lng: pos.coords.longitude });
+            resolve({ lat: pos.coords.latitude, lng: pos.coords.longitude, accuracy: pos.coords.accuracy });
           },
           () => resolve(readCachedGpsFix() ?? { lat: null, lng: null }),
           { enableHighAccuracy: true, timeout: 12000, maximumAge: 30000 },
@@ -230,8 +230,8 @@ function CapturePage() {
       } catch { /* ignore */ }
 
       try {
-        const { lat, lng } = await getPosition();
-        const result = await applyCapture({ data: { fieldId: effectiveField, point, sessionId: session, lat, lng } });
+        const { lat, lng, accuracy } = await getPosition();
+        const result = await applyCapture({ data: { fieldId: effectiveField, point, sessionId: session, lat, lng, accuracy } });
         if ((result as any)?.ok && (result as any)?.already_held) {
           setState("already_held");
           setTimeout(() => navigate({ to: "/misija", search: { field: effectiveRouteField }, replace: true }), 2600);
@@ -307,6 +307,27 @@ function CapturePage() {
               }}
             >
               {en ? "ENABLE GPS" : "OMOGOČI GPS"}
+            </button>
+          )}
+          {!isGpsError && isQrPlaceholder(field) && (
+            <button
+              type="button"
+              onClick={() => navigate({ to: "/join" })}
+              className="mt-5 w-full"
+              style={{
+                background: ACCENT,
+                color: "#0b0d09",
+                fontFamily: "'Michroma', monospace",
+                fontSize: 12,
+                letterSpacing: "0.16em",
+                textTransform: "uppercase",
+                padding: "13px 12px",
+                border: "none",
+                cursor: "pointer",
+                fontWeight: 700,
+              }}
+            >
+              {en ? "JOIN MISSION" : "PRIDRUŽI SE MISIJI"}
             </button>
           )}
         </div>
