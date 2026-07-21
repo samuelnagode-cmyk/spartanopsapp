@@ -1910,7 +1910,7 @@ function PreMatchCountdown({ seconds, polygon, eventName, gamemode, pointTarget,
   const description = (settings as any)?.missionDescription as string | undefined;
   const configuredMission = (settings as any)?.missionName as string | undefined;
   const missionName = (eventName?.trim() || configuredMission?.trim() || polygon?.trim() || (en ? "ACTIVE MISSION" : "AKTIVNA MISIJA")).toUpperCase();
-  const fieldName = polygon?.trim() && polygon.trim().toUpperCase() !== missionName ? polygon.trim().toUpperCase() : null;
+  const fieldName = (polygon?.trim() || state?.field_label?.trim() || "").toUpperCase();
   const duration = state?.match_duration_minutes ?? 0;
   return (
     <div
