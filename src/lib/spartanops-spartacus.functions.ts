@@ -7,8 +7,8 @@ function isField(x: string): boolean {
 }
 
 const ANCHOR_RADIUS_M = 10;
-const MAX_ACCURACY_BUFFER_M = 0;
-const MAX_ACCEPTED_ACCURACY_M = 25;
+const MAX_ACCURACY_BUFFER_M = 25;
+const MAX_ACCEPTED_ACCURACY_M = 50;
 
 function haversineMeters(a: { lat: number; lng: number }, b: { lat: number; lng: number }): number {
   const R = 6371000;
