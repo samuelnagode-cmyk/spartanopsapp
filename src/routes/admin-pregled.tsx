@@ -844,15 +844,6 @@ function CreateFieldForm({ onCancel, onCreated }: { onCancel: () => void; onCrea
         <FieldRow label={en ? "Event name (optional)" : "Ime dogodka (neobvezno)"}>
           <input value={eventName} onChange={(e) => setEventName(e.target.value)} style={consoleInputStyle} placeholder={en ? "e.g. Operation Ares" : "npr. Operacija Ares"} />
         </FieldRow>
-        <FieldRow label={en ? "After game instructions" : "Navodila po igri"}>
-          <textarea
-            value={(lobby.settings as any)?.afterGameInstructions ?? ""}
-            onChange={(e) => patch({ settings: { ...(lobby.settings ?? {}), afterGameInstructions: e.target.value } as any })}
-            rows={3}
-            style={{ ...consoleInputStyle, resize: "vertical", minHeight: 80, fontFamily: "inherit" }}
-            placeholder={en ? "Instruction on what the players should do after the game." : "Navodilo, kaj naj igralci naredijo po koncu igre."}
-          />
-        </FieldRow>
         <div className="grid grid-cols-2 gap-3">
           <FieldRow label={en ? "City" : "Mesto"}>
             <input value={city} onChange={(e) => setCity(e.target.value)} style={consoleInputStyle} placeholder="Ljubljana" />
@@ -2121,6 +2112,15 @@ function MarshalLobbyConsole({ lobby: initialLobby, marshalPassword, lobbyPasswo
           <p style={{ fontSize: 10, color: MUTED, marginTop: 4, fontFamily: "monospace", letterSpacing: "0.06em" }}>
             // {en ? "Editable any time — updates propagate live to player HUDs." : "Uredljivo kadarkoli — spremembe se v živo prenesejo na igralski HUD."}
           </p>
+        </FieldRow>
+        <FieldRow label={en ? "After game instructions" : "Navodila po igri"}>
+          <textarea
+            value={(lobby.settings as any)?.afterGameInstructions ?? ""}
+            onChange={(e) => patch({ settings: { ...(lobby.settings ?? {}), afterGameInstructions: e.target.value } as any })}
+            rows={3}
+            style={{ ...consoleInputStyle, resize: "vertical", minHeight: 80, fontFamily: "inherit" }}
+            placeholder={en ? "Instruction on what the players should do after the game." : "Navodilo, kaj naj igralci naredijo po koncu igre."}
+          />
         </FieldRow>
         <div className="grid grid-cols-2 gap-3">
           <FieldRow label={en ? "City (locked)" : "Mesto (zaklenjeno)"}>
