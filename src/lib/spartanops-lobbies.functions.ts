@@ -99,6 +99,19 @@ async function resetMissionRuntime(supabaseAdmin: any, lobbyId: string) {
   }
 }
 
+async function clearMissionRuntimeForStart(supabaseAdmin: any, lobbyId: string) {
+  const { error: capturesError } = await supabaseAdmin
+    .from("spartanops_captures")
+    .delete()
+    .eq("field_id", lobbyId);
+  if (capturesError) throw new Error(capturesError.message);
+  await clearRespawnLocks(supabaseAdmin, lobbyId);
+  await supabaseAdmin
+    .from("spartanops_qr_anchors" as any)
+    .delete()
+    .eq("field_id", lobbyId);
+}
+
 /** Verify the master admin password (used by the admin console to unlock edit mode). */
 export const verifyMasterPassword = createServerFn({ method: "POST" })
   .inputValidator((d: { password: string }) => ({ password: String(d?.password ?? "") }))
@@ -301,7 +314,7 @@ export const updateLobbyServer = createServerFn({ method: "POST" })
     if (p.settings !== undefined) gsPatch.settings = p.settings;
     if (p.nodePositions !== undefined) gsPatch.node_positions = p.nodePositions;
     if (p.state === "active") {
-      await resetMissionRuntime(supabaseAdmin, data.id);
+      await clearMissionRuntimeForStart(supabaseAdmin, data.id);
       gsPatch.status = "active";
       gsPatch.match_started_at = serverStartedAt ?? serverNowIso;
       gsPatch.team_scores = freshScores();

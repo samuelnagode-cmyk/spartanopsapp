@@ -202,7 +202,9 @@ function safeSetItem(key: string, value: string): boolean {
 function saveLobbies(list: LobbyRecord[]) {
   // Cap at 25 most recent entries — the DB is the source of truth; this cache
   // exists only for offline fallback / cross-tab hints.
-  const capped = list.slice(0, 25);
+  const capped = list.slice(0, 25).map((l) => (
+    l.mapUrl && l.mapUrl.length > 4096 ? { ...l, mapUrl: undefined } : l
+  ));
   safeSetItem(LOBBY_STORAGE_KEY, JSON.stringify(capped));
 }
 
@@ -1599,7 +1601,7 @@ function MarshalLobbyConsole({ lobby: initialLobby, marshalPassword, lobbyPasswo
       startedAt: serverNow + pre,
       fieldName: lobby.fieldName,
       eventName: lobby.eventName,
-      mapUrl: lobby.mapUrl,
+      ...(gameState?.compressed_map_url ? {} : { mapUrl: lobby.mapUrl }),
       matchDurationMinutes: lobby.matchDurationMinutes,
       countdownSeconds: lobby.countdownSeconds,
       pointTarget: lobby.pointTarget,
@@ -1640,7 +1642,7 @@ function MarshalLobbyConsole({ lobby: initialLobby, marshalPassword, lobbyPasswo
   const decommission = async () => {
     if (!confirm(en
       ? "Decommission this field? It will disappear from the active list and the public join page."
-      : "Razgradi ta poligon? Izginil bo iz aktivnega seznama in javne strani za pridružitev."
+      : "Odstrani misijo? Izginila bo iz aktivnega seznama in javne strani za pridružitev."
     )) return;
     try {
       await deleteLobbyServerFn({ data: { id: lobby.id, marshalPassword } });
