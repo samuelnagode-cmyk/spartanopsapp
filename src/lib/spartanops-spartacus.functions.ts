@@ -6,7 +6,8 @@ function isField(x: string): boolean {
   return LEGACY_FIELDS.has(x) || UUID_RE.test(x);
 }
 
-const ANCHOR_RADIUS_M = 10;
+const ANCHOR_RADIUS_M = 35;
+const MAX_ACCURACY_BUFFER_M = 45;
 
 function haversineMeters(a: { lat: number; lng: number }, b: { lat: number; lng: number }): number {
   const R = 6371000;
@@ -24,19 +25,20 @@ function haversineMeters(a: { lat: number; lng: number }, b: { lat: number; lng:
  *  - If enabled and no lat/lng supplied → returns { ok:false, error:'gps_required' }.
  *  - If no anchor exists yet for (field, point), the current scan anchors it and
  *    proceeds as a normal capture.
- *  - If an anchor exists and distance ≤ 10m, proceeds as a normal capture (with
- *    coordinates saved on the row).
- *  - If distance > 10m, inserts a *suspicious* capture row (spartacus_status='pending',
+ *  - If an anchor exists and distance is inside the operational radius plus a
+ *    bounded GPS accuracy buffer, proceeds as a normal capture.
+ *  - If distance exceeds that threshold, inserts a *suspicious* capture row (spartacus_status='pending',
  *    suspicious=true) WITHOUT updating the live scoreboard/holders. Marshals then
  *    review it.
  */
 export const spartanopsSpartacusCapture = createServerFn({ method: "POST" })
-  .inputValidator((d: { fieldId: string; point: number; sessionId: string; lat?: number | null; lng?: number | null }) => ({
+  .inputValidator((d: { fieldId: string; point: number; sessionId: string; lat?: number | null; lng?: number | null; accuracy?: number | null }) => ({
     fieldId: String(d?.fieldId ?? ""),
     point: Number(d?.point),
     sessionId: String(d?.sessionId ?? ""),
     lat: typeof d?.lat === "number" && isFinite(d.lat) ? d.lat : null,
     lng: typeof d?.lng === "number" && isFinite(d.lng) ? d.lng : null,
+    accuracy: typeof d?.accuracy === "number" && isFinite(d.accuracy) ? Math.max(0, Math.min(MAX_ACCURACY_BUFFER_M, d.accuracy)) : 0,
   }))
   .handler(async ({ data }) => {
     if (!isField(data.fieldId)) throw new Error("Invalid field");
@@ -125,7 +127,9 @@ export const spartanopsSpartacusCapture = createServerFn({ method: "POST" })
       { lat: data.lat, lng: data.lng },
     );
 
-    if (dist > ANCHOR_RADIUS_M) {
+    const allowedRadius = ANCHOR_RADIUS_M + (data.accuracy ?? 0);
+
+    if (dist > allowedRadius) {
       await supabaseAdmin.from("spartanops_captures").insert({
         field_id: data.fieldId,
         point_number: data.point,
