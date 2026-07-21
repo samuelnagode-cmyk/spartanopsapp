@@ -90,7 +90,7 @@ export const spartanopsSpartacusCapture = createServerFn({ method: "POST" })
 
     const { data: anchor } = await supabaseAdmin
       .from("spartanops_qr_anchors")
-      .select("latitude, longitude")
+      .select("latitude, longitude, anchor_accuracy_m")
       .eq("field_id", data.fieldId)
       .eq("point_number", data.point)
       .maybeSingle();
@@ -101,6 +101,7 @@ export const spartanopsSpartacusCapture = createServerFn({ method: "POST" })
         point_number: data.point,
         latitude: data.lat,
         longitude: data.lng,
+        anchor_accuracy_m: data.accuracy ?? null,
         anchored_by_callsign: (checkin as any).callsign,
       } as any);
       const { data: r, error } = await supabaseAdmin.rpc("spartanops_apply_capture" as any, {
@@ -126,7 +127,15 @@ export const spartanopsSpartacusCapture = createServerFn({ method: "POST" })
       { lat: data.lat, lng: data.lng },
     );
 
-    const allowedRadius = ANCHOR_RADIUS_M + (data.accuracy ?? 0);
+    // Allowed radius factors in BOTH the current scan's accuracy AND the
+    // accuracy of the fix that originally anchored the point. Without the
+    // anchor-side buffer, a legitimate second scan (e.g. enemy team recap at
+    // the exact same spot) can drift past the threshold whenever the first
+    // player's GPS was imprecise.
+    const scanBuffer = Math.min(MAX_ACCURACY_BUFFER_M, data.accuracy ?? 0);
+    const anchorAcc = typeof (anchor as any).anchor_accuracy_m === "number" ? (anchor as any).anchor_accuracy_m : 0;
+    const anchorBuffer = Math.min(MAX_ACCURACY_BUFFER_M, anchorAcc);
+    const allowedRadius = ANCHOR_RADIUS_M + scanBuffer + anchorBuffer;
 
     if (dist > allowedRadius) {
       await supabaseAdmin.from("spartanops_captures").insert({
