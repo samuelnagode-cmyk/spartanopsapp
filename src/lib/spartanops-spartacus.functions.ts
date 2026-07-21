@@ -150,9 +150,12 @@ export const spartanopsSpartacusCapture = createServerFn({ method: "POST" })
       return { ...(r as any), spartacus: true, gpsFallback: true };
     }
 
+    const scanLat = data.lat as number;
+    const scanLng = data.lng as number;
+
     const dist = haversineMeters(
       { lat: (anchor as any).latitude, lng: (anchor as any).longitude },
-      { lat: data.lat, lng: data.lng },
+      { lat: scanLat, lng: scanLng },
     );
 
     // Allowed radius factors in BOTH the current scan's accuracy AND the
@@ -172,8 +175,8 @@ export const spartanopsSpartacusCapture = createServerFn({ method: "POST" })
         team: (checkin as any).assigned_team,
         player_checkin_id: (checkin as any).id,
         player_callsign: (checkin as any).callsign,
-        latitude: data.lat,
-        longitude: data.lng,
+        latitude: scanLat,
+        longitude: scanLng,
         distance_m: dist,
         suspicious: true,
         spartacus_status: "pending",
@@ -189,7 +192,7 @@ export const spartanopsSpartacusCapture = createServerFn({ method: "POST" })
     if (error) throw new Error(error.message);
     await supabaseAdmin
       .from("spartanops_captures")
-      .update({ latitude: data.lat, longitude: data.lng, distance_m: dist } as any)
+      .update({ latitude: scanLat, longitude: scanLng, distance_m: dist } as any)
       .eq("field_id", data.fieldId)
       .eq("point_number", data.point)
       .eq("player_callsign", (checkin as any).callsign)
