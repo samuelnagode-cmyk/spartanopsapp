@@ -618,6 +618,18 @@ export function LiveMatchView({ state, captures, now, en, mapUrl }: { state: Gam
                   </div>
                 );
               })}
+              {(["spawn_rdeca", "spawn_modra", "spawn_rumena"] as const).map((key) => {
+                const p = positions[key];
+                if (!p) return null;
+                const color = key === "spawn_rdeca" ? "#c0392b" : key === "spawn_modra" ? "#2e86de" : "#f1c40f";
+                const label = key === "spawn_rdeca" ? (en ? "SPAWN RED" : "SPAWN RDEČA") : key === "spawn_modra" ? (en ? "SPAWN BLUE" : "SPAWN MODRA") : (en ? "SPAWN YELLOW" : "SPAWN RUMENA");
+                return (
+                  <div key={key} style={{ position: "absolute", left: `${p.x}%`, top: `${p.y}%`, transform: "translate(-50%,-50%)", display: "flex", flexDirection: "column", alignItems: "center", pointerEvents: "none" }}>
+                    <div style={{ width: 22, height: 22, background: color, clipPath: "polygon(50% 0%, 100% 100%, 0% 100%)", boxShadow: "0 0 8px rgba(0,0,0,0.7)", display: "flex", alignItems: "flex-end", justifyContent: "center", color: "#fff", fontFamily: "'Michroma',monospace", fontSize: 8, fontWeight: 700, paddingBottom: 2 }}>▲</div>
+                    <div style={{ marginTop: 2, fontSize: 8, fontFamily: "monospace", letterSpacing: "0.14em", color: "#fff", background: "rgba(0,0,0,0.75)", padding: "1px 4px" }}>{label}</div>
+                  </div>
+                );
+              })}
               {positions["compass"] && (
                 <div style={{ position: "absolute", left: `${positions["compass"]!.x}%`, top: `${positions["compass"]!.y}%`, transform: "translate(-50%,-50%)", pointerEvents: "none" }}>
                   <TacticalCompass size={72} />
