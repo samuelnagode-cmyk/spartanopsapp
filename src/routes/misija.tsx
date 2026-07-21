@@ -688,7 +688,7 @@ function MisijaPage() {
   // Fullscreen forced-team-change interrupt (must be acknowledged)
   const teamColorNow = me.assigned_team !== "none" ? TEAM_COLOR[me.assigned_team] : "#ff5050";
   const teamLabelNow = me.assigned_team !== "none"
-    ? (en ? TEAM_LABEL_EN[me.assigned_team] : TEAM_LABEL[me.assigned_team])
+    ? teamName(me.assigned_team, state.settings, en)
     : "";
   const colorWordEn = me.assigned_team === "modra" ? "BLUE" : me.assigned_team === "rdeca" ? "RED" : me.assigned_team === "rumena" ? "YELLOW" : "";
   const reassignedBanner = me.team_changed_flag ? (
@@ -705,7 +705,7 @@ function MisijaPage() {
             <>
               Marshal has decided to balance the teams and placed you into{" "}
               <strong style={{ color: teamColorNow }}>{teamLabelNow} {colorWordEn && `(${colorWordEn})`}</strong>{" "}
-              team. From now on, you hold positions and capture points for this faction.
+              team. From now on, you hold position and capture points for this team.
             </>
           ) : (
             <>
