@@ -164,7 +164,7 @@ function TeamChangeNotificationMock({ en, team }: { en: boolean; team: TeamKey }
         </p>
         <p style={{ fontSize: 12, color: INK, lineHeight: 1.7, marginBottom: 18 }}>
           {en ? (
-            <>Marshal has decided to balance the teams and placed you into <strong style={{ color: c }}>{label} TEAM</strong>. From now on, you hold positions and capture points for this faction.</>
+            <>Marshal has decided to balance the teams and placed you into <strong style={{ color: c }}>{label}</strong> team. From now on, you hold position and capture points for this team.</>
           ) : (
             <>Maršal vam je z namenom uravnoteženja ekip spremenil ekipo. Od sedaj naprej zasedate položaje in osvajate točke za <strong style={{ color: c }}>{label}</strong> ekipo.</>
           )}
