@@ -478,7 +478,7 @@ function MisijaPage() {
               ...incoming,
               compressed_map_url: incoming.compressed_map_url || prev?.compressed_map_url || null,
               node_positions: hasIncomingPositions ? incomingPositions : (prev?.node_positions ?? {}),
-              match_started_at: incoming.match_started_at || prev?.match_started_at || null,
+              match_started_at: incoming.match_started_at || (["active", "paused"].includes(incoming.status) ? (prev?.match_started_at ?? null) : null),
             }));
             if ((p.new as any).match_started_at) syncServerClock().catch(() => {});
           }
