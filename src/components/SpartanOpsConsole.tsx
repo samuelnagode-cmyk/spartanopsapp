@@ -1392,7 +1392,7 @@ export function SpartacusAlerts({ fieldId, password, en }: { fieldId: string; pa
       .channel(`spartacus_alerts_${fieldId}`)
       .on("postgres_changes", { event: "INSERT", schema: "public", table: "spartanops_captures", filter: `field_id=eq.${fieldId}` }, (p) => {
         const n = p.new as any;
-        if (seen.current.has(n.id)) return;
+        if (n?.id && seen.current.has(n.id)) return;
         load();
       })
       .on("postgres_changes", { event: "UPDATE", schema: "public", table: "spartanops_captures", filter: `field_id=eq.${fieldId}` }, (p) => {
