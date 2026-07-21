@@ -1134,15 +1134,17 @@ function FieldsWelcome({
   onOpenLobby: (id: string) => void;
   onDecommissionLobby: (id: string) => void;
 }) {
+  const { lang } = useLang();
+  const en = lang === "en";
   return (
     <>
       {/* Deployment onboarding */}
       <div style={{ textAlign: "center", maxWidth: 620, margin: "0 auto 28px" }}>
         <p style={{ fontFamily: "monospace", fontSize: 11, letterSpacing: "0.30em", color: ACCENT, marginBottom: 10, textTransform: "uppercase" }}>
-          // CREATE YOUR OPERATIONAL PLAN
+          {en ? "// CREATE YOUR OPERATIONAL PLAN" : "// USTVARITE SVOJ OPERATIVNI NAČRT"}
         </p>
         <p style={{ fontSize: 13, color: MUTED, lineHeight: 1.7 }}>
-          Create a new mission from scratch or resume an existing one.
+          {en ? "Create a new mission from scratch or resume an existing one." : "Ustvarite novo misijo iz nič ali nadaljujte z obstoječo."}
         </p>
       </div>
 
@@ -1157,7 +1159,7 @@ function FieldsWelcome({
             display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 10,
           }}
         >
-          [ + CREATE NEW MISSION ]
+          {en ? "[ + CREATE NEW MISSION ]" : "[ + USTVARI NOVO MISIJO ]"}
         </button>
         <button
           onClick={onUseExisting}
@@ -1172,16 +1174,17 @@ function FieldsWelcome({
         >
           <span>[</span>
           <ShieldCheck size={14} strokeWidth={1.8} />
-          <span>USE EXISTING MISSION ]</span>
+          <span>{en ? "USE EXISTING MISSION ]" : "UPORABI OBSTOJEČO MISIJO ]"}</span>
         </button>
       </div>
 
 
-      {/* Existing fields list */}
+      {/* Existing missions list */}
       <div id="fields-list" style={{ marginBottom: 40 }}>
         <p style={{ fontFamily: "monospace", fontSize: 10, letterSpacing: "0.30em", color: MUTED, marginBottom: 14, textTransform: "uppercase" }}>
-          // ACTIVE FIELDS
+          {en ? "// ACTIVE MISSIONS" : "// AKTIVNE MISIJE"}
         </p>
+
         {!lobbiesLoaded ? (
           <div style={{ padding: "40px 20px", textAlign: "center", border: `1px dashed rgba(236,227,196,0.15)`, color: MUTED, fontSize: 13, fontStyle: "italic", letterSpacing: "0.14em", textTransform: "uppercase", fontFamily: "monospace" }}>
             ⟳ Loading active missions…
@@ -1433,7 +1436,9 @@ function MasterPasswordModal({ onClose, onSuccess }: { onClose: () => void; onSu
 }
 
 function MarshalPasswordPrompt({ lobby, onClose, onSuccess }: { lobby: LobbyRecord; onClose: () => void; onSuccess: (pw: string) => void }) {
+  const { lang } = useLang();
   const [password, setPassword] = useState("");
+
   const [err, setErr] = useState("");
   const [busy, setBusy] = useState(false);
   const verifyFn = useServerFn(verifyLobbyPassword);
@@ -1461,7 +1466,7 @@ function MarshalPasswordPrompt({ lobby, onClose, onSuccess }: { lobby: LobbyReco
         style={{ background: PANEL, border: `1px solid ${ACCENT}`, padding: 28, maxWidth: 420, width: "100%" }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 18 }}>
           <p style={{ fontFamily: "monospace", fontSize: 11, letterSpacing: "0.28em", color: ACCENT, textTransform: "uppercase" }}>
-            // COMMAND CENTER LOGIN
+            {lang === "en" ? "// COMMAND CENTER LOGIN" : "// PRIJAVA V POVELJNIŠKI CENTER"}
           </p>
           <button type="button" onClick={onClose} aria-label="Close"
             style={{ background: "transparent", border: "none", color: MUTED, cursor: "pointer", padding: 4 }}>
@@ -1472,11 +1477,14 @@ function MarshalPasswordPrompt({ lobby, onClose, onSuccess }: { lobby: LobbyReco
           <ShieldCheck size={22} />
         </div>
         <h2 style={{ fontFamily: "'Michroma', monospace", fontSize: 13, letterSpacing: "0.18em", color: INK, textAlign: "center", marginBottom: 6, textTransform: "uppercase" }}>
-          {lobby.fieldName}
+          {(lang === "en" ? "LOGIN TO MISSION: " : "PRIJAVA V MISIJO: ") + (lobby.eventName || lobby.fieldName)}
         </h2>
         <p style={{ fontSize: 12, color: MUTED, textAlign: "center", marginBottom: 18 }}>
-          Enter the Command Center password to open the Marshal dashboard for this field.
+          {lang === "en"
+            ? "Enter the Command Center password to open the Marshal dashboard for this mission."
+            : "Vnesite geslo Poveljniškega centra za odpiranje nadzorne plošče maršala za to misijo."}
         </p>
+
         <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} autoFocus placeholder="••••••••"
           style={{ width: "100%", background: BG, color: INK, border: "1px solid rgba(236,227,196,0.20)", padding: "12px 14px", fontSize: 14, marginBottom: 12, textAlign: "center", letterSpacing: "0.2em" }} />
         {err && <p style={{ color: "#d97a6c", fontSize: 12, marginBottom: 10, textAlign: "center" }}>{err}</p>}
