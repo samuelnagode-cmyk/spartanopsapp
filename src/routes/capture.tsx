@@ -115,8 +115,21 @@ function CapturePage() {
   const resolveSessionField = useServerFn(spartanopsResolveSessionField);
   const [state, setState] = useState<"loading" | "success" | "error" | "already_held">("loading");
   const [errMsg, setErrMsg] = useState("");
+  const [isGpsError, setIsGpsError] = useState(false);
   const [team, setTeam] = useState<string | null>(null);
   const [resolvedRouteField, setResolvedRouteField] = useState<string>(resolvedField);
+
+  const enableGpsAndRetry = () => {
+    if (typeof navigator === "undefined" || !navigator.geolocation) {
+      window.location.reload();
+      return;
+    }
+    navigator.geolocation.getCurrentPosition(
+      () => window.location.reload(),
+      () => window.location.reload(),
+      { enableHighAccuracy: true, timeout: 10000, maximumAge: 15000 },
+    );
+  };
 
 
   useEffect(() => {
