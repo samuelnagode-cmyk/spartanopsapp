@@ -4,6 +4,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { ArrowLeft, Lock, MapPin, X, Radio } from "lucide-react";
 import { dtoToRecord, SYSTEM_FIELD, type LobbyRecord } from "./admin-pregled";
 import { listPublishedLobbies, verifyLobbyPassword } from "@/lib/spartanops-lobbies.functions";
+import { useLang } from "@/lib/i18n";
 
 export const Route = createFileRoute("/join")({
   head: () => ({
@@ -249,10 +250,13 @@ function LobbyCard({ lobby, isSystem, onJoin }: { lobby: LobbyRecord; isSystem: 
 }
 
 function JoinPrompt({ lobby, onClose, onSuccess }: { lobby: LobbyRecord; onClose: () => void; onSuccess: () => void }) {
+  const { lang } = useLang();
+  const en = lang === "en";
   const [password, setPassword] = useState("");
   const [err, setErr] = useState("");
   const [busy, setBusy] = useState(false);
   const verifyFn = useServerFn(verifyLobbyPassword);
+  const missionName = (lobby.eventName || lobby.fieldName || "").toUpperCase();
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (busy) return;
@@ -261,9 +265,9 @@ function JoinPrompt({ lobby, onClose, onSuccess }: { lobby: LobbyRecord; onClose
     try {
       const { ok } = await verifyFn({ data: { id: lobby.id, password, kind: "player" } });
       if (ok) onSuccess();
-      else setErr("Access denied — wrong lobby password.");
+      else setErr(en ? "Access denied — wrong mission password." : "Dostop zavrnjen — napačno geslo misije.");
     } catch (e: any) {
-      setErr(e?.message ?? "Authentication failed.");
+      setErr(e?.message ?? (en ? "Authentication failed." : "Prijava ni uspela."));
     } finally {
       setBusy(false);
     }
@@ -283,10 +287,12 @@ function JoinPrompt({ lobby, onClose, onSuccess }: { lobby: LobbyRecord; onClose
           <Lock size={20} />
         </div>
         <h2 style={{ fontFamily: "'Michroma', monospace", fontSize: 13, letterSpacing: "0.18em", color: INK, textAlign: "center", marginBottom: 6, textTransform: "uppercase" }}>
-          {lobby.fieldName}
+          {en ? `LOGIN TO MISSION: ${missionName}` : `PRIJAVA V MISIJO: ${missionName}`}
         </h2>
         <p style={{ fontSize: 12, color: MUTED, textAlign: "center", marginBottom: 18 }}>
-          Enter the marshal's mission password to proceed to check-in.
+          {en
+            ? "Enter the password that the marshal has created for this mission."
+            : "Vnesite geslo ki ga je ustvaril marshal za to misijo."}
         </p>
 
         <input
