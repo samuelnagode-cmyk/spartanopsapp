@@ -253,8 +253,32 @@ function CapturePage() {
       <div style={{ background: BG, color: INK, minHeight: "100vh" }} className="flex items-center justify-center p-6">
         <div className="max-w-md w-full text-center rounded-xl p-8" style={{ background: "#1a0808", border: "2px solid #ff3b3b" }}>
           <AlertTriangle size={42} style={{ color: "#ff3b3b" }} className="mx-auto mb-3" />
-          <h2 style={{ color: "#ffd6d6", fontFamily: "'Michroma', monospace", fontSize: 14 }}>Skeniranje ni uspelo</h2>
+          <h2 style={{ color: "#ffd6d6", fontFamily: "'Michroma', monospace", fontSize: 14 }}>
+            {en ? "Scan failed" : "Skeniranje ni uspelo"}
+          </h2>
           <p className="text-sm mt-3" style={{ color: MUTED }}>{errMsg}</p>
+          {isGpsError && (
+            <button
+              type="button"
+              onClick={enableGpsAndRetry}
+              className="mt-5 w-full"
+              style={{
+                background: "#9eff3d",
+                color: "#0b0d09",
+                fontFamily: "'Michroma', monospace",
+                fontSize: 12,
+                letterSpacing: "0.16em",
+                textTransform: "uppercase",
+                padding: "13px 12px",
+                border: "none",
+                cursor: "pointer",
+                fontWeight: 700,
+                boxShadow: "0 0 22px -6px #9eff3d",
+              }}
+            >
+              {en ? "ENABLE GPS & RETRY" : "OMOGOČI GPS IN POSKUSI ZNOVA"}
+            </button>
+          )}
         </div>
       </div>
     );
