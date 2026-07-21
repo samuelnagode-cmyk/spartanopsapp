@@ -50,22 +50,11 @@ export const spartanopsSpartacusCapture = createServerFn({ method: "POST" })
 
     const { data: state } = await supabaseAdmin
       .from("spartanops_game_state")
-      .select("field_id, status, settings, match_started_at")
+      .select("field_id, status, match_started_at")
       .eq("field_id", data.fieldId)
       .maybeSingle();
 
-    const spartacusEnabled = !!((state?.settings as any)?.spartacusEnabled);
-
-    if (!spartacusEnabled) {
-      const { data: r, error } = await supabaseAdmin.rpc("spartanops_apply_capture" as any, {
-        p_field_id: data.fieldId,
-        p_point: data.point,
-        p_session_id: data.sessionId,
-      });
-      if (error) throw new Error(error.message);
-      return { ...(r as any), spartacus: false };
-    }
-
+    // Spartacus GPS anti-cheat is now ALWAYS enforced. No mission-settings bypass.
     if (data.lat == null || data.lng == null) {
       return { ok: false, error: "gps_required", spartacus: true } as const;
     }
