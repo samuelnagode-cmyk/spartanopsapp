@@ -218,6 +218,7 @@ export const spartanopsSpartacusReview = createServerFn({ method: "POST" })
       .from("spartanops_captures")
       .select("id, field_id, point_number, team, player_checkin_id, player_callsign")
       .eq("id", data.captureId)
+      .eq("field_id", data.fieldId)
       .maybeSingle();
     if (!cap) throw new Error("Capture not found");
 
