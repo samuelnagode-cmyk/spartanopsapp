@@ -819,29 +819,14 @@ function FieldSupply() {
 
 /* ---------- 6. CHANGELOG ---------- */
 function Changelog() {
-  const entries = [
-    {
-      date: "July 16, 2026",
-      title: "SPARTACUS GPS ANTI-CHEAT V1.0",
-      body: "Deployed the Spartacus anti-cheat module. Every objective QR code is anchored to real-world GPS coordinates on its first legitimate scan of the match. Any subsequent capture attempted more than 10 meters from that anchor is instantly flagged in the Marshal Command Center — fraudulent scans do not count towards the score until approved.",
-    },
-    {
-      date: "July 12, 2026",
-      title: "OFFICIAL APP LAUNCH // VERSION 1.0",
-      body: "The wait is over. After rigorous field testing, the official SpartanOps application is live. Fully optimized, deployed on a dedicated standalone network, and battle-ready for players and fields worldwide.",
-    },
-    {
-      date: "July 11, 2026",
-      title: "NEXT-GEN UI OVERHAUL",
-      body: "Redesigned the entire user interface from scratch. Engineered a high-contrast, premium tactical dark theme optimized for maximum readability under intense outdoor sunlight and high-stress field scenarios.",
-    },
-  ];
+  const t = useT();
+  const entries = spartanDevlogEntries(t).slice(0, 4);
   return (
     <SectionShell>
       <SectionHeader
-        eyebrow="// DEVLOG"
-        title="SYSTEM UPDATES"
-        sub="For the best user experience we are constantly testing and updating this website."
+        eyebrow={t("spartan.devlogTag")}
+        title={t("spartan.devlogTitle")}
+        sub={t("spartan.devlogSubtext")}
       />
       <ol
         className="relative"
@@ -915,22 +900,23 @@ function Changelog() {
 
 /* ---------- 7. OPERATIONAL PLANS ---------- */
 function OperationalPlans() {
+  const t = useT();
   const core = [
-    "Domination Game Mode (Full Access)",
-    "Player Limit: Up to 30 active players per lobby",
-    "Standard Factions (Classic BLUE vs RED team setup)",
-    "Cost: $0 / Free Forever",
+    t("spartan.tier1Feature1"),
+    t("spartan.tier1Feature2"),
+    t("spartan.tier1Feature3"),
+    t("spartan.tier1Feature4"),
   ];
   const premium = [
-    "Extended Player Limits (30+ players)",
-    "Search & Destroy Game Mode unlock",
-    "Multiple Teams unlock (Deploy 3-5 custom factions simultaneously for multi-front operations)",
-    "On-Command Auto-Balancing (Instantly balance teams with one click based on registered player experience levels)",
-    "Custom field setup & dedicated branding",
+    t("spartan.tier2Feature1"),
+    t("spartan.tier2Feature2"),
+    t("spartan.tier2Feature3"),
+    t("spartan.tier2Feature4"),
+    t("spartan.tier2Feature5"),
   ];
   return (
     <SectionShell id="pricing">
-      <SectionHeader eyebrow="// SYSTEM LICENSING" title="OPERATIONAL PLANS" />
+      <SectionHeader eyebrow={t("spartan.tagLicensing")} title={t("spartan.titlePlans")} />
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-8 md:items-stretch">
         {/* TIER 01 — Minimalist, no card */}
         <div className="flex flex-col py-2 md:py-4">
@@ -938,7 +924,7 @@ function OperationalPlans() {
             className="font-mono uppercase mb-2"
             style={{ fontSize: 11, letterSpacing: "0.28em", color: MUTED }}
           >
-            TIER 01 // CORE
+            {t("spartan.tier1Tag")}
           </p>
           <h3
             style={{
@@ -949,7 +935,7 @@ function OperationalPlans() {
               lineHeight: 1.2,
             }}
           >
-            FREE TIER
+            {t("spartan.tier1Title")}
           </h3>
           <div style={{ width: 40, height: 1, background: ACCENT_SOFT, marginTop: 14 }} />
           <ul className="mt-6 space-y-3 flex-1">
@@ -961,7 +947,7 @@ function OperationalPlans() {
             ))}
           </ul>
           <div className="mt-8">
-            <BtnOutline to="/admin-pregled">Start Free Operation</BtnOutline>
+            <BtnOutline to="/admin-pregled">{t("spartan.btnStartFree")}</BtnOutline>
           </div>
         </div>
 
@@ -990,13 +976,13 @@ function OperationalPlans() {
               boxShadow: `0 0 16px -4px ${ACCENT}`,
             }}
           >
-            // RECOMMENDED FOR FIELDS
+            {t("spartan.tier2Badge")}
           </span>
           <p
             className="font-mono uppercase mb-2 mt-2"
             style={{ fontSize: 11, letterSpacing: "0.28em", color: ACCENT }}
           >
-            TIER 02 // PREMIUM
+            {t("spartan.tier2Tag")}
           </p>
           <h3
             style={{
@@ -1007,7 +993,7 @@ function OperationalPlans() {
               lineHeight: 1.2,
             }}
           >
-            PREMIUM & CUSTOM MODULES
+            {t("spartan.tier2Title")}
           </h3>
           <div style={{ width: 40, height: 1, background: ACCENT, marginTop: 14 }} />
           <ul className="mt-6 space-y-3 flex-1">
@@ -1033,7 +1019,7 @@ function OperationalPlans() {
                 boxShadow: `0 0 32px -6px ${ACCENT}`,
               }}
             >
-              Request Premium Access
+              {t("spartan.btnRequestPremium")}
             </a>
           </div>
         </div>
@@ -1042,12 +1028,7 @@ function OperationalPlans() {
         className="mt-10 text-[12px] leading-[1.7]"
         style={{ color: MUTED, letterSpacing: "0.02em", maxWidth: 820 }}
       >
-        <span style={{ color: ACCENT, fontFamily: "'Rajdhani', monospace", letterSpacing: "0.18em" }}>
-          SYSTEM NOTICE:
-        </span>{" "}
-        SpartanOps Web App is currently under active development. The developers reserve the right to
-        modify features, tiers, and pricing structures at any time. For premium upgrades, custom field
-        integration, or high-capacity events, please contact command network directly.
+        {t("spartan.systemNotice")}
       </p>
     </SectionShell>
   );
