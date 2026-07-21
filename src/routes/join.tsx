@@ -208,7 +208,7 @@ function JoinPage() {
 function LobbyCard({ lobby, isSystem, onJoin }: { lobby: LobbyRecord; isSystem: boolean; onJoin: () => void }) {
   const city = lobby.city || (lobby.location?.split(",")[0]?.trim() ?? "");
   const country = lobby.country || (lobby.location?.split(",")[1]?.trim() ?? "");
-  const locationText = [city, country].filter(Boolean).join(" ") || lobby.location || "—";
+  const locationText = [city, country].filter(Boolean).join(", ") || lobby.location || "—";
   return (
     <div style={{
       background: "linear-gradient(180deg, rgba(224,176,78,0.05) 0%, rgba(0,0,0,0) 60%), " + PANEL,
@@ -216,7 +216,7 @@ function LobbyCard({ lobby, isSystem, onJoin }: { lobby: LobbyRecord; isSystem: 
     }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8, gap: 12, flexWrap: "wrap" }}>
         <p style={{ fontFamily: "'Michroma', monospace", fontSize: 13, letterSpacing: "0.14em", color: ACCENT, textTransform: "uppercase", lineHeight: 1.45 }}>
-          MISSION: '{lobby.eventName || lobby.fieldName}'
+          MISSION: {lobby.eventName || lobby.fieldName}
         </p>
         <span style={{
           fontFamily: "monospace", fontSize: 10, letterSpacing: "0.20em",

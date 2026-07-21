@@ -1182,6 +1182,7 @@ function FieldsWelcome({
               const city = l.city || (l.location?.split(",")[0]?.trim() ?? "");
               const country = l.country || (l.location?.split(",")[1]?.trim() ?? "");
               const status = l.published ? "ACTIVE" : "STANDBY";
+              const locationText = [city, country].filter(Boolean).join(", ") || l.location || "—";
               const statusColor = l.published ? "#3ddc84" : ACCENT;
               return (
                 <div key={l.id}
@@ -1224,7 +1225,7 @@ function FieldsWelcome({
                       </span>
                     </div>
                     <p style={{ fontFamily: "'Michroma', monospace", fontSize: 12, letterSpacing: "0.14em", color: ACCENT, marginBottom: 8, textTransform: "uppercase", lineHeight: 1.55 }}>
-                      MISSION: '{l.eventName || l.fieldName}'
+                      MISSION: {l.eventName || l.fieldName}
                     </p>
                     {l.fieldName && (
                       <p style={{ fontFamily: "monospace", fontSize: 10.5, color: MUTED, letterSpacing: "0.14em", marginTop: 6, textTransform: "uppercase" }}>
@@ -1232,7 +1233,7 @@ function FieldsWelcome({
                       </p>
                     )}
                     <p style={{ fontSize: 12.5, color: "rgba(236,227,196,0.85)", lineHeight: 1.6, marginTop: 8 }}>
-                      Location: {[city, country].filter(Boolean).join(" ") || l.location || "—"}
+                      Location: {locationText}
                     </p>
                   </button>
                 </div>
