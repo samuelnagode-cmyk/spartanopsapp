@@ -21,6 +21,7 @@ import { Route as LokacijaRouteImport } from './routes/lokacija'
 import { Route as JoinRouteImport } from './routes/join'
 import { Route as IntelRouteImport } from './routes/intel'
 import { Route as DogodkiRouteImport } from './routes/dogodki'
+import { Route as DevPreviewRouteImport } from './routes/dev-preview'
 import { Route as CaptureRouteImport } from './routes/capture'
 import { Route as ArhivRouteImport } from './routes/arhiv'
 import { Route as ArchiveRouteImport } from './routes/archive'
@@ -89,6 +90,11 @@ const DogodkiRoute = DogodkiRouteImport.update({
   path: '/dogodki',
   getParentRoute: () => rootRouteImport,
 } as any)
+const DevPreviewRoute = DevPreviewRouteImport.update({
+  id: '/dev-preview',
+  path: '/dev-preview',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const CaptureRoute = CaptureRouteImport.update({
   id: '/capture',
   path: '/capture',
@@ -131,6 +137,7 @@ export interface FileRoutesByFullPath {
   '/archive': typeof ArchiveRoute
   '/arhiv': typeof ArhivRoute
   '/capture': typeof CaptureRoute
+  '/dev-preview': typeof DevPreviewRoute
   '/dogodki': typeof DogodkiRoute
   '/intel': typeof IntelRoute
   '/join': typeof JoinRoute
@@ -152,6 +159,7 @@ export interface FileRoutesByTo {
   '/archive': typeof ArchiveRoute
   '/arhiv': typeof ArhivRoute
   '/capture': typeof CaptureRoute
+  '/dev-preview': typeof DevPreviewRoute
   '/dogodki': typeof DogodkiRoute
   '/intel': typeof IntelRoute
   '/join': typeof JoinRoute
@@ -174,6 +182,7 @@ export interface FileRoutesById {
   '/archive': typeof ArchiveRoute
   '/arhiv': typeof ArhivRoute
   '/capture': typeof CaptureRoute
+  '/dev-preview': typeof DevPreviewRoute
   '/dogodki': typeof DogodkiRoute
   '/intel': typeof IntelRoute
   '/join': typeof JoinRoute
@@ -197,6 +206,7 @@ export interface FileRouteTypes {
     | '/archive'
     | '/arhiv'
     | '/capture'
+    | '/dev-preview'
     | '/dogodki'
     | '/intel'
     | '/join'
@@ -218,6 +228,7 @@ export interface FileRouteTypes {
     | '/archive'
     | '/arhiv'
     | '/capture'
+    | '/dev-preview'
     | '/dogodki'
     | '/intel'
     | '/join'
@@ -239,6 +250,7 @@ export interface FileRouteTypes {
     | '/archive'
     | '/arhiv'
     | '/capture'
+    | '/dev-preview'
     | '/dogodki'
     | '/intel'
     | '/join'
@@ -261,6 +273,7 @@ export interface RootRouteChildren {
   ArchiveRoute: typeof ArchiveRoute
   ArhivRoute: typeof ArhivRoute
   CaptureRoute: typeof CaptureRoute
+  DevPreviewRoute: typeof DevPreviewRoute
   DogodkiRoute: typeof DogodkiRoute
   IntelRoute: typeof IntelRoute
   JoinRoute: typeof JoinRoute
@@ -363,6 +376,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DogodkiRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/dev-preview': {
+      id: '/dev-preview'
+      path: '/dev-preview'
+      fullPath: '/dev-preview'
+      preLoaderRoute: typeof DevPreviewRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/capture': {
       id: '/capture'
       path: '/capture'
@@ -421,6 +441,7 @@ const rootRouteChildren: RootRouteChildren = {
   ArchiveRoute: ArchiveRoute,
   ArhivRoute: ArhivRoute,
   CaptureRoute: CaptureRoute,
+  DevPreviewRoute: DevPreviewRoute,
   DogodkiRoute: DogodkiRoute,
   IntelRoute: IntelRoute,
   JoinRoute: JoinRoute,

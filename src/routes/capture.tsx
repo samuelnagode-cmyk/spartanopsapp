@@ -115,8 +115,21 @@ function CapturePage() {
   const resolveSessionField = useServerFn(spartanopsResolveSessionField);
   const [state, setState] = useState<"loading" | "success" | "error" | "already_held">("loading");
   const [errMsg, setErrMsg] = useState("");
+  const [isGpsError, setIsGpsError] = useState(false);
   const [team, setTeam] = useState<string | null>(null);
   const [resolvedRouteField, setResolvedRouteField] = useState<string>(resolvedField);
+
+  const enableGpsAndRetry = () => {
+    if (typeof navigator === "undefined" || !navigator.geolocation) {
+      window.location.reload();
+      return;
+    }
+    navigator.geolocation.getCurrentPosition(
+      () => window.location.reload(),
+      () => window.location.reload(),
+      { enableHighAccuracy: true, timeout: 10000, maximumAge: 15000 },
+    );
+  };
 
 
   useEffect(() => {
@@ -214,6 +227,7 @@ function CapturePage() {
               ? "⚠ Spartacus flagged this scan as suspicious. Awaiting marshal review."
               : "⚠ Spartacus je označil ta sken kot sumljiv. Čaka pregled maršala.",
           };
+          setIsGpsError(errCode === "gps_required");
           setErrMsg(msg[errCode] ?? "Napaka."); setState("error"); return;
         }
         setTeam((result as any).team ?? null);
@@ -239,8 +253,32 @@ function CapturePage() {
       <div style={{ background: BG, color: INK, minHeight: "100vh" }} className="flex items-center justify-center p-6">
         <div className="max-w-md w-full text-center rounded-xl p-8" style={{ background: "#1a0808", border: "2px solid #ff3b3b" }}>
           <AlertTriangle size={42} style={{ color: "#ff3b3b" }} className="mx-auto mb-3" />
-          <h2 style={{ color: "#ffd6d6", fontFamily: "'Michroma', monospace", fontSize: 14 }}>Skeniranje ni uspelo</h2>
+          <h2 style={{ color: "#ffd6d6", fontFamily: "'Michroma', monospace", fontSize: 14 }}>
+            {en ? "Scan failed" : "Skeniranje ni uspelo"}
+          </h2>
           <p className="text-sm mt-3" style={{ color: MUTED }}>{errMsg}</p>
+          {isGpsError && (
+            <button
+              type="button"
+              onClick={enableGpsAndRetry}
+              className="mt-5 w-full"
+              style={{
+                background: "#9eff3d",
+                color: "#0b0d09",
+                fontFamily: "'Michroma', monospace",
+                fontSize: 12,
+                letterSpacing: "0.16em",
+                textTransform: "uppercase",
+                padding: "13px 12px",
+                border: "none",
+                cursor: "pointer",
+                fontWeight: 700,
+                boxShadow: "0 0 22px -6px #9eff3d",
+              }}
+            >
+              {en ? "ENABLE GPS & RETRY" : "OMOGOČI GPS IN POSKUSI ZNOVA"}
+            </button>
+          )}
         </div>
       </div>
     );
@@ -287,9 +325,6 @@ function CapturePage() {
             <h2 style={{ fontFamily: "'Michroma', monospace", fontSize: 18, color: INK, fontWeight: 700, marginTop: 10, letterSpacing: "0.06em" }}>
               {en ? "POINT " : "TOČKA "}{pointName}{en ? " CAPTURED" : " ZAVZETA"}
             </h2>
-            <p className="text-sm mt-3" style={{ color: MUTED, lineHeight: 1.6 }}>
-              {t("captureSuccessSubtitle")}
-            </p>
 
             <button
               type="button"
