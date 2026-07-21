@@ -5,6 +5,7 @@ import { Crosshair, QrCode, Users, ClipboardList, MapPin, ArrowRight, Printer, C
 import { SYSTEM_FIELD, dtoToRecord } from "./admin-pregled";
 import { getOperationalTelemetry, type OperationalTelemetry } from "@/lib/spartanops-telemetry.functions";
 import { listPublishedLobbies } from "@/lib/spartanops-lobbies.functions";
+import { spartanDevlogEntries, useT } from "@/lib/i18n";
 
 export const Route = createFileRoute("/spartanops")({
   head: () => ({
@@ -195,6 +196,7 @@ const HERO_BG_URL =
   "https://res.cloudinary.com/dfifiytid/image/upload/v1784235270/SpartanOps%20app%20v1.0/GALERIJA/spartanops_homepage_image-03.webp";
 
 function Hero() {
+  const t = useT();
   return (
     <div className="relative">
       {/* Backdrop image — barely visible, fades to page BG at the bottom */}
@@ -230,7 +232,7 @@ function Hero() {
             className="font-mono uppercase mt-3 mb-2"
             style={{ fontSize: 11, letterSpacing: "0.34em", color: BLUE }}
           >
-            // TACTICAL AIRSOFT HUD SYSTEM
+            {t("spartan.heroTag")}
           </p>
           <h1 className="sr-only">SpartanOps</h1>
           <img
@@ -245,12 +247,11 @@ function Hero() {
             className="mx-auto mt-2 text-[14px] md:text-[16px] leading-[1.6]"
             style={{ color: INK, maxWidth: 620 }}
           >
-            The ultimate web app for live-tracking airsoft games. Download tactical
-            printouts for your field and let players scan QR codes to secure victory.
+            {t("spartan.heroSubtext")}
           </p>
           <div className="mt-5 mx-auto grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4" style={{ maxWidth: 480 }}>
-            <BtnPrimary to="/admin-pregled" fullWidth>Create Mission</BtnPrimary>
-            <BtnOutline to="/join" fullWidth>Join Mission</BtnOutline>
+            <BtnPrimary to="/admin-pregled" fullWidth>{t("spartan.btnCreateMission")}</BtnPrimary>
+            <BtnOutline to="/join" fullWidth>{t("spartan.btnJoinMission")}</BtnOutline>
           </div>
           {/* Scroll cue — tactical down chevron */}
           <button
@@ -335,6 +336,7 @@ function AnimatedCounter({ value, duration = 1500 }: { value: number; duration?:
 }
 
 function LiveTracker() {
+  const tl = useT();
   const fetchTelemetry = useServerFn(getOperationalTelemetry);
   const [t, setT] = useState<OperationalTelemetry>({ operators: 24, scans: 125, respawns: 115, missions: 3 });
 
@@ -349,14 +351,14 @@ function LiveTracker() {
   }, [fetchTelemetry]);
 
   const items: Array<{ label: string; value: number; Icon: typeof CheckCircle2; live: boolean }> = [
-    { label: "Operators Deployed", value: t.operators, Icon: Users, live: false },
-    { label: "QR Codes Scanned", value: t.scans, Icon: QrCode, live: false },
-    { label: "Respawns Processed", value: t.respawns, Icon: RefreshCw, live: true },
-    { label: "Missions Completed", value: t.missions, Icon: Target, live: false },
+    { label: tl("spartan.statOperators"), value: t.operators, Icon: Users, live: false },
+    { label: tl("spartan.statQRScanned"), value: t.scans, Icon: QrCode, live: false },
+    { label: tl("spartan.statRespawns"), value: t.respawns, Icon: RefreshCw, live: true },
+    { label: tl("spartan.statMissions"), value: t.missions, Icon: Target, live: false },
   ];
   return (
     <SectionShell>
-      <SectionHeader eyebrow="// LIVE OPS TRACKER" title="OPERATIONAL TELEMETRY" />
+      <SectionHeader eyebrow={tl("spartan.tagLiveOps")} title={tl("spartan.titleTelemetry")} />
       <div className="grid grid-cols-2 gap-3 md:gap-4">
         {items.map((it) => (
           <HudCard
