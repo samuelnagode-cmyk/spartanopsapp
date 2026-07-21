@@ -101,6 +101,24 @@ function placeholderError(en: boolean): string {
 }
 
 const CAPTURE_SFX_MS = 6000;
+const GPS_OK_KEY = "spartanops:gps_authorized";
+const GPS_FIX_KEY = "spartanops:gps_fix";
+
+function readCachedGpsFix(): { lat: number | null; lng: number | null } | null {
+  if (typeof window === "undefined") return null;
+  try {
+    const raw = localStorage.getItem(GPS_FIX_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as { lat?: unknown; lng?: unknown; at?: unknown };
+    const lat = typeof parsed.lat === "number" ? parsed.lat : NaN;
+    const lng = typeof parsed.lng === "number" ? parsed.lng : NaN;
+    const at = typeof parsed.at === "number" ? parsed.at : 0;
+    if (!Number.isFinite(lat) || !Number.isFinite(lng) || Date.now() - at > 10 * 60 * 1000) return null;
+    return { lat, lng };
+  } catch {
+    return null;
+  }
+}
 
 
 function CapturePage() {
@@ -125,7 +143,13 @@ function CapturePage() {
       return;
     }
     navigator.geolocation.getCurrentPosition(
-      () => window.location.reload(),
+      (pos) => {
+        try {
+          localStorage.setItem(GPS_OK_KEY, "1");
+          localStorage.setItem(GPS_FIX_KEY, JSON.stringify({ lat: pos.coords.latitude, lng: pos.coords.longitude, at: Date.now() }));
+        } catch { /* ignore */ }
+        window.location.reload();
+      },
       () => window.location.reload(),
       { enableHighAccuracy: true, timeout: 10000, maximumAge: 15000 },
     );
@@ -137,9 +161,15 @@ function CapturePage() {
       new Promise<{ lat: number | null; lng: number | null }>((resolve) => {
         if (typeof navigator === "undefined" || !navigator.geolocation) return resolve({ lat: null, lng: null });
         navigator.geolocation.getCurrentPosition(
-          (pos) => resolve({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
-          () => resolve({ lat: null, lng: null }),
-          { enableHighAccuracy: true, timeout: 8000, maximumAge: 15000 },
+          (pos) => {
+            try {
+              localStorage.setItem(GPS_OK_KEY, "1");
+              localStorage.setItem(GPS_FIX_KEY, JSON.stringify({ lat: pos.coords.latitude, lng: pos.coords.longitude, at: Date.now() }));
+            } catch { /* ignore */ }
+            resolve({ lat: pos.coords.latitude, lng: pos.coords.longitude });
+          },
+          () => resolve(readCachedGpsFix() ?? { lat: null, lng: null }),
+          { enableHighAccuracy: true, timeout: 12000, maximumAge: 30000 },
         );
       });
 
@@ -276,7 +306,7 @@ function CapturePage() {
                 boxShadow: "0 0 22px -6px #9eff3d",
               }}
             >
-              {en ? "ENABLE GPS & RETRY" : "OMOGOČI GPS IN POSKUSI ZNOVA"}
+              {en ? "ENABLE GPS" : "OMOGOČI GPS"}
             </button>
           )}
         </div>

@@ -1223,15 +1223,15 @@ function FieldsWelcome({
                         {status}
                       </span>
                     </div>
-                    <p style={{ fontFamily: "'Michroma', monospace", fontSize: 12, letterSpacing: "0.14em", color: ACCENT, marginBottom: 8, textTransform: "uppercase" }}>
-                      Mission: {l.eventName || l.fieldName}
+                    <p style={{ fontFamily: "'Michroma', monospace", fontSize: 12, letterSpacing: "0.14em", color: ACCENT, marginBottom: 8, textTransform: "uppercase", lineHeight: 1.55 }}>
+                      Mission: {[l.eventName || l.fieldName, city, country].filter(Boolean).join(" ")}
                     </p>
                     <p style={{ fontSize: 12.5, color: "rgba(236,227,196,0.85)", lineHeight: 1.6 }}>
                       {[city, country].filter(Boolean).join(", ") || l.location}
                     </p>
                     {l.fieldName && (
                       <p style={{ fontFamily: "monospace", fontSize: 10.5, color: MUTED, letterSpacing: "0.14em", marginTop: 6, textTransform: "uppercase" }}>
-                        // {l.fieldName}
+                        // at airsoft field {l.fieldName}
                       </p>
                     )}
                   </button>

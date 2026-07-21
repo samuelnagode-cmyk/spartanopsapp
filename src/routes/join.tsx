@@ -211,8 +211,8 @@ function LobbyCard({ lobby, isSystem, onJoin }: { lobby: LobbyRecord; isSystem: 
       border: `1px solid ${ACCENT}40`, padding: "18px 20px",
     }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8, gap: 12, flexWrap: "wrap" }}>
-        <p style={{ fontFamily: "'Michroma', monospace", fontSize: 13, letterSpacing: "0.14em", color: ACCENT, textTransform: "uppercase" }}>
-          {lobby.fieldName}
+        <p style={{ fontFamily: "'Michroma', monospace", fontSize: 13, letterSpacing: "0.14em", color: ACCENT, textTransform: "uppercase", lineHeight: 1.45 }}>
+          MISSION: {lobby.eventName || lobby.fieldName} at airsoft field {lobby.fieldName}
         </p>
         <span style={{
           fontFamily: "monospace", fontSize: 10, letterSpacing: "0.20em",

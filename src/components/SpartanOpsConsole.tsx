@@ -209,7 +209,19 @@ export function SpartanOpsConsole({ fieldId, password }: { fieldId: string; pass
     };
     load();
     const ch = supabase.channel(`admin_roster_${fieldId}`)
-      .on("postgres_changes", { event: "*", schema: "public", table: "spartanops_checkins", filter: `field_id=eq.${fieldId}` }, load)
+      .on("postgres_changes", { event: "*", schema: "public", table: "spartanops_checkins", filter: `field_id=eq.${fieldId}` }, (payload: any) => {
+        const next = payload.new as Checkin | undefined;
+        const old = payload.old as Partial<Checkin> | undefined;
+        if (payload.eventType === "DELETE" && old?.id) {
+          setRoster((items) => items.filter((p) => p.id !== old.id));
+        } else if (next?.id) {
+          setRoster((items) => {
+            const exists = items.some((p) => p.id === next.id);
+            return exists ? items.map((p) => (p.id === next.id ? { ...p, ...next } : p)) : [...items, next];
+          });
+        }
+        window.setTimeout(load, 150);
+      })
       .subscribe();
     return () => { alive = false; supabase.removeChannel(ch); };
   }, [fieldId, password, getRoster]);
@@ -455,7 +467,7 @@ export function SpartanOpsConsole({ fieldId, password }: { fieldId: string; pass
 
       {/* 4. Live map view + timers — visible during pre-match countdown and while match is active/paused */}
       {(state.status === "active" || state.status === "paused" || !!state.match_started_at) && (
-        <LiveMatchView state={state} captures={captures} now={currentTime} en={en} />
+        <LiveMatchView state={state} captures={captures} now={currentTime} en={en} mapUrl={mapUrl} />
       )}
 
       {/* Separator */}
@@ -550,7 +562,7 @@ export function SpartanOpsConsole({ fieldId, password }: { fieldId: string; pass
 }
 
 
-export function LiveMatchView({ state, captures, now, en }: { state: GameState; captures: Capture[]; now: number; en: boolean }) {
+export function LiveMatchView({ state, captures, now, en, mapUrl }: { state: GameState; captures: Capture[]; now: number; en: boolean; mapUrl?: string }) {
   const startMs = state.match_started_at ? new Date(state.match_started_at).getTime() : null;
   const matchIsRunning = (state.status === "active" || state.status === "paused") && !!startMs;
   // Freeze visible timers/counts while the match is paused.
@@ -562,6 +574,7 @@ export function LiveMatchView({ state, captures, now, en }: { state: GameState; 
     ? captures.filter((c) => !startMs || new Date(c.captured_at).getTime() >= startMs)
     : [];
   const visibleNodeHolders = nodeHoldersFromCaptures(visibleCaptures);
+  const effectiveMapUrl = state.compressed_map_url || mapUrl;
   const remaining = (() => {
     if (!startMs) return state.match_duration_minutes * 60;
     if (effectiveNow < startMs) return state.match_duration_minutes * 60;
@@ -579,9 +592,9 @@ export function LiveMatchView({ state, captures, now, en }: { state: GameState; 
           {en ? "Time remaining" : "Preostali čas"}: <span style={{ color: INK, fontSize: 16 }}>{mm}:{ss}</span>
         </div>
         <div style={{ position: "relative", background: "#0c0e09", border: `1px solid ${ACCENT}55`, marginBottom: 14 }}>
-          {state.compressed_map_url ? (
+          {effectiveMapUrl ? (
             <div style={{ position: "relative" }}>
-              <img src={state.compressed_map_url} alt="Map" style={{ width: "100%", display: "block" }} loading="lazy" decoding="async" />
+              <img src={effectiveMapUrl} alt="Map" style={{ width: "100%", display: "block" }} loading="eager" fetchPriority="high" decoding="async" />
               {[1, 2, 3, 4, 5].map((n) => {
                 const p = positions[String(n)];
                 if (!p) return null;
@@ -971,7 +984,7 @@ export function NodePlacer({ mapUrl, positions, onChange, en }: { mapUrl: string
       </div>
       <div ref={wrapRef} onClick={mapUrl ? onClickMap : undefined}
         style={{ position: "relative", background: "#0c0e09", border: `1px solid rgba(236,227,196,0.12)`, cursor: mapUrl ? "crosshair" : "default", userSelect: "none" }}>
-        {mapUrl ? <img src={mapUrl} alt="map" style={{ width: "100%", display: "block", pointerEvents: "none" }} loading="lazy" decoding="async" /> :
+        {mapUrl ? <img src={mapUrl} alt="map" style={{ width: "100%", display: "block", pointerEvents: "none" }} loading="eager" fetchPriority="high" decoding="async" /> :
           <p style={{ color: MUTED, fontSize: 11, textAlign: "center", padding: 40, textTransform: "uppercase", letterSpacing: "0.16em", fontFamily: "monospace" }}>— {en ? "upload a map first" : "najprej naloži zemljevid"} —</p>}
         {mapUrl && NODES.map((n) => {
           const p = positions[n.key];

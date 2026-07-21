@@ -315,7 +315,7 @@ function ScanFailedGpsMock({ en }: { en: boolean }) {
           {en ? "Spartacus protection requires active GPS to verify your capture. Please enable location services to proceed." : "Spartacus zaščita zahteva aktivno GPS povezavo za potrditev tvoje lokacije. Prosimo, omogoči lokacijske storitve."}
         </p>
         <button style={{ marginTop: 16, width: "100%", background: "#9eff3d", color: BG, padding: "11px 12px", fontFamily: "'Michroma', monospace", fontSize: 11, letterSpacing: "0.16em", textTransform: "uppercase", border: "none", cursor: "pointer", fontWeight: 700, boxShadow: "0 0 22px -6px #9eff3d" }}>
-          {en ? "ENABLE GPS & RETRY" : "OMOGOČI GPS IN POSKUSI ZNOVA"}
+          {en ? "ENABLE GPS" : "OMOGOČI GPS"}
         </button>
       </div>
     </div>
@@ -422,28 +422,28 @@ function GamePausedMock({ en }: { en: boolean }) {
 function DevPreviewPage() {
   const [lang, setLang] = useState<"en" | "sl">("en");
   const [team, setTeam] = useState<TeamKey>("modra");
-  const [device, setDevice] = useState<"mobile" | "desktop">("mobile");
+  const [device, setDevice] = useState<"android" | "iphone" | "desktop">("iphone");
   const en = lang === "en";
 
-  const frameStyle: React.CSSProperties = device === "mobile"
-    ? { width: 380, margin: "0 auto", border: `2px solid ${ACCENT}55`, borderRadius: 22, overflow: "hidden", boxShadow: `0 0 30px -12px ${ACCENT}` }
+  const frameStyle: React.CSSProperties = device !== "desktop"
+    ? { width: device === "iphone" ? 266 : 252, margin: "0 auto", border: `2px solid ${ACCENT}55`, borderRadius: device === "iphone" ? 22 : 12, overflow: "hidden", boxShadow: `0 0 30px -12px ${ACCENT}` }
     : { width: "100%" };
 
-  const cards: { title: string; sound: string; el: (extra?: React.ReactNode) => React.ReactNode }[] = [
+  const cards: { title: string; sound?: string; el: (extra?: React.ReactNode) => React.ReactNode }[] = [
     { title: en ? "DEPLOYMENT REGISTRATION" : "PRIJAVA V OPERACIJO", sound: "spartanops-lobby.mp3", el: () => <DeploymentRegistrationMock en={en} /> },
     { title: en ? "TEAM SELECTION" : "IZBIRA EKIPE", sound: "spartanops-lobby.mp3", el: () => <TeamSelectionMock en={en} /> },
-    { title: en ? "TEAM CHANGE NOTIFICATION" : "OBVESTILO O ZAMENJAVI EKIPE", sound: "(none — silent overlay on HUD)", el: () => <TeamChangeNotificationMock en={en} team={team} /> },
-    { title: en ? "PRE-START SCREEN" : "PRED-START", sound: "countdown-10.mp3 (final 10s) + spartanops-ambient.mp3", el: () => <PreStartMock en={en} /> },
-    { title: en ? "PLAYER HUD (GAME)" : "IGRALSKI HUD (IGRA)", sound: "spartanops-ambient.mp3", el: () => <PlayerHudMock en={en} myTeam={team} /> },
+    { title: en ? "TEAM CHANGE NOTIFICATION" : "OBVESTILO O ZAMENJAVI EKIPE", el: () => <TeamChangeNotificationMock en={en} team={team} /> },
+    { title: en ? "PRE-START SCREEN" : "PRED-START", sound: "countdown-10.mp3", el: () => <PreStartMock en={en} /> },
+    { title: en ? "PLAYER HUD (GAME)" : "IGRALSKI HUD (IGRA)", sound: "raging-fires.mp3", el: () => <PlayerHudMock en={en} myTeam={team} /> },
     { title: en ? "SUCCESS CAPTURE POPUP" : "USPEŠNO ZAVZETJE", sound: "spartanops-capture-levelup.mp3", el: () => <SuccessCapturePopupMock en={en} team={team} /> },
-    { title: en ? "POINT ALREADY TAKEN" : "TOČKA ŽE ZAVZETA", sound: "(none — passive notice)", el: () => <PointAlreadyHeldMock en={en} /> },
-    { title: en ? "DUPLICATE SCAN NOTICE" : "PODVOJEN SKEN", sound: "(none)", el: () => <DuplicateScanMock en={en} /> },
-    { title: en ? "SCAN FAILED (GPS OFF)" : "SKEN NEUSPEŠEN (GPS)", sound: "(none — error state)", el: () => <ScanFailedGpsMock en={en} /> },
-    { title: en ? "NO INTERNET CONNECTION" : "BREZ POVEZAVE", sound: "(none — audio suspended)", el: () => <NoInternetMock en={en} /> },
-    { title: en ? "SPARTACUS WARNING" : "SPARTACUS OPOZORILO", sound: "deactivator.mp3", el: () => <SpartacusWarningMock en={en} /> },
-    { title: en ? "SUSPENDED / FROZEN" : "IZKLJUČEN / ZAMRZNJEN", sound: "deactivator.mp3", el: () => <SuspendedFrozenMock en={en} /> },
-    { title: en ? "DEBRIEFING SCREEN" : "PORAZDELITEV", sound: "spartanops-debriefing.mp3 / spartanops-endgame.mp3", el: () => <DebriefingMock en={en} /> },
-    { title: en ? "GAME PAUSED OVERLAY" : "IGRA PREKINJENA", sound: "(ambient continues, muted)", el: () => <GamePausedMock en={en} /> },
+    { title: en ? "POINT ALREADY TAKEN" : "TOČKA ŽE ZAVZETA", el: () => <PointAlreadyHeldMock en={en} /> },
+    { title: en ? "DUPLICATE SCAN NOTICE" : "PODVOJEN SKEN", el: () => <DuplicateScanMock en={en} /> },
+    { title: en ? "SCAN FAILED (GPS OFF)" : "SKEN NEUSPEŠEN (GPS)", el: () => <ScanFailedGpsMock en={en} /> },
+    { title: en ? "NO INTERNET CONNECTION" : "BREZ POVEZAVE", el: () => <NoInternetMock en={en} /> },
+    { title: en ? "SPARTACUS WARNING" : "SPARTACUS OPOZORILO", el: () => <SpartacusWarningMock en={en} /> },
+    { title: en ? "SUSPENDED / FROZEN" : "IZKLJUČEN / ZAMRZNJEN", el: () => <SuspendedFrozenMock en={en} /> },
+    { title: en ? "DEBRIEFING SCREEN" : "PORAZDELITEV", sound: "spartanops-debriefing.mp3", el: () => <DebriefingMock en={en} /> },
+    { title: en ? "GAME PAUSED OVERLAY" : "IGRA PREKINJENA", sound: "raging-fires.mp3", el: () => <GamePausedMock en={en} /> },
   ];
 
   return (
@@ -461,7 +461,7 @@ function DevPreviewPage() {
           </div>
           <div style={{ display: "flex", gap: 18, flexWrap: "wrap", alignItems: "center" }}>
             <ToggleGroup label="LANG" value={lang} options={[{ v: "en", l: "EN" }, { v: "sl", l: "SLO" }]} onChange={(v) => setLang(v as any)} />
-            <ToggleGroup label="DEVICE" value={device} options={[{ v: "mobile", l: "📱 MOBILE" }, { v: "desktop", l: "🖥 DESKTOP" }]} onChange={(v) => setDevice(v as any)} />
+            <ToggleGroup label="DEVICE" value={device} options={[{ v: "android", l: "ANDROID" }, { v: "iphone", l: "IPHONE" }, { v: "desktop", l: "DESKTOP" }]} onChange={(v) => setDevice(v as any)} />
             <div>
               <p style={{ fontFamily: "monospace", fontSize: 9, color: MUTED, letterSpacing: "0.16em", margin: 0, marginBottom: 4, textTransform: "uppercase" }}>TEAM</p>
               <div style={{ display: "flex", gap: 4 }}>
@@ -487,7 +487,7 @@ function DevPreviewPage() {
 
       {/* Cards grid */}
       <div style={{ maxWidth: 1400, margin: "0 auto", padding: "24px 20px" }}>
-        <div style={{ display: "grid", gridTemplateColumns: device === "mobile" ? "repeat(auto-fill, minmax(400px, 1fr))" : "repeat(auto-fill, minmax(520px, 1fr))", gap: 20 }}>
+          <div style={{ display: "grid", gridTemplateColumns: device !== "desktop" ? "repeat(auto-fill, minmax(300px, 1fr))" : "repeat(auto-fill, minmax(430px, 1fr))", gap: 18 }}>
           {cards.map((c, i) => (
             <CardShell key={i} title={c.title} sound={c.sound}>
               <div style={frameStyle}>{c.el()}</div>
