@@ -192,6 +192,7 @@ function CapturePage() {
   const [team, setTeam] = useState<string | null>(null);
   const [resolvedRouteField, setResolvedRouteField] = useState<string>(resolvedField);
   const [acquiringGps, setAcquiringGps] = useState(false);
+  const [retryNonce, setRetryNonce] = useState(0);
 
   useEffect(() => {
     const onAcq = () => setAcquiringGps(true);
@@ -201,7 +202,7 @@ function CapturePage() {
 
   const enableGpsAndRetry = () => {
     if (typeof navigator === "undefined" || !navigator.geolocation) {
-      window.location.reload();
+      setRetryNonce((n) => n + 1);
       return;
     }
     setIsGpsError(false);
@@ -214,9 +215,9 @@ function CapturePage() {
           localStorage.setItem(GPS_OK_KEY, "1");
           localStorage.setItem(GPS_FIX_KEY, JSON.stringify({ lat: pos.coords.latitude, lng: pos.coords.longitude, accuracy: pos.coords.accuracy, at: Date.now() }));
         } catch { /* ignore */ }
-        window.location.reload();
+        setRetryNonce((n) => n + 1);
       },
-      () => window.location.reload(),
+      () => setRetryNonce((n) => n + 1),
       { enableHighAccuracy: true, timeout: 12000, maximumAge: 0 },
     );
   };
@@ -344,7 +345,7 @@ function CapturePage() {
     };
 
     run();
-  }, [point, field, resolvedField, dbField, navigate, applyCapture, resolveSessionField, en]);
+  }, [point, field, resolvedField, dbField, navigate, applyCapture, resolveSessionField, en, retryNonce]);
 
   if (state === "error") {
     return (
