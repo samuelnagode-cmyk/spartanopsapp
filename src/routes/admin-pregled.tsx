@@ -1464,7 +1464,7 @@ function MarshalPasswordPrompt({ lobby, onClose, onSuccess }: { lobby: LobbyReco
         style={{ background: PANEL, border: `1px solid ${ACCENT}`, padding: 28, maxWidth: 420, width: "100%" }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 18 }}>
           <p style={{ fontFamily: "monospace", fontSize: 11, letterSpacing: "0.28em", color: ACCENT, textTransform: "uppercase" }}>
-            // COMMAND CENTER LOGIN
+            {lang === "en" ? "// COMMAND CENTER LOGIN" : "// PRIJAVA V POVELJNIŠKI CENTER"}
           </p>
           <button type="button" onClick={onClose} aria-label="Close"
             style={{ background: "transparent", border: "none", color: MUTED, cursor: "pointer", padding: 4 }}>
@@ -1475,11 +1475,14 @@ function MarshalPasswordPrompt({ lobby, onClose, onSuccess }: { lobby: LobbyReco
           <ShieldCheck size={22} />
         </div>
         <h2 style={{ fontFamily: "'Michroma', monospace", fontSize: 13, letterSpacing: "0.18em", color: INK, textAlign: "center", marginBottom: 6, textTransform: "uppercase" }}>
-          {lobby.fieldName}
+          {(lang === "en" ? "LOGIN TO MISSION: " : "PRIJAVA V MISIJO: ") + (lobby.eventName || lobby.fieldName)}
         </h2>
         <p style={{ fontSize: 12, color: MUTED, textAlign: "center", marginBottom: 18 }}>
-          Enter the Command Center password to open the Marshal dashboard for this field.
+          {lang === "en"
+            ? "Enter the Command Center password to open the Marshal dashboard for this mission."
+            : "Vnesite geslo Poveljniškega centra za odpiranje nadzorne plošče maršala za to misijo."}
         </p>
+
         <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} autoFocus placeholder="••••••••"
           style={{ width: "100%", background: BG, color: INK, border: "1px solid rgba(236,227,196,0.20)", padding: "12px 14px", fontSize: 14, marginBottom: 12, textAlign: "center", letterSpacing: "0.2em" }} />
         {err && <p style={{ color: "#d97a6c", fontSize: 12, marginBottom: 10, textAlign: "center" }}>{err}</p>}
