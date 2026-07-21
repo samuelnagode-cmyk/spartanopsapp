@@ -37,6 +37,35 @@ const ANCHOR_RADIUS_M = 10;
 const MAX_ACCURACY_BUFFER_M = 1000;
 const MAX_ACCEPTED_ACCURACY_M = 1200;
 
+type SpartacusDiagnosticPayload = {
+  stage: string;
+  field_id: string;
+  point_number: number;
+  player_gps: { lat: number | null; lng: number | null; accuracy: number | null };
+  anchor_gps: { lat: number | null; lng: number | null; accuracy: number | null };
+  calculated_distance_meters: number | null;
+  allowed_threshold_meters: number | null;
+  rpc_response_payload: unknown;
+};
+
+function logSpartacusDiagnostic(payload: SpartacusDiagnosticPayload) {
+  console.log("SPARTACUS DIAGNOSTIC:", payload);
+  return payload;
+}
+
+function baseDiagnostic(data: { fieldId: string; point: number; lat?: number | null; lng?: number | null; accuracy?: number | null }, stage: string): SpartacusDiagnosticPayload {
+  return {
+    stage,
+    field_id: data.fieldId,
+    point_number: data.point,
+    player_gps: { lat: data.lat ?? null, lng: data.lng ?? null, accuracy: data.accuracy ?? null },
+    anchor_gps: { lat: null, lng: null, accuracy: null },
+    calculated_distance_meters: null,
+    allowed_threshold_meters: null,
+    rpc_response_payload: null,
+  };
+}
+
 function haversineMeters(a: { lat: number; lng: number }, b: { lat: number; lng: number }): number {
   const R = 6371000;
   const toRad = (d: number) => (d * Math.PI) / 180;
@@ -80,10 +109,10 @@ export const spartanopsSpartacusCapture = createServerFn({ method: "POST" })
       .eq("field_id", data.fieldId)
       .maybeSingle();
 
-    if (state?.status !== "active") return { ok: false, error: "match_not_active", spartacus: true } as const;
+    if (state?.status !== "active") return { ok: false, error: "match_not_active", spartacus: true, diagnostic: logSpartacusDiagnostic(baseDiagnostic(data, "match_not_active")) } as const;
     const matchStart = (state as any)?.match_started_at ? Date.parse((state as any).match_started_at) : NaN;
     if (!Number.isFinite(matchStart) || matchStart > Date.now()) {
-      return { ok: false, error: "pre_start_locked", spartacus: true } as const;
+      return { ok: false, error: "pre_start_locked", spartacus: true, diagnostic: logSpartacusDiagnostic(baseDiagnostic(data, "pre_start_locked")) } as const;
     }
 
     const { data: secret } = await supabaseAdmin
@@ -91,15 +120,15 @@ export const spartanopsSpartacusCapture = createServerFn({ method: "POST" })
       .select("checkin_id")
       .eq("session_id", data.sessionId)
       .maybeSingle();
-    if (!secret) return { ok: false, error: "not_checked_in", spartacus: true } as const;
+    if (!secret) return { ok: false, error: "not_checked_in", spartacus: true, diagnostic: logSpartacusDiagnostic(baseDiagnostic(data, "not_checked_in")) } as const;
     const { data: checkin } = await supabaseAdmin
       .from("spartanops_checkins")
       .select("id, callsign, assigned_team")
       .eq("field_id", data.fieldId)
       .eq("id", (secret as any).checkin_id)
       .maybeSingle();
-    if (!checkin) return { ok: false, error: "not_checked_in", spartacus: true } as const;
-    if ((checkin as any).assigned_team === "none") return { ok: false, error: "no_team", spartacus: true } as const;
+    if (!checkin) return { ok: false, error: "not_checked_in", spartacus: true, diagnostic: logSpartacusDiagnostic(baseDiagnostic(data, "checkin_missing")) } as const;
+    if ((checkin as any).assigned_team === "none") return { ok: false, error: "no_team", spartacus: true, diagnostic: logSpartacusDiagnostic(baseDiagnostic(data, "no_team")) } as const;
 
     const { data: anchor } = await supabaseAdmin
       .from("spartanops_qr_anchors")
@@ -112,7 +141,7 @@ export const spartanopsSpartacusCapture = createServerFn({ method: "POST" })
 
     if (!anchor) {
       if (!hasGps) {
-        return { ok: false, error: "gps_required", spartacus: true } as const;
+        return { ok: false, error: "gps_required", spartacus: true, diagnostic: logSpartacusDiagnostic(baseDiagnostic(data, "anchor_missing_gps_required")) } as const;
       }
       await supabaseAdmin.from("spartanops_qr_anchors").insert({
         field_id: data.fieldId,
@@ -137,8 +166,14 @@ export const spartanopsSpartacusCapture = createServerFn({ method: "POST" })
         .eq("player_callsign", (checkin as any).callsign)
         .order("captured_at", { ascending: false })
         .limit(1);
-      return { ...(r as any), spartacus: true, anchored: true };
+      return { ...(r as any), spartacus: true, anchored: true, diagnostic: logSpartacusDiagnostic({ ...baseDiagnostic(data, "anchor_created_capture_applied"), calculated_distance_meters: 0, allowed_threshold_meters: ANCHOR_RADIUS_M + Math.min(MAX_ACCURACY_BUFFER_M, data.accuracy ?? 0), rpc_response_payload: r }) };
     }
+
+    const anchorGps = {
+      lat: typeof (anchor as any).latitude === "number" ? (anchor as any).latitude : null,
+      lng: typeof (anchor as any).longitude === "number" ? (anchor as any).longitude : null,
+      accuracy: typeof (anchor as any).anchor_accuracy_m === "number" ? (anchor as any).anchor_accuracy_m : null,
+    };
 
     if (!hasGps) {
       const { data: r, error } = await supabaseAdmin.rpc("spartanops_apply_capture" as any, {
@@ -147,7 +182,7 @@ export const spartanopsSpartacusCapture = createServerFn({ method: "POST" })
         p_session_id: data.sessionId,
       });
       if (error) throw new Error(error.message);
-      return { ...(r as any), spartacus: true, gpsFallback: true };
+      return { ...(r as any), spartacus: true, gpsFallback: true, diagnostic: logSpartacusDiagnostic({ ...baseDiagnostic(data, "gps_fallback_capture_applied"), anchor_gps: anchorGps, rpc_response_payload: r }) };
     }
 
     const scanLat = data.lat as number;
@@ -167,6 +202,12 @@ export const spartanopsSpartacusCapture = createServerFn({ method: "POST" })
     const anchorAcc = typeof (anchor as any).anchor_accuracy_m === "number" ? (anchor as any).anchor_accuracy_m : 0;
     const anchorBuffer = Math.min(MAX_ACCURACY_BUFFER_M, anchorAcc);
     const allowedRadius = ANCHOR_RADIUS_M + scanBuffer + anchorBuffer;
+    const diagnosticBase = {
+      ...baseDiagnostic(data, "distance_evaluated"),
+      anchor_gps: anchorGps,
+      calculated_distance_meters: dist,
+      allowed_threshold_meters: allowedRadius,
+    } satisfies SpartacusDiagnosticPayload;
 
     if (dist > allowedRadius) {
       await supabaseAdmin.from("spartanops_captures").insert({
@@ -181,7 +222,7 @@ export const spartanopsSpartacusCapture = createServerFn({ method: "POST" })
         suspicious: true,
         spartacus_status: "pending",
       } as any);
-      return { ok: false, suspicious: true, spartacus: true, error: "spartacus_flagged", distance_m: dist } as const;
+      return { ok: false, suspicious: true, spartacus: true, error: "spartacus_flagged", distance_m: dist, diagnostic: logSpartacusDiagnostic({ ...diagnosticBase, stage: "distance_over_threshold_spartacus_flagged" }) } as const;
     }
 
     const { data: r, error } = await supabaseAdmin.rpc("spartanops_apply_capture" as any, {
@@ -198,7 +239,7 @@ export const spartanopsSpartacusCapture = createServerFn({ method: "POST" })
       .eq("player_callsign", (checkin as any).callsign)
       .order("captured_at", { ascending: false })
       .limit(1);
-    return { ...(r as any), spartacus: true, distance_m: dist };
+    return { ...(r as any), spartacus: true, distance_m: dist, diagnostic: logSpartacusDiagnostic({ ...diagnosticBase, stage: "distance_within_threshold_capture_applied", rpc_response_payload: r }) };
   });
 
 /**
