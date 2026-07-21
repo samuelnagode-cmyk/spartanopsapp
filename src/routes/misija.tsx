@@ -10,7 +10,7 @@ import { SpartacusAlerts } from "@/components/SpartanOpsConsole";
 
 import { OfflineBanner } from "@/components/OfflineBanner";
 import { TacticalCompass } from "@/components/TacticalCompass";
-import { Crosshair, Shield, ArrowUp } from "lucide-react";
+import { Crosshair, Shield } from "lucide-react";
 import { useLang } from "@/lib/i18n";
 import landingView from "@/assets/landing-view.webp.asset.json";
 
