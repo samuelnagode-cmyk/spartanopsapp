@@ -31,6 +31,12 @@ export const dict: Dict = {
     en: "// SECTOR SECURED. Telemetry transmitting in background. You may return to the field.",
   },
 
+  // GPS acquiring (iOS precise-location prompt)
+  "gpsAcquiringNotice": {
+    sl: "Pridobivanje natančne GPS lokacije... Prosimo omogočite 'Natančna lokacija' v nastavitvah naprave.",
+    en: "Acquiring precise GPS location... Please ensure 'Precise Location' is enabled in your device settings.",
+  },
+
   // Print Station
   "print.kicker": { sl: "// ENOTA ZA OSKRBO", en: "// FIELD SUPPLY POST" },
   "print.title": { sl: "TISKARSKA POSTAJA", en: "PRINT STATION" },
