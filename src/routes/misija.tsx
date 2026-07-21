@@ -344,6 +344,22 @@ function MisijaPage() {
   }, [preview]);
 
   useEffect(() => {
+    if (!preview || !sessionId) return;
+    const previewRoster = makePreviewRoster(field, sessionId);
+    const primary = previewRoster[0];
+    setState(makePreviewState(field, preset));
+    setCaptures(makePreviewCaptures());
+    setRoster(previewRoster);
+    if (preset === "registration") {
+      setGhostMe(null);
+      setShowTeamSelect(false);
+      return;
+    }
+    setGhostMe({ ...primary, assigned_team: preset === "team" ? "none" : "modra" });
+    setShowTeamSelect(preset === "team");
+  }, [preview, preset, field, sessionId]);
+
+  useEffect(() => {
     if (!sessionId || preview) return;
     const key = respawnLockKey(field, sessionId);
     const readLocal = () => {
@@ -390,6 +406,7 @@ function MisijaPage() {
   // Supabase table has no row — we synthesize a lobby state from localStorage
   // so the player is never stuck on "Povezovanje...".
   useEffect(() => {
+    if (preview) return;
     let alive = true;
 
     const synthesizeLocal = (): GameState | null => {
@@ -463,10 +480,11 @@ function MisijaPage() {
       clearTimeout(timeout);
       supabase.removeChannel(ch);
     };
-  }, [field]);
+  }, [field, preview]);
 
   // Load + subscribe roster (per field)
   useEffect(() => {
+    if (preview) return;
     let alive = true;
     const load = async () => {
       if (!sessionId) return;
@@ -501,7 +519,7 @@ function MisijaPage() {
       alive = false;
       supabase.removeChannel(ch);
     };
-  }, [field, sessionId, getParticipantRosterFn]);
+  }, [field, sessionId, getParticipantRosterFn, preview]);
 
   // Derive my checkin (only for real DB player; ghost is local). Fetch PII
   // (first_name / last_initial / club) separately via a server function since
@@ -538,6 +556,7 @@ function MisijaPage() {
 
   // Load + subscribe captures (per field)
   useEffect(() => {
+    if (preview) return;
     let alive = true;
     const load = async () => {
       const { data } = await supabase
@@ -562,7 +581,7 @@ function MisijaPage() {
       alive = false;
       supabase.removeChannel(ch);
     };
-  }, [field]);
+  }, [field, preview]);
 
   // Bridge lobby / match transitions to the ambient audio provider so the
   // lobby track plays on entry and fades out when the match actually begins.
