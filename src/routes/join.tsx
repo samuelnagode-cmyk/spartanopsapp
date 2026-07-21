@@ -228,7 +228,7 @@ function LobbyCard({ lobby, isSystem, onJoin }: { lobby: LobbyRecord; isSystem: 
         </span>
       </div>
       <p style={{ fontFamily: "monospace", fontSize: 10.5, color: MUTED, letterSpacing: "0.14em", marginBottom: 8, textTransform: "uppercase" }}>
-        At airsoft field {lobby.fieldName}
+        Field {lobby.fieldName}
       </p>
       <p style={{ fontSize: 12.5, color: "rgba(236,227,196,0.85)", marginBottom: 12, display: "inline-flex", alignItems: "center", gap: 6 }}>
         <MapPin size={12} style={{ opacity: 0.7 }} /> Location: {locationText}

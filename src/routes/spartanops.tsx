@@ -5,6 +5,7 @@ import { Crosshair, QrCode, Users, ClipboardList, MapPin, ArrowRight, Printer, C
 import { SYSTEM_FIELD, dtoToRecord } from "./admin-pregled";
 import { getOperationalTelemetry, type OperationalTelemetry } from "@/lib/spartanops-telemetry.functions";
 import { listPublishedLobbies } from "@/lib/spartanops-lobbies.functions";
+import { spartanDevlogEntries, useT } from "@/lib/i18n";
 
 export const Route = createFileRoute("/spartanops")({
   head: () => ({
@@ -195,6 +196,7 @@ const HERO_BG_URL =
   "https://res.cloudinary.com/dfifiytid/image/upload/v1784235270/SpartanOps%20app%20v1.0/GALERIJA/spartanops_homepage_image-03.webp";
 
 function Hero() {
+  const t = useT();
   return (
     <div className="relative">
       {/* Backdrop image — barely visible, fades to page BG at the bottom */}
@@ -230,7 +232,7 @@ function Hero() {
             className="font-mono uppercase mt-3 mb-2"
             style={{ fontSize: 11, letterSpacing: "0.34em", color: BLUE }}
           >
-            // TACTICAL AIRSOFT HUD SYSTEM
+            {t("spartan.heroTag")}
           </p>
           <h1 className="sr-only">SpartanOps</h1>
           <img
@@ -245,12 +247,11 @@ function Hero() {
             className="mx-auto mt-2 text-[14px] md:text-[16px] leading-[1.6]"
             style={{ color: INK, maxWidth: 620 }}
           >
-            The ultimate web app for live-tracking airsoft games. Download tactical
-            printouts for your field and let players scan QR codes to secure victory.
+            {t("spartan.heroSubtext")}
           </p>
           <div className="mt-5 mx-auto grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4" style={{ maxWidth: 480 }}>
-            <BtnPrimary to="/admin-pregled" fullWidth>Create Mission</BtnPrimary>
-            <BtnOutline to="/join" fullWidth>Join Mission</BtnOutline>
+            <BtnPrimary to="/admin-pregled" fullWidth>{t("spartan.btnCreateMission")}</BtnPrimary>
+            <BtnOutline to="/join" fullWidth>{t("spartan.btnJoinMission")}</BtnOutline>
           </div>
           {/* Scroll cue — tactical down chevron */}
           <button
@@ -335,6 +336,7 @@ function AnimatedCounter({ value, duration = 1500 }: { value: number; duration?:
 }
 
 function LiveTracker() {
+  const tl = useT();
   const fetchTelemetry = useServerFn(getOperationalTelemetry);
   const [t, setT] = useState<OperationalTelemetry>({ operators: 24, scans: 125, respawns: 115, missions: 3 });
 
@@ -349,14 +351,14 @@ function LiveTracker() {
   }, [fetchTelemetry]);
 
   const items: Array<{ label: string; value: number; Icon: typeof CheckCircle2; live: boolean }> = [
-    { label: "Operators Deployed", value: t.operators, Icon: Users, live: false },
-    { label: "QR Codes Scanned", value: t.scans, Icon: QrCode, live: false },
-    { label: "Respawns Processed", value: t.respawns, Icon: RefreshCw, live: true },
-    { label: "Missions Completed", value: t.missions, Icon: Target, live: false },
+    { label: tl("spartan.statOperators"), value: t.operators, Icon: Users, live: false },
+    { label: tl("spartan.statQRScanned"), value: t.scans, Icon: QrCode, live: false },
+    { label: tl("spartan.statRespawns"), value: t.respawns, Icon: RefreshCw, live: true },
+    { label: tl("spartan.statMissions"), value: t.missions, Icon: Target, live: false },
   ];
   return (
     <SectionShell>
-      <SectionHeader eyebrow="// LIVE OPS TRACKER" title="OPERATIONAL TELEMETRY" />
+      <SectionHeader eyebrow={tl("spartan.tagLiveOps")} title={tl("spartan.titleTelemetry")} />
       <div className="grid grid-cols-2 gap-3 md:gap-4">
         {items.map((it) => (
           <HudCard
@@ -554,23 +556,24 @@ type HowStep = {
 };
 
 function HowItWorks() {
+  const t = useT();
   const steps: HowStep[] = [
     {
-      eyebrow: "STEP 01 // COMMENCE OPERATION",
-      title: "JOIN THE LOBBY",
-      body: "Scan the Player HUD card QR (or join via website), claim your callsign, and pick your faction (RED or BLUE).",
+      eyebrow: t("spartan.step1Tag"),
+      title: t("spartan.step1Title"),
+      body: t("spartan.step1Desc"),
       Icon: QrCode,
     },
     {
-      eyebrow: "STEP 02 // ACTIVE MISSION",
-      title: "ACTIVATE OBJECTIVES",
-      body: "Move to spawn points. After the marshal starts the game it is your mission to locate physical QR points across the field and scan them to trigger tactical functions for the active game mode.",
+      eyebrow: t("spartan.step2Tag"),
+      title: t("spartan.step2Title"),
+      body: t("spartan.step2Desc"),
       Icon: Crosshair,
     },
     {
-      eyebrow: "STEP 03 // TRACKING",
-      title: "PLAYER HUD",
-      body: "Track live scores on your Player HUD and follow in-game rules and missions to secure victory.",
+      eyebrow: t("spartan.step3Tag"),
+      title: t("spartan.step3Title"),
+      body: t("spartan.step3Desc"),
       Icon: Flag,
     },
   ];
@@ -578,9 +581,9 @@ function HowItWorks() {
   return (
     <SectionShell>
       <SectionHeader
-        eyebrow="// FIELD MANUAL"
-        title="HOW IT WORKS / OPERATIONAL MANUAL"
-        sub="The universal QR flow that powers every SpartanOps match."
+        eyebrow={t("spartan.tagManual")}
+        title={t("spartan.titleManual")}
+        sub={t("spartan.descManual")}
       />
 
       <ol style={{ listStyle: "none", padding: 0, margin: 0 }}>
@@ -674,6 +677,7 @@ const SECTOR_IMG =
   "https://res.cloudinary.com/dfifiytid/image/upload/v1783854912/SpartanOps%20app%20v1.0/GALERIJA/homepage_asortiman-14.webp";
 
 function SectorShowcase() {
+  const t = useT();
   return (
     <section className="w-full px-4 sm:px-6 lg:px-8 pt-10 md:pt-16 pb-16 md:pb-24 relative overflow-hidden">
       <div className="max-w-6xl mx-auto relative">
@@ -694,7 +698,7 @@ function SectorShowcase() {
             className="font-mono uppercase mb-3"
             style={{ fontSize: 11, letterSpacing: "0.32em", color: ACCENT }}
           >
-            // TACTICAL SIMPLICITY
+            {t("spartan.tagSimplicity")}
           </p>
           <h2
             style={{
@@ -706,7 +710,7 @@ function SectorShowcase() {
               maxWidth: 820,
             }}
           >
-            REVOLUTIONIZE YOUR AIRSOFT FIELD
+            {t("spartan.titleRevolutionize")}
           </h2>
           <img
             src={SECTOR_IMG}
@@ -723,9 +727,7 @@ function SectorShowcase() {
             className="mt-8 text-[14px] md:text-[15px] leading-[1.75]"
             style={{ color: MUTED, maxWidth: 720 }}
           >
-            Airsoft games are incredibly fun, but organizing and tracking objectives on the field is often
-            technically complicated. Traditional electronic props used for real-time sector tracking can be an
-            immense financial burden — especially for smaller clubs and field operators.
+            {t("spartan.descProblem")}
           </p>
 
           <div
@@ -734,16 +736,16 @@ function SectorShowcase() {
           >
             {[
               {
-                k: "// ZERO ELECTRONICS",
-                v: "No expensive props, no batteries, no wiring, no maintenance. Just print, weatherproof, and deploy.",
+                k: t("spartan.featureZeroElecTitle"),
+                v: t("spartan.featureZeroElecDesc"),
               },
               {
-                k: "// LIVE TRACKING",
-                v: "Real-time sector control, live scoring and instant capture feedback for every player on the field.",
+                k: t("spartan.featureLiveTrackingTitle"),
+                v: t("spartan.featureLiveTrackingDesc"),
               },
               {
-                k: "// PURE IMMERSION",
-                v: "High-visibility tactical QR plates and a battle-ready HUD built for outdoor combat scenarios.",
+                k: t("spartan.featurePureImmersionTitle"),
+                v: t("spartan.featurePureImmersionDesc"),
               },
             ].map((b) => (
               <div
@@ -767,7 +769,7 @@ function SectorShowcase() {
 
           <div className="mt-8">
             <BtnOutline to="/print">
-              <Printer size={14} /> Get Print Files
+              <Printer size={14} /> {t("spartan.btnGetPrintFiles")}
             </BtnOutline>
           </div>
         </div>
@@ -778,6 +780,7 @@ function SectorShowcase() {
 
 /* ---------- 5. FIELD SUPPLY ---------- */
 function FieldSupply() {
+  const t = useT();
   return (
     <SectionShell>
       <HudCard className="p-8 md:p-10">
@@ -787,7 +790,7 @@ function FieldSupply() {
               className="font-mono uppercase mb-3"
               style={{ fontSize: 11, letterSpacing: "0.32em", color: ACCENT }}
             >
-              // LOGISTICS
+              {t("spartan.tagLogistics")}
             </p>
             <h2
               style={{
@@ -797,15 +800,15 @@ function FieldSupply() {
                 color: ACCENT,
               }}
             >
-              FIELD SUPPLY POST
+              {t("spartan.titleSupply")}
             </h2>
             <p className="mt-3 text-[14px] md:text-[15px] leading-[1.7]" style={{ color: MUTED, maxWidth: 620 }}>
-              Download ready-to-print field assets, sector markers, and game rules.
+              {t("spartan.descSupply")}
             </p>
           </div>
           <div className="shrink-0">
             <BtnPrimary to="/print">
-              <Printer size={14} /> Access Print Files
+              <Printer size={14} /> {t("spartan.btnAccessPrint")}
             </BtnPrimary>
           </div>
         </div>
@@ -816,29 +819,14 @@ function FieldSupply() {
 
 /* ---------- 6. CHANGELOG ---------- */
 function Changelog() {
-  const entries = [
-    {
-      date: "July 16, 2026",
-      title: "SPARTACUS GPS ANTI-CHEAT V1.0",
-      body: "Deployed the Spartacus anti-cheat module. Every objective QR code is anchored to real-world GPS coordinates on its first legitimate scan of the match. Any subsequent capture attempted more than 10 meters from that anchor is instantly flagged in the Marshal Command Center — fraudulent scans do not count towards the score until approved.",
-    },
-    {
-      date: "July 12, 2026",
-      title: "OFFICIAL APP LAUNCH // VERSION 1.0",
-      body: "The wait is over. After rigorous field testing, the official SpartanOps application is live. Fully optimized, deployed on a dedicated standalone network, and battle-ready for players and fields worldwide.",
-    },
-    {
-      date: "July 11, 2026",
-      title: "NEXT-GEN UI OVERHAUL",
-      body: "Redesigned the entire user interface from scratch. Engineered a high-contrast, premium tactical dark theme optimized for maximum readability under intense outdoor sunlight and high-stress field scenarios.",
-    },
-  ];
+  const t = useT();
+  const entries = spartanDevlogEntries(t).slice(0, 4);
   return (
     <SectionShell>
       <SectionHeader
-        eyebrow="// DEVLOG"
-        title="SYSTEM UPDATES"
-        sub="For the best user experience we are constantly testing and updating this website."
+        eyebrow={t("spartan.devlogTag")}
+        title={t("spartan.devlogTitle")}
+        sub={t("spartan.devlogSubtext")}
       />
       <ol
         className="relative"
@@ -912,22 +900,23 @@ function Changelog() {
 
 /* ---------- 7. OPERATIONAL PLANS ---------- */
 function OperationalPlans() {
+  const t = useT();
   const core = [
-    "Domination Game Mode (Full Access)",
-    "Player Limit: Up to 30 active players per lobby",
-    "Standard Factions (Classic BLUE vs RED team setup)",
-    "Cost: $0 / Free Forever",
+    t("spartan.tier1Feature1"),
+    t("spartan.tier1Feature2"),
+    t("spartan.tier1Feature3"),
+    t("spartan.tier1Feature4"),
   ];
   const premium = [
-    "Extended Player Limits (30+ players)",
-    "Search & Destroy Game Mode unlock",
-    "Multiple Teams unlock (Deploy 3-5 custom factions simultaneously for multi-front operations)",
-    "On-Command Auto-Balancing (Instantly balance teams with one click based on registered player experience levels)",
-    "Custom field setup & dedicated branding",
+    t("spartan.tier2Feature1"),
+    t("spartan.tier2Feature2"),
+    t("spartan.tier2Feature3"),
+    t("spartan.tier2Feature4"),
+    t("spartan.tier2Feature5"),
   ];
   return (
     <SectionShell id="pricing">
-      <SectionHeader eyebrow="// SYSTEM LICENSING" title="OPERATIONAL PLANS" />
+      <SectionHeader eyebrow={t("spartan.tagLicensing")} title={t("spartan.titlePlans")} />
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-8 md:items-stretch">
         {/* TIER 01 — Minimalist, no card */}
         <div className="flex flex-col py-2 md:py-4">
@@ -935,7 +924,7 @@ function OperationalPlans() {
             className="font-mono uppercase mb-2"
             style={{ fontSize: 11, letterSpacing: "0.28em", color: MUTED }}
           >
-            TIER 01 // CORE
+            {t("spartan.tier1Tag")}
           </p>
           <h3
             style={{
@@ -946,7 +935,7 @@ function OperationalPlans() {
               lineHeight: 1.2,
             }}
           >
-            FREE TIER
+            {t("spartan.tier1Title")}
           </h3>
           <div style={{ width: 40, height: 1, background: ACCENT_SOFT, marginTop: 14 }} />
           <ul className="mt-6 space-y-3 flex-1">
@@ -958,7 +947,7 @@ function OperationalPlans() {
             ))}
           </ul>
           <div className="mt-8">
-            <BtnOutline to="/admin-pregled">Start Free Operation</BtnOutline>
+            <BtnOutline to="/admin-pregled">{t("spartan.btnStartFree")}</BtnOutline>
           </div>
         </div>
 
@@ -987,13 +976,13 @@ function OperationalPlans() {
               boxShadow: `0 0 16px -4px ${ACCENT}`,
             }}
           >
-            // RECOMMENDED FOR FIELDS
+            {t("spartan.tier2Badge")}
           </span>
           <p
             className="font-mono uppercase mb-2 mt-2"
             style={{ fontSize: 11, letterSpacing: "0.28em", color: ACCENT }}
           >
-            TIER 02 // PREMIUM
+            {t("spartan.tier2Tag")}
           </p>
           <h3
             style={{
@@ -1004,7 +993,7 @@ function OperationalPlans() {
               lineHeight: 1.2,
             }}
           >
-            PREMIUM & CUSTOM MODULES
+            {t("spartan.tier2Title")}
           </h3>
           <div style={{ width: 40, height: 1, background: ACCENT, marginTop: 14 }} />
           <ul className="mt-6 space-y-3 flex-1">
@@ -1030,7 +1019,7 @@ function OperationalPlans() {
                 boxShadow: `0 0 32px -6px ${ACCENT}`,
               }}
             >
-              Request Premium Access
+              {t("spartan.btnRequestPremium")}
             </a>
           </div>
         </div>
@@ -1039,12 +1028,7 @@ function OperationalPlans() {
         className="mt-10 text-[12px] leading-[1.7]"
         style={{ color: MUTED, letterSpacing: "0.02em", maxWidth: 820 }}
       >
-        <span style={{ color: ACCENT, fontFamily: "'Rajdhani', monospace", letterSpacing: "0.18em" }}>
-          SYSTEM NOTICE:
-        </span>{" "}
-        SpartanOps Web App is currently under active development. The developers reserve the right to
-        modify features, tiers, and pricing structures at any time. For premium upgrades, custom field
-        integration, or high-capacity events, please contact command network directly.
+        {t("spartan.systemNotice")}
       </p>
     </SectionShell>
   );

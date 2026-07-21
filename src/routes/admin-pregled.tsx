@@ -161,8 +161,10 @@ export function loadLobbies(): LobbyRecord[] {
   try {
     const raw = localStorage.getItem(LOBBY_STORAGE_KEY);
     const list = raw ? (JSON.parse(raw) as LobbyRecord[]) : [];
-    const cleaned = list.filter((l) => !isPurged(l as any));
-    if (cleaned.length !== list.length) {
+    const cleaned = list
+      .filter((l) => !isPurged(l as any))
+      .map((l) => (l.mapUrl && l.mapUrl.length > 4096 ? { ...l, mapUrl: undefined } : l));
+    if (cleaned.length !== list.length || cleaned.some((l, i) => l.mapUrl !== list[i]?.mapUrl)) {
       safeSetItem(LOBBY_STORAGE_KEY, JSON.stringify(cleaned));
     }
     return cleaned;
@@ -202,7 +204,9 @@ function safeSetItem(key: string, value: string): boolean {
 function saveLobbies(list: LobbyRecord[]) {
   // Cap at 25 most recent entries — the DB is the source of truth; this cache
   // exists only for offline fallback / cross-tab hints.
-  const capped = list.slice(0, 25);
+  const capped = list.slice(0, 25).map((l) => (
+    l.mapUrl && l.mapUrl.length > 4096 ? { ...l, mapUrl: undefined } : l
+  ));
   safeSetItem(LOBBY_STORAGE_KEY, JSON.stringify(capped));
 }
 
@@ -1239,7 +1243,7 @@ function FieldsWelcome({
                     </p>
                     {l.fieldName && (
                       <p style={{ fontFamily: "monospace", fontSize: 10.5, color: MUTED, letterSpacing: "0.14em", marginTop: 6, textTransform: "uppercase" }}>
-                        At airsoft field {l.fieldName}
+                        Field {l.fieldName}
                       </p>
                     )}
                     <p style={{ fontSize: 12.5, color: "rgba(236,227,196,0.85)", lineHeight: 1.6, marginTop: 8 }}>
@@ -1599,11 +1603,11 @@ function MarshalLobbyConsole({ lobby: initialLobby, marshalPassword, lobbyPasswo
       startedAt: serverNow + pre,
       fieldName: lobby.fieldName,
       eventName: lobby.eventName,
-      mapUrl: lobby.mapUrl,
+      ...(gameState?.compressed_map_url ? {} : { mapUrl: lobby.mapUrl }),
       matchDurationMinutes: lobby.matchDurationMinutes,
       countdownSeconds: lobby.countdownSeconds,
       pointTarget: lobby.pointTarget,
-      nodePositions: lobby.nodePositions,
+      ...(Object.keys(gameState?.node_positions ?? {}).length ? {} : { nodePositions: lobby.nodePositions }),
       gamemode: lobby.gamemode,
       settings: lobby.settings,
     });
@@ -1640,7 +1644,7 @@ function MarshalLobbyConsole({ lobby: initialLobby, marshalPassword, lobbyPasswo
   const decommission = async () => {
     if (!confirm(en
       ? "Decommission this field? It will disappear from the active list and the public join page."
-      : "Razgradi ta poligon? Izginil bo iz aktivnega seznama in javne strani za pridružitev."
+      : "Odstrani misijo? Izginila bo iz aktivnega seznama in javne strani za pridružitev."
     )) return;
     try {
       await deleteLobbyServerFn({ data: { id: lobby.id, marshalPassword } });

@@ -99,6 +99,19 @@ async function resetMissionRuntime(supabaseAdmin: any, fieldId: string) {
   }
 }
 
+async function clearMissionRuntimeForStart(supabaseAdmin: any, fieldId: string) {
+  const { error: capturesError } = await supabaseAdmin
+    .from("spartanops_captures")
+    .delete()
+    .eq("field_id", fieldId);
+  if (capturesError) throw new Error(capturesError.message);
+  await clearRespawnLocks(supabaseAdmin, fieldId);
+  await supabaseAdmin
+    .from("spartanops_qr_anchors" as any)
+    .delete()
+    .eq("field_id", fieldId);
+}
+
 export const spartanopsAdminVerify = createServerFn({ method: "POST" })
   .inputValidator((d: { tab: string; password: string }) => ({
     tab: String(d?.tab ?? ""),
@@ -124,7 +137,7 @@ export const spartanopsAdminPatchState = createServerFn({ method: "POST" })
     const { start_after_seconds: startAfterSeconds, ...rawPatch } = data.patch;
     const patch: Record<string, any> = { ...rawPatch };
     if (data.patch.status === "active" && typeof startAfterSeconds === "number" && Number.isFinite(startAfterSeconds)) {
-      await resetMissionRuntime(supabaseAdmin, data.fieldId);
+      await clearMissionRuntimeForStart(supabaseAdmin, data.fieldId);
       patch.match_started_at = new Date(serverNowMs + Math.max(0, startAfterSeconds) * 1000).toISOString();
       patch.team_scores = freshScores(patch.team_scores);
       patch.node_holders = FREE_NODES;
@@ -155,6 +168,12 @@ export const spartanopsAdminPatchState = createServerFn({ method: "POST" })
       await supabaseAdmin
         .from("spartanops_lobbies" as any)
         .update({ map_url: patch.compressed_map_url || null, updated_at: serverNowIso } as any)
+        .eq("id", data.fieldId);
+    }
+    if ("node_positions" in patch) {
+      await supabaseAdmin
+        .from("spartanops_lobbies" as any)
+        .update({ node_positions: patch.node_positions ?? {}, updated_at: serverNowIso } as any)
         .eq("id", data.fieldId);
     }
     return { ok: true };

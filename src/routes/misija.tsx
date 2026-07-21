@@ -7,7 +7,6 @@ import { spartanopsAckTeamChange, spartanopsSelectTeam } from "@/lib/spartanops-
 import { spartanopsUpsertCheckin, spartanopsGetMyCheckin, spartanopsDeleteMyCheckin, spartanopsGetParticipantRoster, spartanopsGetServerTime, spartanopsGetRespawnLock } from "@/lib/spartanops-checkin.functions";
 import { spartanopsAcknowledgeWarning } from "@/lib/spartanops-spartacus.functions";
 import { SpartacusAlerts } from "@/components/SpartanOpsConsole";
-import { listPublishedLobbies } from "@/lib/spartanops-lobbies.functions";
 
 import { OfflineBanner } from "@/components/OfflineBanner";
 import { TacticalCompass } from "@/components/TacticalCompass";
@@ -294,7 +293,6 @@ function MisijaPage() {
   const getParticipantRosterFn = useServerFn(spartanopsGetParticipantRoster);
   const getServerTimeFn = useServerFn(spartanopsGetServerTime);
   const getRespawnLockFn = useServerFn(spartanopsGetRespawnLock);
-  const listPublishedLobbiesFn = useServerFn(listPublishedLobbies);
 
   const [sessionId, setSessionId] = useState("");
   const [state, setState] = useState<GameState | null>(null);
@@ -454,16 +452,6 @@ function MisijaPage() {
         const liveState = data as unknown as GameState;
         setState(liveState);
         if ((data as any).match_started_at) syncServerClock().catch(() => {});
-        if (!liveState.compressed_map_url) {
-          try {
-            const dtos = await listPublishedLobbiesFn();
-            const match = dtos.find((l: any) => l.id === field);
-            if (match?.mapUrl && alive) {
-              try { localStorage.setItem("spartanops.lobbies.v1", JSON.stringify(dtos)); } catch { /* ignore */ }
-              setState((prev) => prev && prev.field_id === field && !prev.compressed_map_url ? { ...prev, compressed_map_url: match.mapUrl } : prev);
-            }
-          } catch { /* keep live state as-is */ }
-        }
       }
     };
     load();
@@ -484,9 +472,13 @@ function MisijaPage() {
         (p) => {
           if (p.new) {
             const incoming = p.new as unknown as GameState;
+            const incomingPositions = incoming.node_positions ?? {};
+            const hasIncomingPositions = Object.keys(incomingPositions).length > 0;
             setState((prev) => ({
               ...incoming,
               compressed_map_url: incoming.compressed_map_url || prev?.compressed_map_url || null,
+              node_positions: hasIncomingPositions ? incomingPositions : (prev?.node_positions ?? {}),
+              match_started_at: incoming.match_started_at || (["active", "paused"].includes(incoming.status) ? (prev?.match_started_at ?? null) : null),
             }));
             if ((p.new as any).match_started_at) syncServerClock().catch(() => {});
           }
@@ -498,7 +490,7 @@ function MisijaPage() {
       clearTimeout(timeout);
       supabase.removeChannel(ch);
     };
-  }, [field, preview, preset, listPublishedLobbiesFn]);
+  }, [field, preview, preset]);
 
   // Load + subscribe roster (per field)
   useEffect(() => {
