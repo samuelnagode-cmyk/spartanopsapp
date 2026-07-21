@@ -344,7 +344,7 @@ function MisijaPage() {
   }, [preview]);
 
   useEffect(() => {
-    if (!preview || !sessionId) return;
+    if (!preview || !sessionId || !preset) return;
     const previewRoster = makePreviewRoster(field, sessionId);
     const primary = previewRoster[0];
     setState(makePreviewState(field, preset));
@@ -406,7 +406,7 @@ function MisijaPage() {
   // Supabase table has no row — we synthesize a lobby state from localStorage
   // so the player is never stuck on "Povezovanje...".
   useEffect(() => {
-    if (preview) return;
+    if (preview && preset) return;
     let alive = true;
 
     const synthesizeLocal = (): GameState | null => {
@@ -480,11 +480,11 @@ function MisijaPage() {
       clearTimeout(timeout);
       supabase.removeChannel(ch);
     };
-  }, [field, preview]);
+  }, [field, preview, preset]);
 
   // Load + subscribe roster (per field)
   useEffect(() => {
-    if (preview) return;
+    if (preview && preset) return;
     let alive = true;
     const load = async () => {
       if (!sessionId) return;
@@ -519,7 +519,7 @@ function MisijaPage() {
       alive = false;
       supabase.removeChannel(ch);
     };
-  }, [field, sessionId, getParticipantRosterFn, preview]);
+  }, [field, sessionId, getParticipantRosterFn, preview, preset]);
 
   // Derive my checkin (only for real DB player; ghost is local). Fetch PII
   // (first_name / last_initial / club) separately via a server function since
@@ -528,7 +528,7 @@ function MisijaPage() {
   const ackWarningFn = useServerFn(spartanopsAcknowledgeWarning);
 
   useEffect(() => {
-    if (preview) return;
+    if (preview && preset) return;
     let cancelled = false;
     (async () => {
       try {
@@ -581,7 +581,7 @@ function MisijaPage() {
       alive = false;
       supabase.removeChannel(ch);
     };
-  }, [field, preview]);
+  }, [field, preview, preset]);
 
   // Bridge lobby / match transitions to the ambient audio provider so the
   // lobby track plays on entry and fades out when the match actually begins.
