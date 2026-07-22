@@ -87,6 +87,7 @@ const INITIAL_FIELDS: Field[] = [
 
 
 import type { GameSettings } from "@/components/SpartanOpsConsole";
+import { MissionCardSkeletonGrid } from "@/components/TacticalLoader";
 
 export type NodePositions = Record<string, { x: number; y: number } | null>;
 
@@ -358,8 +359,10 @@ function AdminPage() {
   const search = useSearch({ from: "/admin-pregled" }) as { edit?: string };
   const [section, setSection] = useState<MainSection>("fields");
   const [fields, setFields] = useState<Field[]>(INITIAL_FIELDS);
-  const [customLobbies, setCustomLobbies] = useState<LobbyRecord[]>([]);
-  const [lobbiesLoaded, setLobbiesLoaded] = useState(false);
+  // Hydrate from localStorage cache so mission cards outline instantly on mount
+  // and the DB refresh below silently reconciles.
+  const [customLobbies, setCustomLobbies] = useState<LobbyRecord[]>(() => loadLobbies());
+  const [lobbiesLoaded, setLobbiesLoaded] = useState(() => loadLobbies().length > 0);
   const [activeField, setActiveField] = useState<FieldKey | null>(null);
   const [fieldAuth, setFieldAuth] = useState<Record<string, string>>({});
   const [isEditMode, setIsEditMode] = useState(false);
@@ -1186,9 +1189,7 @@ function FieldsWelcome({
         </p>
 
         {!lobbiesLoaded ? (
-          <div style={{ padding: "40px 20px", textAlign: "center", border: `1px dashed rgba(236,227,196,0.15)`, color: MUTED, fontSize: 13, fontStyle: "italic", letterSpacing: "0.14em", textTransform: "uppercase", fontFamily: "monospace" }}>
-            ⟳ Loading active missions…
-          </div>
+          <MissionCardSkeletonGrid count={3} />
         ) : customLobbies.length === 0 ? (
           <div style={{ padding: "40px 20px", textAlign: "center", border: `1px dashed rgba(236,227,196,0.15)`, color: MUTED, fontSize: 13, fontStyle: "italic" }}>
             No active fields on the network. Deploy a new one to get started.
