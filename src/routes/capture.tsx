@@ -104,16 +104,6 @@ const CAPTURE_SFX_MS = 6000;
 const GPS_OK_KEY = "spartanops:gps_authorized";
 const GPS_FIX_KEY = "spartanops:gps_fix";
 
-type SpartacusDiagnosticPayload = {
-  player_gps?: { lat: number | null; lng: number | null; accuracy?: number | null };
-  anchor_gps?: { lat: number | null; lng: number | null; accuracy?: number | null };
-  calculated_distance_meters?: number | null;
-  allowed_threshold_meters?: number | null;
-  rpc_response_payload?: unknown;
-  stage?: string;
-  evaluator?: unknown;
-};
-
 function readCachedGpsFix(): { lat: number | null; lng: number | null; accuracy?: number | null } | null {
   if (typeof window === "undefined") return null;
   try {
@@ -137,51 +127,104 @@ function readGpsAuthorized(): boolean {
 }
 
 /**
- * iOS-optimized GPS acquisition:
- *  - Uses watchPosition + high accuracy + maximumAge:0 to force a fresh fix.
- *  - Accepts a high-precision fix (<=20m) immediately.
- *  - After 3s of silent retries, accepts best-so-far up to 45m.
- *  - Hard cap at 8s, then falls back only to a very recent precise cached fix.
- *  - Emits progress events so the UI can surface a "Acquiring precise GPS..." notice.
+ * Eager GPS warm-up watcher.
+ *
+ * Started as soon as the Capture view mounts so the device GPS sensor is
+ * already streaming coordinates by the time the QR scan resolves. This
+ * eliminates the "cold-start timeout" that made Android's very first scan
+ * fail with `gps_required`.
+ */
+type WarmFix = { lat: number; lng: number; accuracy: number; at: number };
+let warmLatest: WarmFix | null = null;
+let warmWatchId: number | null = null;
+let warmRefCount = 0;
+
+function startWarmGpsWatcher() {
+  warmRefCount += 1;
+  if (typeof navigator === "undefined" || !navigator.geolocation) return;
+  if (warmWatchId != null) return;
+  try {
+    warmWatchId = navigator.geolocation.watchPosition(
+      (pos) => {
+        const fix: WarmFix = {
+          lat: pos.coords.latitude,
+          lng: pos.coords.longitude,
+          accuracy: pos.coords.accuracy ?? 9999,
+          at: Date.now(),
+        };
+        warmLatest = fix;
+        try {
+          localStorage.setItem(GPS_OK_KEY, "1");
+          localStorage.setItem(GPS_FIX_KEY, JSON.stringify(fix));
+        } catch { /* ignore */ }
+      },
+      () => { /* swallow; per-scan getPosition handles fallback */ },
+      { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 },
+    );
+  } catch { /* ignore */ }
+}
+
+function stopWarmGpsWatcher() {
+  warmRefCount = Math.max(0, warmRefCount - 1);
+  if (warmRefCount > 0) return;
+  if (warmWatchId != null && typeof navigator !== "undefined" && navigator.geolocation) {
+    try { navigator.geolocation.clearWatch(warmWatchId); } catch { /* ignore */ }
+  }
+  warmWatchId = null;
+}
+
+/**
+ * Resolve a usable GPS position for capture.
+ *  - Prefer a fresh warm-watcher fix (age < 10s).
+ *  - Otherwise wait up to 2.5s for the warm watcher to emit its first
+ *    coordinate pair before falling back.
+ *  - Final fallback: a one-shot high-accuracy read, then cached fix.
  */
 function getFreshGpsPosition(): Promise<{ lat: number | null; lng: number | null; accuracy?: number | null }> {
   return new Promise((resolve) => {
-    if (typeof navigator === "undefined" || !navigator.geolocation) return resolve(readCachedGpsFix() ?? { lat: null, lng: null });
-    let best: GeolocationPosition | null = null;
+    if (typeof navigator === "undefined" || !navigator.geolocation) {
+      return resolve(readCachedGpsFix() ?? { lat: null, lng: null });
+    }
+    const now = Date.now();
+    if (warmLatest && now - warmLatest.at < 10000) {
+      return resolve({ lat: warmLatest.lat, lng: warmLatest.lng, accuracy: warmLatest.accuracy });
+    }
+    try { window.dispatchEvent(new Event("spartanops:gps-acquiring")); } catch { /* ignore */ }
     let settled = false;
-    let watchId: number | null = null;
-    const notifyAcquiring = () => { try { window.dispatchEvent(new Event("spartanops:gps-acquiring")); } catch { /* ignore */ } };
-    const accept = (pos: GeolocationPosition) => {
-      try {
-        localStorage.setItem(GPS_OK_KEY, "1");
-        localStorage.setItem(GPS_FIX_KEY, JSON.stringify({ lat: pos.coords.latitude, lng: pos.coords.longitude, accuracy: pos.coords.accuracy, at: Date.now() }));
-      } catch { /* ignore */ }
-      resolve({ lat: pos.coords.latitude, lng: pos.coords.longitude, accuracy: pos.coords.accuracy });
-    };
-    const finish = (pos: GeolocationPosition | null) => {
+    const done = (v: { lat: number | null; lng: number | null; accuracy?: number | null }) => {
       if (settled) return;
       settled = true;
-      if (watchId != null) { try { navigator.geolocation.clearWatch(watchId); } catch { /* ignore */ } }
-      if (pos) accept(pos);
-      else resolve(readCachedGpsFix() ?? { lat: null, lng: null });
+      resolve(v);
     };
-    watchId = navigator.geolocation.watchPosition(
-      (pos) => {
-        if (!best || (pos.coords.accuracy ?? 9999) < (best.coords.accuracy ?? 9999)) best = pos;
-        if ((pos.coords.accuracy ?? 9999) <= 20) finish(pos);
-      },
-      () => { /* swallow individual errors; hard-cap handles fallback */ },
-      { enableHighAccuracy: true, timeout: 8000, maximumAge: 0 },
-    );
-    // Show acquiring notice after 1.2s if we still don't have a good fix.
-    window.setTimeout(() => { if (!settled && (!best || (best.coords.accuracy ?? 9999) > 20)) notifyAcquiring(); }, 1200);
-    // At 3s, accept best-so-far if it's within the loose validation window.
+    const poll = window.setInterval(() => {
+      if (warmLatest && Date.now() - warmLatest.at < 10000) {
+        window.clearInterval(poll);
+        done({ lat: warmLatest.lat, lng: warmLatest.lng, accuracy: warmLatest.accuracy });
+      }
+    }, 120);
     window.setTimeout(() => {
+      window.clearInterval(poll);
       if (settled) return;
-        if (best && (best.coords.accuracy ?? 9999) <= 1200) finish(best);
-    }, 3000);
-    // Hard cap 8s.
-    window.setTimeout(() => finish(best), 8000);
+      // One-shot high-accuracy attempt after the warm buffer failed to yield.
+      navigator.geolocation.getCurrentPosition(
+        (pos) => {
+          const fix: WarmFix = {
+            lat: pos.coords.latitude,
+            lng: pos.coords.longitude,
+            accuracy: pos.coords.accuracy ?? 9999,
+            at: Date.now(),
+          };
+          warmLatest = fix;
+          try {
+            localStorage.setItem(GPS_OK_KEY, "1");
+            localStorage.setItem(GPS_FIX_KEY, JSON.stringify(fix));
+          } catch { /* ignore */ }
+          done({ lat: fix.lat, lng: fix.lng, accuracy: fix.accuracy });
+        },
+        () => done(readCachedGpsFix() ?? { lat: null, lng: null }),
+        { enableHighAccuracy: true, timeout: 6000, maximumAge: 0 },
+      );
+    }, 2500);
   });
 }
 
@@ -203,12 +246,18 @@ function CapturePage() {
   const [resolvedRouteField, setResolvedRouteField] = useState<string>(resolvedField);
   const [acquiringGps, setAcquiringGps] = useState(false);
   const [retryNonce, setRetryNonce] = useState(0);
-  const [debugPayload, setDebugPayload] = useState<SpartacusDiagnosticPayload | null>(null);
+  
 
   useEffect(() => {
     const onAcq = () => setAcquiringGps(true);
     window.addEventListener("spartanops:gps-acquiring", onAcq);
-    return () => window.removeEventListener("spartanops:gps-acquiring", onAcq);
+    // Warm-up: start the eager GPS watcher the moment this view mounts so the
+    // sensor is already streaming coordinates by the time the QR scan runs.
+    startWarmGpsWatcher();
+    return () => {
+      window.removeEventListener("spartanops:gps-acquiring", onAcq);
+      stopWarmGpsWatcher();
+    };
   }, []);
 
   const enableGpsAndRetry = () => {
@@ -295,30 +344,11 @@ function CapturePage() {
 
       try {
         const { lat, lng, accuracy } = await getPosition();
-        const logDiagnostic = (label: string, response: unknown) => {
-          const diagnostic = ((response as any)?.diagnostic ?? {}) as SpartacusDiagnosticPayload;
-          const payload: SpartacusDiagnosticPayload = {
-            ...diagnostic,
-            player_gps: diagnostic.player_gps ?? { lat, lng, accuracy },
-            rpc_response_payload: response,
-            evaluator: {
-              label,
-              ok: (response as any)?.ok,
-              already_held: (response as any)?.already_held,
-              error: (response as any)?.error,
-              suspicious: (response as any)?.suspicious,
-              state_decision: label,
-            },
-          };
-          console.log("SPARTACUS DIAGNOSTIC:", payload);
-          setDebugPayload(payload);
-        };
+
         if ((lat == null || lng == null) && readGpsAuthorized()) {
           const cached = readCachedGpsFix();
           if (cached?.lat != null && cached?.lng != null) {
             const result = await applyCapture({ data: { fieldId: effectiveField, point, sessionId: session, lat: cached.lat, lng: cached.lng, accuracy: cached.accuracy ?? 1200 } });
-            console.log("SPARTACUS DIAGNOSTIC:", result);
-            logDiagnostic("cached-gps-result", result);
             if (result?.ok) {
               setTeam((result as any).team ?? null);
               setResolvedRouteField(effectiveRouteField);
@@ -331,8 +361,6 @@ function CapturePage() {
           }
         }
         const result = await applyCapture({ data: { fieldId: effectiveField, point, sessionId: session, lat, lng, accuracy } });
-        console.log("SPARTACUS DIAGNOSTIC:", result);
-        logDiagnostic("fresh-gps-result", result);
         if ((result as any)?.ok && (result as any)?.already_held) {
           setState("already_held");
           setTimeout(() => navigate({ to: "/misija", search: { field: effectiveRouteField }, replace: true }), 2600);
@@ -340,7 +368,6 @@ function CapturePage() {
         }
         if (!result?.ok) {
           const errCode = (result as any)?.error ?? "";
-          logDiagnostic(`error-branch:${errCode || "unknown"}`, result);
           // Game not currently capturable → silently return the player to
           // /misija so they see the same screen everyone else sees
           // (pre-start countdown or debriefing) without capturing the point.
@@ -375,7 +402,7 @@ function CapturePage() {
               if (row && row.suspicious !== true && row.player_callsign === callsign && row.team === team) {
                 const ageMs = Date.now() - new Date(row.captured_at).getTime();
                 if (ageMs >= 0 && ageMs < 20000) {
-                  logDiagnostic("error-overridden-by-db-success-safety-net", result);
+                  
                   setTeam(team);
                   setResolvedRouteField(effectiveRouteField);
                   setState("success");
@@ -401,7 +428,7 @@ function CapturePage() {
           setIsGpsError(errCode === "gps_required");
           setErrMsg(msg[errCode] ?? "Napaka."); setState("error"); return;
         }
-        logDiagnostic("success-branch", result);
+        
         setTeam((result as any).team ?? null);
         setResolvedRouteField(effectiveRouteField);
         setState("success");
@@ -413,8 +440,6 @@ function CapturePage() {
         // A network/server failure means the capture did not actually land —
         // clear the guard so the player can retry by re-scanning the QR.
         try { sessionStorage.removeItem(captureKey); } catch { /* ignore */ }
-        console.log("SPARTACUS DIAGNOSTIC:", { thrown_error: e?.message ?? e, stack: e?.stack });
-        setDebugPayload({ stage: "frontend_exception", rpc_response_payload: { message: e?.message ?? String(e) } });
         setErrMsg(e?.message ?? "Napaka pri shranjevanju zavzema."); setState("error");
       }
     };
@@ -474,11 +499,6 @@ function CapturePage() {
               {en ? "JOIN MISSION" : "PRIDRUŽI SE MISIJI"}
             </button>
           )}
-          {import.meta.env.DEV && debugPayload && (
-            <pre className="mt-5 max-h-64 overflow-auto text-left text-[10px] leading-relaxed" style={{ color: "#ffd6d6", background: "rgba(0,0,0,0.35)", border: "1px solid rgba(255,255,255,0.16)", padding: 10, whiteSpace: "pre-wrap" }}>
-              {JSON.stringify(debugPayload, null, 2)}
-            </pre>
-          )}
         </div>
       </div>
     );
@@ -519,11 +539,6 @@ function CapturePage() {
               <p className="mt-5 font-mono text-[11px] leading-relaxed" style={{ color: MUTED, letterSpacing: "0.06em" }}>
                 {t("gpsAcquiringNotice")}
               </p>
-            )}
-            {import.meta.env.DEV && debugPayload && (
-              <pre className="mt-5 max-h-56 overflow-auto text-left text-[10px] leading-relaxed" style={{ color: MUTED, background: "rgba(0,0,0,0.35)", border: "1px solid rgba(255,255,255,0.12)", padding: 10, whiteSpace: "pre-wrap" }}>
-                {JSON.stringify(debugPayload, null, 2)}
-              </pre>
             )}
           </>
         ) : (
@@ -574,11 +589,6 @@ function CapturePage() {
                 }}
               />
             </div>
-            {import.meta.env.DEV && debugPayload && (
-              <pre className="mt-5 max-h-56 overflow-auto text-left text-[10px] leading-relaxed" style={{ color: MUTED, background: "rgba(0,0,0,0.35)", border: "1px solid rgba(255,255,255,0.12)", padding: 10, whiteSpace: "pre-wrap" }}>
-                {JSON.stringify(debugPayload, null, 2)}
-              </pre>
-            )}
           </>
         )}
       </div>
