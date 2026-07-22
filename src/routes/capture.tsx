@@ -349,8 +349,6 @@ function CapturePage() {
           const cached = readCachedGpsFix();
           if (cached?.lat != null && cached?.lng != null) {
             const result = await applyCapture({ data: { fieldId: effectiveField, point, sessionId: session, lat: cached.lat, lng: cached.lng, accuracy: cached.accuracy ?? 1200 } });
-            console.log("SPARTACUS DIAGNOSTIC:", result);
-            logDiagnostic("cached-gps-result", result);
             if (result?.ok) {
               setTeam((result as any).team ?? null);
               setResolvedRouteField(effectiveRouteField);
