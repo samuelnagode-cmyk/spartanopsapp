@@ -1189,9 +1189,7 @@ function FieldsWelcome({
         </p>
 
         {!lobbiesLoaded ? (
-          <div style={{ padding: "40px 20px", textAlign: "center", border: `1px dashed rgba(236,227,196,0.15)`, color: MUTED, fontSize: 13, fontStyle: "italic", letterSpacing: "0.14em", textTransform: "uppercase", fontFamily: "monospace" }}>
-            ⟳ Loading active missions…
-          </div>
+          <MissionCardSkeletonGrid count={3} />
         ) : customLobbies.length === 0 ? (
           <div style={{ padding: "40px 20px", textAlign: "center", border: `1px dashed rgba(236,227,196,0.15)`, color: MUTED, fontSize: 13, fontStyle: "italic" }}>
             No active fields on the network. Deploy a new one to get started.
