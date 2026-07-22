@@ -344,24 +344,7 @@ function CapturePage() {
 
       try {
         const { lat, lng, accuracy } = await getPosition();
-        const logDiagnostic = (label: string, response: unknown) => {
-          const diagnostic = ((response as any)?.diagnostic ?? {}) as SpartacusDiagnosticPayload;
-          const payload: SpartacusDiagnosticPayload = {
-            ...diagnostic,
-            player_gps: diagnostic.player_gps ?? { lat, lng, accuracy },
-            rpc_response_payload: response,
-            evaluator: {
-              label,
-              ok: (response as any)?.ok,
-              already_held: (response as any)?.already_held,
-              error: (response as any)?.error,
-              suspicious: (response as any)?.suspicious,
-              state_decision: label,
-            },
-          };
-          console.log("SPARTACUS DIAGNOSTIC:", payload);
-          setDebugPayload(payload);
-        };
+
         if ((lat == null || lng == null) && readGpsAuthorized()) {
           const cached = readCachedGpsFix();
           if (cached?.lat != null && cached?.lng != null) {
