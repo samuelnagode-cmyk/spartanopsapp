@@ -428,7 +428,7 @@ function CapturePage() {
           setIsGpsError(errCode === "gps_required");
           setErrMsg(msg[errCode] ?? "Napaka."); setState("error"); return;
         }
-        logDiagnostic("success-branch", result);
+        
         setTeam((result as any).team ?? null);
         setResolvedRouteField(effectiveRouteField);
         setState("success");
