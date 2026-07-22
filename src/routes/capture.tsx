@@ -402,7 +402,7 @@ function CapturePage() {
               if (row && row.suspicious !== true && row.player_callsign === callsign && row.team === team) {
                 const ageMs = Date.now() - new Date(row.captured_at).getTime();
                 if (ageMs >= 0 && ageMs < 20000) {
-                  logDiagnostic("error-overridden-by-db-success-safety-net", result);
+                  
                   setTeam(team);
                   setResolvedRouteField(effectiveRouteField);
                   setState("success");
