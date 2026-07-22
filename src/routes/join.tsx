@@ -5,6 +5,17 @@ import { ArrowLeft, Lock, MapPin, X, Radio } from "lucide-react";
 import { dtoToRecord, SYSTEM_FIELD, type LobbyRecord } from "./admin-pregled";
 import { listPublishedLobbies, verifyLobbyPassword } from "@/lib/spartanops-lobbies.functions";
 import { useLang } from "@/lib/i18n";
+import { TacticalUplinkLoader, MissionCardSkeletonGrid } from "@/components/TacticalLoader";
+
+function loadCachedLobbies(): LobbyRecord[] {
+  if (typeof window === "undefined") return [];
+  try {
+    const raw = localStorage.getItem("spartanops.lobbies.v1");
+    if (!raw) return [];
+    const list = JSON.parse(raw) as LobbyRecord[];
+    return list.filter((l) => l && l.id !== SYSTEM_FIELD.id);
+  } catch { return []; }
+}
 
 export const Route = createFileRoute("/join")({
   head: () => ({
