@@ -358,8 +358,10 @@ function AdminPage() {
   const search = useSearch({ from: "/admin-pregled" }) as { edit?: string };
   const [section, setSection] = useState<MainSection>("fields");
   const [fields, setFields] = useState<Field[]>(INITIAL_FIELDS);
-  const [customLobbies, setCustomLobbies] = useState<LobbyRecord[]>([]);
-  const [lobbiesLoaded, setLobbiesLoaded] = useState(false);
+  // Hydrate from localStorage cache so mission cards outline instantly on mount
+  // and the DB refresh below silently reconciles.
+  const [customLobbies, setCustomLobbies] = useState<LobbyRecord[]>(() => loadLobbies());
+  const [lobbiesLoaded, setLobbiesLoaded] = useState(() => loadLobbies().length > 0);
   const [activeField, setActiveField] = useState<FieldKey | null>(null);
   const [fieldAuth, setFieldAuth] = useState<Record<string, string>>({});
   const [isEditMode, setIsEditMode] = useState(false);
