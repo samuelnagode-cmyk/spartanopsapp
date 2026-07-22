@@ -499,11 +499,6 @@ function CapturePage() {
               {en ? "JOIN MISSION" : "PRIDRUŽI SE MISIJI"}
             </button>
           )}
-          {import.meta.env.DEV && debugPayload && (
-            <pre className="mt-5 max-h-64 overflow-auto text-left text-[10px] leading-relaxed" style={{ color: "#ffd6d6", background: "rgba(0,0,0,0.35)", border: "1px solid rgba(255,255,255,0.16)", padding: 10, whiteSpace: "pre-wrap" }}>
-              {JSON.stringify(debugPayload, null, 2)}
-            </pre>
-          )}
         </div>
       </div>
     );
