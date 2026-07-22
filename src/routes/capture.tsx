@@ -361,8 +361,6 @@ function CapturePage() {
           }
         }
         const result = await applyCapture({ data: { fieldId: effectiveField, point, sessionId: session, lat, lng, accuracy } });
-        console.log("SPARTACUS DIAGNOSTIC:", result);
-        logDiagnostic("fresh-gps-result", result);
         if ((result as any)?.ok && (result as any)?.already_held) {
           setState("already_held");
           setTimeout(() => navigate({ to: "/misija", search: { field: effectiveRouteField }, replace: true }), 2600);
@@ -370,7 +368,6 @@ function CapturePage() {
         }
         if (!result?.ok) {
           const errCode = (result as any)?.error ?? "";
-          logDiagnostic(`error-branch:${errCode || "unknown"}`, result);
           // Game not currently capturable → silently return the player to
           // /misija so they see the same screen everyone else sees
           // (pre-start countdown or debriefing) without capturing the point.
