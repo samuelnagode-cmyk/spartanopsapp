@@ -251,7 +251,13 @@ function CapturePage() {
   useEffect(() => {
     const onAcq = () => setAcquiringGps(true);
     window.addEventListener("spartanops:gps-acquiring", onAcq);
-    return () => window.removeEventListener("spartanops:gps-acquiring", onAcq);
+    // Warm-up: start the eager GPS watcher the moment this view mounts so the
+    // sensor is already streaming coordinates by the time the QR scan runs.
+    startWarmGpsWatcher();
+    return () => {
+      window.removeEventListener("spartanops:gps-acquiring", onAcq);
+      stopWarmGpsWatcher();
+    };
   }, []);
 
   const enableGpsAndRetry = () => {
