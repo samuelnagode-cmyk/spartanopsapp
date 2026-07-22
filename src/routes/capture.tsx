@@ -599,11 +599,6 @@ function CapturePage() {
                 }}
               />
             </div>
-            {import.meta.env.DEV && debugPayload && (
-              <pre className="mt-5 max-h-56 overflow-auto text-left text-[10px] leading-relaxed" style={{ color: MUTED, background: "rgba(0,0,0,0.35)", border: "1px solid rgba(255,255,255,0.12)", padding: 10, whiteSpace: "pre-wrap" }}>
-                {JSON.stringify(debugPayload, null, 2)}
-              </pre>
-            )}
           </>
         )}
       </div>
