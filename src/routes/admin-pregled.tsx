@@ -87,6 +87,7 @@ const INITIAL_FIELDS: Field[] = [
 
 
 import type { GameSettings } from "@/components/SpartanOpsConsole";
+import { MissionCardSkeletonGrid } from "@/components/TacticalLoader";
 
 export type NodePositions = Record<string, { x: number; y: number } | null>;
 
