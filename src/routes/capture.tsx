@@ -440,8 +440,6 @@ function CapturePage() {
         // A network/server failure means the capture did not actually land —
         // clear the guard so the player can retry by re-scanning the QR.
         try { sessionStorage.removeItem(captureKey); } catch { /* ignore */ }
-        console.log("SPARTACUS DIAGNOSTIC:", { thrown_error: e?.message ?? e, stack: e?.stack });
-        setDebugPayload({ stage: "frontend_exception", rpc_response_payload: { message: e?.message ?? String(e) } });
         setErrMsg(e?.message ?? "Napaka pri shranjevanju zavzema."); setState("error");
       }
     };
