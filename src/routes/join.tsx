@@ -66,9 +66,12 @@ function JoinPage() {
   const navigate = useNavigate();
   const search = Route.useSearch();
   const directLobbyId = search.lobby || search.field_id;
-  const [lobbies, setLobbies] = useState<LobbyRecord[]>([]);
+  // Hydrate synchronously from cache so the grid outlines instantly instead of
+  // flashing a full-screen loader on every mount.
+  const [lobbies, setLobbies] = useState<LobbyRecord[]>(() => loadCachedLobbies());
   const [selected, setSelected] = useState<LobbyRecord | null>(null);
   const [checking, setChecking] = useState(true);
+  const [hasCache] = useState(() => loadCachedLobbies().length > 0);
   const listFn = useServerFn(listPublishedLobbies);
 
   useEffect(() => {
@@ -94,14 +97,11 @@ function JoinPage() {
     (async () => {
       const browseMode = search.browse === "1";
       if (browseMode) {
-        // Clear any auto-login so browsing the list does not silently deploy
-        // the user back into their previous mission.
         try { localStorage.removeItem(SESSION_KEY); } catch { /* ignore */ }
       }
       const s = browseMode ? null : loadActiveSession();
       const list = (await refresh()) ?? [];
       if (!alive) return;
-      // Direct-join via QR: /join?lobby=<id> bypasses lobby search + password
       if (!browseMode && directLobbyId && list.some((l) => l.id === directLobbyId)) {
         saveActiveSession({ lobbyId: directLobbyId, authenticated: true, at: Date.now() });
         navigate({ to: "/misija", search: { field: directLobbyId } as any, replace: true });
@@ -122,14 +122,11 @@ function JoinPage() {
 
   const activeCount = useMemo(() => lobbies.length, [lobbies]);
 
-  if (checking) {
-    return (
-      <div style={{ background: BG, color: MUTED, minHeight: "100vh", display: "grid", placeItems: "center" }}>
-        <p style={{ fontFamily: "monospace", fontSize: 12, letterSpacing: "0.24em", textTransform: "uppercase" }}>
-          // ESTABLISHING UPLINK...
-        </p>
-      </div>
-    );
+  // Only show the full-screen uplink loader when we have no cached data at all
+  // AND we're still resolving direct-join / session redirects. With cache, we
+  // render the grid immediately (skeletons behind data) — feels instant.
+  if (checking && !hasCache) {
+    return <TacticalUplinkLoader />;
   }
 
   return (
