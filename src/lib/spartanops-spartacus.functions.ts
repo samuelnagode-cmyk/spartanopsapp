@@ -49,7 +49,6 @@ type SpartacusDiagnosticPayload = {
 };
 
 function logSpartacusDiagnostic(payload: SpartacusDiagnosticPayload) {
-  console.log("SPARTACUS DIAGNOSTIC:", payload);
   return payload;
 }
 
