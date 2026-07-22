@@ -246,7 +246,7 @@ function CapturePage() {
   const [resolvedRouteField, setResolvedRouteField] = useState<string>(resolvedField);
   const [acquiringGps, setAcquiringGps] = useState(false);
   const [retryNonce, setRetryNonce] = useState(0);
-  const [debugPayload, setDebugPayload] = useState<SpartacusDiagnosticPayload | null>(null);
+  
 
   useEffect(() => {
     const onAcq = () => setAcquiringGps(true);
