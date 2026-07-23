@@ -441,6 +441,12 @@ function CapturePage() {
             not_checked_in: "Niste prijavljeni v misijo.",
             no_team: "Nimate dodeljene ekipe.",
             invalid_point: "Neveljavna točka.",
+            cooldown: en
+              ? "Cooldown active — wait before rescanning this point."
+              : "Ohladitev aktivna — počakaj pred ponovnim skeniranjem te točke.",
+            out_of_range: en
+              ? "ERROR: Out of range (max 15m)!"
+              : "NAPAKA: Niste v dometu točke (največ 15m)!",
             gps_required: en
               ? "Spartacus protection requires active GPS to verify your capture. Please enable location services to proceed."
               : "Spartacus zaščita zahteva aktivno GPS povezavo za potrditev tvoje lokacije ob zavzetju. Prosimo, omogoči lokacijske storitve za nadaljevanje.",
@@ -448,6 +454,7 @@ function CapturePage() {
               ? "⚠ Spartacus flagged this scan as suspicious. Awaiting marshal review."
               : "⚠ Spartacus je označil ta sken kot sumljiv. Čaka pregled maršala.",
           };
+
           setIsGpsError(errCode === "gps_required");
           setErrMsg(msg[errCode] ?? "Napaka."); setState("error"); return;
         }
