@@ -224,7 +224,15 @@ export const spartanopsSpartacusCapture = createServerFn({ method: "POST" })
       allowed_threshold_meters: allowedRadius,
     } satisfies SpartacusDiagnosticPayload;
 
+    // Hard rule: absolute 15m ceiling from the anchored point coordinates.
+    // Overrides Spartacus buffer — no capture row is written, no marshal
+    // review is triggered. Purely a client-facing range rejection.
+    const HARD_RANGE_M = 15;
+    if (dist > HARD_RANGE_M && dist > allowedRadius) {
+      return { ok: false, spartacus: true, error: "out_of_range", distance_m: dist, diagnostic: logSpartacusDiagnostic({ ...diagnosticBase, stage: "distance_over_hard_range" }) } as const;
+    }
     if (dist > allowedRadius) {
+
       await supabaseAdmin.from("spartanops_captures").insert({
         field_id: data.fieldId,
         point_number: data.point,
