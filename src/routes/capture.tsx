@@ -286,6 +286,28 @@ function CapturePage() {
   useEffect(() => {
     const getPosition = getFreshGpsPosition;
 
+    // Anti-cheat: /capture MUST only run when the in-app scanner set a
+    // fresh ticket in sessionStorage. This blocks manual URL entry,
+    // browser history replays, and shared /capture links.
+    let hasTicket = false;
+    try {
+      const raw = sessionStorage.getItem("spartanops:scan_ticket");
+      if (raw) {
+        const parsed = JSON.parse(raw) as { fieldId?: string; point?: string; at?: number };
+        const ageOk = typeof parsed?.at === "number" && Date.now() - parsed.at < 30_000;
+        if (ageOk) hasTicket = true;
+        // Consume once — a captured ticket cannot be reused.
+        sessionStorage.removeItem("spartanops:scan_ticket");
+      }
+    } catch { /* ignore */ }
+    if (!hasTicket) {
+      try {
+        sessionStorage.setItem("spartanops:security_alert", String(Date.now()));
+      } catch { /* ignore */ }
+      navigate({ to: "/misija", search: { field: resolvedField } as any, replace: true });
+      return;
+    }
+
     const run = async () => {
       if (!point) { setErrMsg("Manjka oznaka točke (1-5)."); setState("error"); return; }
       const session = typeof window !== "undefined" ? localStorage.getItem(SESSION_KEY) : null;
@@ -313,6 +335,7 @@ function CapturePage() {
         setTimeout(() => navigate({ to: "/misija", search: { field: effectiveRouteField }, replace: true }), 2200);
         return;
       }
+
       // Preflight: block scans while the marshal has the match paused.
       try {
         const { data: gs } = await supabase
