@@ -37,6 +37,51 @@ export const dict: Dict = {
     en: "Acquiring precise GPS location... Please ensure 'Precise Location' is enabled in your device settings.",
   },
 
+  // In-app QR Scanner (anti-cheat)
+  "scanner.hudButton": { sl: "SKENIRAJ TOČKO", en: "SCAN CODE" },
+  "scanner.title": { sl: "// TAKTIČNI SKENER", en: "// TACTICAL SCANNER" },
+  "scanner.hint": {
+    sl: "Poravnaj QR kodo znotraj okvirja.",
+    en: "Align the QR code inside the frame.",
+  },
+  "scanner.close": { sl: "ZAPRI", en: "CLOSE" },
+  "scanner.torch": { sl: "BAKLA", en: "TORCH" },
+  "scanner.cameraDenied": {
+    sl: "Dostop do kamere zavrnjen. Omogoči ga v nastavitvah brskalnika.",
+    en: "Camera access denied. Enable it in your browser settings.",
+  },
+  "scanner.invalidCode": {
+    sl: "Neveljavna QR koda za to misijo.",
+    en: "Invalid QR code for this mission.",
+  },
+  "scanner.securityAlert": {
+    sl: "VARNOSTNO OPOZORILO: Zajem točke je mogoč le preko vgrajenega skenerja v aplikaciji.",
+    en: "SECURITY ALERT: Point capture is only valid via the In-App Scanner.",
+  },
+  "scanner.cooldown": {
+    sl: "Ohladitev aktivna — počakaj pred ponovnim skeniranjem te točke.",
+    en: "Cooldown active — wait before rescanning this point.",
+  },
+  "scanner.outOfRange": {
+    sl: "NAPAKA: Niste v dometu točke (največ 15m)!",
+    en: "ERROR: Out of range (max 15m)!",
+  },
+  "scanner.permsTitle": { sl: "DOVOLJENJA ZAVRNJENA", en: "PERMISSIONS DENIED" },
+  "scanner.permsBody": {
+    sl: "Za igranje moraš v nastavitvah brskalnika omogočiti dostop do GPS lokacije in Kamere. Osveži stran, ko odobriš.",
+    en: "You must enable both GPS Location and Camera permissions in your browser settings to continue. Refresh the page once granted.",
+  },
+  "scanner.permsRetry": { sl: "PONOVI PREVERJANJE", en: "RETRY CHECK" },
+  "scanner.cameraPermTitle": { sl: "DOSTOP DO KAMERE", en: "CAMERA ACCESS" },
+  "scanner.cameraPermBody": {
+    sl: "Za skeniranje QR točk je potreben dostop do kamere. Klikni za omogočitev.",
+    en: "Camera access is required for scanning point QR codes. Tap to enable.",
+  },
+  "scanner.cameraPermGrant": { sl: "OMOGOČI KAMERO", en: "GRANT CAMERA" },
+  "scanner.cameraPermOk": { sl: "✓ KAMERA POTRJENA", en: "✓ CAMERA GRANTED" },
+
+
+
   // Print Station
   "print.kicker": { sl: "// ENOTA ZA OSKRBO", en: "// FIELD SUPPLY POST" },
   "print.title": { sl: "TISKARSKA POSTAJA", en: "PRINT STATION" },
