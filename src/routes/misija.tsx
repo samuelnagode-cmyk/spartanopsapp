@@ -2351,7 +2351,64 @@ function TacticalMap({ state, captures, en, hasPositions }: { state: GameState; 
 
 
 
+function ScanCodeButton({ fieldId, paused, en }: { fieldId: string; paused: boolean; en: boolean }) {
+  const t = useT();
+  const navigate = useNavigate();
+  const [open, setOpen] = useState(false);
+
+  const handleDecode = useCallback((payload: ScanPayload) => {
+    // Anti-cheat ticket: /capture will only accept scans originating from
+    // this in-app scanner. The ticket carries the fresh scan payload so the
+    // URL query string cannot be tampered with mid-flight.
+    try {
+      sessionStorage.setItem(
+        "spartanops:scan_ticket",
+        JSON.stringify({ fieldId: payload.fieldId, point: payload.point, at: Date.now() }),
+      );
+    } catch { /* ignore */ }
+    setOpen(false);
+    // Preserve the printed URL contract for /capture's existing search parsing.
+    navigate({ to: "/capture", search: { field: payload.fieldId, point: payload.point } as any, replace: true });
+  }, [navigate]);
+
+  return (
+    <>
+      <div className="mb-6 flex justify-center">
+        <button
+          type="button"
+          onClick={() => setOpen(true)}
+          disabled={paused}
+          className={paused ? "" : "animate-pulse"}
+          style={{
+            width: "100%",
+            maxWidth: 520,
+            background: `linear-gradient(180deg, ${ACCENT}22, ${ACCENT}05)`,
+            color: paused ? "rgba(224,176,78,0.35)" : ACCENT,
+            border: `2px solid ${paused ? "rgba(224,176,78,0.28)" : ACCENT}`,
+            padding: "16px 12px",
+            fontFamily: "'Michroma', monospace",
+            fontSize: 13,
+            letterSpacing: "0.24em",
+            textTransform: "uppercase",
+            fontWeight: 700,
+            cursor: paused ? "not-allowed" : "pointer",
+            boxShadow: paused ? "none" : `0 0 24px -6px ${ACCENT}, inset 0 0 12px -6px ${ACCENT}`,
+            display: "inline-flex",
+            alignItems: "center",
+            justifyContent: "center",
+            gap: 10,
+          }}
+        >
+          <Crosshair size={16} /> {t("scanner.hudButton")}
+        </button>
+      </div>
+      <QRScanner open={open} onClose={() => setOpen(false)} onDecode={handleDecode} />
+    </>
+  );
+}
+
 function LiveMatch({ state, captures, now, roster }: { state: GameState; captures: Capture[]; now: number; roster: Checkin[] }) {
+
   const { lang } = useLang();
   const en = lang === "en";
   const teamLabelFor = (t: string) => teamName(t, state.settings, en);
