@@ -288,8 +288,21 @@ function makePreviewCaptures(): Capture[] {
 
 function MisijaPage() {
   const { lang } = useLang();
+  const t = useT();
   const en = lang === "en";
   const { field: rawField, point: targetPoint, preview, marshal: marshalMode, preset } = Route.useSearch();
+
+  // Anti-cheat security alert: /scan sets this flag when a QR is opened
+  // outside the in-app scanner. Surface a tactical warning on arrival.
+  useEffect(() => {
+    try {
+      if (sessionStorage.getItem("spartanops:security_alert")) {
+        sessionStorage.removeItem("spartanops:security_alert");
+        alert(t("scanner.securityAlert"));
+      }
+    } catch { /* ignore */ }
+  }, [t]);
+
   const field = useMemo(() => toDbField(rawField), [rawField]);
   const ackFn = useServerFn(spartanopsAckTeamChange);
   const selectTeamFn = useServerFn(spartanopsSelectTeam);
