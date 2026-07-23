@@ -2472,6 +2472,11 @@ function LiveMatch({ state, captures, now, roster }: { state: GameState; capture
       {/* Map with positioned node markers — click to open zoomable modal */}
       <TacticalMap state={state} captures={visibleCaptures} en={en} hasPositions={hasPositions} />
 
+      {/* In-app Scan Code button — the ONLY sanctioned capture path */}
+      <ScanCodeButton fieldId={state.field_id} paused={state.status === "paused"} en={en} />
+
+
+
 
       {/* Capture log */}
       <div style={{ background: PANEL, border: `1px solid rgba(236,227,196,0.12)` }}>
