@@ -1,5 +1,6 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
-import { memo, useEffect, useMemo, useRef, useState } from "react";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
+
 import { useServerFn } from "@tanstack/react-start";
 import { ExperienceBadge, EXPERIENCE_LEVELS } from "@/components/ExperienceBadge";
 import { supabase } from "@/integrations/supabase/client";
