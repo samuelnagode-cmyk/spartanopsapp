@@ -1,5 +1,6 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
-import { memo, useEffect, useMemo, useRef, useState } from "react";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
+
 import { useServerFn } from "@tanstack/react-start";
 import { ExperienceBadge, EXPERIENCE_LEVELS } from "@/components/ExperienceBadge";
 import { supabase } from "@/integrations/supabase/client";
@@ -11,7 +12,9 @@ import { SpartacusAlerts } from "@/components/SpartanOpsConsole";
 import { OfflineBanner } from "@/components/OfflineBanner";
 import { TacticalCompass } from "@/components/TacticalCompass";
 import { Crosshair, Shield } from "lucide-react";
-import { useLang } from "@/lib/i18n";
+import { useLang, useT } from "@/lib/i18n";
+import { QRScanner, type ScanPayload } from "@/components/QRScanner";
+
 import landingView from "@/assets/landing-view.webp.asset.json";
 
 export const Route = createFileRoute("/misija")({
@@ -285,8 +288,21 @@ function makePreviewCaptures(): Capture[] {
 
 function MisijaPage() {
   const { lang } = useLang();
+  const t = useT();
   const en = lang === "en";
   const { field: rawField, point: targetPoint, preview, marshal: marshalMode, preset } = Route.useSearch();
+
+  // Anti-cheat security alert: /scan sets this flag when a QR is opened
+  // outside the in-app scanner. Surface a tactical warning on arrival.
+  useEffect(() => {
+    try {
+      if (sessionStorage.getItem("spartanops:security_alert")) {
+        sessionStorage.removeItem("spartanops:security_alert");
+        alert(t("scanner.securityAlert"));
+      }
+    } catch { /* ignore */ }
+  }, [t]);
+
   const field = useMemo(() => toDbField(rawField), [rawField]);
   const ackFn = useServerFn(spartanopsAckTeamChange);
   const selectTeamFn = useServerFn(spartanopsSelectTeam);
@@ -2348,7 +2364,64 @@ function TacticalMap({ state, captures, en, hasPositions }: { state: GameState; 
 
 
 
+function ScanCodeButton({ fieldId, paused, en }: { fieldId: string; paused: boolean; en: boolean }) {
+  const t = useT();
+  const navigate = useNavigate();
+  const [open, setOpen] = useState(false);
+
+  const handleDecode = useCallback((payload: ScanPayload) => {
+    // Anti-cheat ticket: /capture will only accept scans originating from
+    // this in-app scanner. The ticket carries the fresh scan payload so the
+    // URL query string cannot be tampered with mid-flight.
+    try {
+      sessionStorage.setItem(
+        "spartanops:scan_ticket",
+        JSON.stringify({ fieldId: payload.fieldId, point: payload.point, at: Date.now() }),
+      );
+    } catch { /* ignore */ }
+    setOpen(false);
+    // Preserve the printed URL contract for /capture's existing search parsing.
+    navigate({ to: "/capture", search: { field: payload.fieldId, point: payload.point } as any, replace: true });
+  }, [navigate]);
+
+  return (
+    <>
+      <div className="mb-6 flex justify-center">
+        <button
+          type="button"
+          onClick={() => setOpen(true)}
+          disabled={paused}
+          className={paused ? "" : "animate-pulse"}
+          style={{
+            width: "100%",
+            maxWidth: 520,
+            background: `linear-gradient(180deg, ${ACCENT}22, ${ACCENT}05)`,
+            color: paused ? "rgba(224,176,78,0.35)" : ACCENT,
+            border: `2px solid ${paused ? "rgba(224,176,78,0.28)" : ACCENT}`,
+            padding: "16px 12px",
+            fontFamily: "'Michroma', monospace",
+            fontSize: 13,
+            letterSpacing: "0.24em",
+            textTransform: "uppercase",
+            fontWeight: 700,
+            cursor: paused ? "not-allowed" : "pointer",
+            boxShadow: paused ? "none" : `0 0 24px -6px ${ACCENT}, inset 0 0 12px -6px ${ACCENT}`,
+            display: "inline-flex",
+            alignItems: "center",
+            justifyContent: "center",
+            gap: 10,
+          }}
+        >
+          <Crosshair size={16} /> {t("scanner.hudButton")}
+        </button>
+      </div>
+      <QRScanner open={open} onClose={() => setOpen(false)} onDecode={handleDecode} />
+    </>
+  );
+}
+
 function LiveMatch({ state, captures, now, roster }: { state: GameState; captures: Capture[]; now: number; roster: Checkin[] }) {
+
   const { lang } = useLang();
   const en = lang === "en";
   const teamLabelFor = (t: string) => teamName(t, state.settings, en);
@@ -2468,6 +2541,12 @@ function LiveMatch({ state, captures, now, roster }: { state: GameState; capture
 
       {/* Map with positioned node markers — click to open zoomable modal */}
       <TacticalMap state={state} captures={visibleCaptures} en={en} hasPositions={hasPositions} />
+
+      {/* In-app Scan Code button — the ONLY sanctioned capture path */}
+      <ScanCodeButton fieldId={state.field_id ?? ""} paused={state.status === "paused"} en={en} />
+
+
+
 
 
       {/* Capture log */}

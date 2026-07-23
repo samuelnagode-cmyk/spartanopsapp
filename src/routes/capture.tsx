@@ -286,6 +286,28 @@ function CapturePage() {
   useEffect(() => {
     const getPosition = getFreshGpsPosition;
 
+    // Anti-cheat: /capture MUST only run when the in-app scanner set a
+    // fresh ticket in sessionStorage. This blocks manual URL entry,
+    // browser history replays, and shared /capture links.
+    let hasTicket = false;
+    try {
+      const raw = sessionStorage.getItem("spartanops:scan_ticket");
+      if (raw) {
+        const parsed = JSON.parse(raw) as { fieldId?: string; point?: string; at?: number };
+        const ageOk = typeof parsed?.at === "number" && Date.now() - parsed.at < 30_000;
+        if (ageOk) hasTicket = true;
+        // Consume once — a captured ticket cannot be reused.
+        sessionStorage.removeItem("spartanops:scan_ticket");
+      }
+    } catch { /* ignore */ }
+    if (!hasTicket) {
+      try {
+        sessionStorage.setItem("spartanops:security_alert", String(Date.now()));
+      } catch { /* ignore */ }
+      navigate({ to: "/misija", search: { field: resolvedField } as any, replace: true });
+      return;
+    }
+
     const run = async () => {
       if (!point) { setErrMsg("Manjka oznaka točke (1-5)."); setState("error"); return; }
       const session = typeof window !== "undefined" ? localStorage.getItem(SESSION_KEY) : null;
@@ -313,6 +335,7 @@ function CapturePage() {
         setTimeout(() => navigate({ to: "/misija", search: { field: effectiveRouteField }, replace: true }), 2200);
         return;
       }
+
       // Preflight: block scans while the marshal has the match paused.
       try {
         const { data: gs } = await supabase
@@ -418,6 +441,12 @@ function CapturePage() {
             not_checked_in: "Niste prijavljeni v misijo.",
             no_team: "Nimate dodeljene ekipe.",
             invalid_point: "Neveljavna točka.",
+            cooldown: en
+              ? "Cooldown active — wait before rescanning this point."
+              : "Ohladitev aktivna — počakaj pred ponovnim skeniranjem te točke.",
+            out_of_range: en
+              ? "ERROR: Out of range (max 15m)!"
+              : "NAPAKA: Niste v dometu točke (največ 15m)!",
             gps_required: en
               ? "Spartacus protection requires active GPS to verify your capture. Please enable location services to proceed."
               : "Spartacus zaščita zahteva aktivno GPS povezavo za potrditev tvoje lokacije ob zavzetju. Prosimo, omogoči lokacijske storitve za nadaljevanje.",
@@ -425,6 +454,7 @@ function CapturePage() {
               ? "⚠ Spartacus flagged this scan as suspicious. Awaiting marshal review."
               : "⚠ Spartacus je označil ta sken kot sumljiv. Čaka pregled maršala.",
           };
+
           setIsGpsError(errCode === "gps_required");
           setErrMsg(msg[errCode] ?? "Napaka."); setState("error"); return;
         }

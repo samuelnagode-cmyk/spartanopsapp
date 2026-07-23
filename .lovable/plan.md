@@ -1,62 +1,64 @@
-# Events System Overhaul — Implementation Plan
+## Anti-Cheat Scanner System — Implementation Plan
 
-A large multi-part refactor. I'll outline what changes where, then implement after your approval.
+Bulletproof capture path: printed URLs stop executing on landing, and captures only flow through an in-app scanner that carries fresh GPS + a server-enforced per-player cooldown.
 
-## 1. Database (migration)
-- New table `public.event_registrations`:
-  - `id uuid pk`, `event_id uuid fk → events(id) on delete cascade`
-  - `full_name text` (admin only), `email_or_phone text` (admin only)
-  - `wants_food boolean default false`
-  - `public_callsign text not null`, `loadout_role text not null`
-  - `avatar_id text not null`
-  - `created_at timestamptz default now()`
-- Grants + RLS:
-  - `GRANT INSERT, SELECT ON event_registrations TO anon, authenticated` (anon insert needed for public signup)
-  - `GRANT ALL TO service_role`
-  - Policies:
-    - Public INSERT allowed (with basic length checks)
-    - Public SELECT only of safe columns via a **view** `public.event_registrations_public` exposing only `id, event_id, public_callsign, loadout_role, avatar_id, wants_food, created_at`. Grant SELECT on view to anon/authenticated. RLS on base table denies SELECT to anon for admin columns.
-  - Admin reads of full rows happen server-side via service-role server fn protected by the hardcoded password (request-time check inside server fn — never expose key client-side).
-- Confirm `events.category` already supports 'airsoft' / 'glamping' / 'lokalno' (it does — text column). No schema change needed there.
+### 1. `/scan` — URL Poisoning Defense
 
-## 2. Main calendar `/dogodki` (Glamping/Local only)
-- Remove the "AIRSOFT" filter tab; keep VSI / GLAMPING / LOKALNO.
-- Filter events query to `category in ('glamping','lokalno')`.
-- Below calendar, add centered beige-themed CTA banner linking to `/rezervacije` (the existing contact/inquiry route — site has no `/kontakt`; will use `/rezervacije` and label "kontakt").
+Rewrite `src/routes/scan.tsx`:
+- On mount, before any render, parse `field_id`, `type`, `point`.
+- Immediately call `window.history.replaceState(null, "", "/misija")` so the executable URL disappears from history/back/reload.
+- Do NOT navigate to `/capture` or call any capture RPC.
+- Redirect to `/misija` (the HUD) and push a localized toast:
+  - EN: "SECURITY ALERT: Point capture is only valid via the In-App Scanner."
+  - SLO: "VARNOSTNO OPOZORILO: Zajem točke je mogoč le preko vgrajenega skenerja v aplikaciji."
+- Legacy internal navigation to `/capture` (via the in-app scanner) is preserved through a new sentinel (see §3), so only external/history entries into `/scan` get blocked.
 
-## 3. New `/airsoft/dogodki` route
-- Full-width dark/tactical calendar fetching `category = 'airsoft'`.
-- Three filter buttons: Upcoming (default) / Past / All.
-- Expanded card retains Google Calendar + Copy Link buttons.
-- Each card shows tactical **Register** button + disclaimer.
-- Below card: "Kdo vse pride?" public attendee grid with avatars/callsigns/roles + live summary by role.
-- Attendee list lazy-fetched only when card expanded (per requirement).
-- CTA banner below calendar → `/rezervacije`.
-- Footer matches /airsoft (dark).
+### 2. Permissions Gate on Deployment Registration (`/join`)
 
-## 4. Airsoft page button rewire
-- `/airsoft` "AKTUALNI DOGODKI" button now links to `/airsoft/dogodki` instead of current target.
+In `src/routes/join.tsx` deployment/registration step:
+- Before allowing "Deploy", request BOTH:
+  - `navigator.geolocation.getCurrentPosition(...)`
+  - `navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } })` then immediately stop tracks.
+- Track `gpsGranted` / `cameraGranted` in local state.
+- If either is denied, render a diagnostic card blocking the flow:
+  - EN title "PERMISSIONS DENIED" / SLO "DOVOLJENJA ZAVRNJENA" with the exact copy from the brief and a "Retry" button.
+- Persist a `spartanops.permissions_ok` flag in localStorage so the HUD can trust prior grants but still re-check on scan open.
 
-## 5. Registration modal
-- Form fields exactly as specified, 8 preset SVG avatar icons (inline SVG), loadout dropdown (AEG/Sniper/DMR/HPA/Pistol/Najem).
-- Zod validation. Inserts via `createServerFn` (uses publishable-key client + RLS insert policy).
-- Success toast + refetch of attendee list.
+### 3. In-App Scanner — HUD Button + Modal
 
-## 6. Admin view `/airsoft/admin-pregled`
-- Footer "ADMIN" link only on `/airsoft*` routes.
-- Password gate (client-entered) → calls server fn `getAdminRegistrations({password})` which checks `password === "spartanjenajaci666"` server-side, then uses service-role client to fetch full rows joined with events.
-- Dashboard: per upcoming event → total count, food count, expandable player table, CSV export button (client-side CSV generation).
+New component `src/components/QRScanner.tsx`:
+- Full-screen `bg-black/90` overlay with:
+  - Centered `<video>` viewport with a glowing gold/cyan crosshair bounding box (pure CSS/SVG, animated).
+  - Top-corner flashlight toggle: `track.applyConstraints({ advanced: [{ torch: boolean }] })` wrapped in strict try/catch; hide toggle if unsupported.
+  - Bottom close button (EN "CLOSE" / SLO "ZAPRI").
+- Decode strategy: use native `BarcodeDetector` when available; otherwise dynamic-import `jsqr` (add via `bun add jsqr`) and decode from a hidden canvas frame loop.
+- On decode, treat result as a raw string. Parse via `new URL(text, window.location.origin)` (tolerant to bare paths), extract `field_id`, `type`, `point`.
+- Cleanse: reject unless `type === "domination"` and `point` matches a whitelist (`alpha|beta|gamma|delta|epsilon`); map point names → 1..5 for existing backend.
+- On accept: stop tracks, close modal, navigate internally to `/capture` with a session-only sentinel `sessionStorage.setItem("spartanops.scan_ticket", <token>)` proving the scan originated in-app. `/capture` consumes and clears the ticket; if missing, it redirects to `/misija` with the same security-alert toast (prevents users from typing `/capture?...` manually or reloading it).
 
-## 7. i18n
-- Add all new strings to `src/lib/i18n.tsx` SL + EN.
+HUD button (in `src/routes/misija.tsx`, under the map widget):
+- Prominent tactical button, animated pulsing gold/amber border (`animate-pulse` + custom ring).
+- Label EN "SCAN CODE" / SLO "SKENIRAJ TOČKO".
+- Opens `<QRScanner />`.
 
-## 8. SEO
-- `/airsoft/dogodki` route head() with localized title/description, canonical, og tags.
+### 4. Server-Side Anti-Cheat Core
 
-## Technical notes
-- Server fns live in `src/lib/airsoft-events.functions.ts` (registration insert, attendee list fetch, admin fetch).
-- Hardcoded admin password is a weak gate (per your spec); I'll keep the comparison server-side and never ship the string to client code.
-- No business logic in UI components beyond presentation.
-- No changes to existing colors, fonts, or other pages.
+Extend `src/lib/spartanops-spartacus.functions.ts` (`spartanopsSpartacusCapture`):
+- **Per-player 3-minute cooldown:** before insert/apply, query `spartanops_captures` for the same `player_checkin_id` + `point_number` within the last 3 minutes. If found, return `{ ok: false, error: "cooldown" }` and surface a localized toast on the client.
+- **Hardened 15 m GPS check:** when a valid anchor exists AND fresh GPS is provided, if `dist > 15` (independent of accuracy buffers), reject with `{ ok: false, error: "out_of_range", distance_m }`. Keep the existing Spartacus suspicious flow only for missing/stale GPS edge cases — the hard 15 m rule takes precedence when GPS is present.
+- Keep anchor-on-first-scan behavior unchanged.
 
-Ready to implement on approval.
+Client toasts in `src/routes/capture.tsx`:
+- `cooldown` → EN "Cooldown active — wait before rescanning this point." / SLO equivalent.
+- `out_of_range` → EN "ERROR: Out of range (max 15m)!" / SLO "NAPAKA: Niste v dometu točke (največ 15m)!"
+
+### 5. i18n Cleanliness
+
+All new strings routed through the existing `useI18n()` hook via new keys under a `scanner.*` namespace in `src/lib/i18n.tsx` (EN + SLO). No literal `//` prefix strings baked into JSX — the tactical `//` prefix comes from a shared helper so language switches never leak English.
+
+### Technical Notes
+
+- Add dep: `jsqr` (fallback decoder). `BarcodeDetector` used when available for perf.
+- No DB migrations: cooldown reads from existing `spartanops_captures.captured_at`.
+- Printed QR URLs (`/scan?...`) remain valid physical assets — they now serve only as offline pointers; scanning them via the in-app scanner works because the scanner parses the URL and routes through the protected `/capture` path with a scan ticket. Scanning them with an external camera lands on `/scan`, which sanitizes and redirects without capturing.
+- `/capture` gains a `scan_ticket` guard so it can no longer be triggered by URL sharing, reload, or history.
