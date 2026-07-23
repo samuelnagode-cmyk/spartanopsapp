@@ -2530,7 +2530,8 @@ function LiveMatch({ state, captures, now, roster }: { state: GameState; capture
       <TacticalMap state={state} captures={visibleCaptures} en={en} hasPositions={hasPositions} />
 
       {/* In-app Scan Code button — the ONLY sanctioned capture path */}
-      <ScanCodeButton fieldId={state.field_id} paused={state.status === "paused"} en={en} />
+      <ScanCodeButton fieldId={state.field_id ?? ""} paused={state.status === "paused"} en={en} />
+
 
 
 
