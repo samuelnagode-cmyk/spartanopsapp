@@ -228,9 +228,10 @@ export const spartanopsSpartacusCapture = createServerFn({ method: "POST" })
     // Overrides Spartacus buffer — no capture row is written, no marshal
     // review is triggered. Purely a client-facing range rejection.
     const HARD_RANGE_M = 15;
-    if (dist > HARD_RANGE_M && dist > allowedRadius) {
+    if (dist > HARD_RANGE_M) {
       return { ok: false, spartacus: true, error: "out_of_range", distance_m: dist, diagnostic: logSpartacusDiagnostic({ ...diagnosticBase, stage: "distance_over_hard_range" }) } as const;
     }
+
     if (dist > allowedRadius) {
 
       await supabaseAdmin.from("spartanops_captures").insert({
