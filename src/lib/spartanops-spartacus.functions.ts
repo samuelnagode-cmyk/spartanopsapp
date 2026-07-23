@@ -129,6 +129,22 @@ export const spartanopsSpartacusCapture = createServerFn({ method: "POST" })
     if (!checkin) return { ok: false, error: "not_checked_in", spartacus: true, diagnostic: logSpartacusDiagnostic(baseDiagnostic(data, "checkin_missing")) } as const;
     if ((checkin as any).assigned_team === "none") return { ok: false, error: "no_team", spartacus: true, diagnostic: logSpartacusDiagnostic(baseDiagnostic(data, "no_team")) } as const;
 
+    // Anti-cheat: 3-minute per-player-per-point cooldown. Blocks rapid
+    // rescans of the same QR by the same operator regardless of game state.
+    const cooldownCutoff = new Date(Date.now() - 3 * 60_000).toISOString();
+    const { data: recent } = await supabaseAdmin
+      .from("spartanops_captures")
+      .select("id, captured_at")
+      .eq("field_id", data.fieldId)
+      .eq("point_number", data.point)
+      .eq("player_checkin_id", (checkin as any).id)
+      .gte("captured_at", cooldownCutoff)
+      .limit(1);
+    if (recent && recent.length > 0) {
+      return { ok: false, error: "cooldown", spartacus: true, diagnostic: logSpartacusDiagnostic(baseDiagnostic(data, "cooldown_active")) } as const;
+    }
+
+
     const { data: anchor } = await supabaseAdmin
       .from("spartanops_qr_anchors")
       .select("latitude, longitude, anchor_accuracy_m")
