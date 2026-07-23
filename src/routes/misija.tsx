@@ -12,7 +12,9 @@ import { SpartacusAlerts } from "@/components/SpartanOpsConsole";
 import { OfflineBanner } from "@/components/OfflineBanner";
 import { TacticalCompass } from "@/components/TacticalCompass";
 import { Crosshair, Shield } from "lucide-react";
-import { useLang } from "@/lib/i18n";
+import { useLang, useT } from "@/lib/i18n";
+import { QRScanner, type ScanPayload } from "@/components/QRScanner";
+
 import landingView from "@/assets/landing-view.webp.asset.json";
 
 export const Route = createFileRoute("/misija")({
