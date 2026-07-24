@@ -1851,12 +1851,40 @@ function MarshalLobbyConsole({ lobby: initialLobby, marshalPassword, lobbyPasswo
       if (alive) setCaptures((data ?? []) as any);
     };
     load();
+    // Direct row merging via Realtime — avoids a full 50-row SELECT on every event.
     const ch = supabase
       .channel(`marshal-caps-${lobby.id}`)
-      .on("postgres_changes", { event: "*", schema: "public", table: "spartanops_captures", filter: `field_id=eq.${lobby.id}` }, load)
+      .on("postgres_changes", { event: "INSERT", schema: "public", table: "spartanops_captures", filter: `field_id=eq.${lobby.id}` },
+        (p) => {
+          const r = p.new as any as CaptureRow;
+          if (!r?.id) return;
+          setCaptures((prev) => {
+            if (prev.some((c) => c.id === r.id)) return prev;
+            return [r, ...prev].slice(0, 50);
+          });
+        })
+      .on("postgres_changes", { event: "UPDATE", schema: "public", table: "spartanops_captures", filter: `field_id=eq.${lobby.id}` },
+        (p) => {
+          const r = p.new as any as CaptureRow;
+          if (!r?.id) return;
+          setCaptures((prev) => {
+            const idx = prev.findIndex((c) => c.id === r.id);
+            if (idx < 0) return [r, ...prev].slice(0, 50);
+            const next = prev.slice();
+            next[idx] = { ...next[idx], ...r };
+            return next;
+          });
+        })
+      .on("postgres_changes", { event: "DELETE", schema: "public", table: "spartanops_captures", filter: `field_id=eq.${lobby.id}` },
+        (p) => {
+          const id = (p.old as any)?.id;
+          if (!id) return;
+          setCaptures((prev) => prev.filter((c) => c.id !== id));
+        })
       .subscribe();
     return () => { alive = false; supabase.removeChannel(ch); };
   }, [lobby.id]);
+
 
   // Match timer tick (drives the "TIME REMAINING" countdown)
   useEffect(() => {
