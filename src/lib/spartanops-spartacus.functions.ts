@@ -229,13 +229,15 @@ export const spartanopsSpartacusCapture = createServerFn({ method: "POST" })
       allowed_threshold_meters: allowedRadius,
     } satisfies SpartacusDiagnosticPayload;
 
-    // Hard rule: absolute 15m ceiling from the anchored point coordinates.
-    // Overrides Spartacus buffer — no capture row is written, no marshal
-    // review is triggered. Purely a client-facing range rejection.
-    const HARD_RANGE_M = 15;
+    // Hard rule: Marshal-controlled dynamic radius ceiling from the anchored
+    // point coordinates. Overrides Spartacus buffer — no capture row is
+    // written, no marshal review is triggered. Purely a client-facing range
+    // rejection.
+    const HARD_RANGE_M = dynamicRadiusM;
     if (dist > HARD_RANGE_M) {
-      return { ok: false, spartacus: true, error: "out_of_range", distance_m: dist, diagnostic: logSpartacusDiagnostic({ ...diagnosticBase, stage: "distance_over_hard_range" }) } as const;
+      return { ok: false, spartacus: true, error: "out_of_range", distance_m: dist, radius_m: HARD_RANGE_M, diagnostic: logSpartacusDiagnostic({ ...diagnosticBase, stage: "distance_over_hard_range" }) } as const;
     }
+
 
     if (dist > allowedRadius) {
 
