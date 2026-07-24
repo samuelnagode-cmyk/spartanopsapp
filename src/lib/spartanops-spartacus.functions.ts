@@ -104,7 +104,7 @@ export const spartanopsSpartacusCapture = createServerFn({ method: "POST" })
 
     const { data: state } = await supabaseAdmin
       .from("spartanops_game_state")
-      .select("field_id, status, match_started_at")
+      .select("field_id, status, match_started_at, settings")
       .eq("field_id", data.fieldId)
       .maybeSingle();
 
@@ -113,6 +113,11 @@ export const spartanopsSpartacusCapture = createServerFn({ method: "POST" })
     if (!Number.isFinite(matchStart) || matchStart > Date.now()) {
       return { ok: false, error: "pre_start_locked", spartacus: true, diagnostic: logSpartacusDiagnostic(baseDiagnostic(data, "pre_start_locked")) } as const;
     }
+
+    // Marshal-controlled dynamic radius (3–50m), fallback 15m.
+    const rawRadius = Number((state as any)?.settings?.spartacusRadius);
+    const dynamicRadiusM = Number.isFinite(rawRadius) ? Math.max(3, Math.min(50, Math.round(rawRadius))) : 15;
+
 
     const { data: secret } = await supabaseAdmin
       .from("spartanops_checkin_secrets" as any)
@@ -224,13 +229,15 @@ export const spartanopsSpartacusCapture = createServerFn({ method: "POST" })
       allowed_threshold_meters: allowedRadius,
     } satisfies SpartacusDiagnosticPayload;
 
-    // Hard rule: absolute 15m ceiling from the anchored point coordinates.
-    // Overrides Spartacus buffer — no capture row is written, no marshal
-    // review is triggered. Purely a client-facing range rejection.
-    const HARD_RANGE_M = 15;
+    // Hard rule: Marshal-controlled dynamic radius ceiling from the anchored
+    // point coordinates. Overrides Spartacus buffer — no capture row is
+    // written, no marshal review is triggered. Purely a client-facing range
+    // rejection.
+    const HARD_RANGE_M = dynamicRadiusM;
     if (dist > HARD_RANGE_M) {
-      return { ok: false, spartacus: true, error: "out_of_range", distance_m: dist, diagnostic: logSpartacusDiagnostic({ ...diagnosticBase, stage: "distance_over_hard_range" }) } as const;
+      return { ok: false, spartacus: true, error: "out_of_range", distance_m: dist, radius_m: HARD_RANGE_M, diagnostic: logSpartacusDiagnostic({ ...diagnosticBase, stage: "distance_over_hard_range" }) } as const;
     }
+
 
     if (dist > allowedRadius) {
 
