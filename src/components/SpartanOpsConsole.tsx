@@ -1214,7 +1214,68 @@ export function SpartacusConfig({ settings, onPatch, en }: { settings: GameSetti
       >
         [ {enabled ? (en ? "SPARTACUS PROTECTION ACTIVE" : "SPARTACUS ZAŠČITA AKTIVNA") : (en ? "ENABLE SPARTACUS PROTECTION" : "OMOGOČI SPARTACUS ZAŠČITO")} ]
       </button>
+      <SpartacusRadiusControl settings={settings} onPatch={onPatch} en={en} enabled={enabled} />
       <style>{`@keyframes spartacus-pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:0.55;transform:scale(1.25)}}`}</style>
+    </div>
+  );
+}
+
+const SPARTACUS_RADIUS_DEFAULT = 15;
+const SPARTACUS_RADIUS_MIN = 3;
+const SPARTACUS_RADIUS_MAX = 50;
+
+function SpartacusRadiusControl({ settings, onPatch, en, enabled }: { settings: GameSettings; onPatch: (s: GameSettings) => void; en: boolean; enabled: boolean }) {
+  const raw = typeof settings.spartacusRadius === "number" && isFinite(settings.spartacusRadius)
+    ? settings.spartacusRadius
+    : SPARTACUS_RADIUS_DEFAULT;
+  const value = Math.max(SPARTACUS_RADIUS_MIN, Math.min(SPARTACUS_RADIUS_MAX, Math.round(raw)));
+  const commit = (v: number) => {
+    const clamped = Math.max(SPARTACUS_RADIUS_MIN, Math.min(SPARTACUS_RADIUS_MAX, Math.round(v)));
+    onPatch({ ...settings, spartacusRadius: clamped });
+  };
+  const dim = enabled ? 1 : 0.5;
+  return (
+    <div style={{ marginTop: 14, padding: 12, border: "1px solid #ffb02055", background: "rgba(0,0,0,0.35)", opacity: dim }}>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8 }}>
+        <div style={{ fontFamily: "'Michroma', monospace", fontSize: 11, letterSpacing: "0.2em", color: "#ffb020", textTransform: "uppercase" }}>
+          {en ? "SPARTACUS RADIUS" : "SPARTACUS RADIJ"}
+        </div>
+        <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+          <button type="button" onClick={() => commit(value - 1)} disabled={!enabled || value <= SPARTACUS_RADIUS_MIN}
+            style={{ width: 28, height: 28, background: "transparent", color: "#ffb020", border: "1px solid #ffb02088", fontFamily: "monospace", fontSize: 14, cursor: enabled && value > SPARTACUS_RADIUS_MIN ? "pointer" : "not-allowed" }}>−</button>
+          <input
+            type="number"
+            min={SPARTACUS_RADIUS_MIN}
+            max={SPARTACUS_RADIUS_MAX}
+            value={value}
+            disabled={!enabled}
+            onChange={(e) => commit(Number(e.target.value))}
+            style={{ width: 60, textAlign: "center", background: "rgba(0,0,0,0.5)", color: INK, border: "1px solid #ffb02088", padding: "4px 6px", fontFamily: "monospace", fontSize: 13 }}
+          />
+          <span style={{ fontFamily: "monospace", fontSize: 11, color: MUTED }}>m</span>
+          <button type="button" onClick={() => commit(value + 1)} disabled={!enabled || value >= SPARTACUS_RADIUS_MAX}
+            style={{ width: 28, height: 28, background: "transparent", color: "#ffb020", border: "1px solid #ffb02088", fontFamily: "monospace", fontSize: 14, cursor: enabled && value < SPARTACUS_RADIUS_MAX ? "pointer" : "not-allowed" }}>+</button>
+        </div>
+      </div>
+      <input
+        type="range"
+        min={SPARTACUS_RADIUS_MIN}
+        max={SPARTACUS_RADIUS_MAX}
+        step={1}
+        value={value}
+        disabled={!enabled}
+        onChange={(e) => commit(Number(e.target.value))}
+        style={{ width: "100%", accentColor: "#ffb020" }}
+      />
+      <div style={{ display: "flex", justifyContent: "space-between", fontFamily: "monospace", fontSize: 9, color: MUTED, marginTop: 2 }}>
+        <span>{SPARTACUS_RADIUS_MIN}m</span>
+        <span>{SPARTACUS_RADIUS_MAX}m</span>
+      </div>
+      <p style={{ fontSize: 10.5, color: MUTED, fontFamily: "monospace", lineHeight: 1.6, marginTop: 10, marginBottom: 0 }}>
+        {en
+          ? "Adjust based on field GPS coverage. The smaller the radius, the higher the anti-cheat protection, but may trigger false flags."
+          : "Prilagodi glede na GPS signal na terenu. Manjši kot je radij, večja je zaščita pred goljufanjem, vendar se poveča tveganje za lažne blokade."}
+      </p>
     </div>
   );
 }
