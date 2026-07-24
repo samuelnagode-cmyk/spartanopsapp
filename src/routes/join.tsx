@@ -2,20 +2,44 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { ArrowLeft, Lock, MapPin, X, Radio } from "lucide-react";
-import { dtoToRecord, SYSTEM_FIELD, type LobbyRecord } from "./admin-pregled";
+import { dtoToRecord, SYSTEM_FIELD, isLobbyRetired, rowToRecord, type LobbyRecord } from "./admin-pregled";
 import { listPublishedLobbies, verifyLobbyPassword } from "@/lib/spartanops-lobbies.functions";
 import { useLang } from "@/lib/i18n";
 import { TacticalUplinkLoader, MissionCardSkeletonGrid } from "@/components/TacticalLoader";
+import { supabase } from "@/integrations/supabase/client";
+
+const LOBBY_CACHE_KEY = "spartanops.lobbies.v1";
+const LOBBY_CACHE_META_KEY = "spartanops.lobbies.v1.cachedAt";
+const LOBBY_CACHE_TTL_MS = 30 * 60_000; // 30 minutes
 
 function loadCachedLobbies(): LobbyRecord[] {
   if (typeof window === "undefined") return [];
   try {
-    const raw = localStorage.getItem("spartanops.lobbies.v1");
+    // TTL — a cache older than 30 min is discarded so a long-idle tab does not
+    // paint a deleted / finished mission on next open.
+    const meta = Number(localStorage.getItem(LOBBY_CACHE_META_KEY) ?? 0);
+    if (meta && Date.now() - meta > LOBBY_CACHE_TTL_MS) {
+      try {
+        localStorage.removeItem(LOBBY_CACHE_KEY);
+        localStorage.removeItem(LOBBY_CACHE_META_KEY);
+      } catch {}
+      return [];
+    }
+    const raw = localStorage.getItem(LOBBY_CACHE_KEY);
     if (!raw) return [];
     const list = JSON.parse(raw) as LobbyRecord[];
-    return list.filter((l) => l && l.id !== SYSTEM_FIELD.id);
+    return list.filter((l) => l && l.id !== SYSTEM_FIELD.id && !isLobbyRetired(l));
   } catch { return []; }
 }
+
+function writeLobbyCache(records: LobbyRecord[]) {
+  if (typeof window === "undefined") return;
+  try {
+    localStorage.setItem(LOBBY_CACHE_KEY, JSON.stringify(records));
+    localStorage.setItem(LOBBY_CACHE_META_KEY, String(Date.now()));
+  } catch { /* ignore quota errors */ }
+}
+
 
 export const Route = createFileRoute("/join")({
   head: () => ({
