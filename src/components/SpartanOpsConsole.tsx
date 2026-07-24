@@ -45,8 +45,10 @@ export type GameSettings = {
   };
   capturePointsScoring?: boolean;
   /** Spartacus GPS anti-cheat. Anchors each QR code on first scan; flags any
-   * subsequent scan more than 10m away as suspicious for marshal review. */
+   * subsequent scan more than `spartacusRadius` metres away as suspicious. */
   spartacusEnabled?: boolean;
+  /** Marshal-controlled dynamic anti-cheat radius in metres (3–50). */
+  spartacusRadius?: number;
 };
 export type GameState = {
   field_id: string;
