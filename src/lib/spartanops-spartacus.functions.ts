@@ -104,7 +104,7 @@ export const spartanopsSpartacusCapture = createServerFn({ method: "POST" })
 
     const { data: state } = await supabaseAdmin
       .from("spartanops_game_state")
-      .select("field_id, status, match_started_at")
+      .select("field_id, status, match_started_at, settings")
       .eq("field_id", data.fieldId)
       .maybeSingle();
 
@@ -113,6 +113,11 @@ export const spartanopsSpartacusCapture = createServerFn({ method: "POST" })
     if (!Number.isFinite(matchStart) || matchStart > Date.now()) {
       return { ok: false, error: "pre_start_locked", spartacus: true, diagnostic: logSpartacusDiagnostic(baseDiagnostic(data, "pre_start_locked")) } as const;
     }
+
+    // Marshal-controlled dynamic radius (3–50m), fallback 15m.
+    const rawRadius = Number((state as any)?.settings?.spartacusRadius);
+    const dynamicRadiusM = Number.isFinite(rawRadius) ? Math.max(3, Math.min(50, Math.round(rawRadius))) : 15;
+
 
     const { data: secret } = await supabaseAdmin
       .from("spartanops_checkin_secrets" as any)
