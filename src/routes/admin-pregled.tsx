@@ -194,10 +194,21 @@ export function loadFieldsRegistryWithSystem(): AllTimeFieldRecord[] {
 export function loadLobbies(): LobbyRecord[] {
   if (typeof window === "undefined") return [];
   try {
+    // TTL enforcement: purge cache older than 30 min so a long-idle tab doesn't
+    // render stale (deleted / finished) missions on next open.
+    const meta = Number(localStorage.getItem(LOBBY_CACHE_META_KEY) ?? 0);
+    if (meta && Date.now() - meta > LOBBY_CACHE_TTL_MS) {
+      try {
+        localStorage.removeItem(LOBBY_STORAGE_KEY);
+        localStorage.removeItem(LOBBY_CACHE_META_KEY);
+      } catch {}
+      return [];
+    }
     const raw = localStorage.getItem(LOBBY_STORAGE_KEY);
     const list = raw ? (JSON.parse(raw) as LobbyRecord[]) : [];
     const cleaned = list
       .filter((l) => !isPurged(l as any))
+      .filter((l) => !isLobbyRetired(l))
       .map((l) => (l.mapUrl && l.mapUrl.length > 4096 ? { ...l, mapUrl: undefined } : l));
     if (cleaned.length !== list.length || cleaned.some((l, i) => l.mapUrl !== list[i]?.mapUrl)) {
       safeSetItem(LOBBY_STORAGE_KEY, JSON.stringify(cleaned));
@@ -236,14 +247,19 @@ function safeSetItem(key: string, value: string): boolean {
   }
 }
 
-function saveLobbies(list: LobbyRecord[]) {
+export function saveLobbies(list: LobbyRecord[]) {
   // Cap at 25 most recent entries — the DB is the source of truth; this cache
-  // exists only for offline fallback / cross-tab hints.
-  const capped = list.slice(0, 25).map((l) => (
-    l.mapUrl && l.mapUrl.length > 4096 ? { ...l, mapUrl: undefined } : l
-  ));
-  safeSetItem(LOBBY_STORAGE_KEY, JSON.stringify(capped));
+  // exists only for offline fallback / cross-tab hints. Retired (ended/cancelled)
+  // lobbies never enter the active-mission cache.
+  const capped = list
+    .filter((l) => !isLobbyRetired(l))
+    .slice(0, 25)
+    .map((l) => (l.mapUrl && l.mapUrl.length > 4096 ? { ...l, mapUrl: undefined } : l));
+  const ok = safeSetItem(LOBBY_STORAGE_KEY, JSON.stringify(capped));
+  if (ok) safeSetItem(LOBBY_CACHE_META_KEY, String(Date.now()));
 }
+
+
 
 
 export function updateLobby(id: string, patch: Partial<LobbyRecord>): LobbyRecord | null {
