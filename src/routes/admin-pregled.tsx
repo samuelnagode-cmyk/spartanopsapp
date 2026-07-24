@@ -119,7 +119,41 @@ export type LobbyRecord = {
 };
 
 const LOBBY_STORAGE_KEY = "spartanops.lobbies.v1";
+const LOBBY_CACHE_META_KEY = "spartanops.lobbies.v1.cachedAt";
+const LOBBY_CACHE_TTL_MS = 30 * 60_000; // 30 minutes
 const ALL_TIME_STORAGE_KEY = "spartanops.all_time_fields.v1";
+
+/** True when a lobby is finished/cancelled and must be excluded from the active grid. */
+export function isLobbyRetired(l: { state?: LobbyState | string | null } | null | undefined): boolean {
+  if (!l) return false;
+  const s = String(l.state ?? "").toLowerCase();
+  return s === "ended" || s === "finished" || s === "cancelled" || s === "canceled";
+}
+
+/** Map a raw snake_case `spartanops_lobbies` Realtime row to the client LobbyRecord shape. */
+export function rowToRecord(r: any): LobbyRecord {
+  return {
+    id: r.id,
+    fieldName: r.field_name ?? "",
+    eventName: r.event_name ?? undefined,
+    location: r.location ?? "",
+    country: r.country ?? undefined,
+    city: r.city ?? undefined,
+    marshalPassword: undefined,
+    gamemode: (r.gamemode as any) ?? "domination",
+    mapUrl: r.map_url ?? undefined,
+    matchDurationMinutes: r.match_duration_minutes ?? 30,
+    countdownSeconds: r.countdown_seconds ?? 60,
+    pointTarget: r.point_target ?? 50,
+    nodePositions: (r.node_positions as any) ?? undefined,
+    settings: (r.settings as any) ?? undefined,
+    createdAt: r.created_at ? new Date(r.created_at).getTime() : Date.now(),
+    published: !!r.published,
+    state: (r.state as any) ?? "pending",
+    startedAt: r.started_at ? new Date(r.started_at).getTime() : null,
+  };
+}
+
 
 export type AllTimeFieldRecord = {
   id: string;
