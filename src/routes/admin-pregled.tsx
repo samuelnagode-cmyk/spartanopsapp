@@ -441,20 +441,24 @@ function AdminPage() {
     const refresh = async () => {
       const mpw = getMasterPw();
       try {
-        if (mpw) {
-          const rows = await listLobbiesFn({ data: { masterPassword: mpw } });
-          if (!alive) return;
-          const records = rows.map(dtoToRecord);
-          setCustomLobbies(records);
+        const rows = mpw
+          ? await listLobbiesFn({ data: { masterPassword: mpw } })
+          : await listPublishedLobbiesFn();
+        if (!alive) return;
+        // Strip retired (ended/cancelled) lobbies from the active grid.
+        const records = rows.map(dtoToRecord).filter((l) => !isLobbyRetired(l));
+        setCustomLobbies((prev) => {
+          // Overwrite when the active set differs from the cache — this is the
+          // "mathematically exact" background sync path.
+          const prevIds = prev.map((l) => l.id).sort().join("|");
+          const nextIds = records.map((l) => l.id).sort().join("|");
+          if (prevIds !== nextIds) {
+            saveLobbies(records);
+            return records;
+          }
           saveLobbies(records);
-        } else {
-          // No master pw — pull the public list (source of truth) instead of localStorage.
-          const rows = await listPublishedLobbiesFn();
-          if (!alive) return;
-          const records = rows.map(dtoToRecord);
-          setCustomLobbies(records);
-          saveLobbies(records);
-        }
+          return records;
+        });
       } catch (e) {
         console.error("[admin] failed to load lobbies", e);
         if (alive) setCustomLobbies([]);
@@ -465,10 +469,52 @@ function AdminPage() {
     refresh();
     const onFocus = () => refresh();
     window.addEventListener("focus", onFocus);
-    // Live-sync via Realtime on the lobbies table.
+    // Live-sync via Realtime on the lobbies table — merge directly into local
+    // state instead of triggering a full SELECT on every ping.
     const channel = supabase
       .channel("admin-lobbies")
-      .on("postgres_changes", { event: "*", schema: "public", table: "spartanops_lobbies" }, () => refresh())
+      .on("postgres_changes", { event: "INSERT", schema: "public", table: "spartanops_lobbies" }, (payload) => {
+        const row = rowToRecord(payload.new as any);
+        if (isPurged(row as any) || isLobbyRetired(row)) return;
+        setCustomLobbies((prev) => {
+          if (prev.some((l) => l.id === row.id)) return prev;
+          const next = [row, ...prev].sort((a, b) => b.createdAt - a.createdAt);
+          saveLobbies(next);
+          return next;
+        });
+      })
+      .on("postgres_changes", { event: "UPDATE", schema: "public", table: "spartanops_lobbies" }, (payload) => {
+        const row = rowToRecord(payload.new as any);
+        setCustomLobbies((prev) => {
+          // Retired states (ended/cancelled) drop from the active grid immediately.
+          if (isLobbyRetired(row) || isPurged(row as any)) {
+            const next = prev.filter((l) => l.id !== row.id);
+            if (next.length !== prev.length) saveLobbies(next);
+            return next;
+          }
+          const idx = prev.findIndex((l) => l.id === row.id);
+          if (idx < 0) {
+            const next = [row, ...prev].sort((a, b) => b.createdAt - a.createdAt);
+            saveLobbies(next);
+            return next;
+          }
+          // Preserve any locally cached fields the public view strips (e.g. marshalPassword).
+          const merged = { ...prev[idx], ...row };
+          const next = prev.slice();
+          next[idx] = merged;
+          saveLobbies(next);
+          return next;
+        });
+      })
+      .on("postgres_changes", { event: "DELETE", schema: "public", table: "spartanops_lobbies" }, (payload) => {
+        const id = (payload.old as any)?.id;
+        if (!id) return;
+        setCustomLobbies((prev) => {
+          const next = prev.filter((l) => l.id !== id);
+          if (next.length !== prev.length) saveLobbies(next);
+          return next;
+        });
+      })
       .subscribe();
     return () => {
       alive = false;
@@ -476,6 +522,7 @@ function AdminPage() {
       supabase.removeChannel(channel);
     };
   }, [creating, listLobbiesFn, listPublishedLobbiesFn]);
+
 
   const refreshLobbies = async () => {
     const mpw = getMasterPw();
