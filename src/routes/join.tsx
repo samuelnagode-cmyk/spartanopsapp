@@ -2,20 +2,44 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { ArrowLeft, Lock, MapPin, X, Radio } from "lucide-react";
-import { dtoToRecord, SYSTEM_FIELD, type LobbyRecord } from "./admin-pregled";
+import { dtoToRecord, SYSTEM_FIELD, isLobbyRetired, rowToRecord, type LobbyRecord } from "./admin-pregled";
 import { listPublishedLobbies, verifyLobbyPassword } from "@/lib/spartanops-lobbies.functions";
 import { useLang } from "@/lib/i18n";
 import { TacticalUplinkLoader, MissionCardSkeletonGrid } from "@/components/TacticalLoader";
+import { supabase } from "@/integrations/supabase/client";
+
+const LOBBY_CACHE_KEY = "spartanops.lobbies.v1";
+const LOBBY_CACHE_META_KEY = "spartanops.lobbies.v1.cachedAt";
+const LOBBY_CACHE_TTL_MS = 30 * 60_000; // 30 minutes
 
 function loadCachedLobbies(): LobbyRecord[] {
   if (typeof window === "undefined") return [];
   try {
-    const raw = localStorage.getItem("spartanops.lobbies.v1");
+    // TTL — a cache older than 30 min is discarded so a long-idle tab does not
+    // paint a deleted / finished mission on next open.
+    const meta = Number(localStorage.getItem(LOBBY_CACHE_META_KEY) ?? 0);
+    if (meta && Date.now() - meta > LOBBY_CACHE_TTL_MS) {
+      try {
+        localStorage.removeItem(LOBBY_CACHE_KEY);
+        localStorage.removeItem(LOBBY_CACHE_META_KEY);
+      } catch {}
+      return [];
+    }
+    const raw = localStorage.getItem(LOBBY_CACHE_KEY);
     if (!raw) return [];
     const list = JSON.parse(raw) as LobbyRecord[];
-    return list.filter((l) => l && l.id !== SYSTEM_FIELD.id);
+    return list.filter((l) => l && l.id !== SYSTEM_FIELD.id && !isLobbyRetired(l));
   } catch { return []; }
 }
+
+function writeLobbyCache(records: LobbyRecord[]) {
+  if (typeof window === "undefined") return;
+  try {
+    localStorage.setItem(LOBBY_CACHE_KEY, JSON.stringify(records));
+    localStorage.setItem(LOBBY_CACHE_META_KEY, String(Date.now()));
+  } catch { /* ignore quota errors */ }
+}
+
 
 export const Route = createFileRoute("/join")({
   head: () => ({
@@ -79,18 +103,25 @@ function JoinPage() {
     const refresh = async () => {
       try {
         const dtos = await listFn();
-        if (!alive) return;
+        if (!alive) return [] as LobbyRecord[];
         const records = dtos
           .map(dtoToRecord)
-          .filter((l) => l.id !== SYSTEM_FIELD.id)
+          .filter((l) => l.id !== SYSTEM_FIELD.id && !isLobbyRetired(l))
           .sort((a, b) => b.createdAt - a.createdAt);
-        try { localStorage.setItem("spartanops.lobbies.v1", JSON.stringify(records)); } catch { /* ignore */ }
-        setLobbies(records);
+        setLobbies((prev) => {
+          // Mathematically exact: if the active set differs from what's on
+          // screen, replace it (and its cache) instantly.
+          const prevIds = prev.map((l) => l.id).sort().join("|");
+          const nextIds = records.map((l) => l.id).sort().join("|");
+          if (prevIds !== nextIds) writeLobbyCache(records);
+          else writeLobbyCache(records);
+          return records;
+        });
         return records;
       } catch (e) {
         console.error("[join] failed to load lobbies", e);
         if (alive) setLobbies([]);
-        return [];
+        return [] as LobbyRecord[];
       }
     };
 
@@ -116,8 +147,60 @@ function JoinPage() {
 
     const onFocus = () => refresh();
     window.addEventListener("focus", onFocus);
-    return () => { alive = false; window.removeEventListener("focus", onFocus); };
+
+    // Direct row merging via Realtime — no full SELECT on every ping. Retired
+    // (ended/cancelled) lobbies drop from the grid immediately.
+    const channel = supabase
+      .channel("join-lobbies")
+      .on("postgres_changes", { event: "INSERT", schema: "public", table: "spartanops_lobbies" }, (payload) => {
+        const row = rowToRecord(payload.new as any);
+        if (row.id === SYSTEM_FIELD.id || isLobbyRetired(row) || !row.published) return;
+        setLobbies((prev) => {
+          if (prev.some((l) => l.id === row.id)) return prev;
+          const next = [row, ...prev].sort((a, b) => b.createdAt - a.createdAt);
+          writeLobbyCache(next);
+          return next;
+        });
+      })
+      .on("postgres_changes", { event: "UPDATE", schema: "public", table: "spartanops_lobbies" }, (payload) => {
+        const row = rowToRecord(payload.new as any);
+        setLobbies((prev) => {
+          const shouldDrop = row.id === SYSTEM_FIELD.id || isLobbyRetired(row) || !row.published;
+          if (shouldDrop) {
+            const next = prev.filter((l) => l.id !== row.id);
+            if (next.length !== prev.length) writeLobbyCache(next);
+            return next;
+          }
+          const idx = prev.findIndex((l) => l.id === row.id);
+          if (idx < 0) {
+            const next = [row, ...prev].sort((a, b) => b.createdAt - a.createdAt);
+            writeLobbyCache(next);
+            return next;
+          }
+          const next = prev.slice();
+          next[idx] = { ...prev[idx], ...row };
+          writeLobbyCache(next);
+          return next;
+        });
+      })
+      .on("postgres_changes", { event: "DELETE", schema: "public", table: "spartanops_lobbies" }, (payload) => {
+        const id = (payload.old as any)?.id;
+        if (!id) return;
+        setLobbies((prev) => {
+          const next = prev.filter((l) => l.id !== id);
+          if (next.length !== prev.length) writeLobbyCache(next);
+          return next;
+        });
+      })
+      .subscribe();
+
+    return () => {
+      alive = false;
+      window.removeEventListener("focus", onFocus);
+      supabase.removeChannel(channel);
+    };
   }, [navigate, listFn, directLobbyId]);
+
 
 
   const activeCount = useMemo(() => lobbies.length, [lobbies]);

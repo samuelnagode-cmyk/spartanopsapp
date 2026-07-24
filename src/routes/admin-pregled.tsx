@@ -119,7 +119,41 @@ export type LobbyRecord = {
 };
 
 const LOBBY_STORAGE_KEY = "spartanops.lobbies.v1";
+const LOBBY_CACHE_META_KEY = "spartanops.lobbies.v1.cachedAt";
+const LOBBY_CACHE_TTL_MS = 30 * 60_000; // 30 minutes
 const ALL_TIME_STORAGE_KEY = "spartanops.all_time_fields.v1";
+
+/** True when a lobby is finished/cancelled and must be excluded from the active grid. */
+export function isLobbyRetired(l: { state?: LobbyState | string | null } | null | undefined): boolean {
+  if (!l) return false;
+  const s = String(l.state ?? "").toLowerCase();
+  return s === "ended" || s === "finished" || s === "cancelled" || s === "canceled";
+}
+
+/** Map a raw snake_case `spartanops_lobbies` Realtime row to the client LobbyRecord shape. */
+export function rowToRecord(r: any): LobbyRecord {
+  return {
+    id: r.id,
+    fieldName: r.field_name ?? "",
+    eventName: r.event_name ?? undefined,
+    location: r.location ?? "",
+    country: r.country ?? undefined,
+    city: r.city ?? undefined,
+    marshalPassword: undefined,
+    gamemode: (r.gamemode as any) ?? "domination",
+    mapUrl: r.map_url ?? undefined,
+    matchDurationMinutes: r.match_duration_minutes ?? 30,
+    countdownSeconds: r.countdown_seconds ?? 60,
+    pointTarget: r.point_target ?? 50,
+    nodePositions: (r.node_positions as any) ?? undefined,
+    settings: (r.settings as any) ?? undefined,
+    createdAt: r.created_at ? new Date(r.created_at).getTime() : Date.now(),
+    published: !!r.published,
+    state: (r.state as any) ?? "pending",
+    startedAt: r.started_at ? new Date(r.started_at).getTime() : null,
+  };
+}
+
 
 export type AllTimeFieldRecord = {
   id: string;
@@ -160,10 +194,21 @@ export function loadFieldsRegistryWithSystem(): AllTimeFieldRecord[] {
 export function loadLobbies(): LobbyRecord[] {
   if (typeof window === "undefined") return [];
   try {
+    // TTL enforcement: purge cache older than 30 min so a long-idle tab doesn't
+    // render stale (deleted / finished) missions on next open.
+    const meta = Number(localStorage.getItem(LOBBY_CACHE_META_KEY) ?? 0);
+    if (meta && Date.now() - meta > LOBBY_CACHE_TTL_MS) {
+      try {
+        localStorage.removeItem(LOBBY_STORAGE_KEY);
+        localStorage.removeItem(LOBBY_CACHE_META_KEY);
+      } catch {}
+      return [];
+    }
     const raw = localStorage.getItem(LOBBY_STORAGE_KEY);
     const list = raw ? (JSON.parse(raw) as LobbyRecord[]) : [];
     const cleaned = list
       .filter((l) => !isPurged(l as any))
+      .filter((l) => !isLobbyRetired(l))
       .map((l) => (l.mapUrl && l.mapUrl.length > 4096 ? { ...l, mapUrl: undefined } : l));
     if (cleaned.length !== list.length || cleaned.some((l, i) => l.mapUrl !== list[i]?.mapUrl)) {
       safeSetItem(LOBBY_STORAGE_KEY, JSON.stringify(cleaned));
@@ -202,14 +247,19 @@ function safeSetItem(key: string, value: string): boolean {
   }
 }
 
-function saveLobbies(list: LobbyRecord[]) {
+export function saveLobbies(list: LobbyRecord[]) {
   // Cap at 25 most recent entries — the DB is the source of truth; this cache
-  // exists only for offline fallback / cross-tab hints.
-  const capped = list.slice(0, 25).map((l) => (
-    l.mapUrl && l.mapUrl.length > 4096 ? { ...l, mapUrl: undefined } : l
-  ));
-  safeSetItem(LOBBY_STORAGE_KEY, JSON.stringify(capped));
+  // exists only for offline fallback / cross-tab hints. Retired (ended/cancelled)
+  // lobbies never enter the active-mission cache.
+  const capped = list
+    .filter((l) => !isLobbyRetired(l))
+    .slice(0, 25)
+    .map((l) => (l.mapUrl && l.mapUrl.length > 4096 ? { ...l, mapUrl: undefined } : l));
+  const ok = safeSetItem(LOBBY_STORAGE_KEY, JSON.stringify(capped));
+  if (ok) safeSetItem(LOBBY_CACHE_META_KEY, String(Date.now()));
 }
+
+
 
 
 export function updateLobby(id: string, patch: Partial<LobbyRecord>): LobbyRecord | null {
@@ -391,20 +441,24 @@ function AdminPage() {
     const refresh = async () => {
       const mpw = getMasterPw();
       try {
-        if (mpw) {
-          const rows = await listLobbiesFn({ data: { masterPassword: mpw } });
-          if (!alive) return;
-          const records = rows.map(dtoToRecord);
-          setCustomLobbies(records);
+        const rows = mpw
+          ? await listLobbiesFn({ data: { masterPassword: mpw } })
+          : await listPublishedLobbiesFn();
+        if (!alive) return;
+        // Strip retired (ended/cancelled) lobbies from the active grid.
+        const records = rows.map(dtoToRecord).filter((l) => !isLobbyRetired(l));
+        setCustomLobbies((prev) => {
+          // Overwrite when the active set differs from the cache — this is the
+          // "mathematically exact" background sync path.
+          const prevIds = prev.map((l) => l.id).sort().join("|");
+          const nextIds = records.map((l) => l.id).sort().join("|");
+          if (prevIds !== nextIds) {
+            saveLobbies(records);
+            return records;
+          }
           saveLobbies(records);
-        } else {
-          // No master pw — pull the public list (source of truth) instead of localStorage.
-          const rows = await listPublishedLobbiesFn();
-          if (!alive) return;
-          const records = rows.map(dtoToRecord);
-          setCustomLobbies(records);
-          saveLobbies(records);
-        }
+          return records;
+        });
       } catch (e) {
         console.error("[admin] failed to load lobbies", e);
         if (alive) setCustomLobbies([]);
@@ -415,10 +469,52 @@ function AdminPage() {
     refresh();
     const onFocus = () => refresh();
     window.addEventListener("focus", onFocus);
-    // Live-sync via Realtime on the lobbies table.
+    // Live-sync via Realtime on the lobbies table — merge directly into local
+    // state instead of triggering a full SELECT on every ping.
     const channel = supabase
       .channel("admin-lobbies")
-      .on("postgres_changes", { event: "*", schema: "public", table: "spartanops_lobbies" }, () => refresh())
+      .on("postgres_changes", { event: "INSERT", schema: "public", table: "spartanops_lobbies" }, (payload) => {
+        const row = rowToRecord(payload.new as any);
+        if (isPurged(row as any) || isLobbyRetired(row)) return;
+        setCustomLobbies((prev) => {
+          if (prev.some((l) => l.id === row.id)) return prev;
+          const next = [row, ...prev].sort((a, b) => b.createdAt - a.createdAt);
+          saveLobbies(next);
+          return next;
+        });
+      })
+      .on("postgres_changes", { event: "UPDATE", schema: "public", table: "spartanops_lobbies" }, (payload) => {
+        const row = rowToRecord(payload.new as any);
+        setCustomLobbies((prev) => {
+          // Retired states (ended/cancelled) drop from the active grid immediately.
+          if (isLobbyRetired(row) || isPurged(row as any)) {
+            const next = prev.filter((l) => l.id !== row.id);
+            if (next.length !== prev.length) saveLobbies(next);
+            return next;
+          }
+          const idx = prev.findIndex((l) => l.id === row.id);
+          if (idx < 0) {
+            const next = [row, ...prev].sort((a, b) => b.createdAt - a.createdAt);
+            saveLobbies(next);
+            return next;
+          }
+          // Preserve any locally cached fields the public view strips (e.g. marshalPassword).
+          const merged = { ...prev[idx], ...row };
+          const next = prev.slice();
+          next[idx] = merged;
+          saveLobbies(next);
+          return next;
+        });
+      })
+      .on("postgres_changes", { event: "DELETE", schema: "public", table: "spartanops_lobbies" }, (payload) => {
+        const id = (payload.old as any)?.id;
+        if (!id) return;
+        setCustomLobbies((prev) => {
+          const next = prev.filter((l) => l.id !== id);
+          if (next.length !== prev.length) saveLobbies(next);
+          return next;
+        });
+      })
       .subscribe();
     return () => {
       alive = false;
@@ -426,6 +522,7 @@ function AdminPage() {
       supabase.removeChannel(channel);
     };
   }, [creating, listLobbiesFn, listPublishedLobbiesFn]);
+
 
   const refreshLobbies = async () => {
     const mpw = getMasterPw();
@@ -1754,12 +1851,40 @@ function MarshalLobbyConsole({ lobby: initialLobby, marshalPassword, lobbyPasswo
       if (alive) setCaptures((data ?? []) as any);
     };
     load();
+    // Direct row merging via Realtime — avoids a full 50-row SELECT on every event.
     const ch = supabase
       .channel(`marshal-caps-${lobby.id}`)
-      .on("postgres_changes", { event: "*", schema: "public", table: "spartanops_captures", filter: `field_id=eq.${lobby.id}` }, load)
+      .on("postgres_changes", { event: "INSERT", schema: "public", table: "spartanops_captures", filter: `field_id=eq.${lobby.id}` },
+        (p) => {
+          const r = p.new as any as CaptureRow;
+          if (!r?.id) return;
+          setCaptures((prev) => {
+            if (prev.some((c) => c.id === r.id)) return prev;
+            return [r, ...prev].slice(0, 50);
+          });
+        })
+      .on("postgres_changes", { event: "UPDATE", schema: "public", table: "spartanops_captures", filter: `field_id=eq.${lobby.id}` },
+        (p) => {
+          const r = p.new as any as CaptureRow;
+          if (!r?.id) return;
+          setCaptures((prev) => {
+            const idx = prev.findIndex((c) => c.id === r.id);
+            if (idx < 0) return [r, ...prev].slice(0, 50);
+            const next = prev.slice();
+            next[idx] = { ...next[idx], ...r };
+            return next;
+          });
+        })
+      .on("postgres_changes", { event: "DELETE", schema: "public", table: "spartanops_captures", filter: `field_id=eq.${lobby.id}` },
+        (p) => {
+          const id = (p.old as any)?.id;
+          if (!id) return;
+          setCaptures((prev) => prev.filter((c) => c.id !== id));
+        })
       .subscribe();
     return () => { alive = false; supabase.removeChannel(ch); };
   }, [lobby.id]);
+
 
   // Match timer tick (drives the "TIME REMAINING" countdown)
   useEffect(() => {
