@@ -437,6 +437,8 @@ function CapturePage() {
             }
           } catch { /* fall through to error UI */ }
           try { sessionStorage.removeItem(captureKey); } catch { /* allow retry */ }
+          const dynRadius = Number((result as any)?.radius_m);
+          const radiusLabel = Number.isFinite(dynRadius) ? Math.round(dynRadius) : 15;
           const msg: Record<string, string> = {
             not_checked_in: "Niste prijavljeni v misijo.",
             no_team: "Nimate dodeljene ekipe.",
@@ -445,8 +447,8 @@ function CapturePage() {
               ? "Cooldown active — wait before rescanning this point."
               : "Ohladitev aktivna — počakaj pred ponovnim skeniranjem te točke.",
             out_of_range: en
-              ? "ERROR: Out of range (max 15m)!"
-              : "NAPAKA: Niste v dometu točke (največ 15m)!",
+              ? `ERROR: Out of activation range (max ${radiusLabel}m)!`
+              : `NAPAKA: Niste v dometu za aktiviranje te funkcije (največ ${radiusLabel}m)!`,
             gps_required: en
               ? "Spartacus protection requires active GPS to verify your capture. Please enable location services to proceed."
               : "Spartacus zaščita zahteva aktivno GPS povezavo za potrditev tvoje lokacije ob zavzetju. Prosimo, omogoči lokacijske storitve za nadaljevanje.",
