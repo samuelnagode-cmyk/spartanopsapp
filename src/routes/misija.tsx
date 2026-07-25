@@ -14,6 +14,7 @@ import { TacticalCompass } from "@/components/TacticalCompass";
 import { Crosshair, Shield } from "lucide-react";
 import { useLang, useT } from "@/lib/i18n";
 import { QRScanner, type ScanPayload } from "@/components/QRScanner";
+import { useAmbientAudio } from "@/components/AmbientAudio";
 
 import landingView from "@/assets/landing-view.webp.asset.json";
 
@@ -1315,6 +1316,96 @@ function SpartacusConsentBlock({ en, onClearedChange }: { en: boolean; onCleared
 }
 
 
+function CameraNoticeBlock({ en }: { en: boolean }) {
+  return (
+    <div style={{ border: `1px solid ${ACCENT}55`, background: "rgba(224,176,78,0.06)", padding: 14 }}>
+      <p style={{ fontFamily: "'Michroma', monospace", fontSize: 10.5, color: ACCENT, letterSpacing: "0.16em", textTransform: "uppercase", fontWeight: 800, marginBottom: 6 }}>
+        {en ? "📷 CAMERA ACCESS · QR SCANNER" : "📷 DOSTOP DO KAMERE · QR SKENER"}
+      </p>
+      <p style={{ fontFamily: "monospace", color: MUTED, fontSize: 11, lineHeight: 1.6, margin: 0 }}>
+        {en
+          ? "Camera access will be requested upon your first QR scan — please approve it to play."
+          : "Dostop do kamere bo zahtevan ob prvem QR skeniranju — potrdi ga za igranje."}
+      </p>
+    </div>
+  );
+}
+
+function AudioSettingsBlock({ en }: { en: boolean }) {
+  const { musicEnabled, sfxEnabled, setMusicEnabled, setSfxEnabled, unlock } = useAmbientAudio();
+  const Row = ({ on, onChange, label }: { on: boolean; onChange: () => void; label: string }) => (
+    <label
+      style={{
+        display: "flex",
+        alignItems: "flex-start",
+        gap: 10,
+        padding: "8px 4px",
+        cursor: "pointer",
+      }}
+    >
+      <span
+        onClick={onChange}
+        role="switch"
+        aria-checked={on}
+        style={{
+          flexShrink: 0,
+          width: 36,
+          height: 20,
+          borderRadius: 999,
+          background: on ? "rgba(61,220,132,0.35)" : "rgba(236,227,196,0.14)",
+          border: `1px solid ${on ? "#3ddc84" : "rgba(236,227,196,0.28)"}`,
+          position: "relative",
+          transition: "background 160ms",
+          marginTop: 2,
+        }}
+      >
+        <span
+          style={{
+            position: "absolute",
+            top: 1,
+            left: on ? 16 : 1,
+            width: 16,
+            height: 16,
+            borderRadius: "50%",
+            background: on ? "#3ddc84" : "rgba(236,227,196,0.6)",
+            boxShadow: on ? "0 0 8px #3ddc84" : "none",
+            transition: "left 160ms",
+          }}
+        />
+      </span>
+      <span style={{ fontFamily: "monospace", color: INK, fontSize: 11.5, lineHeight: 1.55 }}>{label}</span>
+    </label>
+  );
+  return (
+    <div style={{ border: `1px solid ${ACCENT}55`, background: "rgba(0,0,0,0.28)", padding: 14 }}>
+      <p style={{ fontFamily: "'Michroma', monospace", fontSize: 10.5, color: ACCENT, letterSpacing: "0.16em", textTransform: "uppercase", fontWeight: 800, marginBottom: 8 }}>
+        {en ? "🎧 AUDIO SETTINGS" : "🎧 NASTAVITVE ZVOKA"}
+      </p>
+      <Row
+        on={musicEnabled}
+        onChange={() => { unlock(); setMusicEnabled(!musicEnabled); }}
+        label={en
+          ? "Background Music: Optional. Immersive atmosphere for lobby and debriefing."
+          : "Glasba v ozadju: Izbirno. Ambience za lobby in debriefing."}
+      />
+      <Row
+        on={sfxEnabled}
+        onChange={() => { unlock(); setSfxEnabled(!sfxEnabled); }}
+        label={en
+          ? "Sound Effects (SFX): Recommended. Tactical in-game alerts (respawns, sectors, countdowns)."
+          : "Zvočni efekti (SFX): Priporočeno. Taktični zvoki med igro (respawn, sektorji, odštevanje)."}
+      />
+      <p style={{ fontFamily: "monospace", color: MUTED, fontSize: 10.5, lineHeight: 1.55, marginTop: 8, fontStyle: "italic" }}>
+        {en
+          ? "*(Note: Sounds play only while your screen is active. You can mute them at any time during the game using the bottom-left icon.)*"
+          : "*(Opomba: Zvoki se predvajajo le ob prižganem zaslonu. Med igro jih lahko kadarkoli izklopite s krogcem spodaj levo.)*"}
+      </p>
+    </div>
+  );
+}
+
+
+
 function CheckinForm({ sessionId, fieldId, preview, onGhost, fieldLabel }: { sessionId: string; fieldId: string; preview?: boolean; onGhost?: (m: Checkin) => void; fieldLabel?: string | null }) {
   const { lang } = useLang();
   const en = lang === "en";
@@ -1542,6 +1633,10 @@ function CheckinForm({ sessionId, fieldId, preview, onGhost, fieldLabel }: { ses
           </div>
 
           <SpartacusConsentBlock en={en} onClearedChange={setSpartacusCleared} />
+
+          <CameraNoticeBlock en={en} />
+
+          <AudioSettingsBlock en={en} />
 
           {err && <p style={{ color: "#ff8a8a", fontSize: 12 }}>{err}</p>}
 
@@ -1925,6 +2020,16 @@ function PreMatchCountdown({ seconds, polygon, eventName, gamemode, pointTarget,
   const missionName = (eventName?.trim() || configuredMission?.trim() || polygon?.trim() || (en ? "ACTIVE MISSION" : "AKTIVNA MISIJA")).toUpperCase();
   const fieldName = (polygon?.trim() || state?.field_label?.trim() || "").toUpperCase();
   const duration = state?.match_duration_minutes ?? 0;
+  // Fire the tactical countdown SFX exactly once when the visible timer
+  // hits T-14s so the audio aligns with the final 10-second phase.
+  const firedRef = useRef(false);
+  useEffect(() => {
+    if (firedRef.current) return;
+    if (seconds === 14) {
+      firedRef.current = true;
+      try { window.dispatchEvent(new Event("spartanops:countdown")); } catch { /* ignore */ }
+    }
+  }, [seconds]);
   return (
     <div
       className="fixed inset-0 z-50 flex flex-col items-center justify-start overflow-y-auto p-4 text-center"

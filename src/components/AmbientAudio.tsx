@@ -1,20 +1,37 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { useLocation } from "@tanstack/react-router";
-import { Volume2, VolumeX } from "lucide-react";
-import raging from "@/assets/raging-fires.mp3.asset.json";
-import deactivator from "@/assets/deactivator.mp3.asset.json";
-import countdown from "@/assets/countdown-10.mp3.asset.json";
-import endgame from "@/assets/spartanops-endgame.mp3.asset.json";
-import capture from "@/assets/spartanops-capture-levelup.mp3.asset.json";
+import { Music, Volume2, VolumeX, Waves } from "lucide-react";
+import songMain from "@/assets/SONG_MAIN.mp3.asset.json";
+import songLobby from "@/assets/SONG_LOBBY.mp3.asset.json";
+import songDebrief from "@/assets/SONG_DEBRIEFING.mp3.asset.json";
+import sfxCountdown from "@/assets/SOUNDEFFECT_STARTCOUNTOWN.mp3.asset.json";
+import sfxSector from "@/assets/SOUNDEFFECT_SECTORSECURED.mp3.asset.json";
 
-type DeployMode = "broadcast" | "mute" | "command";
+/**
+ * Global audio orchestrator. One AudioContext at root so switching between
+ * pages (Home -> Lobby -> Game) never restarts a track. Music vs SFX are
+ * independent global toggles persisted to localStorage. Casual visitors get
+ * both OFF by default — nothing plays until they opt in.
+ *
+ * Music routing (when musicEnabled):
+ *   - Homepage & public info pages  -> SONG_MAIN
+ *   - /join, /admin-pregled, /misija-in-lobby -> SONG_LOBBY
+ *   - Active in-match (post match-start, pre match-end) -> SILENCE
+ *   - Post match end / debrief -> SONG_DEBRIEFING
+ *
+ * SFX (when sfxEnabled):
+ *   - spartanops:countdown  -> SOUNDEFFECT_STARTCOUNTOWN.mp3 (T-14s pre-match, respawn scan)
+ *   - spartanops:capture-success -> SOUNDEFFECT_SECTORSECURED.mp3
+ */
 
 type Ctx = {
-  enabled: boolean;
-  toggle: () => void;
-  deployMode: DeployMode;
-  setDeployMode: (m: DeployMode) => void;
-  startCountdown: () => void;
+  musicEnabled: boolean;
+  sfxEnabled: boolean;
+  toggleMusic: () => void;
+  toggleSfx: () => void;
+  setMusicEnabled: (v: boolean) => void;
+  setSfxEnabled: (v: boolean) => void;
+  unlock: () => void;
 };
 
 const AudioCtx = createContext<Ctx | null>(null);
@@ -25,229 +42,191 @@ export function useAmbientAudio() {
   return c;
 }
 
-const FADE_MS = 900;
+const MUSIC_KEY = "spartanops:music-enabled";
+const SFX_KEY = "spartanops:sfx-enabled";
 
+const FADE_MS = 700;
 function fade(el: HTMLAudioElement, to: number, ms = FADE_MS) {
   const from = el.volume;
   const start = performance.now();
+  if (to > 0 && el.paused) {
+    el.volume = 0;
+    el.play().catch(() => {});
+  }
   const step = (t: number) => {
     const k = Math.min(1, (t - start) / ms);
     el.volume = Math.max(0, Math.min(1, from + (to - from) * k));
     if (k < 1) requestAnimationFrame(step);
     else if (to === 0) el.pause();
   };
-  if (to > 0 && el.paused) {
-    el.volume = 0;
-    el.play().catch(() => {});
-  }
   requestAnimationFrame(step);
 }
 
-const ENABLED_KEY = "spartanops:audio-enabled";
+type Track = "main" | "lobby" | "debrief" | "silent";
+
+function isLobbyPath(pathname: string) {
+  return /^\/(join|admin-pregled)(\b|\/|$)/i.test(pathname);
+}
+function isMissionPath(pathname: string) {
+  return /^\/misija(\b|\/|$)/i.test(pathname);
+}
 
 export function AmbientAudioProvider({ children }: { children: ReactNode }) {
   const { pathname } = useLocation();
-  const [enabled, setEnabled] = useState(false);
-  const [deployMode, setDeployMode] = useState<DeployMode>("broadcast");
-  const [lobbyOverride, setLobbyOverride] = useState<boolean | null>(null);
+  const [musicEnabled, setMusicEnabledState] = useState(false);
+  const [sfxEnabled, setSfxEnabledState] = useState(false);
+  // Mission phase, only meaningful on /misija. Updated by event bridges.
+  const [missionPhase, setMissionPhase] = useState<"lobby" | "active" | "debrief">("lobby");
 
-  // Restore last opt-in choice: player must toggle on the first time, then
-  // the preference carries across QR scans, page reloads, and route jumps.
   useEffect(() => {
     try {
-      if (typeof window !== "undefined" && window.localStorage.getItem(ENABLED_KEY) === "1") {
-        setEnabled(true);
-      }
+      if (typeof window === "undefined") return;
+      if (window.localStorage.getItem(MUSIC_KEY) === "1") setMusicEnabledState(true);
+      if (window.localStorage.getItem(SFX_KEY) === "1") setSfxEnabledState(true);
     } catch { /* ignore */ }
   }, []);
+  const setMusicEnabled = useCallback((v: boolean) => {
+    setMusicEnabledState(v);
+    try { localStorage.setItem(MUSIC_KEY, v ? "1" : "0"); } catch {}
+  }, []);
+  const setSfxEnabled = useCallback((v: boolean) => {
+    setSfxEnabledState(v);
+    try { localStorage.setItem(SFX_KEY, v ? "1" : "0"); } catch {}
+  }, []);
+  const toggleMusic = useCallback(() => setMusicEnabled(!musicEnabled), [musicEnabled, setMusicEnabled]);
+  const toggleSfx = useCallback(() => setSfxEnabled(!sfxEnabled), [sfxEnabled, setSfxEnabled]);
+
+  // Reset mission phase whenever we leave /misija.
   useEffect(() => {
-    try {
-      if (typeof window !== "undefined") {
-        window.localStorage.setItem(ENABLED_KEY, enabled ? "1" : "0");
-      }
-    } catch { /* ignore */ }
-  }, [enabled]);
-
-  const track1Ref = useRef<HTMLAudioElement | null>(null);
-  const track2Ref = useRef<HTMLAudioElement | null>(null);
-  const countdownRef = useRef<HTMLAudioElement | null>(null);
-  const endgameRef = useRef<HTMLAudioElement | null>(null);
-  const captureRef = useRef<HTMLAudioElement | null>(null);
-  const endgamePlayingRef = useRef(false);
-
-  // Route-based fallback: /join is the mission list / pre-lobby surface.
-  // /misija is phase-driven below because it can be registration, team select,
-  // pre-start, live HUD, respawn lock, or debriefing.
-  const routeRaging = pathname === "/" || /^\/(spartanops|archive|arhiv|print|updates)(\b|\/|$)/i.test(pathname);
-  const routeLobby = /^\/(join|lobby)(\b|\/|$)/i.test(pathname);
-  const routeMission = /^\/misija(\b|\/|$)/i.test(pathname);
-  const inLobby = lobbyOverride ?? routeLobby;
-  const awaitingMissionPhase = routeMission && lobbyOverride === null;
-  const hasRouteAudio = routeRaging || routeLobby || routeMission;
-
-  useEffect(() => {
-    if (!/^\/misija(\b|\/|$)/i.test(pathname)) setLobbyOverride(null);
+    if (!isMissionPath(pathname)) setMissionPhase("lobby");
   }, [pathname]);
 
-  const stopEndgameAndRestore = useCallback((forceLobby?: boolean) => {
-    const eg = endgameRef.current;
-    if (eg) {
-      fade(eg, 0);
-      try { eg.currentTime = 0; } catch { /* ignore */ }
-    }
-    endgamePlayingRef.current = false;
-    if (typeof forceLobby === "boolean") setLobbyOverride(forceLobby);
-    if (!enabled) return;
-    const t1 = track1Ref.current, t2 = track2Ref.current;
-    const nextLobby = forceLobby ?? inLobby;
-    if (!hasRouteAudio) {
-      if (t1) fade(t1, 0);
-      if (t2) fade(t2, 0);
-    } else if (nextLobby) {
-      if (t1) fade(t1, 0);
-      if (t2) fade(t2, 0.55);
-    } else {
-      if (t2) fade(t2, 0);
-      if (t1) fade(t1, 0.5);
-    }
-  }, [enabled, inLobby, hasRouteAudio]);
+  const mainRef = useRef<HTMLAudioElement | null>(null);
+  const lobbyRef = useRef<HTMLAudioElement | null>(null);
+  const debriefRef = useRef<HTMLAudioElement | null>(null);
+  const countdownRef = useRef<HTMLAudioElement | null>(null);
+  const sectorRef = useRef<HTMLAudioElement | null>(null);
 
+  // Instantiate audio nodes once.
   useEffect(() => {
-    const t1 = new Audio(raging.url);
-    t1.loop = true;
-    t1.preload = "auto";
-    t1.volume = 0;
-    const t2 = new Audio(deactivator.url);
-    t2.loop = true;
-    t2.preload = "auto";
-    t2.volume = 0;
-    const cd = new Audio(countdown.url);
-    cd.preload = "auto";
-    cd.volume = 1;
-    // Debriefing track is large — defer network until match ends.
-    const eg = new Audio(endgame.url);
-    eg.loop = false;
-    eg.preload = "none";
-    eg.volume = 0;
-    // Capture SFX — small file, load eagerly for instant playback.
-    const cap = new Audio(capture.url);
-    cap.preload = "auto";
-    cap.volume = 0.9;
-    track1Ref.current = t1;
-    track2Ref.current = t2;
+    const main = new Audio(songMain.url); main.loop = true; main.preload = "auto"; main.volume = 0;
+    const lobby = new Audio(songLobby.url); lobby.loop = true; lobby.preload = "auto"; lobby.volume = 0;
+    // Debrief is heavier and not needed until match end — lazy load.
+    const debrief = new Audio(songDebrief.url); debrief.loop = false; debrief.preload = "none"; debrief.volume = 0;
+    const cd = new Audio(sfxCountdown.url); cd.preload = "auto"; cd.volume = 1;
+    const sec = new Audio(sfxSector.url); sec.preload = "auto"; sec.volume = 0.95;
+    mainRef.current = main;
+    lobbyRef.current = lobby;
+    debriefRef.current = debrief;
     countdownRef.current = cd;
-    endgameRef.current = eg;
-    captureRef.current = cap;
+    sectorRef.current = sec;
     return () => {
-      [t1, t2, cd, eg, cap].forEach((a) => { a.pause(); a.src = ""; });
+      [main, lobby, debrief, cd, sec].forEach((a) => { try { a.pause(); a.src = ""; } catch {} });
     };
   }, []);
 
-  // Switch tracks on enable/route change
-  useEffect(() => {
-    const t1 = track1Ref.current, t2 = track2Ref.current, eg = endgameRef.current, cap = captureRef.current, cd = countdownRef.current;
-    if (!t1 || !t2) return;
-    if (!enabled) {
-      // Hard-stop every audio node — a slow fade left leftover sound after
-      // the mute button was pressed on some browsers.
-      const hardStop = (a: HTMLAudioElement | null) => {
-        if (!a) return;
-        try { a.pause(); a.volume = 0; a.currentTime = 0; } catch { /* ignore */ }
-      };
-      hardStop(t1); hardStop(t2); hardStop(cd); hardStop(cap);
-      if (eg) { hardStop(eg); endgamePlayingRef.current = false; }
-      return;
+  // Compute active music track from route + mission phase.
+  const activeTrack: Track = useMemo(() => {
+    if (isMissionPath(pathname)) {
+      if (missionPhase === "active") return "silent";
+      if (missionPhase === "debrief") return "debrief";
+      return "lobby";
     }
-    if (endgamePlayingRef.current) {
-      // Endgame track owns the mix until it ends or user toggles.
-      fade(t1, 0);
-      fade(t2, 0);
-      return;
-    }
-    if (!hasRouteAudio || awaitingMissionPhase) {
-      fade(t1, 0);
-      fade(t2, 0);
-      return;
-    }
-    if (inLobby) {
-      fade(t1, 0);
-      fade(t2, 0.55);
-    } else if (routeRaging) {
-      fade(t2, 0);
-      fade(t1, 0.5);
-    } else {
-      fade(t1, 0);
-      fade(t2, 0);
-    }
-  }, [enabled, inLobby, awaitingMissionPhase, hasRouteAudio, routeRaging, routeMission]);
+    if (isLobbyPath(pathname)) return "lobby";
+    return "main";
+  }, [pathname, missionPhase]);
 
-  const startCountdown = useCallback(() => {
-    const cd = countdownRef.current;
-    if (!cd) return;
-    cd.currentTime = 0;
-    cd.play().catch(() => {});
-  }, []);
-
-  // Event bridges from other components (misija, SpartanOpsConsole).
+  // Drive playback whenever music enable or the desired track changes.
   useEffect(() => {
-    const onCountdown = () => startCountdown();
+    const main = mainRef.current, lobby = lobbyRef.current, debrief = debriefRef.current;
+    if (!main || !lobby || !debrief) return;
+    const stopAll = () => {
+      [main, lobby, debrief].forEach((a) => {
+        try { fade(a, 0); } catch {}
+      });
+    };
+    if (!musicEnabled) {
+      // Hard stop — silence must be immediate on mute.
+      [main, lobby, debrief].forEach((a) => {
+        try { a.pause(); a.volume = 0; } catch {}
+      });
+      return;
+    }
+    if (activeTrack === "silent") { stopAll(); return; }
+    if (activeTrack === "debrief") {
+      fade(main, 0); fade(lobby, 0);
+      debrief.preload = "auto";
+      fade(debrief, 0.65);
+      return;
+    }
+    if (activeTrack === "lobby") {
+      fade(main, 0); fade(debrief, 0);
+      fade(lobby, 0.55);
+      return;
+    }
+    // main
+    fade(lobby, 0); fade(debrief, 0);
+    fade(main, 0.5);
+  }, [musicEnabled, activeTrack]);
+
+  // SFX event bridges. Countdown is dispatched by pre-match at T-14s AND by
+  // /spawn on respawn scan; sector-secured by /capture on success.
+  useEffect(() => {
+    const onCountdown = () => {
+      const cd = countdownRef.current;
+      if (!cd || !sfxEnabled) return;
+      try { cd.currentTime = 0; } catch {}
+      cd.volume = 1;
+      cd.play().catch(() => {});
+    };
+    const onSector = () => {
+      const s = sectorRef.current;
+      if (!s || !sfxEnabled) return;
+      try { s.currentTime = 0; } catch {}
+      s.volume = 0.95;
+      s.play().catch(() => {});
+    };
+    const onMatchStart = () => setMissionPhase("active");
+    const onMatchEnd = () => setMissionPhase("debrief");
+    const onDebriefExit = () => setMissionPhase("lobby");
     const onLobby = (e: Event) => {
       const detail = (e as CustomEvent<{ active: boolean }>).detail;
-      if (detail && typeof detail.active === "boolean") setLobbyOverride(detail.active);
-    };
-    const onMatchStart = () => {
-      // Match countdown / game begins — fade out lobby music completely.
-      setLobbyOverride(false);
-      const t2 = track2Ref.current;
-      if (t2) fade(t2, 0);
-    };
-    const onMatchEnd = () => {
-      const t1 = track1Ref.current, t2 = track2Ref.current, eg = endgameRef.current;
-      if (t1) fade(t1, 0);
-      if (t2) fade(t2, 0);
-      if (!eg) return;
-      endgamePlayingRef.current = true;
-      // Only actually play if audio is enabled; still start loading on-demand.
-      eg.preload = "auto";
-      eg.currentTime = 0;
-      if (enabled) {
-        fade(eg, 0.6);
-      }
-      const onEnded = () => stopEndgameAndRestore(true);
-      eg.addEventListener("ended", onEnded, { once: true });
-    };
-    const onDebriefExit = () => stopEndgameAndRestore(true);
-    const onCapture = () => {
-      // Capture SFX is gated behind the audio toggle: if the player never
-      // opted in, we stay silent. Route the sound through the shared audio
-      // node so muting the app also mutes the capture chime.
-      const cap = captureRef.current;
-      if (!cap || !enabled) return;
-      try { cap.currentTime = 0; } catch {}
-      cap.volume = 0.9;
-      cap.play().catch(() => {});
+      // Explicit lobby signal from misija — keep us in lobby phase.
+      if (detail && detail.active) setMissionPhase("lobby");
     };
     window.addEventListener("spartanops:countdown", onCountdown);
-    window.addEventListener("spartanops:lobby", onLobby as EventListener);
+    window.addEventListener("spartanops:capture-success", onSector);
     window.addEventListener("spartanops:match-start", onMatchStart);
     window.addEventListener("spartanops:match-end", onMatchEnd);
     window.addEventListener("spartanops:debrief-exit", onDebriefExit);
-    window.addEventListener("spartanops:capture-success", onCapture);
+    window.addEventListener("spartanops:lobby", onLobby as EventListener);
     return () => {
       window.removeEventListener("spartanops:countdown", onCountdown);
-      window.removeEventListener("spartanops:lobby", onLobby as EventListener);
+      window.removeEventListener("spartanops:capture-success", onSector);
       window.removeEventListener("spartanops:match-start", onMatchStart);
       window.removeEventListener("spartanops:match-end", onMatchEnd);
       window.removeEventListener("spartanops:debrief-exit", onDebriefExit);
-      window.removeEventListener("spartanops:capture-success", onCapture);
+      window.removeEventListener("spartanops:lobby", onLobby as EventListener);
     };
-  }, [startCountdown, enabled, stopEndgameAndRestore]);
+  }, [sfxEnabled]);
 
-  const toggle = useCallback(() => setEnabled((v) => !v), []);
+  // Unlock: on first user interaction, prime every audio node with a silent
+  // play so mobile Safari/Chrome will accept later programmatic playback.
+  const unlock = useCallback(() => {
+    const nodes = [mainRef.current, lobbyRef.current, debriefRef.current, countdownRef.current, sectorRef.current];
+    nodes.forEach((a) => {
+      if (!a) return;
+      const wasVol = a.volume;
+      try {
+        a.volume = 0;
+        a.play().then(() => { try { a.pause(); a.volume = wasVol; } catch {} }).catch(() => { try { a.volume = wasVol; } catch {} });
+      } catch { /* ignore */ }
+    });
+  }, []);
 
-  const value = useMemo(
-    () => ({ enabled, toggle, deployMode, setDeployMode, startCountdown }),
-    [enabled, toggle, deployMode, startCountdown],
+  const value = useMemo<Ctx>(
+    () => ({ musicEnabled, sfxEnabled, toggleMusic, toggleSfx, setMusicEnabled, setSfxEnabled, unlock }),
+    [musicEnabled, sfxEnabled, toggleMusic, toggleSfx, setMusicEnabled, setSfxEnabled, unlock],
   );
 
   return (
@@ -259,41 +238,117 @@ export function AmbientAudioProvider({ children }: { children: ReactNode }) {
 }
 
 function AudioFab() {
-  const { enabled, toggle } = useAmbientAudio();
+  const { musicEnabled, sfxEnabled, toggleMusic, toggleSfx, unlock } = useAmbientAudio();
+  const [open, setOpen] = useState(false);
+  const anythingOn = musicEnabled || sfxEnabled;
+
+  const onFabClick = () => {
+    unlock();
+    setOpen((v) => !v);
+  };
+
+  return (
+    <div style={{ position: "fixed", bottom: 24, left: 24, zIndex: 60 }}>
+      {open && (
+        <div
+          role="menu"
+          style={{
+            position: "absolute",
+            bottom: 62,
+            left: 0,
+            minWidth: 190,
+            background: "rgba(11,13,10,0.94)",
+            border: "1px solid rgba(224,176,78,0.55)",
+            boxShadow: "0 18px 40px -12px rgba(0,0,0,0.75), 0 0 24px -6px rgba(224,176,78,0.45)",
+            backdropFilter: "blur(8px)",
+            padding: 8,
+            display: "flex",
+            flexDirection: "column",
+            gap: 6,
+            animation: "sop-slideup 180ms ease-out",
+          }}
+        >
+          <FabRow
+            active={musicEnabled}
+            onClick={() => { unlock(); toggleMusic(); }}
+            icon={<Music size={14} />}
+            label="MUSIC"
+          />
+          <FabRow
+            active={sfxEnabled}
+            onClick={() => { unlock(); toggleSfx(); }}
+            icon={<Waves size={14} />}
+            label="SFX"
+          />
+          <style>{`@keyframes sop-slideup { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }`}</style>
+        </div>
+      )}
+      <button
+        type="button"
+        onClick={onFabClick}
+        aria-label="Audio controls"
+        aria-expanded={open}
+        style={{
+          width: 52,
+          height: 52,
+          borderRadius: 999,
+          background: "rgba(11,13,10,0.85)",
+          border: "1px solid rgba(224,176,78,0.55)",
+          boxShadow: "0 0 24px -4px rgba(224,176,78,0.55)",
+          backdropFilter: "blur(6px)",
+          color: "#E0B04E",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          cursor: "pointer",
+          position: "relative",
+        }}
+      >
+        {anythingOn ? (
+          <Volume2 size={20} strokeWidth={1.8} className={musicEnabled ? "animate-pulse" : ""} />
+        ) : (
+          <VolumeX size={20} strokeWidth={1.8} />
+        )}
+      </button>
+    </div>
+  );
+}
+
+function FabRow({ active, onClick, icon, label }: { active: boolean; onClick: () => void; icon: ReactNode; label: string }) {
   return (
     <button
       type="button"
-      onClick={toggle}
-      aria-label={enabled ? "Mute ambient audio" : "Enable ambient audio"}
-      className="fixed z-50 flex items-center justify-center transition-transform hover:scale-105"
+      role="menuitemcheckbox"
+      aria-checked={active}
+      onClick={onClick}
       style={{
-        bottom: 24,
-        left: 24,
-        width: 52,
-        height: 52,
-        borderRadius: 999,
-        background: "rgba(11,13,10,0.85)",
-        border: "1px solid rgba(232,154,10,0.55)",
-        boxShadow: "0 0 24px -4px rgba(232,154,10,0.55)",
-        backdropFilter: "blur(6px)",
-        color: "#e89a0a",
+        display: "flex",
+        alignItems: "center",
+        gap: 10,
+        padding: "8px 10px",
+        background: active ? "rgba(224,176,78,0.16)" : "transparent",
+        border: `1px solid ${active ? "#E0B04E" : "rgba(224,176,78,0.25)"}`,
+        color: active ? "#E0B04E" : "rgba(236,227,196,0.75)",
+        fontFamily: "'Michroma', monospace",
+        fontSize: 10,
+        letterSpacing: "0.22em",
+        textTransform: "uppercase",
+        cursor: "pointer",
+        textAlign: "left",
       }}
     >
+      <span style={{ display: "inline-flex" }}>{icon}</span>
+      <span style={{ flex: 1 }}>{label}</span>
       <span
         aria-hidden
         style={{
-          position: "absolute",
-          inset: -6,
-          borderRadius: 999,
-          background: "radial-gradient(circle, rgba(232,154,10,0.35) 0%, transparent 70%)",
-          pointerEvents: "none",
+          width: 8,
+          height: 8,
+          borderRadius: "50%",
+          background: active ? "#3ddc84" : "rgba(236,227,196,0.25)",
+          boxShadow: active ? "0 0 8px #3ddc84" : "none",
         }}
       />
-      {enabled ? (
-        <Volume2 size={20} strokeWidth={1.8} className="animate-pulse" />
-      ) : (
-        <VolumeX size={20} strokeWidth={1.8} />
-      )}
     </button>
   );
 }
