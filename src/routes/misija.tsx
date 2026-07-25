@@ -1543,6 +1543,10 @@ function CheckinForm({ sessionId, fieldId, preview, onGhost, fieldLabel }: { ses
 
           <SpartacusConsentBlock en={en} onClearedChange={setSpartacusCleared} />
 
+          <CameraNoticeBlock en={en} />
+
+          <AudioSettingsBlock en={en} />
+
           {err && <p style={{ color: "#ff8a8a", fontSize: 12 }}>{err}</p>}
 
           <button
