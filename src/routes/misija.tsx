@@ -1925,6 +1925,16 @@ function PreMatchCountdown({ seconds, polygon, eventName, gamemode, pointTarget,
   const missionName = (eventName?.trim() || configuredMission?.trim() || polygon?.trim() || (en ? "ACTIVE MISSION" : "AKTIVNA MISIJA")).toUpperCase();
   const fieldName = (polygon?.trim() || state?.field_label?.trim() || "").toUpperCase();
   const duration = state?.match_duration_minutes ?? 0;
+  // Fire the tactical countdown SFX exactly once when the visible timer
+  // hits T-14s so the audio aligns with the final 10-second phase.
+  const firedRef = useRef(false);
+  useEffect(() => {
+    if (firedRef.current) return;
+    if (seconds === 14) {
+      firedRef.current = true;
+      try { window.dispatchEvent(new Event("spartanops:countdown")); } catch { /* ignore */ }
+    }
+  }, [seconds]);
   return (
     <div
       className="fixed inset-0 z-50 flex flex-col items-center justify-start overflow-y-auto p-4 text-center"
