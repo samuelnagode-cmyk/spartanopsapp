@@ -448,20 +448,20 @@ function DevPreviewPage() {
     : { width: "100%" };
 
   const cards: { title: string; sound?: string; el: (extra?: React.ReactNode) => React.ReactNode }[] = [
-    { title: en ? "DEPLOYMENT REGISTRATION" : "PRIJAVA V OPERACIJO", sound: "spartanops-lobby.mp3", el: () => <RealMisijaPreview preset="registration" device={device} /> },
-    { title: en ? "TEAM SELECTION" : "IZBIRA EKIPE", sound: "spartanops-lobby.mp3", el: () => <RealMisijaPreview preset="team" device={device} /> },
+    { title: en ? "DEPLOYMENT REGISTRATION" : "PRIJAVA V OPERACIJO", sound: "SONG_LOBBY.mp3", el: () => <RealMisijaPreview preset="registration" device={device} /> },
+    { title: en ? "TEAM SELECTION" : "IZBIRA EKIPE", sound: "SONG_LOBBY.mp3", el: () => <RealMisijaPreview preset="team" device={device} /> },
     { title: en ? "TEAM CHANGE NOTIFICATION" : "OBVESTILO O ZAMENJAVI EKIPE", el: () => <TeamChangeNotificationMock en={en} team={team} /> },
-    { title: en ? "PRE-START SCREEN" : "PRED-START", sound: "countdown-10.mp3", el: () => <RealMisijaPreview preset="prestart" device={device} /> },
-    { title: en ? "PLAYER HUD (GAME)" : "IGRALSKI HUD (IGRA)", sound: "raging-fires.mp3", el: () => <RealMisijaPreview preset="hud" device={device} /> },
-    { title: en ? "SUCCESS CAPTURE POPUP" : "USPEŠNO ZAVZETJE", sound: "spartanops-capture-levelup.mp3", el: () => <SuccessCapturePopupMock en={en} team={team} /> },
+    { title: en ? "PRE-START SCREEN" : "PRED-START", sound: "SOUNDEFFECT_STARTCOUNTOWN.mp3 (T-14s)", el: () => <RealMisijaPreview preset="prestart" device={device} /> },
+    { title: en ? "PLAYER HUD (GAME)" : "IGRALSKI HUD (IGRA)", el: () => <RealMisijaPreview preset="hud" device={device} /> },
+    { title: en ? "SUCCESS CAPTURE POPUP" : "USPEŠNO ZAVZETJE", sound: "SOUNDEFFECT_SECTORSECURED.mp3", el: () => <SuccessCapturePopupMock en={en} team={team} /> },
     { title: en ? "POINT ALREADY TAKEN" : "TOČKA ŽE ZAVZETA", el: () => <PointAlreadyHeldMock en={en} /> },
     { title: en ? "DUPLICATE SCAN NOTICE" : "PODVOJEN SKEN", el: () => <DuplicateScanMock en={en} /> },
     { title: en ? "SCAN FAILED (GPS OFF)" : "SKEN NEUSPEŠEN (GPS)", el: () => <ScanFailedGpsMock en={en} /> },
     { title: en ? "NO INTERNET CONNECTION" : "BREZ POVEZAVE", el: () => <NoInternetMock en={en} /> },
     { title: en ? "SPARTACUS WARNING" : "SPARTACUS OPOZORILO", el: () => <SpartacusWarningMock en={en} /> },
     { title: en ? "SUSPENDED / FROZEN" : "IZKLJUČEN / ZAMRZNJEN", el: () => <SuspendedFrozenMock en={en} /> },
-    { title: en ? "DEBRIEFING SCREEN" : "PORAZDELITEV", sound: "spartanops-debriefing.mp3", el: () => <DebriefingMock en={en} /> },
-    { title: en ? "GAME PAUSED OVERLAY" : "IGRA PREKINJENA", sound: "raging-fires.mp3", el: () => <GamePausedMock en={en} /> },
+    { title: en ? "DEBRIEFING SCREEN" : "PORAZDELITEV", sound: "SONG_DEBRIEFING.mp3", el: () => <DebriefingMock en={en} /> },
+    { title: en ? "GAME PAUSED OVERLAY" : "IGRA PREKINJENA", el: () => <GamePausedMock en={en} /> },
   ];
 
   return (
