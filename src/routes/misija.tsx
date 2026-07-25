@@ -14,6 +14,7 @@ import { TacticalCompass } from "@/components/TacticalCompass";
 import { Crosshair, Shield } from "lucide-react";
 import { useLang, useT } from "@/lib/i18n";
 import { QRScanner, type ScanPayload } from "@/components/QRScanner";
+import { useAmbientAudio } from "@/components/AmbientAudio";
 
 import landingView from "@/assets/landing-view.webp.asset.json";
 
