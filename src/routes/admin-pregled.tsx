@@ -797,6 +797,8 @@ function CreateFieldForm({ onCancel, onCreated }: { onCancel: () => void; onCrea
   const [eventName, setEventName] = useState("");
   const [country, setCountry] = useState("");
   const [city, setCity] = useState("");
+  const [marshalName, setMarshalName] = useState("");
+  const [marshalPhone, setMarshalPhone] = useState("");
 
 
   // Field / map / game settings (mirrors SpartanOpsConsole atoms)
@@ -839,10 +841,10 @@ function CreateFieldForm({ onCancel, onCreated }: { onCancel: () => void; onCrea
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (busy) return;
-    if (!missionName.trim() || !fieldName.trim() || !password.trim() || !country.trim() || !city.trim() || !marshalPassword.trim()) {
+    if (!missionName.trim() || !fieldName.trim() || !password.trim() || !country.trim() || !city.trim() || !marshalPassword.trim() || !marshalName.trim()) {
       setErr(en
-        ? "Mission name, field name, city, country, mission password, and marshal password are required."
-        : "Ime misije, ime poligona, mesto, država, geslo misije in geslo maršala so obvezni.");
+        ? "Mission name, field name, city, country, marshal name, mission password, and marshal password are required."
+        : "Ime misije, ime poligona, mesto, država, ime maršala, geslo misije in geslo maršala so obvezni.");
       return;
     }
     if (marshalPassword.trim() === password.trim()) {
@@ -857,6 +859,8 @@ function CreateFieldForm({ onCancel, onCreated }: { onCancel: () => void; onCrea
     const settingsWithMission = {
       ...settings,
       missionName: missionName.trim(),
+      marshalName: marshalName.trim(),
+      marshalPhone: marshalPhone.trim() || undefined,
       missionDescription: missionDescription.trim() || undefined,
       afterGameInstructions: afterGameInstructions.trim() || undefined,
     } as any;
@@ -956,6 +960,12 @@ function CreateFieldForm({ onCancel, onCreated }: { onCancel: () => void; onCrea
             <input value={country} onChange={(e) => setCountry(e.target.value)} style={consoleInputStyle} placeholder="Slovenia" />
           </FieldRow>
         </div>
+        <FieldRow label={en ? "Marshal name (mandatory)" : "Ime maršala (obvezno)"}>
+          <input required value={marshalName} onChange={(e) => setMarshalName(e.target.value)} style={consoleInputStyle} placeholder={en ? "e.g. Luka" : "npr. Luka"} />
+        </FieldRow>
+        <FieldRow label={en ? "Marshal phone number (optional)" : "Telefonska številka maršala (neobvezno)"}>
+          <input value={marshalPhone} onChange={(e) => setMarshalPhone(e.target.value)} style={consoleInputStyle} placeholder="+386 40 123 456" inputMode="tel" />
+        </FieldRow>
       </Pane>
 
       <div style={{ height: 16 }} />
