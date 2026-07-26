@@ -775,7 +775,7 @@ function MisijaPage() {
         {reassignedBanner}
         {warningOverlay}
         {pauseOverlay}
-        <PreMatchCountdown seconds={preMatchSecEarly} polygon={state.current_polygon_name} eventName={state.event_name} gamemode={state.gamemode} pointTarget={state.point_target} settings={state.settings} en={en} state={state} />
+        <PreMatchCountdown seconds={preMatchSecEarly} polygon={state.current_polygon_name} eventName={state.event_name} gamemode={state.gamemode} pointTarget={state.point_target} settings={state.settings} en={en} state={state} roster={roster} />
         <div className="flex flex-col items-center px-4 pb-8"><MarshalContactBlock settings={state.settings} en={en} /></div>
         {preview && <PreviewReturnButton />}
       </div>
@@ -833,7 +833,7 @@ function MisijaPage() {
       <OfflineBanner />
       {reassignedBanner}
         {warningOverlay}
-      {preMatchSec > 0 && <PreMatchCountdown seconds={preMatchSec} polygon={fieldTitleFromState(state, field)} eventName={missionTitleFromState(state, field)} gamemode={state.gamemode} pointTarget={state.point_target} settings={state.settings} en={en} state={state} /> }
+      {preMatchSec > 0 && <PreMatchCountdown seconds={preMatchSec} polygon={fieldTitleFromState(state, field)} eventName={missionTitleFromState(state, field)} gamemode={state.gamemode} pointTarget={state.point_target} settings={state.settings} en={en} state={state} roster={roster} /> }
       <div className="max-w-5xl mx-auto px-4 py-8">
         <PlayerHudHeader en={en} />
         <h1
@@ -1350,21 +1350,6 @@ function SpartacusConsentBlock({ en, onClearedChange }: { en: boolean; onCleared
 }
 
 
-function CameraNoticeBlock({ en }: { en: boolean }) {
-  return (
-    <div style={{ border: `1px solid ${ACCENT}55`, background: "rgba(224,176,78,0.06)", padding: 14 }}>
-      <p style={{ fontFamily: "'Michroma', monospace", fontSize: 10.5, color: ACCENT, letterSpacing: "0.16em", textTransform: "uppercase", fontWeight: 800, marginBottom: 6 }}>
-        {en ? "📷 CAMERA ACCESS · QR SCANNER" : "📷 DOSTOP DO KAMERE · QR SKENER"}
-      </p>
-      <p style={{ fontFamily: "monospace", color: MUTED, fontSize: 11, lineHeight: 1.6, margin: 0 }}>
-        {en
-          ? "Camera access will be requested upon your first QR scan — please approve it to play."
-          : "Dostop do kamere bo zahtevan ob prvem QR skeniranju — potrdi ga za igranje."}
-      </p>
-    </div>
-  );
-}
-
 function AudioSettingsBlock({ en }: { en: boolean }) {
   const { musicEnabled, sfxEnabled, setMusicEnabled, setSfxEnabled, unlock } = useAmbientAudio();
   const Row = ({ on, onChange, label }: { on: boolean; onChange: () => void; label: string }) => (
@@ -1667,8 +1652,6 @@ function CheckinForm({ sessionId, fieldId, preview, onGhost, fieldLabel }: { ses
           </div>
 
           <SpartacusConsentBlock en={en} onClearedChange={setSpartacusCleared} />
-
-          <CameraNoticeBlock en={en} />
 
           <AudioSettingsBlock en={en} />
 
@@ -2045,7 +2028,7 @@ function RespawnRulesBlock({ settings, en = false }: { settings?: GameSettings |
   );
 }
 
-function PreMatchCountdown({ seconds, polygon, eventName, gamemode, pointTarget, settings, en = false, state }: { seconds: number; polygon: string | null; eventName?: string | null; gamemode?: "domination" | "search_destroy" | null; pointTarget?: number; settings?: GameSettings | null; en?: boolean; state?: GameState }) {
+function PreMatchCountdown({ seconds, polygon, eventName, gamemode, pointTarget, settings, en = false, state, roster }: { seconds: number; polygon: string | null; eventName?: string | null; gamemode?: "domination" | "search_destroy" | null; pointTarget?: number; settings?: GameSettings | null; en?: boolean; state?: GameState; roster?: Checkin[] }) {
   const mm = String(Math.floor(seconds / 60)).padStart(2, "0");
   const ss = String(seconds % 60).padStart(2, "0");
   const modeLabel = gamemode === "search_destroy" ? "SEARCH & DESTROY" : "DOMINATION";
@@ -2100,9 +2083,33 @@ function PreMatchCountdown({ seconds, polygon, eventName, gamemode, pointTarget,
       >
         {mm}:{ss}
       </div>
-      {description && (
+      {/* 1) Team vs team with player counts */}
+      <div className="flex items-center justify-center gap-4 mt-1 mb-4 flex-wrap" style={{ width: "min(640px, 100%)" }}>
+        {(["modra", "rdeca"] as const).map((k, i) => (
+          <div key={k} className="flex items-center gap-3">
+            {i === 1 && (
+              <span style={{ color: MUTED, fontFamily: "monospace", fontSize: 12, letterSpacing: "0.2em", marginRight: 12 }}>VS</span>
+            )}
+            <span
+              style={{
+                fontFamily: "'Michroma', monospace",
+                fontSize: 14,
+                color: TEAM_COLOR[k],
+                letterSpacing: "0.12em",
+                textTransform: "uppercase",
+              }}
+            >
+              {teamName(k, settings, en)}
+              <span style={{ color: INK, marginLeft: 6 }}>({(roster ?? []).filter((r) => r.assigned_team === k).length})</span>
+            </span>
+          </div>
+        ))}
+      </div>
+
+      {/* 2) Mission description */}
+      {description?.trim() && (
         <div
-          className="max-w-2xl mt-4"
+          className="max-w-2xl mt-1"
           style={{
             border: `1px solid ${ACCENT}55`,
             background: "rgba(0,0,0,0.42)",
@@ -2119,8 +2126,29 @@ function PreMatchCountdown({ seconds, polygon, eventName, gamemode, pointTarget,
           </p>
         </div>
       )}
+
+      {/* 3) Standing objective text */}
+      <p className="max-w-2xl text-[12px]" style={{ color: MUTED, lineHeight: 1.7, fontStyle: "italic", marginTop: 14, marginBottom: 0, width: "min(640px, 100%)" }}>
+        {en
+          ? "Your objective is to secure as many sectors as possible via scanning the QR codes in the marked areas."
+          : "Vaš cilj je zavarovati čim več sektorjev s skeniranjem QR kod na označenih lokacijah."}
+      </p>
+
+      {/* 4) Objective + time */}
+      <div className="grid grid-cols-2 gap-3 my-5" style={{ width: "min(560px, 100%)" }}>
+        <div style={{ border: `1px solid ${ACCENT}55`, background: "rgba(0,0,0,0.32)", padding: "12px 10px" }}>
+          <p style={{ color: MUTED, fontFamily: "monospace", fontSize: 9, letterSpacing: "0.20em", textTransform: "uppercase" }}>{en ? "Objective" : "Cilj"}</p>
+          <p style={{ color: ACCENT, fontFamily: "'Michroma', monospace", fontSize: 18, marginTop: 5 }}>{pointTarget ?? 50} PTS</p>
+        </div>
+        <div style={{ border: `1px solid ${ACCENT}55`, background: "rgba(0,0,0,0.32)", padding: "12px 10px" }}>
+          <p style={{ color: MUTED, fontFamily: "monospace", fontSize: 9, letterSpacing: "0.20em", textTransform: "uppercase" }}>{en ? "Time to do it" : "Čas izvedbe"}</p>
+          <p style={{ color: ACCENT, fontFamily: "'Michroma', monospace", fontSize: 18, marginTop: 5 }}>{duration || "—"} MIN</p>
+        </div>
+      </div>
+
+      {/* 5) Spawn point note */}
       <div
-        className="max-w-2xl mt-3"
+        className="max-w-2xl mb-5"
         style={{
           border: `1px solid ${ACCENT}66`,
           borderLeft: `5px solid ${TEAM_COLOR.modra}`,
@@ -2136,23 +2164,7 @@ function PreMatchCountdown({ seconds, polygon, eventName, gamemode, pointTarget,
             : "Zdaj se lahko premaknete na spawn točke, se pripravite in počakate na začetek igre."}
         </p>
       </div>
-      <div className="grid grid-cols-2 gap-3 my-5" style={{ width: "min(560px, 100%)" }}>
-        <div style={{ border: `1px solid ${ACCENT}55`, background: "rgba(0,0,0,0.32)", padding: "12px 10px" }}>
-          <p style={{ color: MUTED, fontFamily: "monospace", fontSize: 9, letterSpacing: "0.20em", textTransform: "uppercase" }}>{en ? "Objective" : "Cilj"}</p>
-          <p style={{ color: ACCENT, fontFamily: "'Michroma', monospace", fontSize: 18, marginTop: 5 }}>{pointTarget ?? 50} PTS</p>
-        </div>
-        <div style={{ border: `1px solid ${ACCENT}55`, background: "rgba(0,0,0,0.32)", padding: "12px 10px" }}>
-          <p style={{ color: MUTED, fontFamily: "monospace", fontSize: 9, letterSpacing: "0.20em", textTransform: "uppercase" }}>{en ? "Time to do it" : "Čas izvedbe"}</p>
-          <p style={{ color: ACCENT, fontFamily: "'Michroma', monospace", fontSize: 18, marginTop: 5 }}>{duration || "—"} MIN</p>
-        </div>
-      </div>
-      {gamemode !== "search_destroy" && !description?.trim() && (
-        <p className="max-w-2xl text-[12px]" style={{ color: MUTED, lineHeight: 1.7, fontStyle: "italic", marginTop: 0, marginBottom: 14 }}>
-          {en
-            ? "Your objective is to secure as many sectors as possible via scanning the QR codes in the marked areas."
-            : "Vaš cilj je zavarovati čim več sektorjev s skeniranjem QR kod na označenih lokacijah."}
-        </p>
-      )}
+
       {state && (
         <div style={{ width: "100%", maxWidth: 720, margin: "0 auto 12px", border: `1px solid ${ACCENT}55`, boxShadow: "0 20px 60px rgba(0,0,0,0.55)" }}>
           <TacticalMapContent state={state} en={en} nodeHoldersOverride={FREE_NODES} />
@@ -2600,7 +2612,7 @@ function LiveMatch({ state, captures, now, roster }: { state: GameState; capture
   return (
     <div className="max-w-5xl mx-auto px-4 py-6" style={{ paddingTop: 112 }}>
       <PointCapturedOverlay captures={visibleCaptures} teamLabelFor={teamLabelFor} en={en} />
-      {preMatchSec > 0 && <PreMatchCountdown seconds={preMatchSec} polygon={fieldTitleFromState(state, "")} eventName={missionTitleFromState(state, "")} gamemode={state.gamemode} pointTarget={state.point_target} settings={state.settings} en={en} state={state} />}
+      {preMatchSec > 0 && <PreMatchCountdown seconds={preMatchSec} polygon={fieldTitleFromState(state, "")} eventName={missionTitleFromState(state, "")} gamemode={state.gamemode} pointTarget={state.point_target} settings={state.settings} en={en} state={state} roster={roster} />}
 
       <PlayerHudHeader en={en} />
       <h1
