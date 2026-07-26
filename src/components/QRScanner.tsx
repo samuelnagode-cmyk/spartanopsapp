@@ -71,10 +71,20 @@ export function QRScanner({ open, onClose, onDecode }: Props) {
   const [torch, setTorch] = useState(false);
   const [torchSupported, setTorchSupported] = useState(false);
 
+  // Keep callbacks in refs so the camera effect only depends on `open`.
+  // Otherwise every re-render (torch/err state, new inline props) tore down
+  // and re-created the MediaStream, which made the viewport flicker between
+  // the camera feed and a black frame.
+  const onDecodeRef = useRef(onDecode);
+  const tRef = useRef(t);
+  useEffect(() => { onDecodeRef.current = onDecode; }, [onDecode]);
+  useEffect(() => { tRef.current = t; }, [t]);
+
   useEffect(() => {
     if (!open) return;
     decodedRef.current = false;
     let cancelled = false;
+
 
     async function start() {
       try {
