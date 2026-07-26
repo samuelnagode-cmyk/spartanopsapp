@@ -2045,7 +2045,7 @@ function RespawnRulesBlock({ settings, en = false }: { settings?: GameSettings |
   );
 }
 
-function PreMatchCountdown({ seconds, polygon, eventName, gamemode, pointTarget, settings, en = false, state }: { seconds: number; polygon: string | null; eventName?: string | null; gamemode?: "domination" | "search_destroy" | null; pointTarget?: number; settings?: GameSettings | null; en?: boolean; state?: GameState }) {
+function PreMatchCountdown({ seconds, polygon, eventName, gamemode, pointTarget, settings, en = false, state, roster }: { seconds: number; polygon: string | null; eventName?: string | null; gamemode?: "domination" | "search_destroy" | null; pointTarget?: number; settings?: GameSettings | null; en?: boolean; state?: GameState; roster?: Checkin[] }) {
   const mm = String(Math.floor(seconds / 60)).padStart(2, "0");
   const ss = String(seconds % 60).padStart(2, "0");
   const modeLabel = gamemode === "search_destroy" ? "SEARCH & DESTROY" : "DOMINATION";
