@@ -258,6 +258,9 @@ export function SpartanOpsConsole({ fieldId, password }: { fieldId: string; pass
       } catch { /* ignore */ }
     }
     finally { setBusy(false); }
+  };
+
+
 
 
   const doReassign = async (id: string, team: "modra" | "rdeca" | "rumena" | "none") => {
