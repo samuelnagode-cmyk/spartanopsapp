@@ -20,7 +20,7 @@ import sfxSector from "@/assets/SOUNDEFFECT_SECTORSECURED.mp3.asset.json";
  *   - Post match end / debrief -> SONG_DEBRIEFING
  *
  * SFX (when sfxEnabled):
- *   - spartanops:countdown  -> SOUNDEFFECT_STARTCOUNTOWN.mp3 (T-14s pre-match, respawn scan)
+ *   - spartanops:countdown  -> SOUNDEFFECT_STARTCOUNTOWN.mp3 (T-15s pre-match, respawn scan)
  *   - spartanops:capture-success -> SOUNDEFFECT_SECTORSECURED.mp3
  */
 

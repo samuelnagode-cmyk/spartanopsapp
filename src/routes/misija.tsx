@@ -2021,11 +2021,11 @@ function PreMatchCountdown({ seconds, polygon, eventName, gamemode, pointTarget,
   const fieldName = (polygon?.trim() || state?.field_label?.trim() || "").toUpperCase();
   const duration = state?.match_duration_minutes ?? 0;
   // Fire the tactical countdown SFX exactly once when the visible timer
-  // hits T-14s so the audio aligns with the final 10-second phase.
+  // hits T-15s so the audio aligns with the final phase.
   const firedRef = useRef(false);
   useEffect(() => {
     if (firedRef.current) return;
-    if (seconds === 14) {
+    if (seconds === 15) {
       firedRef.current = true;
       try { window.dispatchEvent(new Event("spartanops:countdown")); } catch { /* ignore */ }
     }
