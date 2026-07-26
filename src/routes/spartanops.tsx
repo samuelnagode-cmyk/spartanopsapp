@@ -418,10 +418,21 @@ function LiveTracker() {
 }
 
 /* ---------- 3. ACTIVE OPERATIONS ---------- */
+const OPS_CACHE_KEY = "spartanops.home.ops.v1";
+type OpRow = { id: string; name: string; region: string; status: "ACTIVE" | "DECOMMISSIONED" };
+
 function Locations() {
   const navigate = useNavigate();
   const listFn = useServerFn(listPublishedLobbies);
-  const [rows, setRows] = useState<Array<{ id: string; name: string; region: string; status: "ACTIVE" | "DECOMMISSIONED" }>>([]);
+  // Hydrate instantly from cache so the section never flashes "no operations".
+  const [rows, setRows] = useState<OpRow[]>(() => {
+    if (typeof window === "undefined") return [];
+    try {
+      const raw = localStorage.getItem(OPS_CACHE_KEY);
+      return raw ? (JSON.parse(raw) as OpRow[]) : [];
+    } catch { return []; }
+  });
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     let alive = true;
@@ -433,15 +444,19 @@ function Locations() {
           .map(dtoToRecord)
           .filter((r) => r.id !== SYSTEM_FIELD.id)
           .sort((a, b) => b.createdAt - a.createdAt)
-          .slice(0, 3);
-        setRows(records.map((r) => ({
+          .slice(0, 4);
+        const next: OpRow[] = records.map((r) => ({
           id: r.id,
           name: r.fieldName,
           region: r.location || "",
           status: "ACTIVE" as const,
-        })));
+        }));
+        setRows(next);
+        try { localStorage.setItem(OPS_CACHE_KEY, JSON.stringify(next)); } catch { /* ignore */ }
       } catch {
-        if (alive) setRows([]);
+        /* keep cached rows on failure */
+      } finally {
+        if (alive) setLoading(false);
       }
     };
     refresh();
@@ -449,6 +464,7 @@ function Locations() {
     window.addEventListener("focus", onFocus);
     return () => { alive = false; window.removeEventListener("focus", onFocus); };
   }, [listFn]);
+
 
   const goJoin = () => navigate({ to: "/join", search: { browse: "1" } as any });
 
