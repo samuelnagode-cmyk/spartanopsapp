@@ -218,15 +218,18 @@ export function AmbientAudioProvider({ children }: { children: ReactNode }) {
       const cd = countdownRef.current;
       if (!cd || !sfxEnabled) return;
       try {
+        cd.load(); // Prisili iOS, da pravilno inicializira zvok šele ob kliku/dogodku
         cd.currentTime = 0;
       } catch {}
       cd.volume = 1;
       cd.play().catch(() => {});
     };
+
     const onSector = () => {
       const s = sectorRef.current;
       if (!s || !sfxEnabled) return;
       try {
+        s.load(); // Enako dodaj tukaj za sector secured zvok
         s.currentTime = 0;
       } catch {}
       s.volume = 0.95;
