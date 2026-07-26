@@ -2202,6 +2202,7 @@ function PreMatchCountdown({ seconds, polygon, eventName, gamemode, pointTarget,
         })}
       </div>
       <RespawnRulesBlock settings={settings} en={en} />
+      <RespawnProtocolBlock settings={settings?.respawn} en={en} />
     </div>
   );
 }
