@@ -264,8 +264,9 @@ export const updateLobbyServer = createServerFn({ method: "POST" })
     const p = data.patch;
     const serverNowMs = Date.now();
     const serverNowIso = new Date(serverNowMs).toISOString();
+    const isResumePatch = p.state === "active" && p.startedAt !== undefined && p.countdownSeconds === undefined;
     const startAfterSeconds = Number(p.countdownSeconds ?? 0);
-    const serverStartedAt = p.state === "active"
+    const serverStartedAt = p.state === "active" && !isResumePatch
       ? new Date(serverNowMs + Math.max(0, Number.isFinite(startAfterSeconds) ? startAfterSeconds : 0) * 1000).toISOString()
       : null;
     const row: Record<string, any> = { updated_at: serverNowIso };
@@ -314,12 +315,16 @@ export const updateLobbyServer = createServerFn({ method: "POST" })
     if (p.settings !== undefined) gsPatch.settings = p.settings;
     if (p.nodePositions !== undefined) gsPatch.node_positions = p.nodePositions;
     if (p.state === "active") {
-      await clearMissionRuntimeForStart(supabaseAdmin, data.id);
       gsPatch.status = "active";
-      gsPatch.match_started_at = serverStartedAt ?? serverNowIso;
-      gsPatch.team_scores = freshScores();
-      gsPatch.node_holders = FREE_NODES;
-      gsPatch.winner_team = null;
+      if (isResumePatch) {
+        gsPatch.match_started_at = p.startedAt ?? serverNowIso;
+      } else {
+        await clearMissionRuntimeForStart(supabaseAdmin, data.id);
+        gsPatch.match_started_at = serverStartedAt ?? serverNowIso;
+        gsPatch.team_scores = freshScores();
+        gsPatch.node_holders = FREE_NODES;
+        gsPatch.winner_team = null;
+      }
     } else if (p.state === "paused") {
       gsPatch.status = "paused";
     } else if (p.state === "ended") {

@@ -154,6 +154,12 @@ export function rowToRecord(r: any): LobbyRecord {
   };
 }
 
+function gameStatusToLobbyState(status: GameState["status"] | null | undefined): LobbyState | null {
+  if (status === "active" || status === "paused" || status === "ended") return status;
+  if (status === "lobby" || status === "closed") return "pending";
+  return null;
+}
+
 
 export type AllTimeFieldRecord = {
   id: string;
@@ -1689,6 +1695,7 @@ function MarshalLobbyConsole({ lobby: initialLobby, marshalPassword, lobbyPasswo
   const en = lang === "en";
   const { isPremium, openPremiumModal } = usePremium();
   const [lobby, setLobby] = useState<LobbyRecord>(initialLobby);
+  const [gameState, setGameState] = useState<GameState | null>(null);
   type RegisteredPlayer = {
     id: string;
     callsign: string;
@@ -1700,7 +1707,8 @@ function MarshalLobbyConsole({ lobby: initialLobby, marshalPassword, lobbyPasswo
     phoneNumber: string | null;
   };
   const [registered, setRegistered] = useState<RegisteredPlayer[]>([]);
-  const state: LobbyState = lobby.state ?? "pending";
+  const lobbyState: LobbyState = lobby.state ?? "pending";
+  const state: LobbyState = gameStatusToLobbyState(gameState?.status) ?? lobbyState;
   const [showLobbyPw, setShowLobbyPw] = useState(false);
   const [showMarshalPw, setShowMarshalPw] = useState(false);
   // Ephemeral plaintext passwords. Bcrypt hashes never leave the DB, so we
@@ -1808,6 +1816,33 @@ function MarshalLobbyConsole({ lobby: initialLobby, marshalPassword, lobbyPasswo
       settings: lobby.settings,
     });
   };
+  const pauseMission = () => {
+    const pausedIso = new Date(Date.now() - serverOffset).toISOString();
+    setLobby((prev) => ({ ...prev, state: "paused" }));
+    updateLobby(lobby.id, { state: "paused" });
+    setGameState((prev) => prev ? { ...prev, status: "paused", updated_at: pausedIso } : prev);
+    updateFn({ data: { id: lobby.id, patch: { state: "paused" }, authPassword: marshalPassword || getMasterPw() } })
+      .catch((e) => console.error("[marshal] pause failed", e));
+  };
+  const resumeMission = () => {
+    const serverNow = Date.now() - serverOffset;
+    const pausedAt = gameState?.updated_at ? new Date(gameState.updated_at).getTime() : serverNow;
+    const originalStart = gameState?.match_started_at
+      ? new Date(gameState.match_started_at).getTime()
+      : lobby.startedAt ?? serverNow;
+    const nextStartedAt = originalStart + Math.max(0, serverNow - pausedAt);
+    const nextStartedAtIso = new Date(nextStartedAt).toISOString();
+    setLobby((prev) => ({ ...prev, state: "active", startedAt: nextStartedAt }));
+    updateLobby(lobby.id, { state: "active", startedAt: nextStartedAt });
+    setGameState((prev) => prev ? { ...prev, status: "active", match_started_at: nextStartedAtIso, updated_at: new Date(serverNow).toISOString() } : prev);
+    updateFn({ data: { id: lobby.id, patch: { state: "active", startedAt: nextStartedAtIso }, authPassword: marshalPassword || getMasterPw() } })
+      .catch((e) => console.error("[marshal] resume failed", e));
+  };
+  const handleMatchPrimaryAction = () => {
+    if (state === "active") { pauseMission(); return; }
+    if (state === "paused") { resumeMission(); return; }
+    startMission().catch((e) => console.error("[marshal] start failed", e));
+  };
   const endAndReset = () => {
     if (!confirm(en
       ? "End current mission/debriefing (score display) and reset stats? Registered players will remain in the lobby."
@@ -1895,7 +1930,6 @@ function MarshalLobbyConsole({ lobby: initialLobby, marshalPassword, lobbyPasswo
 
 
   // Live game state (for the tactical map + countdown + node holders)
-  const [gameState, setGameState] = useState<GameState | null>(null);
   useEffect(() => {
     let alive = true;
     const load = async () => {
@@ -1907,6 +1941,11 @@ function MarshalLobbyConsole({ lobby: initialLobby, marshalPassword, lobbyPasswo
       if (alive && data) {
         const next = data as unknown as GameState;
         setGameState(next);
+        const nextLobbyState = gameStatusToLobbyState(next.status);
+        if (nextLobbyState) {
+          setLobby((prev) => ({ ...prev, state: nextLobbyState, startedAt: next.match_started_at ? new Date(next.match_started_at).getTime() : prev.startedAt ?? null }));
+          updateLobby(lobby.id, { state: nextLobbyState, startedAt: next.match_started_at ? new Date(next.match_started_at).getTime() : null });
+        }
         if (next.match_started_at) syncServerClock().catch(() => {});
       }
     };
@@ -1918,6 +1957,11 @@ function MarshalLobbyConsole({ lobby: initialLobby, marshalPassword, lobbyPasswo
           if (p.new) {
             const next = p.new as unknown as GameState;
             setGameState(next);
+            const nextLobbyState = gameStatusToLobbyState(next.status);
+            if (nextLobbyState) {
+              setLobby((prev) => ({ ...prev, state: nextLobbyState, startedAt: next.match_started_at ? new Date(next.match_started_at).getTime() : prev.startedAt ?? null }));
+              updateLobby(lobby.id, { state: nextLobbyState, startedAt: next.match_started_at ? new Date(next.match_started_at).getTime() : null });
+            }
             if (next.match_started_at) syncServerClock().catch(() => {});
           }
         })
@@ -2196,19 +2240,18 @@ function MarshalLobbyConsole({ lobby: initialLobby, marshalPassword, lobbyPasswo
           );
         })()}
         <button
-          onClick={startMission}
-          disabled={state === "active"}
+          onClick={handleMatchPrimaryAction}
           style={{
             width: "100%",
-            background: state === "active" ? "rgba(61,220,132,0.08)" : "rgba(61,220,132,0.14)",
-            color: state === "active" ? MUTED : "#3ddc84",
-            border: `1px solid ${state === "active" ? "rgba(61,220,132,0.30)" : "#3ddc84"}`,
+            background: state === "active" ? "rgba(245,176,65,0.14)" : state === "paused" ? "rgba(61,220,132,0.14)" : "rgba(61,220,132,0.14)",
+            color: state === "active" ? "#f5b041" : "#3ddc84",
+            border: `1px solid ${state === "active" ? "#f5b041" : "#3ddc84"}`,
             padding: "9px 12px", marginBottom: 8, fontFamily: "'Michroma', monospace", fontSize: 10.5,
             letterSpacing: "0.28em", textTransform: "uppercase", fontWeight: 600,
-            cursor: state === "active" ? "not-allowed" : "pointer",
+            cursor: "pointer",
             display: "flex", alignItems: "center", justifyContent: "center",
           }}>
-          [ {en ? "START MISSION" : "ZAŽENI MISIJO"} ]
+          [ {state === "active" ? (en ? "PAUSE GAME" : "PAVZIRAJ IGRO") : state === "paused" ? (en ? "RESUME GAME" : "NADALJUJ IGRO") : (en ? "START MISSION" : "ZAŽENI MISIJO")} ]
         </button>
         <button
           onClick={endAndReset}
