@@ -418,10 +418,21 @@ function LiveTracker() {
 }
 
 /* ---------- 3. ACTIVE OPERATIONS ---------- */
+const OPS_CACHE_KEY = "spartanops.home.ops.v1";
+type OpRow = { id: string; name: string; region: string; status: "ACTIVE" | "DECOMMISSIONED" };
+
 function Locations() {
   const navigate = useNavigate();
   const listFn = useServerFn(listPublishedLobbies);
-  const [rows, setRows] = useState<Array<{ id: string; name: string; region: string; status: "ACTIVE" | "DECOMMISSIONED" }>>([]);
+  // Hydrate instantly from cache so the section never flashes "no operations".
+  const [rows, setRows] = useState<OpRow[]>(() => {
+    if (typeof window === "undefined") return [];
+    try {
+      const raw = localStorage.getItem(OPS_CACHE_KEY);
+      return raw ? (JSON.parse(raw) as OpRow[]) : [];
+    } catch { return []; }
+  });
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     let alive = true;
@@ -433,15 +444,19 @@ function Locations() {
           .map(dtoToRecord)
           .filter((r) => r.id !== SYSTEM_FIELD.id)
           .sort((a, b) => b.createdAt - a.createdAt)
-          .slice(0, 3);
-        setRows(records.map((r) => ({
+          .slice(0, 4);
+        const next: OpRow[] = records.map((r) => ({
           id: r.id,
           name: r.fieldName,
           region: r.location || "",
           status: "ACTIVE" as const,
-        })));
+        }));
+        setRows(next);
+        try { localStorage.setItem(OPS_CACHE_KEY, JSON.stringify(next)); } catch { /* ignore */ }
       } catch {
-        if (alive) setRows([]);
+        /* keep cached rows on failure */
+      } finally {
+        if (alive) setLoading(false);
       }
     };
     refresh();
@@ -449,6 +464,7 @@ function Locations() {
     window.addEventListener("focus", onFocus);
     return () => { alive = false; window.removeEventListener("focus", onFocus); };
   }, [listFn]);
+
 
   const goJoin = () => navigate({ to: "/join", search: { browse: "1" } as any });
 
@@ -459,7 +475,32 @@ function Locations() {
         title="ACTIVE OPERATIONS"
         sub="Latest missions currently deployed on the SpartanOps command network."
       />
-      {rows.length === 0 ? (
+      {rows.length === 0 && loading ? (
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 md:gap-5">
+          {[0, 1, 2, 3].map((i) => (
+            <HudCard key={i} className="p-6">
+              <div className="flex items-center gap-3">
+                <span
+                  className="inline-block shrink-0"
+                  style={{
+                    width: 10, height: 10, borderRadius: 999, background: ACCENT,
+                    animation: "spartanops-ops-pulse 1s ease-in-out infinite",
+                    animationDelay: `${i * 0.15}s`,
+                  }}
+                />
+                <div className="w-full">
+                  <div style={{ height: 12, width: "58%", background: `${ACCENT}22`, animation: "spartanops-ops-pulse 1.2s ease-in-out infinite", animationDelay: `${i * 0.15}s` }} />
+                  <div style={{ height: 9, width: "34%", marginTop: 10, background: `${ACCENT}14`, animation: "spartanops-ops-pulse 1.2s ease-in-out infinite", animationDelay: `${i * 0.15 + 0.1}s` }} />
+                </div>
+              </div>
+              <p className="mt-4 font-mono uppercase" style={{ fontSize: 10, letterSpacing: "0.24em", color: MUTED }}>
+                // SCANNING NETWORK…
+              </p>
+            </HudCard>
+          ))}
+          <style>{`@keyframes spartanops-ops-pulse{0%,100%{opacity:.28}50%{opacity:1}}`}</style>
+        </div>
+      ) : rows.length === 0 ? (
         <HudCard className="p-8 text-center">
           <p className="font-mono uppercase" style={{ fontSize: 11, letterSpacing: "0.24em", color: MUTED }}>
             // NO FIELDS DEPLOYED YET
