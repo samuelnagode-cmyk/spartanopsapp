@@ -776,6 +776,7 @@ function MisijaPage() {
         {warningOverlay}
         {pauseOverlay}
         <PreMatchCountdown seconds={preMatchSecEarly} polygon={state.current_polygon_name} eventName={state.event_name} gamemode={state.gamemode} pointTarget={state.point_target} settings={state.settings} en={en} state={state} />
+        <div className="flex flex-col items-center px-4 pb-8"><MarshalContactBlock settings={state.settings} en={en} /></div>
         {preview && <PreviewReturnButton />}
       </div>
     );
@@ -790,7 +791,7 @@ function MisijaPage() {
           {reassignedBanner}
         {warningOverlay}
           <RespawnLockScreen until={respawnUntil} field={field} sessionId={sessionId} serverOffset={serverOffset} en={en} />
-          <AbortMissionButton field={field} en={en} />
+          <AbortMissionButton field={field} en={en} settings={state.settings} />
         </div>
       );
     }
@@ -801,7 +802,7 @@ function MisijaPage() {
         {warningOverlay}
         {pauseOverlay}
         <LiveMatch state={state} captures={captures} now={currentTime} roster={roster} />
-        <AbortMissionButton field={field} en={en} />
+        <AbortMissionButton field={field} en={en} settings={state.settings} />
         {preview && <PreviewReturnButton />}
       </div>
     );
@@ -817,7 +818,7 @@ function MisijaPage() {
         {warningOverlay}
         <EndgameSoundtrackTrigger />
         <EndgameReport state={state} roster={roster} captures={captures} en={en} now={currentTime} />
-        <AbortMissionButton field={field} en={en} />
+        <AbortMissionButton field={field} en={en} settings={state.settings} />
         {preview && <PreviewReturnButton />}
       </div>
     );
@@ -922,7 +923,7 @@ function MisijaPage() {
       {marshalMode ? (
         <MarshalHudOverlay fieldId={field} en={en} />
       ) : (
-        <AbortMissionButton field={field} en={en} />
+        <AbortMissionButton field={field} en={en} settings={state.settings} />
       )}
       {preview && <PreviewReturnButton />}
     </div>
@@ -948,7 +949,37 @@ function PreviewReturnButton() {
   );
 }
 
-function AbortMissionButton({ field, en }: { field: string; en: boolean }) {
+function MarshalContactBlock({ settings, en }: { settings?: GameSettings | null; en: boolean }) {
+  const name = (settings?.marshalName ?? "").trim();
+  const phone = (settings?.marshalPhone ?? "").trim();
+  if (!name || !phone) return null;
+  return (
+    <div
+      style={{
+        width: "100%",
+        maxWidth: 520,
+        margin: "18px auto 12px",
+        padding: "12px 14px",
+        border: "1px dashed rgba(224,176,78,0.45)",
+        background: "rgba(224,176,78,0.05)",
+        fontFamily: "monospace",
+        fontSize: 11,
+        lineHeight: 1.7,
+        letterSpacing: "0.04em",
+        color: "rgba(224,176,78,0.9)",
+        textAlign: "center",
+      }}
+    >
+      {en ? (
+        <>This game is marshaled by <strong style={{ color: "#E0B04E" }}>{name}</strong>, you can reach him at: <a href={`tel:${phone.replace(/\s+/g, "")}`} style={{ color: "#E0B04E", textDecoration: "underline" }}>{phone}</a></>
+      ) : (
+        <>To igro vodi marshal <strong style={{ color: "#E0B04E" }}>{name}</strong>, dosegljiv je na telefonski številki: <a href={`tel:${phone.replace(/\s+/g, "")}`} style={{ color: "#E0B04E", textDecoration: "underline" }}>{phone}</a></>
+      )}
+    </div>
+  );
+}
+
+function AbortMissionButton({ field, en, settings }: { field: string; en: boolean; settings?: GameSettings | null }) {
   const deleteMyCheckinFn = useServerFn(spartanopsDeleteMyCheckin);
   const onClick = async () => {
     if (!confirm(en ? "Abort mission and disconnect from this lobby?" : "Prekiniti misijo in se odklopiti iz tega lobbyja?")) return;
@@ -975,6 +1006,7 @@ function AbortMissionButton({ field, en }: { field: string; en: boolean }) {
   };
   return (
     <div className="mt-4 mb-2 flex flex-col items-center px-4">
+      <MarshalContactBlock settings={settings} en={en} />
       <button
         onClick={onClick}
         className="transition-colors"
