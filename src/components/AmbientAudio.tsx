@@ -70,6 +70,10 @@ function isLobbyPath(pathname: string) {
 function isMissionPath(pathname: string) {
   return /^\/misija(\b|\/|$)/i.test(pathname);
 }
+// In-field tactical views must stay musically silent — only SFX play there.
+function isSilentPath(pathname: string) {
+  return /^\/(capture|scan|spawn)(\b|\/|$)/i.test(pathname);
+}
 
 export function AmbientAudioProvider({ children }: { children: ReactNode }) {
   const { pathname } = useLocation();
