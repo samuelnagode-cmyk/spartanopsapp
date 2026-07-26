@@ -246,9 +246,22 @@ export function SpartanOpsConsole({ fieldId, password }: { fieldId: string; pass
 
   const callPatch = async (patch: Partial<GameState>) => {
     setBusy(true);
-    try { await patchState({ data: { fieldId, password, patch: patch as any } }); }
+    try {
+      await patchState({ data: { fieldId, password, patch: patch as any } });
+      // Optimistic merge so controls (START / PAUSE / RESUME) flip instantly,
+      // even if the realtime broadcast is delayed or dropped.
+      setState((prev) => (prev ? ({ ...prev, ...(patch as any) } as GameState) : prev));
+      // Reconcile with the authoritative row (server sets match_started_at etc.).
+      try {
+        const { data } = await supabase.from("spartanops_game_state").select("*").eq("field_id", fieldId).maybeSingle();
+        if (data) setState(data as unknown as GameState);
+      } catch { /* ignore */ }
+    }
     finally { setBusy(false); }
   };
+
+
+
 
   const doReassign = async (id: string, team: "modra" | "rdeca" | "rumena" | "none") => {
     await reassign({ data: { fieldId, password, checkinId: id, team } });
