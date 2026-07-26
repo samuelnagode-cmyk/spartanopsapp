@@ -1411,7 +1411,7 @@ function FieldsWelcome({
                       Location: {locationText}
                     </p>
                   </button>
-                  <LobbyLinkRow lobbyId={l.id} en={en} />
+                  
                 </div>
 
               );
@@ -2253,6 +2253,8 @@ function MarshalLobbyConsole({ lobby: initialLobby, marshalPassword, lobbyPasswo
           }}>
           [ {state === "active" ? (en ? "PAUSE GAME" : "PAVZIRAJ IGRO") : state === "paused" ? (en ? "RESUME GAME" : "NADALJUJ IGRO") : (en ? "START MISSION" : "ZAŽENI MISIJO")} ]
         </button>
+        {/* Join link is only exposed inside the password-protected marshal console. */}
+        <LobbyLinkRow lobbyId={lobby.id} en={en} />
         <button
           onClick={endAndReset}
           style={{
