@@ -109,7 +109,7 @@ export function QRScanner({ open, onClose, onDecode }: Props) {
         }
         beginDecodeLoop();
       } catch (e: any) {
-        setErr(t("scanner.cameraDenied"));
+        setErr(tRef.current("scanner.cameraDenied"));
       }
     }
 
@@ -175,13 +175,13 @@ export function QRScanner({ open, onClose, onDecode }: Props) {
       const payload = parseScanPayload(raw);
       if (!payload) {
         // Ignore and keep scanning — some printed codes may be misfired.
-        setErr(t("scanner.invalidCode"));
+        setErr(tRef.current("scanner.invalidCode"));
         setTimeout(() => setErr(""), 1600);
         return;
       }
       decodedRef.current = true;
       stopStream();
-      onDecode(payload);
+      onDecodeRef.current(payload);
     }
 
     function stopStream() {
@@ -205,7 +205,7 @@ export function QRScanner({ open, onClose, onDecode }: Props) {
       streamRef.current = null;
       decodedRef.current = false;
     };
-  }, [open, onDecode, t]);
+  }, [open]);
 
   const toggleTorch = async () => {
     const track = streamRef.current?.getVideoTracks?.()[0];
