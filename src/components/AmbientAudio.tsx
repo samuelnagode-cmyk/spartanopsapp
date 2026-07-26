@@ -131,6 +131,7 @@ export function AmbientAudioProvider({ children }: { children: ReactNode }) {
 
   // Compute active music track from route + mission phase.
   const activeTrack: Track = useMemo(() => {
+    if (isSilentPath(pathname)) return "silent";
     if (isMissionPath(pathname)) {
       if (missionPhase === "active") return "silent";
       if (missionPhase === "debrief") return "debrief";
