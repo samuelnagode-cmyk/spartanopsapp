@@ -1405,7 +1405,9 @@ function FieldsWelcome({
                       Location: {locationText}
                     </p>
                   </button>
+                  <LobbyLinkRow lobbyId={l.id} en={en} />
                 </div>
+
               );
             })}
           </div>
