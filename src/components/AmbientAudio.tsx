@@ -215,12 +215,16 @@ export function AmbientAudioProvider({ children }: { children: ReactNode }) {
     };
   }, [sfxEnabled]);
 
-  // Unlock: on first user interaction, prime every audio node with a silent
-  // play so mobile Safari/Chrome will accept later programmatic playback.
+  // Unlock: on first user interaction, prime audio nodes with a silent play so
+  // mobile Safari/Chrome accepts later programmatic playback. Runs once, and
+  // never touches a node that is already playing (that would cut the music).
+  const unlockedRef = useRef(false);
   const unlock = useCallback(() => {
+    if (unlockedRef.current) return;
+    unlockedRef.current = true;
     const nodes = [mainRef.current, lobbyRef.current, debriefRef.current, countdownRef.current, sectorRef.current];
     nodes.forEach((a) => {
-      if (!a) return;
+      if (!a || !a.paused) return;
       const wasVol = a.volume;
       try {
         a.volume = 0;
