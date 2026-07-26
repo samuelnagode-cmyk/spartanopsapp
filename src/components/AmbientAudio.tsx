@@ -87,15 +87,21 @@ export function AmbientAudioProvider({ children }: { children: ReactNode }) {
       if (typeof window === "undefined") return;
       if (window.localStorage.getItem(MUSIC_KEY) === "1") setMusicEnabledState(true);
       if (window.localStorage.getItem(SFX_KEY) === "1") setSfxEnabledState(true);
-    } catch { /* ignore */ }
+    } catch {
+      /* ignore */
+    }
   }, []);
   const setMusicEnabled = useCallback((v: boolean) => {
     setMusicEnabledState(v);
-    try { localStorage.setItem(MUSIC_KEY, v ? "1" : "0"); } catch {}
+    try {
+      localStorage.setItem(MUSIC_KEY, v ? "1" : "0");
+    } catch {}
   }, []);
   const setSfxEnabled = useCallback((v: boolean) => {
     setSfxEnabledState(v);
-    try { localStorage.setItem(SFX_KEY, v ? "1" : "0"); } catch {}
+    try {
+      localStorage.setItem(SFX_KEY, v ? "1" : "0");
+    } catch {}
   }, []);
   const toggleMusic = useCallback(() => setMusicEnabled(!musicEnabled), [musicEnabled, setMusicEnabled]);
   const toggleSfx = useCallback(() => setSfxEnabled(!sfxEnabled), [sfxEnabled, setSfxEnabled]);
@@ -113,19 +119,37 @@ export function AmbientAudioProvider({ children }: { children: ReactNode }) {
 
   // Instantiate audio nodes once.
   useEffect(() => {
-    const main = new Audio(songMain.url); main.loop = true; main.preload = "auto"; main.volume = 0;
-    const lobby = new Audio(songLobby.url); lobby.loop = true; lobby.preload = "auto"; lobby.volume = 0;
+    const main = new Audio(songMain.url);
+    main.loop = true;
+    main.preload = "auto";
+    main.volume = 0;
+    const lobby = new Audio(songLobby.url);
+    lobby.loop = true;
+    lobby.preload = "auto";
+    lobby.volume = 0;
     // Debrief is heavier and not needed until match end — lazy load.
-    const debrief = new Audio(songDebrief.url); debrief.loop = false; debrief.preload = "none"; debrief.volume = 0;
-    const cd = new Audio(sfxCountdown.url); cd.preload = "auto"; cd.volume = 1;
-    const sec = new Audio(sfxSector.url); sec.preload = "auto"; sec.volume = 0.95;
+    const debrief = new Audio(songDebrief.url);
+    debrief.loop = false;
+    debrief.preload = "none";
+    debrief.volume = 0;
+    const cd = new Audio(sfxCountdown.url);
+    cd.preload = "none";
+    cd.volume = 1;
+    const sec = new Audio(sfxSector.url);
+    sec.preload = "none";
+    sec.volume = 0.95;
     mainRef.current = main;
     lobbyRef.current = lobby;
     debriefRef.current = debrief;
     countdownRef.current = cd;
     sectorRef.current = sec;
     return () => {
-      [main, lobby, debrief, cd, sec].forEach((a) => { try { a.pause(); a.src = ""; } catch {} });
+      [main, lobby, debrief, cd, sec].forEach((a) => {
+        try {
+          a.pause();
+          a.src = "";
+        } catch {}
+      });
     };
   }, []);
 
@@ -143,34 +167,47 @@ export function AmbientAudioProvider({ children }: { children: ReactNode }) {
 
   // Drive playback whenever music enable or the desired track changes.
   useEffect(() => {
-    const main = mainRef.current, lobby = lobbyRef.current, debrief = debriefRef.current;
+    const main = mainRef.current,
+      lobby = lobbyRef.current,
+      debrief = debriefRef.current;
     if (!main || !lobby || !debrief) return;
     const stopAll = () => {
       [main, lobby, debrief].forEach((a) => {
-        try { fade(a, 0); } catch {}
+        try {
+          fade(a, 0);
+        } catch {}
       });
     };
     if (!musicEnabled) {
       // Hard stop — silence must be immediate on mute.
       [main, lobby, debrief].forEach((a) => {
-        try { a.pause(); a.volume = 0; } catch {}
+        try {
+          a.pause();
+          a.volume = 0;
+        } catch {}
       });
       return;
     }
-    if (activeTrack === "silent") { stopAll(); return; }
+    if (activeTrack === "silent") {
+      stopAll();
+      return;
+    }
     if (activeTrack === "debrief") {
-      fade(main, 0); fade(lobby, 0);
+      fade(main, 0);
+      fade(lobby, 0);
       debrief.preload = "auto";
       fade(debrief, 0.65);
       return;
     }
     if (activeTrack === "lobby") {
-      fade(main, 0); fade(debrief, 0);
+      fade(main, 0);
+      fade(debrief, 0);
       fade(lobby, 0.55);
       return;
     }
     // main
-    fade(lobby, 0); fade(debrief, 0);
+    fade(lobby, 0);
+    fade(debrief, 0);
     fade(main, 0.5);
   }, [musicEnabled, activeTrack]);
 
@@ -180,14 +217,18 @@ export function AmbientAudioProvider({ children }: { children: ReactNode }) {
     const onCountdown = () => {
       const cd = countdownRef.current;
       if (!cd || !sfxEnabled) return;
-      try { cd.currentTime = 0; } catch {}
+      try {
+        cd.currentTime = 0;
+      } catch {}
       cd.volume = 1;
       cd.play().catch(() => {});
     };
     const onSector = () => {
       const s = sectorRef.current;
       if (!s || !sfxEnabled) return;
-      try { s.currentTime = 0; } catch {}
+      try {
+        s.currentTime = 0;
+      } catch {}
       s.volume = 0.95;
       s.play().catch(() => {});
     };
@@ -228,8 +269,21 @@ export function AmbientAudioProvider({ children }: { children: ReactNode }) {
       const wasVol = a.volume;
       try {
         a.volume = 0;
-        a.play().then(() => { try { a.pause(); a.volume = wasVol; } catch {} }).catch(() => { try { a.volume = wasVol; } catch {} });
-      } catch { /* ignore */ }
+        a.play()
+          .then(() => {
+            try {
+              a.pause();
+              a.volume = wasVol;
+            } catch {}
+          })
+          .catch(() => {
+            try {
+              a.volume = wasVol;
+            } catch {}
+          });
+      } catch {
+        /* ignore */
+      }
     });
   }, []);
 
@@ -279,13 +333,19 @@ function AudioFab() {
         >
           <FabRow
             active={musicEnabled}
-            onClick={() => { unlock(); toggleMusic(); }}
+            onClick={() => {
+              unlock();
+              toggleMusic();
+            }}
             icon={<Music size={14} />}
             label="MUSIC"
           />
           <FabRow
             active={sfxEnabled}
-            onClick={() => { unlock(); toggleSfx(); }}
+            onClick={() => {
+              unlock();
+              toggleSfx();
+            }}
             icon={<Waves size={14} />}
             label="SFX"
           />
@@ -323,7 +383,17 @@ function AudioFab() {
   );
 }
 
-function FabRow({ active, onClick, icon, label }: { active: boolean; onClick: () => void; icon: ReactNode; label: string }) {
+function FabRow({
+  active,
+  onClick,
+  icon,
+  label,
+}: {
+  active: boolean;
+  onClick: () => void;
+  icon: ReactNode;
+  label: string;
+}) {
   return (
     <button
       type="button"
