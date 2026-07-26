@@ -2175,6 +2175,32 @@ function PreMatchCountdown({ seconds, polygon, eventName, gamemode, pointTarget,
           </div>
         </div>
       )}
+      {/* 6) Team rosters under the map */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-5" style={{ width: "min(720px, 100%)" }}>
+        {(["modra", "rdeca"] as const).map((k) => {
+          const members = (roster ?? []).filter((r) => r.assigned_team === k);
+          return (
+            <div key={k} style={{ border: `1px solid ${TEAM_COLOR[k]}66`, background: "rgba(0,0,0,0.38)", padding: "10px 12px", textAlign: "left" }}>
+              <p style={{ color: TEAM_COLOR[k], fontFamily: "'Michroma', monospace", fontSize: 11, letterSpacing: "0.16em", textTransform: "uppercase", marginBottom: 8 }}>
+                {teamName(k, settings, en)} ({members.length})
+              </p>
+              {members.length === 0 ? (
+                <p style={{ color: MUTED, fontFamily: "monospace", fontSize: 11 }}>
+                  {en ? "// NO OPERATORS ASSIGNED" : "// NI DODELJENIH OPERATIVCEV"}
+                </p>
+              ) : (
+                <ul style={{ listStyle: "none", margin: 0, padding: 0, display: "grid", gap: 4 }}>
+                  {members.map((m) => (
+                    <li key={m.id} style={{ color: INK, fontFamily: "monospace", fontSize: 12, letterSpacing: "0.06em", textTransform: "uppercase" }}>
+                      <span style={{ color: TEAM_COLOR[k], marginRight: 6 }}>▪</span>{m.callsign}
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+          );
+        })}
+      </div>
       <RespawnRulesBlock settings={settings} en={en} />
     </div>
   );
