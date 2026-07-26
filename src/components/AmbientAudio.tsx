@@ -20,7 +20,7 @@ import sfxSector from "@/assets/SOUNDEFFECT_SECTORSECURED.mp3.asset.json";
  *   - Post match end / debrief -> SONG_DEBRIEFING
  *
  * SFX (when sfxEnabled):
- *   - spartanops:countdown  -> SOUNDEFFECT_STARTCOUNTOWN.mp3 (T-14s pre-match, respawn scan)
+ *   - spartanops:countdown  -> SOUNDEFFECT_STARTCOUNTOWN.mp3 (T-15s pre-match, respawn scan)
  *   - spartanops:capture-success -> SOUNDEFFECT_SECTORSECURED.mp3
  */
 
@@ -69,6 +69,10 @@ function isLobbyPath(pathname: string) {
 }
 function isMissionPath(pathname: string) {
   return /^\/misija(\b|\/|$)/i.test(pathname);
+}
+// In-field tactical views must stay musically silent — only SFX play there.
+function isSilentPath(pathname: string) {
+  return /^\/(capture|scan|spawn)(\b|\/|$)/i.test(pathname);
 }
 
 export function AmbientAudioProvider({ children }: { children: ReactNode }) {
@@ -127,6 +131,7 @@ export function AmbientAudioProvider({ children }: { children: ReactNode }) {
 
   // Compute active music track from route + mission phase.
   const activeTrack: Track = useMemo(() => {
+    if (isSilentPath(pathname)) return "silent";
     if (isMissionPath(pathname)) {
       if (missionPhase === "active") return "silent";
       if (missionPhase === "debrief") return "debrief";
@@ -210,12 +215,16 @@ export function AmbientAudioProvider({ children }: { children: ReactNode }) {
     };
   }, [sfxEnabled]);
 
-  // Unlock: on first user interaction, prime every audio node with a silent
-  // play so mobile Safari/Chrome will accept later programmatic playback.
+  // Unlock: on first user interaction, prime audio nodes with a silent play so
+  // mobile Safari/Chrome accepts later programmatic playback. Runs once, and
+  // never touches a node that is already playing (that would cut the music).
+  const unlockedRef = useRef(false);
   const unlock = useCallback(() => {
+    if (unlockedRef.current) return;
+    unlockedRef.current = true;
     const nodes = [mainRef.current, lobbyRef.current, debriefRef.current, countdownRef.current, sectorRef.current];
     nodes.forEach((a) => {
-      if (!a) return;
+      if (!a || !a.paused) return;
       const wasVol = a.volume;
       try {
         a.volume = 0;
