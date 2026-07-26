@@ -2084,7 +2084,28 @@ function PreMatchCountdown({ seconds, polygon, eventName, gamemode, pointTarget,
       >
         {mm}:{ss}
       </div>
-      {/* 1) Team vs team with player counts */}
+      {/* 1) Mission description / instructions (from Marshal Command Center) */}
+      {description?.trim() && (
+        <div
+          className="max-w-2xl mt-1 mb-4"
+          style={{
+            border: `1px solid ${ACCENT}55`,
+            background: "rgba(0,0,0,0.42)",
+            padding: "12px 14px",
+            textAlign: "left",
+            width: "min(640px, 100%)",
+          }}
+        >
+          <p style={{ color: ACCENT, fontFamily: "monospace", fontSize: 9.5, letterSpacing: "0.24em", textTransform: "uppercase", marginBottom: 6 }}>
+            {en ? "// MISSION DESCRIPTION / INSTRUCTIONS" : "// OPIS MISIJE / NAVODILA"}
+          </p>
+          <p style={{ color: INK, fontSize: 13, lineHeight: 1.7, whiteSpace: "pre-wrap" }}>
+            {description}
+          </p>
+        </div>
+      )}
+
+      {/* 2) Team vs team with player counts */}
       <div className="flex items-center justify-center gap-4 mt-1 mb-4 flex-wrap" style={{ width: "min(640px, 100%)" }}>
         {(["modra", "rdeca"] as const).map((k, i) => (
           <div key={k} className="flex items-center gap-3">
@@ -2107,26 +2128,6 @@ function PreMatchCountdown({ seconds, polygon, eventName, gamemode, pointTarget,
         ))}
       </div>
 
-      {/* 2) Mission description */}
-      {description?.trim() && (
-        <div
-          className="max-w-2xl mt-1"
-          style={{
-            border: `1px solid ${ACCENT}55`,
-            background: "rgba(0,0,0,0.42)",
-            padding: "12px 14px",
-            textAlign: "left",
-            width: "min(640px, 100%)",
-          }}
-        >
-          <p style={{ color: ACCENT, fontFamily: "monospace", fontSize: 9.5, letterSpacing: "0.24em", textTransform: "uppercase", marginBottom: 6 }}>
-            {en ? "// MISSION BRIEFING" : "// NAVODILA MISIJE"}
-          </p>
-          <p style={{ color: INK, fontSize: 13, lineHeight: 1.7, whiteSpace: "pre-wrap" }}>
-            {description}
-          </p>
-        </div>
-      )}
 
       {/* 3) Standing objective text */}
       <p className="max-w-2xl text-[12px]" style={{ color: MUTED, lineHeight: 1.7, fontStyle: "italic", marginTop: 14, marginBottom: 0, width: "min(640px, 100%)" }}>
