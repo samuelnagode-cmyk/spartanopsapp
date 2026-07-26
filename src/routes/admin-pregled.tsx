@@ -797,6 +797,8 @@ function CreateFieldForm({ onCancel, onCreated }: { onCancel: () => void; onCrea
   const [eventName, setEventName] = useState("");
   const [country, setCountry] = useState("");
   const [city, setCity] = useState("");
+  const [marshalName, setMarshalName] = useState("");
+  const [marshalPhone, setMarshalPhone] = useState("");
 
 
   // Field / map / game settings (mirrors SpartanOpsConsole atoms)
@@ -818,6 +820,8 @@ function CreateFieldForm({ onCancel, onCreated }: { onCancel: () => void; onCrea
   const [publishToLobby, setPublishToLobby] = useState(true);
   const [err, setErr] = useState("");
   const [ok, setOk] = useState(false);
+  const [created, setCreated] = useState<{ rec: LobbyRecord; password: string; marshalPassword: string } | null>(null);
+  const [copied, setCopied] = useState(false);
   const [showPassword, setShowPassword] = useState(true);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -839,10 +843,10 @@ function CreateFieldForm({ onCancel, onCreated }: { onCancel: () => void; onCrea
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (busy) return;
-    if (!missionName.trim() || !fieldName.trim() || !password.trim() || !country.trim() || !city.trim() || !marshalPassword.trim()) {
+    if (!missionName.trim() || !fieldName.trim() || !password.trim() || !country.trim() || !city.trim() || !marshalPassword.trim() || !marshalName.trim()) {
       setErr(en
-        ? "Mission name, field name, city, country, mission password, and marshal password are required."
-        : "Ime misije, ime poligona, mesto, država, geslo misije in geslo maršala so obvezni.");
+        ? "Mission name, field name, city, country, marshal name, mission password, and marshal password are required."
+        : "Ime misije, ime poligona, mesto, država, ime maršala, geslo misije in geslo maršala so obvezni.");
       return;
     }
     if (marshalPassword.trim() === password.trim()) {
@@ -857,6 +861,8 @@ function CreateFieldForm({ onCancel, onCreated }: { onCancel: () => void; onCrea
     const settingsWithMission = {
       ...settings,
       missionName: missionName.trim(),
+      marshalName: marshalName.trim(),
+      marshalPhone: marshalPhone.trim() || undefined,
       missionDescription: missionDescription.trim() || undefined,
       afterGameInstructions: afterGameInstructions.trim() || undefined,
     } as any;
@@ -900,7 +906,7 @@ function CreateFieldForm({ onCancel, onCreated }: { onCancel: () => void; onCrea
         createdAt: rec.createdAt,
       });
       setOk(true);
-      setTimeout(() => onCreated(rec, { password: password.trim(), marshalPassword: marshalPassword.trim() }), 500);
+      setCreated({ rec, password: password.trim(), marshalPassword: marshalPassword.trim() });
     } catch (e: any) {
       console.error("[admin] createLobby failed", { error: e, message: e?.message, cause: e?.cause, stack: e?.stack });
       setErr(e?.message ? `Error: ${e.message}` : "Failed to create lobby.");
@@ -908,6 +914,10 @@ function CreateFieldForm({ onCancel, onCreated }: { onCancel: () => void; onCrea
       setBusy(false);
     }
   };
+
+  const lobbyUrl = created && typeof window !== "undefined"
+    ? `${window.location.origin}/misija?field=${created.rec.id}`
+    : "";
 
   return (
     <form onSubmit={submit} style={{ maxWidth: 780, margin: "0 auto" }}>
@@ -956,6 +966,12 @@ function CreateFieldForm({ onCancel, onCreated }: { onCancel: () => void; onCrea
             <input value={country} onChange={(e) => setCountry(e.target.value)} style={consoleInputStyle} placeholder="Slovenia" />
           </FieldRow>
         </div>
+        <FieldRow label={en ? "Marshal name (mandatory)" : "Ime maršala (obvezno)"}>
+          <input required value={marshalName} onChange={(e) => setMarshalName(e.target.value)} style={consoleInputStyle} placeholder={en ? "e.g. Luka" : "npr. Luka"} />
+        </FieldRow>
+        <FieldRow label={en ? "Marshal phone number (optional)" : "Telefonska številka maršala (neobvezno)"}>
+          <input value={marshalPhone} onChange={(e) => setMarshalPhone(e.target.value)} style={consoleInputStyle} placeholder="+386 40 123 456" inputMode="tel" />
+        </FieldRow>
       </Pane>
 
       <div style={{ height: 16 }} />
@@ -1212,6 +1228,44 @@ function CreateFieldForm({ onCancel, onCreated }: { onCancel: () => void; onCrea
             ? "Click to show this lobby on the list of missions."
             : "Klikni, da se ta misija prikaže na seznamu aktivnih misij — igralci se lahko po tem pridružijo misiji z geslom, ki ste ga ustvarili."}
         </p>
+      </div>
+
+      <div style={{ marginTop: 22, padding: "14px 16px", border: `1px solid ${ACCENT}55`, background: "rgba(224,176,78,0.04)" }}>
+        <p style={{ fontFamily: "'Michroma', monospace", fontSize: 11, letterSpacing: "0.18em", color: ACCENT, textTransform: "uppercase", marginBottom: 10 }}>
+          {en ? "LOBBY URL" : "POVEZAVA DO MISIJE"}
+        </p>
+        {lobbyUrl ? (
+          <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
+            <input readOnly value={lobbyUrl} onFocus={(e) => e.currentTarget.select()} style={{ ...consoleInputStyle, flex: "1 1 240px" }} />
+            <button
+              type="button"
+              onClick={async () => {
+                try { await navigator.clipboard.writeText(lobbyUrl); } catch { /* ignore */ }
+                setCopied(true);
+                setTimeout(() => setCopied(false), 1800);
+              }}
+              style={{ background: "transparent", border: `1px solid ${ACCENT}`, color: ACCENT, padding: "10px 14px", fontFamily: "'Michroma', monospace", fontSize: 10, letterSpacing: "0.16em", textTransform: "uppercase", cursor: "pointer" }}
+            >
+              {copied ? (en ? "COPIED" : "KOPIRANO") : (en ? "COPY LINK" : "KOPIRAJ")}
+            </button>
+          </div>
+        ) : (
+          <p style={{ fontFamily: "monospace", fontSize: 12, color: MUTED, letterSpacing: "0.06em" }}>____</p>
+        )}
+        <p style={{ fontFamily: "monospace", fontSize: 11, color: MUTED, lineHeight: 1.6, marginTop: 10 }}>
+          {en
+            ? "After creating a lobby, you can copy the provided link and send it to your players, so they can join the mission directly."
+            : "Po tem ko vzpostavite misijo, lahko kopirate generirani link, s katerim se lahko vaši igralci povežejo direktno v misijo."}
+        </p>
+        {created && (
+          <button
+            type="button"
+            onClick={() => onCreated(created.rec, { password: created.password, marshalPassword: created.marshalPassword })}
+            style={{ marginTop: 14, background: ACCENT, color: BG, border: "none", padding: "12px 22px", fontFamily: "'Michroma', monospace", fontSize: 11, letterSpacing: "0.2em", textTransform: "uppercase", fontWeight: 700, cursor: "pointer" }}
+          >
+            [ {en ? "ENTER COMMAND CENTER" : "V KOMANDNI CENTER"} ]
+          </button>
+        )}
       </div>
     </form>
   );
