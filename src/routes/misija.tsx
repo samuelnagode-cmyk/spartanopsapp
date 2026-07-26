@@ -128,6 +128,8 @@ type RespawnSettings = {
 type GameSettings = {
   missionDescription?: string;
   missionName?: string;
+  marshalName?: string;
+  marshalPhone?: string;
   afterGameInstructions?: string;
   teamCount?: number;
   teamNames?: Record<string, string>;
