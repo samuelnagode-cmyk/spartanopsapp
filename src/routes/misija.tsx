@@ -775,7 +775,7 @@ function MisijaPage() {
         {reassignedBanner}
         {warningOverlay}
         {pauseOverlay}
-        <PreMatchCountdown seconds={preMatchSecEarly} polygon={state.current_polygon_name} eventName={state.event_name} gamemode={state.gamemode} pointTarget={state.point_target} settings={state.settings} en={en} state={state} />
+        <PreMatchCountdown seconds={preMatchSecEarly} polygon={state.current_polygon_name} eventName={state.event_name} gamemode={state.gamemode} pointTarget={state.point_target} settings={state.settings} en={en} state={state} roster={roster} />
         <div className="flex flex-col items-center px-4 pb-8"><MarshalContactBlock settings={state.settings} en={en} /></div>
         {preview && <PreviewReturnButton />}
       </div>
@@ -833,7 +833,7 @@ function MisijaPage() {
       <OfflineBanner />
       {reassignedBanner}
         {warningOverlay}
-      {preMatchSec > 0 && <PreMatchCountdown seconds={preMatchSec} polygon={fieldTitleFromState(state, field)} eventName={missionTitleFromState(state, field)} gamemode={state.gamemode} pointTarget={state.point_target} settings={state.settings} en={en} state={state} /> }
+      {preMatchSec > 0 && <PreMatchCountdown seconds={preMatchSec} polygon={fieldTitleFromState(state, field)} eventName={missionTitleFromState(state, field)} gamemode={state.gamemode} pointTarget={state.point_target} settings={state.settings} en={en} state={state} roster={roster} /> }
       <div className="max-w-5xl mx-auto px-4 py-8">
         <PlayerHudHeader en={en} />
         <h1
@@ -2629,7 +2629,7 @@ function LiveMatch({ state, captures, now, roster }: { state: GameState; capture
   return (
     <div className="max-w-5xl mx-auto px-4 py-6" style={{ paddingTop: 112 }}>
       <PointCapturedOverlay captures={visibleCaptures} teamLabelFor={teamLabelFor} en={en} />
-      {preMatchSec > 0 && <PreMatchCountdown seconds={preMatchSec} polygon={fieldTitleFromState(state, "")} eventName={missionTitleFromState(state, "")} gamemode={state.gamemode} pointTarget={state.point_target} settings={state.settings} en={en} state={state} />}
+      {preMatchSec > 0 && <PreMatchCountdown seconds={preMatchSec} polygon={fieldTitleFromState(state, "")} eventName={missionTitleFromState(state, "")} gamemode={state.gamemode} pointTarget={state.point_target} settings={state.settings} en={en} state={state} roster={roster} />}
 
       <PlayerHudHeader en={en} />
       <h1
