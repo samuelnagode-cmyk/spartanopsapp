@@ -1350,21 +1350,6 @@ function SpartacusConsentBlock({ en, onClearedChange }: { en: boolean; onCleared
 }
 
 
-function CameraNoticeBlock({ en }: { en: boolean }) {
-  return (
-    <div style={{ border: `1px solid ${ACCENT}55`, background: "rgba(224,176,78,0.06)", padding: 14 }}>
-      <p style={{ fontFamily: "'Michroma', monospace", fontSize: 10.5, color: ACCENT, letterSpacing: "0.16em", textTransform: "uppercase", fontWeight: 800, marginBottom: 6 }}>
-        {en ? "📷 CAMERA ACCESS · QR SCANNER" : "📷 DOSTOP DO KAMERE · QR SKENER"}
-      </p>
-      <p style={{ fontFamily: "monospace", color: MUTED, fontSize: 11, lineHeight: 1.6, margin: 0 }}>
-        {en
-          ? "Camera access will be requested upon your first QR scan — please approve it to play."
-          : "Dostop do kamere bo zahtevan ob prvem QR skeniranju — potrdi ga za igranje."}
-      </p>
-    </div>
-  );
-}
-
 function AudioSettingsBlock({ en }: { en: boolean }) {
   const { musicEnabled, sfxEnabled, setMusicEnabled, setSfxEnabled, unlock } = useAmbientAudio();
   const Row = ({ on, onChange, label }: { on: boolean; onChange: () => void; label: string }) => (
@@ -1667,8 +1652,6 @@ function CheckinForm({ sessionId, fieldId, preview, onGhost, fieldLabel }: { ses
           </div>
 
           <SpartacusConsentBlock en={en} onClearedChange={setSpartacusCleared} />
-
-          <CameraNoticeBlock en={en} />
 
           <AudioSettingsBlock en={en} />
 
