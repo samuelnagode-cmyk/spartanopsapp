@@ -947,6 +947,10 @@ function OperationalPlans() {
     t("spartan.tier1Feature2"),
     t("spartan.tier1Feature3"),
     t("spartan.tier1Feature4"),
+    t("spartan.tier1Feature5"),
+    t("spartan.tier1Feature6"),
+    t("spartan.tier1Feature7"),
+    t("spartan.tier1Feature8"),
   ];
   const premium = [
     t("spartan.tier2Feature1"),
