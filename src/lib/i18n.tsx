@@ -640,6 +640,11 @@ export function useT() {
 
 export function spartanDevlogEntries(t: (key: string) => string) {
   return [
+    { date: t("spartan.updateScannerDate"), title: t("spartan.updateScannerTitle"), body: t("spartan.updateScannerDesc") },
+    { date: t("spartan.updateSeoDate"), title: t("spartan.updateSeoTitle"), body: t("spartan.updateSeoDesc") },
+    { date: t("spartan.updatePrestartDate"), title: t("spartan.updatePrestartTitle"), body: t("spartan.updatePrestartDesc") },
+    { date: t("spartan.updateBattlefieldDate"), title: t("spartan.updateBattlefieldTitle"), body: t("spartan.updateBattlefieldDesc") },
+    { date: t("spartan.updateAmbientDate"), title: t("spartan.updateAmbientTitle"), body: t("spartan.updateAmbientDesc") },
     { date: t("spartan.updateHardGraphicsDate"), title: t("spartan.updateHardGraphicsTitle"), body: t("spartan.updateHardGraphicsDesc") },
     { date: t("spartan.update1Date"), title: t("spartan.update1Title"), body: t("spartan.update1Desc") },
     { date: t("spartan.update2Date"), title: t("spartan.update2Title"), body: t("spartan.update2Desc") },
