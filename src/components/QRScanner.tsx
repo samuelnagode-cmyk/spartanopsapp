@@ -8,6 +8,7 @@ const INK = "#ece3c4";
 const POINT_NAMES = new Set(["alpha", "bravo", "beta", "charlie", "gamma", "delta", "echo", "epsilon"]);
 
 export type ScanPayload = {
+  kind: "capture" | "respawn";
   fieldId: string;
   point: string;
   type: string;
@@ -15,23 +16,27 @@ export type ScanPayload = {
 };
 
 /**
- * Extract capture payload from a decoded QR text. Accepts full printed URLs
+ * Extract a payload from a decoded QR text. Accepts full printed URLs
  * such as `https://spartanopsapp.com/scan?field_id=...&type=domination&point=alpha`
- * as well as bare `field_id=...` query strings, or a partially garbled string
- * where only the query params survive. Returns null when the payload is not
- * a valid domination capture code.
+ * (capture points) and `https://spartanopsapp.com/spawn?field=...` (universal
+ * respawn code), as well as bare `field_id=...` query strings, or a partially
+ * garbled string where only the query params survive. Returns null when the
+ * payload is not a valid SpartanOps code.
  */
 export function parseScanPayload(raw: string): ScanPayload | null {
   if (!raw || typeof raw !== "string") return null;
   const text = raw.trim();
   let params: URLSearchParams | null = null;
+  let path = "";
   try {
     // Tolerate protocol-less strings by falling back to a synthetic origin.
     const url = new URL(text, "https://spartanopsapp.com");
     params = url.searchParams;
+    path = url.pathname.toLowerCase();
   } catch {
     // Try to recover raw `?a=b&c=d` or `a=b&c=d` fragments.
     const q = text.includes("?") ? text.slice(text.indexOf("?") + 1) : text;
+    path = text.includes("?") ? text.slice(0, text.indexOf("?")).toLowerCase() : "";
     try {
       params = new URLSearchParams(q);
     } catch {
@@ -42,11 +47,19 @@ export function parseScanPayload(raw: string): ScanPayload | null {
   const fieldId = (params.get("field_id") ?? params.get("field") ?? "").trim();
   const point = (params.get("point") ?? "").trim().toLowerCase();
   const type = (params.get("type") ?? "").trim().toLowerCase();
-  if (!fieldId || !point) return null;
+  if (!fieldId) return null;
+
+  // Universal respawn code: /spawn?field=<id> (no point).
+  if (path.includes("/spawn") || (!point && (!type || type === "respawn" || type === "spawn"))) {
+    return { kind: "respawn", fieldId, point: "", type: "respawn", raw: text };
+  }
+
+  if (!point) return null;
   if (type && type !== "domination") return null;
   if (!POINT_NAMES.has(point) && !/^[1-5]$/.test(point)) return null;
-  return { fieldId, point, type: type || "domination", raw: text };
+  return { kind: "capture", fieldId, point, type: type || "domination", raw: text };
 }
+
 
 type Props = {
   open: boolean;
