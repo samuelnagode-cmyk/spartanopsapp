@@ -2144,11 +2144,7 @@ function PreMatchCountdown({ seconds, polygon, eventName, gamemode, pointTarget,
       {state && (
         <div style={{ width: "100%", maxWidth: 720, margin: "0 auto 12px", border: `1px solid ${ACCENT}55`, boxShadow: "0 20px 60px rgba(0,0,0,0.55)" }}>
           <TacticalMapContent state={state} en={en} nodeHoldersOverride={FREE_NODES} />
-          <div style={{ position: "relative", height: 0 }}>
-            <div style={{ position: "absolute", right: 8, bottom: 8, background: "rgba(0,0,0,0.55)", padding: 6, border: `1px solid ${ACCENT}55` }}>
-              <TacticalCompass size={56} />
-            </div>
-          </div>
+
         </div>
       )}
       {/* 6) Team rosters under the map */}
@@ -2524,6 +2520,12 @@ function ScanCodeButton({ fieldId, paused, en }: { fieldId: string; paused: bool
   const [open, setOpen] = useState(false);
 
   const handleDecode = useCallback((payload: ScanPayload) => {
+    setOpen(false);
+    // Universal respawn QR — route straight into the respawn sequence.
+    if (payload.kind === "respawn") {
+      navigate({ to: "/spawn", search: { field: payload.fieldId } as any, replace: true });
+      return;
+    }
     // Anti-cheat ticket: /capture will only accept scans originating from
     // this in-app scanner. The ticket carries the fresh scan payload so the
     // URL query string cannot be tampered with mid-flight.
@@ -2533,10 +2535,10 @@ function ScanCodeButton({ fieldId, paused, en }: { fieldId: string; paused: bool
         JSON.stringify({ fieldId: payload.fieldId, point: payload.point, at: Date.now() }),
       );
     } catch { /* ignore */ }
-    setOpen(false);
     // Preserve the printed URL contract for /capture's existing search parsing.
     navigate({ to: "/capture", search: { field: payload.fieldId, point: payload.point } as any, replace: true });
   }, [navigate]);
+
 
   return (
     <>

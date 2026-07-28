@@ -1841,8 +1841,12 @@ function MarshalLobbyConsole({ lobby: initialLobby, marshalPassword, lobbyPasswo
   const handleMatchPrimaryAction = () => {
     if (state === "active") { pauseMission(); return; }
     if (state === "paused") { resumeMission(); return; }
+    // Bring the marshal back to the top so Match Controls (and the lobby URL)
+    // are in view the moment the mission goes live.
+    try { window.scrollTo({ top: 0, behavior: "smooth" }); } catch { /* ignore */ }
     startMission().catch((e) => console.error("[marshal] start failed", e));
   };
+
   const endAndReset = () => {
     if (!confirm(en
       ? "End current mission/debriefing (score display) and reset stats? Registered players will remain in the lobby."
@@ -2253,9 +2257,8 @@ function MarshalLobbyConsole({ lobby: initialLobby, marshalPassword, lobbyPasswo
           }}>
           [ {state === "active" ? (en ? "PAUSE GAME" : "PAVZIRAJ IGRO") : state === "paused" ? (en ? "RESUME GAME" : "NADALJUJ IGRO") : (en ? "START MISSION" : "ZAŽENI MISIJO")} ]
         </button>
-        {/* Join link is only exposed inside the password-protected marshal console. */}
-        <LobbyLinkRow lobbyId={lobby.id} en={en} />
         <button
+
           onClick={endAndReset}
           style={{
             width: "100%",
@@ -2321,6 +2324,11 @@ function MarshalLobbyConsole({ lobby: initialLobby, marshalPassword, lobbyPasswo
             </div>
           )}
         </div>
+
+        {/* Join link is only exposed inside the password-protected marshal console. */}
+        <LobbyLinkRow lobbyId={lobby.id} en={en} />
+
+
 
         <p style={{ fontFamily: "monospace", fontSize: 11, color: MUTED, marginTop: 12 }}>
           {en ? "Registered:" : "Prijavljeni:"} <strong style={{ color: INK }}>{registered.length}</strong>
