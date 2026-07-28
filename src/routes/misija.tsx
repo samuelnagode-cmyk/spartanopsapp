@@ -2144,11 +2144,7 @@ function PreMatchCountdown({ seconds, polygon, eventName, gamemode, pointTarget,
       {state && (
         <div style={{ width: "100%", maxWidth: 720, margin: "0 auto 12px", border: `1px solid ${ACCENT}55`, boxShadow: "0 20px 60px rgba(0,0,0,0.55)" }}>
           <TacticalMapContent state={state} en={en} nodeHoldersOverride={FREE_NODES} />
-          <div style={{ position: "relative", height: 0 }}>
-            <div style={{ position: "absolute", right: 8, bottom: 8, background: "rgba(0,0,0,0.55)", padding: 6, border: `1px solid ${ACCENT}55` }}>
-              <TacticalCompass size={56} />
-            </div>
-          </div>
+
         </div>
       )}
       {/* 6) Team rosters under the map */}
