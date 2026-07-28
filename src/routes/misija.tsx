@@ -2798,10 +2798,6 @@ function LiveMatch({ state, captures, now, roster }: { state: GameState; capture
         </div>
       )}
 
-      {/* Respawn rules (Timer type) — always visible in-match */}
-      <div className="mt-4 flex justify-center">
-        <RespawnRulesBlock settings={state.settings} en={en} />
-      </div>
       <RespawnProtocolBlock settings={state.settings?.respawn} en={en} />
     </div>
   );
