@@ -2325,6 +2325,11 @@ function MarshalLobbyConsole({ lobby: initialLobby, marshalPassword, lobbyPasswo
           )}
         </div>
 
+        {/* Join link is only exposed inside the password-protected marshal console. */}
+        <LobbyLinkRow lobbyId={lobby.id} en={en} />
+
+
+
         <p style={{ fontFamily: "monospace", fontSize: 11, color: MUTED, marginTop: 12 }}>
           {en ? "Registered:" : "Prijavljeni:"} <strong style={{ color: INK }}>{registered.length}</strong>
         </p>
