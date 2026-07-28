@@ -1841,8 +1841,12 @@ function MarshalLobbyConsole({ lobby: initialLobby, marshalPassword, lobbyPasswo
   const handleMatchPrimaryAction = () => {
     if (state === "active") { pauseMission(); return; }
     if (state === "paused") { resumeMission(); return; }
+    // Bring the marshal back to the top so Match Controls (and the lobby URL)
+    // are in view the moment the mission goes live.
+    try { window.scrollTo({ top: 0, behavior: "smooth" }); } catch { /* ignore */ }
     startMission().catch((e) => console.error("[marshal] start failed", e));
   };
+
   const endAndReset = () => {
     if (!confirm(en
       ? "End current mission/debriefing (score display) and reset stats? Registered players will remain in the lobby."
