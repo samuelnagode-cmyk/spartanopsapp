@@ -2520,6 +2520,12 @@ function ScanCodeButton({ fieldId, paused, en }: { fieldId: string; paused: bool
   const [open, setOpen] = useState(false);
 
   const handleDecode = useCallback((payload: ScanPayload) => {
+    setOpen(false);
+    // Universal respawn QR — route straight into the respawn sequence.
+    if (payload.kind === "respawn") {
+      navigate({ to: "/spawn", search: { field: payload.fieldId } as any, replace: true });
+      return;
+    }
     // Anti-cheat ticket: /capture will only accept scans originating from
     // this in-app scanner. The ticket carries the fresh scan payload so the
     // URL query string cannot be tampered with mid-flight.
@@ -2529,10 +2535,10 @@ function ScanCodeButton({ fieldId, paused, en }: { fieldId: string; paused: bool
         JSON.stringify({ fieldId: payload.fieldId, point: payload.point, at: Date.now() }),
       );
     } catch { /* ignore */ }
-    setOpen(false);
     // Preserve the printed URL contract for /capture's existing search parsing.
     navigate({ to: "/capture", search: { field: payload.fieldId, point: payload.point } as any, replace: true });
   }, [navigate]);
+
 
   return (
     <>
