@@ -2000,34 +2000,8 @@ function TeamSelectModal({
   );
 }
 
-function RespawnRulesBlock({ settings, en = false }: { settings?: GameSettings | null; en?: boolean }) {
-  const r = settings?.respawn;
-  const lines: string[] = [];
-  if (!r || !r.enabled) {
-    lines.push(en ? "Respawn rule: You return to the game instantly (instant respawn)." : "Respawn pravila: V igro se vrnete takoj (instant respawn).");
-  } else {
-    if (r.mode === "linear") {
-      const min = Math.round((r.linearSec ?? 30) / 6) / 10;
-      lines.push(en ? `Linear timer: after every elimination you respawn in ${min} minutes.` : `Linearni čas: vedno ko umrete se vrnete (respawnate) v igro čez: ${min} minut.`);
-    } else {
-      lines.push(en ? "Dynamic timer: the longer the mission runs, the longer respawns take." : "Dinamični čas: dlje kot traja igra, dlje traja da se vrnete v igro.");
-    }
-    if (r.visibility === "all") {
-      lines.push(en ? "WARNING: enemy operators will see your respawn countdown." : "POZOR: vaši nasprotniki bodo videli ko čakate na respawn.");
-    } else {
-      lines.push(en ? "Enemy operators cannot see your respawn timers." : "Vaši nasprotniki ne bodo videli vaših respawn časov.");
-    }
-  }
-  return (
-    <div style={{ marginTop: 14, padding: "10px 14px", border: `1px dashed ${ACCENT}55`, background: "rgba(0,0,0,0.35)", maxWidth: 520 }}>
-      {lines.map((l, i) => (
-        <p key={i} className="text-[11px]" style={{ color: i === 0 ? INK : MUTED, lineHeight: 1.6, fontFamily: "monospace", margin: 0 }}>
-          {l}
-        </p>
-      ))}
-    </div>
-  );
-}
+
+
 
 function PreMatchCountdown({ seconds, polygon, eventName, gamemode, pointTarget, settings, en = false, state, roster }: { seconds: number; polygon: string | null; eventName?: string | null; gamemode?: "domination" | "search_destroy" | null; pointTarget?: number; settings?: GameSettings | null; en?: boolean; state?: GameState; roster?: Checkin[] }) {
   const mm = String(Math.floor(seconds / 60)).padStart(2, "0");
