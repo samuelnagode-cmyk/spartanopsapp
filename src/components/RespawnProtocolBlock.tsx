@@ -45,8 +45,8 @@ export function buildRespawnProtocolLines(r: RespawnProtocolSettings, en: boolea
     const t = formatTime(r.linearSec ?? 60, en);
     lines.push(
       en
-        ? `This mission has a respawn time of ${t}. After being hit, go to your respawn, scan the respawn QR code and the time will be displayed.`
-        : `Ta misija ima določen čas oživljanja, ki znaša ${t}. Po zadetku pojdite na svoj spawn, skenirajte QR kodo in prikazal se bo čas do oživitve.`,
+        ? `This mission has a respawn time of ${t}.`
+        : `Ta misija ima določen čas oživljanja, ki znaša ${t}.`,
     );
   }
 
