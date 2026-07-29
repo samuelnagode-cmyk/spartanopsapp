@@ -264,8 +264,25 @@ export function AmbientAudioProvider({ children }: { children: ReactNode }) {
       // Explicit lobby signal from misija — keep us in lobby phase.
       if (detail && detail.active) setMissionPhase("lobby");
     };
+    const playOneShot = (ref: typeof sectorRef, vol: number) => {
+      const a = ref.current;
+      if (!a || !sfxEnabled) return;
+      try {
+        a.load();
+        a.currentTime = 0;
+      } catch {}
+      a.volume = vol;
+      a.play().catch(() => {});
+    };
+    const onTeamCapture = () => playOneShot(teamCapRef, 0.95);
+    const onEnemyCapture = () => playOneShot(enemyCapRef, 0.95);
+    const onRespawnSfx = () => playOneShot(respawnRef, 0.95);
+    window.addEventListener("spartanops:sfx-team-capture", onTeamCapture);
+    window.addEventListener("spartanops:sfx-enemy-capture", onEnemyCapture);
+    window.addEventListener("spartanops:sfx-respawn", onRespawnSfx);
     window.addEventListener("spartanops:countdown", onCountdown);
     window.addEventListener("spartanops:capture-success", onSector);
+
     window.addEventListener("spartanops:match-start", onMatchStart);
     window.addEventListener("spartanops:match-end", onMatchEnd);
     window.addEventListener("spartanops:debrief-exit", onDebriefExit);
