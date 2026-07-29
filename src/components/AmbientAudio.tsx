@@ -288,8 +288,12 @@ export function AmbientAudioProvider({ children }: { children: ReactNode }) {
     window.addEventListener("spartanops:debrief-exit", onDebriefExit);
     window.addEventListener("spartanops:lobby", onLobby as EventListener);
     return () => {
+      window.removeEventListener("spartanops:sfx-team-capture", onTeamCapture);
+      window.removeEventListener("spartanops:sfx-enemy-capture", onEnemyCapture);
+      window.removeEventListener("spartanops:sfx-respawn", onRespawnSfx);
       window.removeEventListener("spartanops:countdown", onCountdown);
       window.removeEventListener("spartanops:capture-success", onSector);
+
       window.removeEventListener("spartanops:match-start", onMatchStart);
       window.removeEventListener("spartanops:match-end", onMatchEnd);
       window.removeEventListener("spartanops:debrief-exit", onDebriefExit);
