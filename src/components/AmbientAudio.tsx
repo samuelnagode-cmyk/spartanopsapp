@@ -308,7 +308,7 @@ export function AmbientAudioProvider({ children }: { children: ReactNode }) {
   const unlock = useCallback(() => {
     if (unlockedRef.current) return;
     unlockedRef.current = true;
-    const nodes = [mainRef.current, lobbyRef.current, debriefRef.current, countdownRef.current, sectorRef.current];
+    const nodes = [mainRef.current, lobbyRef.current, debriefRef.current, countdownRef.current, sectorRef.current, teamCapRef.current, enemyCapRef.current, respawnRef.current];
     nodes.forEach((a) => {
       if (!a || !a.paused) return;
       const wasVol = a.volume;
