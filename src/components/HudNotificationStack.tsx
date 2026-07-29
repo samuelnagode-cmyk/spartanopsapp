@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { X } from "lucide-react";
 import { useT } from "@/lib/i18n";
 
@@ -30,9 +30,12 @@ export function fillTemplate(tpl: string, vars: Record<string, string>) {
 
 export function useHudNotices() {
   const [notices, setNotices] = useState<HudNotice[]>([]);
-  const push = (n: HudNotice) =>
+  const push = useCallback((n: HudNotice) => {
     setNotices((prev) => [n, ...prev.filter((p) => p.id !== n.id)].slice(0, MAX_STACK));
-  const dismiss = (id: string) => setNotices((prev) => prev.filter((p) => p.id !== id));
+  }, []);
+  const dismiss = useCallback((id: string) => {
+    setNotices((prev) => prev.filter((p) => p.id !== id));
+  }, []);
   return { notices, push, dismiss };
 }
 
