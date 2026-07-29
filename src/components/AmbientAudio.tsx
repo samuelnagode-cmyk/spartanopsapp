@@ -120,6 +120,10 @@ export function AmbientAudioProvider({ children }: { children: ReactNode }) {
   const debriefRef = useRef<HTMLAudioElement | null>(null);
   const countdownRef = useRef<HTMLAudioElement | null>(null);
   const sectorRef = useRef<HTMLAudioElement | null>(null);
+  const teamCapRef = useRef<HTMLAudioElement | null>(null);
+  const enemyCapRef = useRef<HTMLAudioElement | null>(null);
+  const respawnRef = useRef<HTMLAudioElement | null>(null);
+
 
   // Instantiate audio nodes once.
   useEffect(() => {
