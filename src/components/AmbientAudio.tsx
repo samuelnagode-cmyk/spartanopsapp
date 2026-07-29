@@ -6,6 +6,10 @@ import songLobby from "@/assets/SONG_LOBBY.mp3.asset.json";
 import songDebrief from "@/assets/SONG_DEBRIEFING.mp3.asset.json";
 import sfxCountdown from "@/assets/SOUNDEFFECT_STARTCOUNTOWN.mp3.asset.json";
 import sfxSector from "@/assets/SOUNDEFFECT_SECTORSECURED.mp3.asset.json";
+import sfxTeamCapture from "@/assets/SOUNDEFFECT_TEAMCAPTUREDSECTOR.mp3.asset.json";
+import sfxEnemyCapture from "@/assets/SOUNDEFFECT_ENEMYCAPTUREDSECTOR.mp3.asset.json";
+import sfxRespawn from "@/assets/SOUNDEFFECT_RESPAWNTIMER.mp3.asset.json";
+
 
 /**
  * Global audio orchestrator. One AudioContext at root so switching between
