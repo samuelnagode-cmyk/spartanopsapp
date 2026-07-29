@@ -3187,18 +3187,31 @@ function EndgameReport({ state, roster, captures, en, now }: { state: GameState;
   );
 }
 
+export function useDeathLog(fieldId: string): DeathEvent[] {
+  const [events, setEvents] = useState<DeathEvent[]>(() => readDeathEvents(fieldId));
+  useEffect(() => {
+    setEvents(readDeathEvents(fieldId));
+    const onUpdate = () => setEvents(readDeathEvents(fieldId));
+    window.addEventListener("spartanops:deathlog", onUpdate);
+    return () => window.removeEventListener("spartanops:deathlog", onUpdate);
+  }, [fieldId]);
+  return events;
+}
+
 function HudNoticeFeed({
   captures,
   roster,
   myTeam,
   teamLabelFor,
   respawnEnabled,
+  fieldId,
 }: {
   captures: Capture[];
   roster: Checkin[];
   myTeam: string;
   teamLabelFor: (t: string) => string;
   respawnEnabled: boolean;
+  fieldId: string;
 }) {
   const t = useT();
   const { notices, push, dismiss } = useHudNotices();
