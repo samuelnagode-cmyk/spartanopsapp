@@ -3107,30 +3107,38 @@ function EndgameReport({ state, roster, captures, en, now }: { state: GameState;
         {activeTeams.map((team) => {
           const teamCol = TEAM_COLOR[team] ?? ACCENT;
           const members = enriched.filter((p) => p.assigned_team === team);
+          const teamDeaths = members.reduce((sum, p) => sum + (p.death_count ?? 0), 0);
+          const cols = showDeaths ? "minmax(0,1fr) 56px 70px" : "minmax(0,1fr) 56px";
           return (
             <div key={team} style={{ background: PANEL, border: `1px solid ${teamCol}66` }}>
               <div style={{ padding: "10px 14px", borderBottom: `1px solid ${teamCol}44`, fontFamily: "'Michroma', monospace", fontSize: 12, letterSpacing: "0.16em", color: teamCol, textTransform: "uppercase" }}>
                 ▌ {teamLabelFor(team)} {en ? "SCOREBOARD" : "LESTVICA"}
               </div>
-              <div className="grid gap-2 px-3 py-2 text-[9px] font-mono uppercase tracking-widest" style={{ color: MUTED, gridTemplateColumns: "minmax(0,1fr) 56px 70px" }}>
+              <div className="grid gap-2 px-3 py-2 text-[9px] font-mono uppercase tracking-widest" style={{ color: MUTED, gridTemplateColumns: cols }}>
                 <span>Callsign</span>
                 <span style={{ textAlign: "right" }}>{en ? "Points" : "Točke"}</span>
-                <span style={{ textAlign: "right" }}>{en ? "Deaths" : "Smrti"}</span>
+                {showDeaths && <span style={{ textAlign: "right" }}>{en ? "Deaths" : "Smrti"}</span>}
               </div>
               {members.length === 0 ? (
                 <p className="text-center py-6 font-mono text-[11px]" style={{ color: MUTED }}>—</p>
               ) : members.map((p) => {
                 const real = fmtName(p);
                 return (
-                  <div key={p.id} className="grid gap-2 items-center px-3 py-2 text-[12px] font-mono" style={{ gridTemplateColumns: "minmax(0,1fr) 56px 70px", borderTop: "1px solid rgba(236,227,196,0.06)" }}>
+                  <div key={p.id} className="grid gap-2 items-center px-3 py-2 text-[12px] font-mono" style={{ gridTemplateColumns: cols, borderTop: "1px solid rgba(236,227,196,0.06)" }}>
                     <span style={{ color: INK, fontWeight: 700, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", minWidth: 0 }}>
                       {p.callsign}{real && <span style={{ color: MUTED, fontWeight: 400, fontSize: 10, marginLeft: 6 }}>({real})</span>}
                     </span>
                     <span style={{ color: INK, fontWeight: 700, textAlign: "right" }}>{p.pts}</span>
-                    <span style={{ color: "#ff7070", textAlign: "right", fontWeight: 700 }}>☠ {p.death_count ?? 0}</span>
+                    {showDeaths && <span style={{ color: "#ff7070", textAlign: "right", fontWeight: 700 }}>☠ {p.death_count ?? 0}</span>}
                   </div>
                 );
               })}
+              {showDeaths && (
+                <div className="px-3 py-2 font-mono text-[10px] uppercase tracking-[0.16em] flex items-center justify-between" style={{ borderTop: `1px solid ${teamCol}44`, color: MUTED }}>
+                  <span>{t("hudLog.totalDeaths")}</span>
+                  <span style={{ color: "#ff7070", fontWeight: 700 }}>☠ {teamDeaths}</span>
+                </div>
+              )}
             </div>
           );
         })}
@@ -3146,6 +3154,19 @@ function EndgameReport({ state, roster, captures, en, now }: { state: GameState;
           </div>
         </>
       )}
+
+      {/* Full mission history log */}
+      <div style={{ maxWidth: 720, margin: "24px auto 0" }}>
+        <HudHistoryLog
+          captures={captures}
+          deaths={deathLog}
+          respawnEnabled={respawnEnabled}
+          teamLabelFor={teamLabelFor}
+          teamColor={(x) => TEAM_COLOR[x] ?? ACCENT}
+          nodeNames={NODE_NAMES}
+          maxHeight={360}
+        />
+      </div>
     </div>
   );
 }
