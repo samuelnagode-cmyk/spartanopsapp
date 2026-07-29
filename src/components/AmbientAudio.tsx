@@ -348,6 +348,7 @@ export function AmbientAudioProvider({ children }: { children: ReactNode }) {
 function AudioFab() {
   const { musicEnabled, sfxEnabled, toggleMusic, toggleSfx, unlock } = useAmbientAudio();
   const [open, setOpen] = useState(false);
+  const wrapRef = useRef<HTMLDivElement | null>(null);
   const anythingOn = musicEnabled || sfxEnabled;
 
   const onFabClick = () => {
@@ -355,8 +356,24 @@ function AudioFab() {
     setOpen((v) => !v);
   };
 
+  // Close the music/SFX card when clicking (or tapping) anywhere else.
+  useEffect(() => {
+    if (!open) return;
+    const onDown = (e: Event) => {
+      const el = wrapRef.current;
+      if (el && e.target instanceof Node && !el.contains(e.target)) setOpen(false);
+    };
+    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") setOpen(false); };
+    document.addEventListener("pointerdown", onDown, true);
+    document.addEventListener("keydown", onKey);
+    return () => {
+      document.removeEventListener("pointerdown", onDown, true);
+      document.removeEventListener("keydown", onKey);
+    };
+  }, [open]);
+
   return (
-    <div style={{ position: "fixed", bottom: 24, left: 24, zIndex: 60 }}>
+    <div ref={wrapRef} style={{ position: "fixed", bottom: 24, left: 24, zIndex: 60 }}>
       {open && (
         <div
           role="menu"
