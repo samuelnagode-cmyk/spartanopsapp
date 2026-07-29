@@ -49,6 +49,13 @@ export const dict: Dict = {
   "hudNotif.respawnTitle": { sl: "ČAKANJE NA OŽIVITEV", en: "AWAITING RESPAWN" },
   "hudNotif.dismiss": { sl: "Zapri obvestilo", en: "Dismiss notification" },
 
+  // HUD tactical history log
+  "hudLog.title": { sl: "ZGODOVINA DOGODKOV", en: "EVENT HISTORY" },
+  "hudLog.all": { sl: "Vsi dogodki", en: "All events" },
+  "hudLog.sectorsOnly": { sl: "Samo sektorji", en: "Sectors only" },
+  "hudLog.empty": { sl: "Ni zabeleženih dogodkov.", en: "No events recorded." },
+  "hudLog.totalDeaths": { sl: "SKUPAJ SMRTI", en: "TOTAL DEATHS" },
+
   // In-app QR Scanner (anti-cheat)
   "scanner.hudButton": { sl: "SKENIRAJ TOČKO", en: "SCAN CODE" },
 

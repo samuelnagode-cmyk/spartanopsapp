@@ -161,6 +161,31 @@ function SpawnPage() {
     return () => clearInterval(timer);
   }, [respawnLeft]);
 
+  // If the match ends (timer runs out or the marshal ends it) while the player
+  // is still holding a respawn countdown, drop the countdown and send them
+  // straight to the debriefing screen instead of making them wait it out.
+  useEffect(() => {
+    if (state !== "success" || respawnLeft == null || respawnLeft <= 0) return;
+    let cancelled = false;
+    const check = async () => {
+      const { data } = await supabase
+        .from("spartanops_game_state")
+        .select("status, match_started_at, match_duration_minutes")
+        .eq("field_id", toDbField(returnField))
+        .maybeSingle();
+      if (cancelled || !data) return;
+      const startMs = (data as any).match_started_at ? Date.parse((data as any).match_started_at) : NaN;
+      const durMin = Number((data as any).match_duration_minutes ?? 0);
+      const expired = Number.isFinite(startMs) && durMin > 0 && Date.now() >= startMs + durMin * 60_000;
+      if ((data as any).status === "ended" || expired) {
+        navigate({ to: "/misija", search: { field: returnField }, replace: true });
+      }
+    };
+    check();
+    const poll = setInterval(check, 4000);
+    return () => { cancelled = true; clearInterval(poll); };
+  }, [state, respawnLeft, returnField, navigate]);
+
   // Respawn QR scan triggers the respawn timer SFX immediately so the
   // player hears the countdown cue the moment their timer starts.
   useEffect(() => {

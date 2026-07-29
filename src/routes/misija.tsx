@@ -15,6 +15,8 @@ import { TacticalCompass } from "@/components/TacticalCompass";
 import { Crosshair, Shield } from "lucide-react";
 import { useLang, useT } from "@/lib/i18n";
 import { HudNotificationStack, useHudNotices, fillTemplate } from "@/components/HudNotificationStack";
+import { HudHistoryLog } from "@/components/HudHistoryLog";
+import { appendDeathEvents, readDeathEvents, type DeathEvent } from "@/lib/hud-history";
 import { QRScanner, type ScanPayload } from "@/components/QRScanner";
 import { useAmbientAudio } from "@/components/AmbientAudio";
 
@@ -2606,6 +2608,7 @@ function ScanCodeButton({ fieldId, paused, en }: { fieldId: string; paused: bool
 
 function LiveMatch({ state, captures, now, roster, myTeam }: { state: GameState; captures: Capture[]; now: number; roster: Checkin[]; myTeam: string }) {
 
+  const deathLog = useDeathLog(state.field_id ?? "");
   const { lang } = useLang();
   const en = lang === "en";
   const teamLabelFor = (t: string) => teamName(t, state.settings, en);
@@ -2644,7 +2647,7 @@ function LiveMatch({ state, captures, now, roster, myTeam }: { state: GameState;
 
   return (
     <div className="max-w-5xl mx-auto px-4 py-6" style={{ paddingTop: 112 }}>
-      <HudNoticeFeed captures={visibleCaptures} roster={roster} myTeam={myTeam} teamLabelFor={teamLabelFor} respawnEnabled={!!state.settings?.respawn?.enabled} />
+      <HudNoticeFeed captures={visibleCaptures} roster={roster} myTeam={myTeam} teamLabelFor={teamLabelFor} respawnEnabled={!!state.settings?.respawn?.enabled} fieldId={state.field_id ?? ""} />
       {preMatchSec > 0 && <PreMatchCountdown seconds={preMatchSec} polygon={fieldTitleFromState(state, "")} eventName={missionTitleFromState(state, "")} gamemode={state.gamemode} pointTarget={state.point_target} settings={state.settings} en={en} state={state} roster={roster} />}
 
       <PlayerHudHeader en={en} />
@@ -2733,54 +2736,16 @@ function LiveMatch({ state, captures, now, roster, myTeam }: { state: GameState;
 
 
 
-      {/* Capture log */}
-      <div style={{ background: PANEL, border: `1px solid rgba(236,227,196,0.12)` }}>
-        <div
-          style={{
-            padding: "10px 14px",
-            borderBottom: `1px solid rgba(236,227,196,0.1)`,
-            fontFamily: "monospace",
-            fontSize: 11,
-            letterSpacing: "0.2em",
-            color: ACCENT,
-            textTransform: "uppercase",
-          }}
-        >
-          ▌ {en ? "CAPTURE LOG" : "DNEVNIK ZAVZEMANJ"}
-        </div>
-        <div style={{ maxHeight: 260, overflowY: "auto" }}>
-          {visibleCaptures.length === 0 && (
-            <p style={{ color: MUTED, fontStyle: "italic", padding: 16, fontSize: 12, textAlign: "center" }}>
-              {en ? "No captures recorded." : "Še ni zavzetij."}
-            </p>
-          )}
-          {visibleCaptures.map((c) => {
-            const t = new Date(c.captured_at);
-            const time = `${String(t.getHours()).padStart(2, "0")}:${String(t.getMinutes()).padStart(2, "0")}:${String(t.getSeconds()).padStart(2, "0")}`;
-            return (
-              <div
-                key={c.id}
-                style={{
-                  padding: "8px 14px",
-                  borderTop: "1px solid rgba(236,227,196,0.05)",
-                  fontSize: 12,
-                  fontFamily: "monospace",
-                  display: "flex",
-                  gap: 10,
-                  alignItems: "center",
-                }}
-              >
-                <span style={{ color: MUTED }}>{time}</span>
-                <span style={{ color: TEAM_COLOR[c.team], fontWeight: 700, minWidth: 70 }}>{teamLabelFor(c.team)}</span>
-                <span style={{ color: INK }}>
-                  {en ? "Point" : "Točka"} {c.point_number} ({NODE_NAMES[c.point_number - 1]})
-                </span>
-                <span style={{ color: MUTED, marginLeft: "auto" }}>{c.player_callsign ?? "—"}</span>
-              </div>
-            );
-          })}
-        </div>
-      </div>
+      {/* Two-tier tactical history log */}
+      <HudHistoryLog
+        captures={visibleCaptures}
+        deaths={deathLog}
+        respawnEnabled={!!state.settings?.respawn?.enabled}
+        teamLabelFor={teamLabelFor}
+        teamColor={(t) => TEAM_COLOR[t] ?? ACCENT}
+        nodeNames={NODE_NAMES}
+        maxHeight={300}
+      />
 
       {/* Player scoreboard (capture counts per player) */}
       {state.settings?.capturePointsScoring && (
@@ -2926,7 +2891,11 @@ function EndgameReport({ state, roster, captures, en, now }: { state: GameState;
       try { window.dispatchEvent(new Event("spartanops:debrief-exit")); } catch { /* ignore */ }
     };
   }, []);
-  const teamLabelFor = (t: string) => teamName(t, state.settings, en);
+  const t = useT();
+  const deathLog = useDeathLog(state.field_id ?? "");
+  const respawnEnabled = !!state.settings?.respawn?.enabled;
+  const showDeaths = respawnEnabled && !!state.settings?.respawn?.publicDeaths;
+  const teamLabelFor = (tm: string) => teamName(tm, state.settings, en);
   const counts: Record<string, number> = {};
   for (const c of captures) counts[c.player_callsign ?? "—"] = (counts[c.player_callsign ?? "—"] ?? 0) + 1;
 
@@ -3142,30 +3111,38 @@ function EndgameReport({ state, roster, captures, en, now }: { state: GameState;
         {activeTeams.map((team) => {
           const teamCol = TEAM_COLOR[team] ?? ACCENT;
           const members = enriched.filter((p) => p.assigned_team === team);
+          const teamDeaths = members.reduce((sum, p) => sum + (p.death_count ?? 0), 0);
+          const cols = showDeaths ? "minmax(0,1fr) 56px 70px" : "minmax(0,1fr) 56px";
           return (
             <div key={team} style={{ background: PANEL, border: `1px solid ${teamCol}66` }}>
               <div style={{ padding: "10px 14px", borderBottom: `1px solid ${teamCol}44`, fontFamily: "'Michroma', monospace", fontSize: 12, letterSpacing: "0.16em", color: teamCol, textTransform: "uppercase" }}>
                 ▌ {teamLabelFor(team)} {en ? "SCOREBOARD" : "LESTVICA"}
               </div>
-              <div className="grid gap-2 px-3 py-2 text-[9px] font-mono uppercase tracking-widest" style={{ color: MUTED, gridTemplateColumns: "minmax(0,1fr) 56px 70px" }}>
+              <div className="grid gap-2 px-3 py-2 text-[9px] font-mono uppercase tracking-widest" style={{ color: MUTED, gridTemplateColumns: cols }}>
                 <span>Callsign</span>
                 <span style={{ textAlign: "right" }}>{en ? "Points" : "Točke"}</span>
-                <span style={{ textAlign: "right" }}>{en ? "Deaths" : "Smrti"}</span>
+                {showDeaths && <span style={{ textAlign: "right" }}>{en ? "Deaths" : "Smrti"}</span>}
               </div>
               {members.length === 0 ? (
                 <p className="text-center py-6 font-mono text-[11px]" style={{ color: MUTED }}>—</p>
               ) : members.map((p) => {
                 const real = fmtName(p);
                 return (
-                  <div key={p.id} className="grid gap-2 items-center px-3 py-2 text-[12px] font-mono" style={{ gridTemplateColumns: "minmax(0,1fr) 56px 70px", borderTop: "1px solid rgba(236,227,196,0.06)" }}>
+                  <div key={p.id} className="grid gap-2 items-center px-3 py-2 text-[12px] font-mono" style={{ gridTemplateColumns: cols, borderTop: "1px solid rgba(236,227,196,0.06)" }}>
                     <span style={{ color: INK, fontWeight: 700, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", minWidth: 0 }}>
                       {p.callsign}{real && <span style={{ color: MUTED, fontWeight: 400, fontSize: 10, marginLeft: 6 }}>({real})</span>}
                     </span>
                     <span style={{ color: INK, fontWeight: 700, textAlign: "right" }}>{p.pts}</span>
-                    <span style={{ color: "#ff7070", textAlign: "right", fontWeight: 700 }}>☠ {p.death_count ?? 0}</span>
+                    {showDeaths && <span style={{ color: "#ff7070", textAlign: "right", fontWeight: 700 }}>☠ {p.death_count ?? 0}</span>}
                   </div>
                 );
               })}
+              {showDeaths && (
+                <div className="px-3 py-2 font-mono text-[10px] uppercase tracking-[0.16em] flex items-center justify-between" style={{ borderTop: `1px solid ${teamCol}44`, color: MUTED }}>
+                  <span>{t("hudLog.totalDeaths")}</span>
+                  <span style={{ color: "#ff7070", fontWeight: 700 }}>☠ {teamDeaths}</span>
+                </div>
+              )}
             </div>
           );
         })}
@@ -3181,8 +3158,32 @@ function EndgameReport({ state, roster, captures, en, now }: { state: GameState;
           </div>
         </>
       )}
+
+      {/* Full mission history log */}
+      <div style={{ maxWidth: 720, margin: "24px auto 0" }}>
+        <HudHistoryLog
+          captures={captures}
+          deaths={deathLog}
+          respawnEnabled={respawnEnabled}
+          teamLabelFor={teamLabelFor}
+          teamColor={(x) => TEAM_COLOR[x] ?? ACCENT}
+          nodeNames={NODE_NAMES}
+          maxHeight={360}
+        />
+      </div>
     </div>
   );
+}
+
+export function useDeathLog(fieldId: string): DeathEvent[] {
+  const [events, setEvents] = useState<DeathEvent[]>(() => readDeathEvents(fieldId));
+  useEffect(() => {
+    setEvents(readDeathEvents(fieldId));
+    const onUpdate = () => setEvents(readDeathEvents(fieldId));
+    window.addEventListener("spartanops:deathlog", onUpdate);
+    return () => window.removeEventListener("spartanops:deathlog", onUpdate);
+  }, [fieldId]);
+  return events;
 }
 
 function HudNoticeFeed({
@@ -3191,12 +3192,14 @@ function HudNoticeFeed({
   myTeam,
   teamLabelFor,
   respawnEnabled,
+  fieldId,
 }: {
   captures: Capture[];
   roster: Checkin[];
   myTeam: string;
   teamLabelFor: (t: string) => string;
   respawnEnabled: boolean;
+  fieldId: string;
 }) {
   const t = useT();
   const { notices, push, dismiss } = useHudNotices();
@@ -3251,6 +3254,18 @@ function HudNoticeFeed({
       deathPrimedRef.current = true;
       return;
     }
+    if (fresh.length > 0) {
+      appendDeathEvents(
+        fieldId,
+        fresh.map((p) => ({
+          id: `${p.id}-${p.respawn_unlock_at}`,
+          callsign: String(p.callsign ?? "—"),
+          team: p.assigned_team,
+          at: Date.now(),
+        })),
+      );
+      try { window.dispatchEvent(new Event("spartanops:deathlog")); } catch { /* ignore */ }
+    }
     fresh.slice(-3).forEach((p) => {
       const color = TEAM_COLOR[p.assigned_team] ?? ACCENT;
       push({
@@ -3266,7 +3281,7 @@ function HudNoticeFeed({
       });
       try { window.dispatchEvent(new Event("spartanops:sfx-respawn")); } catch { /* ignore */ }
     });
-  }, [roster, respawnEnabled, push, t, teamLabelFor]);
+  }, [roster, respawnEnabled, push, t, teamLabelFor, fieldId]);
 
   return <HudNotificationStack notices={notices} onDismiss={dismiss} />;
 }
