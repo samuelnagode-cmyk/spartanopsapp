@@ -3293,7 +3293,7 @@ function HudNoticeFeed({
       });
       try { window.dispatchEvent(new Event("spartanops:sfx-respawn")); } catch { /* ignore */ }
     });
-  }, [roster, respawnEnabled, push, t, teamLabelFor]);
+  }, [roster, respawnEnabled, push, t, teamLabelFor, fieldId]);
 
   return <HudNotificationStack notices={notices} onDismiss={dismiss} />;
 }
