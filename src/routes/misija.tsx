@@ -3266,6 +3266,18 @@ function HudNoticeFeed({
       deathPrimedRef.current = true;
       return;
     }
+    if (fresh.length > 0) {
+      appendDeathEvents(
+        fieldId,
+        fresh.map((p) => ({
+          id: `${p.id}-${p.respawn_unlock_at}`,
+          callsign: String(p.callsign ?? "—"),
+          team: p.assigned_team,
+          at: Date.now(),
+        })),
+      );
+      try { window.dispatchEvent(new Event("spartanops:deathlog")); } catch { /* ignore */ }
+    }
     fresh.slice(-3).forEach((p) => {
       const color = TEAM_COLOR[p.assigned_team] ?? ACCENT;
       push({
