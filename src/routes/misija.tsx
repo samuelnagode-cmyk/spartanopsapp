@@ -2143,9 +2143,8 @@ function PreMatchCountdown({ seconds, polygon, eventName, gamemode, pointTarget,
       </div>
 
       {state && (
-        <div style={{ width: "100%", maxWidth: 720, margin: "0 auto 12px", border: `1px solid ${ACCENT}55`, boxShadow: "0 20px 60px rgba(0,0,0,0.55)" }}>
-          <TacticalMapContent state={state} en={en} nodeHoldersOverride={FREE_NODES} />
-
+        <div style={{ width: "100%", maxWidth: 720, margin: "0 auto 12px" }}>
+          <TacticalMap state={state} captures={[]} en={en} hasPositions={true} missionName={missionName} timeLabel={`${mm}:${ss}`} />
         </div>
       )}
       {/* 6) Team rosters under the map */}
@@ -2381,9 +2380,11 @@ function TacticalMapContent({ state, en, nodeHoldersOverride }: { state: GameSta
   );
 }
 
-function TacticalMap({ state, captures, en, hasPositions }: { state: GameState; captures: Capture[]; en: boolean; hasPositions: boolean }) {
+function TacticalMap({ state, captures, en, hasPositions, missionName, timeLabel }: { state: GameState; captures: Capture[]; en: boolean; hasPositions: boolean; missionName?: string; timeLabel?: string }) {
   const [open, setOpen] = useState(false);
-  const [zoom, setZoom] = useState(1.6);
+  // Opens showing the FULL map (no crop) — the operator zooms in from there.
+  const [zoom, setZoom] = useState(1);
+  useEffect(() => { if (open) setZoom(1); }, [open]);
   const positions = state.node_positions ?? {};
   const startMs = state.match_started_at ? new Date(state.match_started_at).getTime() : null;
   const mapIsLive = (state.status === "active" || state.status === "paused") && !!startMs;
@@ -2466,31 +2467,42 @@ function TacticalMap({ state, captures, en, hasPositions }: { state: GameState; 
           role="dialog"
           aria-modal="true"
         >
-          <div className="flex items-center justify-between px-4 py-3" style={{ borderBottom: `1px solid ${ACCENT}44` }}>
-            <div style={{ fontFamily: "'Michroma', monospace", fontSize: 11, letterSpacing: "0.18em", color: ACCENT, textTransform: "uppercase" }}>
-              // TACTICAL MAP
+          <div className="flex items-center justify-between gap-3 px-4 py-3" style={{ borderBottom: `1px solid ${ACCENT}44` }}>
+            <div
+              style={{
+                fontFamily: "'Michroma', monospace",
+                fontSize: 10,
+                letterSpacing: "0.16em",
+                color: ACCENT,
+                textTransform: "uppercase",
+                textShadow: `0 0 10px ${ACCENT}99, 0 0 22px ${ACCENT}55`,
+                lineHeight: 1.5,
+                minWidth: 0,
+              }}
+            >
+              {(missionName || (en ? "ACTIVE MISSION" : "AKTIVNA MISIJA")).toUpperCase()},{" "}
+              {en ? "TIME REMAINING" : "PREOSTALI ČAS"}: {timeLabel ?? "--:--"}
             </div>
-            <div className="flex items-center gap-2">
-              <button
-                type="button"
-                onClick={() => setZoom((z) => Math.max(1, z - 0.3))}
-                style={{ background: "transparent", color: INK, border: `1px solid ${ACCENT}55`, padding: "6px 10px", fontFamily: "monospace", fontSize: 12, cursor: "pointer" }}
-                aria-label="Zoom out"
-              >−</button>
-              <button
-                type="button"
-                onClick={() => setZoom((z) => Math.min(4, z + 0.3))}
-                style={{ background: "transparent", color: INK, border: `1px solid ${ACCENT}55`, padding: "6px 10px", fontFamily: "monospace", fontSize: 12, cursor: "pointer" }}
-                aria-label="Zoom in"
-              >+</button>
-              <button
-                type="button"
-                onClick={() => setOpen(false)}
-                style={{ background: ACCENT, color: BG, border: "none", padding: "6px 12px", fontFamily: "'Michroma', monospace", fontSize: 11, letterSpacing: "0.16em", textTransform: "uppercase", cursor: "pointer", fontWeight: 700 }}
-              >
-                [ {en ? "CLOSE TACTICAL MAP" : "ZAPRI ZEMLJEVID"} ]
-              </button>
-            </div>
+            <button
+              type="button"
+              onClick={() => setOpen(false)}
+              aria-label={en ? "Close tactical map" : "Zapri zemljevid"}
+              style={{
+                flexShrink: 0,
+                width: 38,
+                height: 38,
+                background: "transparent",
+                color: ACCENT,
+                border: `1px solid ${ACCENT}77`,
+                fontFamily: "'Michroma', monospace",
+                fontSize: 15,
+                lineHeight: 1,
+                cursor: "pointer",
+                fontWeight: 700,
+              }}
+            >
+              ✕
+            </button>
           </div>
           <div
             className="flex-1"
@@ -2506,6 +2518,21 @@ function TacticalMap({ state, captures, en, hasPositions }: { state: GameState; 
             >
               <TacticalMapContent state={state} en={en} nodeHoldersOverride={visibleNodeHolders} />
             </div>
+          </div>
+          <div className="flex items-center justify-center gap-3 px-4 py-3" style={{ borderTop: `1px solid ${ACCENT}33` }}>
+            <button
+              type="button"
+              onClick={() => setZoom((z) => Math.max(1, +(z - 0.3).toFixed(2)))}
+              style={{ background: "transparent", color: INK, border: `1px solid ${ACCENT}55`, padding: "6px 16px", fontFamily: "monospace", fontSize: 14, cursor: "pointer" }}
+              aria-label="Zoom out"
+            >−</button>
+            <span style={{ color: ACCENT, fontFamily: "monospace", fontSize: 11, letterSpacing: "0.14em" }}>{Math.round(zoom * 100)}%</span>
+            <button
+              type="button"
+              onClick={() => setZoom((z) => Math.min(4, +(z + 0.3).toFixed(2)))}
+              style={{ background: "transparent", color: INK, border: `1px solid ${ACCENT}55`, padding: "6px 16px", fontFamily: "monospace", fontSize: 14, cursor: "pointer" }}
+              aria-label="Zoom in"
+            >+</button>
           </div>
         </div>
       )}
@@ -2697,7 +2724,7 @@ function LiveMatch({ state, captures, now, roster, myTeam }: { state: GameState;
       </div>
 
       {/* Map with positioned node markers — click to open zoomable modal */}
-      <TacticalMap state={state} captures={visibleCaptures} en={en} hasPositions={hasPositions} />
+      <TacticalMap state={state} captures={visibleCaptures} en={en} hasPositions={hasPositions} missionName={missionTitleFromState(state, en ? "Active Mission" : "Aktivna misija")} timeLabel={`${mm}:${ss}`} />
 
       {/* In-app Scan Code button — the ONLY sanctioned capture path */}
       <ScanCodeButton fieldId={state.field_id ?? ""} paused={state.status === "paused"} en={en} />
