@@ -2608,6 +2608,7 @@ function ScanCodeButton({ fieldId, paused, en }: { fieldId: string; paused: bool
 
 function LiveMatch({ state, captures, now, roster, myTeam }: { state: GameState; captures: Capture[]; now: number; roster: Checkin[]; myTeam: string }) {
 
+  const deathLog = useDeathLog(state.field_id ?? "");
   const { lang } = useLang();
   const en = lang === "en";
   const teamLabelFor = (t: string) => teamName(t, state.settings, en);
