@@ -2143,9 +2143,8 @@ function PreMatchCountdown({ seconds, polygon, eventName, gamemode, pointTarget,
       </div>
 
       {state && (
-        <div style={{ width: "100%", maxWidth: 720, margin: "0 auto 12px", border: `1px solid ${ACCENT}55`, boxShadow: "0 20px 60px rgba(0,0,0,0.55)" }}>
-          <TacticalMapContent state={state} en={en} nodeHoldersOverride={FREE_NODES} />
-
+        <div style={{ width: "100%", maxWidth: 720, margin: "0 auto 12px" }}>
+          <TacticalMap state={state} captures={[]} en={en} hasPositions={true} missionName={missionName} timeLabel={`${mm}:${ss}`} />
         </div>
       )}
       {/* 6) Team rosters under the map */}
@@ -2725,7 +2724,7 @@ function LiveMatch({ state, captures, now, roster, myTeam }: { state: GameState;
       </div>
 
       {/* Map with positioned node markers — click to open zoomable modal */}
-      <TacticalMap state={state} captures={visibleCaptures} en={en} hasPositions={hasPositions} />
+      <TacticalMap state={state} captures={visibleCaptures} en={en} hasPositions={hasPositions} missionName={missionTitleFromState(state, en ? "Active Mission" : "Aktivna misija")} timeLabel={`${mm}:${ss}`} />
 
       {/* In-app Scan Code button — the ONLY sanctioned capture path */}
       <ScanCodeButton fieldId={state.field_id ?? ""} paused={state.status === "paused"} en={en} />
