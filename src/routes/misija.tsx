@@ -2735,54 +2735,16 @@ function LiveMatch({ state, captures, now, roster, myTeam }: { state: GameState;
 
 
 
-      {/* Capture log */}
-      <div style={{ background: PANEL, border: `1px solid rgba(236,227,196,0.12)` }}>
-        <div
-          style={{
-            padding: "10px 14px",
-            borderBottom: `1px solid rgba(236,227,196,0.1)`,
-            fontFamily: "monospace",
-            fontSize: 11,
-            letterSpacing: "0.2em",
-            color: ACCENT,
-            textTransform: "uppercase",
-          }}
-        >
-          ▌ {en ? "CAPTURE LOG" : "DNEVNIK ZAVZEMANJ"}
-        </div>
-        <div style={{ maxHeight: 260, overflowY: "auto" }}>
-          {visibleCaptures.length === 0 && (
-            <p style={{ color: MUTED, fontStyle: "italic", padding: 16, fontSize: 12, textAlign: "center" }}>
-              {en ? "No captures recorded." : "Še ni zavzetij."}
-            </p>
-          )}
-          {visibleCaptures.map((c) => {
-            const t = new Date(c.captured_at);
-            const time = `${String(t.getHours()).padStart(2, "0")}:${String(t.getMinutes()).padStart(2, "0")}:${String(t.getSeconds()).padStart(2, "0")}`;
-            return (
-              <div
-                key={c.id}
-                style={{
-                  padding: "8px 14px",
-                  borderTop: "1px solid rgba(236,227,196,0.05)",
-                  fontSize: 12,
-                  fontFamily: "monospace",
-                  display: "flex",
-                  gap: 10,
-                  alignItems: "center",
-                }}
-              >
-                <span style={{ color: MUTED }}>{time}</span>
-                <span style={{ color: TEAM_COLOR[c.team], fontWeight: 700, minWidth: 70 }}>{teamLabelFor(c.team)}</span>
-                <span style={{ color: INK }}>
-                  {en ? "Point" : "Točka"} {c.point_number} ({NODE_NAMES[c.point_number - 1]})
-                </span>
-                <span style={{ color: MUTED, marginLeft: "auto" }}>{c.player_callsign ?? "—"}</span>
-              </div>
-            );
-          })}
-        </div>
-      </div>
+      {/* Two-tier tactical history log */}
+      <HudHistoryLog
+        captures={visibleCaptures}
+        deaths={deathLog}
+        respawnEnabled={!!state.settings?.respawn?.enabled}
+        teamLabelFor={teamLabelFor}
+        teamColor={(t) => TEAM_COLOR[t] ?? ACCENT}
+        nodeNames={NODE_NAMES}
+        maxHeight={300}
+      />
 
       {/* Player scoreboard (capture counts per player) */}
       {state.settings?.capturePointsScoring && (
