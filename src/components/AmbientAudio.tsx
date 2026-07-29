@@ -6,6 +6,10 @@ import songLobby from "@/assets/SONG_LOBBY.mp3.asset.json";
 import songDebrief from "@/assets/SONG_DEBRIEFING.mp3.asset.json";
 import sfxCountdown from "@/assets/SOUNDEFFECT_STARTCOUNTOWN.mp3.asset.json";
 import sfxSector from "@/assets/SOUNDEFFECT_SECTORSECURED.mp3.asset.json";
+import sfxTeamCapture from "@/assets/SOUNDEFFECT_TEAMCAPTUREDSECTOR.mp3.asset.json";
+import sfxEnemyCapture from "@/assets/SOUNDEFFECT_ENEMYCAPTUREDSECTOR.mp3.asset.json";
+import sfxRespawn from "@/assets/SOUNDEFFECT_RESPAWNTIMER.mp3.asset.json";
+
 
 /**
  * Global audio orchestrator. One AudioContext at root so switching between
@@ -116,6 +120,10 @@ export function AmbientAudioProvider({ children }: { children: ReactNode }) {
   const debriefRef = useRef<HTMLAudioElement | null>(null);
   const countdownRef = useRef<HTMLAudioElement | null>(null);
   const sectorRef = useRef<HTMLAudioElement | null>(null);
+  const teamCapRef = useRef<HTMLAudioElement | null>(null);
+  const enemyCapRef = useRef<HTMLAudioElement | null>(null);
+  const respawnRef = useRef<HTMLAudioElement | null>(null);
+
 
   // Instantiate audio nodes once.
   useEffect(() => {
@@ -138,13 +146,26 @@ export function AmbientAudioProvider({ children }: { children: ReactNode }) {
     const sec = new Audio(sfxSector.url);
     sec.preload = "none";
     sec.volume = 0.95;
+    const teamCap = new Audio(sfxTeamCapture.url);
+    teamCap.preload = "none";
+    teamCap.volume = 0.95;
+    const enemyCap = new Audio(sfxEnemyCapture.url);
+    enemyCap.preload = "none";
+    enemyCap.volume = 0.95;
+    const rsp = new Audio(sfxRespawn.url);
+    rsp.preload = "none";
+    rsp.volume = 0.95;
     mainRef.current = main;
     lobbyRef.current = lobby;
     debriefRef.current = debrief;
     countdownRef.current = cd;
     sectorRef.current = sec;
+    teamCapRef.current = teamCap;
+    enemyCapRef.current = enemyCap;
+    respawnRef.current = rsp;
     return () => {
-      [main, lobby, debrief, cd, sec].forEach((a) => {
+      [main, lobby, debrief, cd, sec, teamCap, enemyCap, rsp].forEach((a) => {
+
         try {
           a.pause();
           a.src = "";
@@ -243,15 +264,36 @@ export function AmbientAudioProvider({ children }: { children: ReactNode }) {
       // Explicit lobby signal from misija — keep us in lobby phase.
       if (detail && detail.active) setMissionPhase("lobby");
     };
+    const playOneShot = (ref: typeof sectorRef, vol: number) => {
+      const a = ref.current;
+      if (!a || !sfxEnabled) return;
+      try {
+        a.load();
+        a.currentTime = 0;
+      } catch {}
+      a.volume = vol;
+      a.play().catch(() => {});
+    };
+    const onTeamCapture = () => playOneShot(teamCapRef, 0.95);
+    const onEnemyCapture = () => playOneShot(enemyCapRef, 0.95);
+    const onRespawnSfx = () => playOneShot(respawnRef, 0.95);
+    window.addEventListener("spartanops:sfx-team-capture", onTeamCapture);
+    window.addEventListener("spartanops:sfx-enemy-capture", onEnemyCapture);
+    window.addEventListener("spartanops:sfx-respawn", onRespawnSfx);
     window.addEventListener("spartanops:countdown", onCountdown);
     window.addEventListener("spartanops:capture-success", onSector);
+
     window.addEventListener("spartanops:match-start", onMatchStart);
     window.addEventListener("spartanops:match-end", onMatchEnd);
     window.addEventListener("spartanops:debrief-exit", onDebriefExit);
     window.addEventListener("spartanops:lobby", onLobby as EventListener);
     return () => {
+      window.removeEventListener("spartanops:sfx-team-capture", onTeamCapture);
+      window.removeEventListener("spartanops:sfx-enemy-capture", onEnemyCapture);
+      window.removeEventListener("spartanops:sfx-respawn", onRespawnSfx);
       window.removeEventListener("spartanops:countdown", onCountdown);
       window.removeEventListener("spartanops:capture-success", onSector);
+
       window.removeEventListener("spartanops:match-start", onMatchStart);
       window.removeEventListener("spartanops:match-end", onMatchEnd);
       window.removeEventListener("spartanops:debrief-exit", onDebriefExit);
@@ -266,7 +308,7 @@ export function AmbientAudioProvider({ children }: { children: ReactNode }) {
   const unlock = useCallback(() => {
     if (unlockedRef.current) return;
     unlockedRef.current = true;
-    const nodes = [mainRef.current, lobbyRef.current, debriefRef.current, countdownRef.current, sectorRef.current];
+    const nodes = [mainRef.current, lobbyRef.current, debriefRef.current, countdownRef.current, sectorRef.current, teamCapRef.current, enemyCapRef.current, respawnRef.current];
     nodes.forEach((a) => {
       if (!a || !a.paused) return;
       const wasVol = a.volume;

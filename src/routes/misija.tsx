@@ -14,6 +14,7 @@ import { OfflineBanner } from "@/components/OfflineBanner";
 import { TacticalCompass } from "@/components/TacticalCompass";
 import { Crosshair, Shield } from "lucide-react";
 import { useLang, useT } from "@/lib/i18n";
+import { HudNotificationStack, useHudNotices, fillTemplate } from "@/components/HudNotificationStack";
 import { QRScanner, type ScanPayload } from "@/components/QRScanner";
 import { useAmbientAudio } from "@/components/AmbientAudio";
 
@@ -802,7 +803,7 @@ function MisijaPage() {
         {reassignedBanner}
         {warningOverlay}
         {pauseOverlay}
-        <LiveMatch state={state} captures={captures} now={currentTime} roster={roster} />
+        <LiveMatch state={state} captures={captures} now={currentTime} roster={roster} myTeam={me.assigned_team} />
         <AbortMissionButton field={field} en={en} settings={state.settings} />
         {preview && <PreviewReturnButton />}
       </div>
@@ -2576,7 +2577,7 @@ function ScanCodeButton({ fieldId, paused, en }: { fieldId: string; paused: bool
   );
 }
 
-function LiveMatch({ state, captures, now, roster }: { state: GameState; captures: Capture[]; now: number; roster: Checkin[] }) {
+function LiveMatch({ state, captures, now, roster, myTeam }: { state: GameState; captures: Capture[]; now: number; roster: Checkin[]; myTeam: string }) {
 
   const { lang } = useLang();
   const en = lang === "en";
@@ -2616,7 +2617,7 @@ function LiveMatch({ state, captures, now, roster }: { state: GameState; capture
 
   return (
     <div className="max-w-5xl mx-auto px-4 py-6" style={{ paddingTop: 112 }}>
-      <PointCapturedOverlay captures={visibleCaptures} teamLabelFor={teamLabelFor} en={en} />
+      <HudNoticeFeed captures={visibleCaptures} roster={roster} myTeam={myTeam} teamLabelFor={teamLabelFor} respawnEnabled={!!state.settings?.respawn?.enabled} />
       {preMatchSec > 0 && <PreMatchCountdown seconds={preMatchSec} polygon={fieldTitleFromState(state, "")} eventName={missionTitleFromState(state, "")} gamemode={state.gamemode} pointTarget={state.point_target} settings={state.settings} en={en} state={state} roster={roster} />}
 
       <PlayerHudHeader en={en} />
@@ -3157,11 +3158,27 @@ function EndgameReport({ state, roster, captures, en, now }: { state: GameState;
   );
 }
 
-function PointCapturedOverlay({ captures, teamLabelFor, en }: { captures: Capture[]; teamLabelFor: (t: string) => string; en: boolean }) {
-  const [toasts, setToasts] = useState<Array<{ id: string; team: string; node: number; player: string | null }>>([]);
+function HudNoticeFeed({
+  captures,
+  roster,
+  myTeam,
+  teamLabelFor,
+  respawnEnabled,
+}: {
+  captures: Capture[];
+  roster: Checkin[];
+  myTeam: string;
+  teamLabelFor: (t: string) => string;
+  respawnEnabled: boolean;
+}) {
+  const t = useT();
+  const { notices, push, dismiss } = useHudNotices();
   const seenRef = useRef<Set<string>>(new Set());
   const primedRef = useRef(false);
+  const deathRef = useRef<Map<string, string>>(new Map());
+  const deathPrimedRef = useRef(false);
 
+  // Sector captures -> tactical notice + team/enemy SFX.
   useEffect(() => {
     if (!primedRef.current) {
       captures.forEach((c) => seenRef.current.add(c.id));
@@ -3171,67 +3188,62 @@ function PointCapturedOverlay({ captures, teamLabelFor, en }: { captures: Captur
     const fresh = captures.filter((c) => !seenRef.current.has(c.id));
     if (fresh.length === 0) return;
     fresh.forEach((c) => seenRef.current.add(c.id));
-    const additions = fresh.slice(-3).map((c) => ({
-      id: c.id,
-      team: c.team,
-      node: c.point_number,
-      player: c.player_callsign,
-    }));
-    setToasts((prev) => [...prev, ...additions]);
-    additions.forEach((a) => {
-      window.setTimeout(() => setToasts((prev) => prev.filter((t) => t.id !== a.id)), 3200);
+    fresh.slice(-3).forEach((c) => {
+      const color = TEAM_COLOR[c.team] ?? ACCENT;
+      push({
+        id: `cap-${c.id}`,
+        kind: "capture",
+        title: t("hudNotif.captureTitle"),
+        color,
+        at: new Date(c.captured_at).getTime() || Date.now(),
+        text: fillTemplate(t("hudNotif.capture"), {
+          player: c.player_callsign ? String(c.player_callsign).toUpperCase() : "—",
+          sector: NODE_NAMES[c.point_number - 1] ?? `#${c.point_number}`,
+          team: teamLabelFor(c.team),
+        }),
+      });
+      const evt = c.team === myTeam ? "spartanops:sfx-team-capture" : "spartanops:sfx-enemy-capture";
+      try { window.dispatchEvent(new Event(evt)); } catch { /* ignore */ }
     });
-  }, [captures]);
+  }, [captures, myTeam, push, t, teamLabelFor]);
 
-  if (toasts.length === 0) return null;
-  return (
-    <div style={{ position: "fixed", inset: 0, zIndex: 65, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 14, pointerEvents: "none", padding: "18px" }}>
-      {toasts.map((t) => {
-        const teamLabel = teamLabelFor(t.team).toUpperCase();
-        const node = NODE_NAMES[t.node - 1] ?? `#${t.node}`;
-        const callsign = t.player ? String(t.player).toUpperCase() : "";
-        return (
-          <div
-            key={t.id}
-            style={{
-              background: "rgba(10,12,10,0.96)",
-              border: `2px solid ${ACCENT}`,
-              boxShadow: `0 0 40px -4px ${ACCENT}aa, inset 0 0 24px rgba(224,176,78,0.08)`,
-              padding: "26px 22px",
-              width: 300,
-              height: 300,
-              maxWidth: "calc(100vw - 36px)",
-              maxHeight: "calc(100vw - 36px)",
-              display: "flex",
-              flexDirection: "column",
-              justifyContent: "center",
-              alignItems: "center",
-              textAlign: "center",
-              fontFamily: "'Michroma', monospace",
-              color: INK,
-              letterSpacing: "0.12em",
-              textTransform: "uppercase",
-              animation: "spops-capture-toast 320ms ease-out",
-            }}
-          >
-            <span style={{ color: ACCENT, fontSize: 12, fontWeight: 800, letterSpacing: "0.22em" }}>
-              🎯 {en ? "POINT CAPTURED" : "TOČKA ZAVZETA"}
-            </span>
-            <div style={{ marginTop: 16, width: 48, height: 2, background: ACCENT, boxShadow: `0 0 10px ${ACCENT}` }} />
-            <div style={{ marginTop: 18, fontSize: 20, fontWeight: 900, letterSpacing: "0.14em", lineHeight: 1.2, color: INK }}>
-              {teamLabel}
-              {callsign ? <> &nbsp;<span style={{ color: ACCENT }}>“{callsign}”</span></> : null}
-            </div>
-            <div style={{ marginTop: 14, fontSize: 12, letterSpacing: "0.2em", color: MUTED }}>
-              {en ? "SECTOR" : "SEKTOR"} · <span style={{ color: INK, fontWeight: 700 }}>{node}</span>
-            </div>
-          </div>
-        );
-      })}
-      <style>{`@keyframes spops-capture-toast{from{opacity:0;transform:scale(0.94)}to{opacity:1;transform:scale(1)}}`}</style>
-    </div>
-  );
+  // Player deaths (respawn lock started) -> notice + respawn SFX.
+  useEffect(() => {
+    if (!respawnEnabled) return;
+    const next = new Map<string, string>();
+    const fresh: Checkin[] = [];
+    roster.forEach((p) => {
+      const v = p.respawn_unlock_at ?? "";
+      next.set(p.id, v);
+      const prev = deathRef.current.get(p.id) ?? "";
+      const isNew = v && v !== prev && Date.parse(v) > Date.now();
+      if (deathPrimedRef.current && isNew) fresh.push(p);
+    });
+    deathRef.current = next;
+    if (!deathPrimedRef.current) {
+      deathPrimedRef.current = true;
+      return;
+    }
+    fresh.slice(-3).forEach((p) => {
+      const color = TEAM_COLOR[p.assigned_team] ?? ACCENT;
+      push({
+        id: `rsp-${p.id}-${p.respawn_unlock_at}`,
+        kind: "respawn",
+        title: t("hudNotif.respawnTitle"),
+        color,
+        at: Date.now(),
+        text: fillTemplate(t("hudNotif.respawn"), {
+          player: String(p.callsign ?? "—").toUpperCase(),
+          team: teamLabelFor(p.assigned_team),
+        }),
+      });
+      try { window.dispatchEvent(new Event("spartanops:sfx-respawn")); } catch { /* ignore */ }
+    });
+  }, [roster, respawnEnabled, push, t, teamLabelFor]);
+
+  return <HudNotificationStack notices={notices} onDismiss={dismiss} />;
 }
+
 
 function WarningModal({ message, en, onAcknowledge }: { message: string; en: boolean; onAcknowledge: () => void | Promise<void> }) {
   const [busy, setBusy] = useState(false);

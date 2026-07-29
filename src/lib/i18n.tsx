@@ -36,9 +36,22 @@ export const dict: Dict = {
     sl: "Pridobivanje natančne GPS lokacije... Prosimo omogočite 'Natančna lokacija' v nastavitvah naprave.",
     en: "Acquiring precise GPS location... Please ensure 'Precise Location' is enabled in your device settings.",
   },
+  // HUD tactical notification feed
+  "hudNotif.capture": {
+    sl: "Igralec {player} je zavzel sektor {sector} za ekipo {team}.",
+    en: "Player {player} has captured sector {sector} for {team} team.",
+  },
+  "hudNotif.captureTitle": { sl: "SEKTOR ZAVZET", en: "SECTOR CAPTURED" },
+  "hudNotif.respawn": {
+    sl: "Igralec {player} iz ekipe {team} čaka na oživitev.",
+    en: "Player {player} from team {team} is waiting for respawn.",
+  },
+  "hudNotif.respawnTitle": { sl: "ČAKANJE NA OŽIVITEV", en: "AWAITING RESPAWN" },
+  "hudNotif.dismiss": { sl: "Zapri obvestilo", en: "Dismiss notification" },
 
   // In-app QR Scanner (anti-cheat)
   "scanner.hudButton": { sl: "SKENIRAJ TOČKO", en: "SCAN CODE" },
+
   "scanner.title": { sl: "// TAKTIČNI SKENER", en: "// TACTICAL SCANNER" },
   "scanner.hint": {
     sl: "Poravnaj QR kodo znotraj okvirja.",

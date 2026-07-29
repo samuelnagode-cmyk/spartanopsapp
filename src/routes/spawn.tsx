@@ -161,11 +161,12 @@ function SpawnPage() {
     return () => clearInterval(timer);
   }, [respawnLeft]);
 
-  // Respawn QR scan triggers the tactical countdown SFX immediately so the
-  // player hears the beep sequence begin the moment their timer starts.
+  // Respawn QR scan triggers the respawn timer SFX immediately so the
+  // player hears the countdown cue the moment their timer starts.
   useEffect(() => {
-    try { window.dispatchEvent(new Event("spartanops:countdown")); } catch { /* ignore */ }
+    try { window.dispatchEvent(new Event("spartanops:sfx-respawn")); } catch { /* ignore */ }
   }, []);
+
 
   useEffect(() => {
     const run = async () => {
