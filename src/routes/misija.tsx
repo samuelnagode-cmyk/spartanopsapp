@@ -14,6 +14,7 @@ import { OfflineBanner } from "@/components/OfflineBanner";
 import { TacticalCompass } from "@/components/TacticalCompass";
 import { Crosshair, Shield } from "lucide-react";
 import { useLang, useT } from "@/lib/i18n";
+import { HudNotificationStack, useHudNotices, fillTemplate } from "@/components/HudNotificationStack";
 import { QRScanner, type ScanPayload } from "@/components/QRScanner";
 import { useAmbientAudio } from "@/components/AmbientAudio";
 
@@ -802,7 +803,7 @@ function MisijaPage() {
         {reassignedBanner}
         {warningOverlay}
         {pauseOverlay}
-        <LiveMatch state={state} captures={captures} now={currentTime} roster={roster} />
+        <LiveMatch state={state} captures={captures} now={currentTime} roster={roster} myTeam={me.assigned_team} />
         <AbortMissionButton field={field} en={en} settings={state.settings} />
         {preview && <PreviewReturnButton />}
       </div>
@@ -2576,7 +2577,7 @@ function ScanCodeButton({ fieldId, paused, en }: { fieldId: string; paused: bool
   );
 }
 
-function LiveMatch({ state, captures, now, roster }: { state: GameState; captures: Capture[]; now: number; roster: Checkin[] }) {
+function LiveMatch({ state, captures, now, roster, myTeam }: { state: GameState; captures: Capture[]; now: number; roster: Checkin[]; myTeam: string }) {
 
   const { lang } = useLang();
   const en = lang === "en";
@@ -2616,7 +2617,7 @@ function LiveMatch({ state, captures, now, roster }: { state: GameState; capture
 
   return (
     <div className="max-w-5xl mx-auto px-4 py-6" style={{ paddingTop: 112 }}>
-      <PointCapturedOverlay captures={visibleCaptures} teamLabelFor={teamLabelFor} en={en} />
+      <HudNoticeFeed captures={visibleCaptures} roster={roster} myTeam={myTeam} teamLabelFor={teamLabelFor} respawnEnabled={!!state.settings?.respawn?.enabled} />
       {preMatchSec > 0 && <PreMatchCountdown seconds={preMatchSec} polygon={fieldTitleFromState(state, "")} eventName={missionTitleFromState(state, "")} gamemode={state.gamemode} pointTarget={state.point_target} settings={state.settings} en={en} state={state} roster={roster} />}
 
       <PlayerHudHeader en={en} />
