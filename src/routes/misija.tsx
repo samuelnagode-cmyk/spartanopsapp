@@ -2381,9 +2381,11 @@ function TacticalMapContent({ state, en, nodeHoldersOverride }: { state: GameSta
   );
 }
 
-function TacticalMap({ state, captures, en, hasPositions }: { state: GameState; captures: Capture[]; en: boolean; hasPositions: boolean }) {
+function TacticalMap({ state, captures, en, hasPositions, missionName, timeLabel }: { state: GameState; captures: Capture[]; en: boolean; hasPositions: boolean; missionName?: string; timeLabel?: string }) {
   const [open, setOpen] = useState(false);
-  const [zoom, setZoom] = useState(1.6);
+  // Opens showing the FULL map (no crop) — the operator zooms in from there.
+  const [zoom, setZoom] = useState(1);
+  useEffect(() => { if (open) setZoom(1); }, [open]);
   const positions = state.node_positions ?? {};
   const startMs = state.match_started_at ? new Date(state.match_started_at).getTime() : null;
   const mapIsLive = (state.status === "active" || state.status === "paused") && !!startMs;
