@@ -2891,7 +2891,11 @@ function EndgameReport({ state, roster, captures, en, now }: { state: GameState;
       try { window.dispatchEvent(new Event("spartanops:debrief-exit")); } catch { /* ignore */ }
     };
   }, []);
-  const teamLabelFor = (t: string) => teamName(t, state.settings, en);
+  const t = useT();
+  const deathLog = useDeathLog(state.field_id ?? "");
+  const respawnEnabled = !!state.settings?.respawn?.enabled;
+  const showDeaths = respawnEnabled && !!state.settings?.respawn?.publicDeaths;
+  const teamLabelFor = (tm: string) => teamName(tm, state.settings, en);
   const counts: Record<string, number> = {};
   for (const c of captures) counts[c.player_callsign ?? "—"] = (counts[c.player_callsign ?? "—"] ?? 0) + 1;
 
