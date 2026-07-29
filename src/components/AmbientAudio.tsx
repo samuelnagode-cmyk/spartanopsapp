@@ -146,13 +146,26 @@ export function AmbientAudioProvider({ children }: { children: ReactNode }) {
     const sec = new Audio(sfxSector.url);
     sec.preload = "none";
     sec.volume = 0.95;
+    const teamCap = new Audio(sfxTeamCapture.url);
+    teamCap.preload = "none";
+    teamCap.volume = 0.95;
+    const enemyCap = new Audio(sfxEnemyCapture.url);
+    enemyCap.preload = "none";
+    enemyCap.volume = 0.95;
+    const rsp = new Audio(sfxRespawn.url);
+    rsp.preload = "none";
+    rsp.volume = 0.95;
     mainRef.current = main;
     lobbyRef.current = lobby;
     debriefRef.current = debrief;
     countdownRef.current = cd;
     sectorRef.current = sec;
+    teamCapRef.current = teamCap;
+    enemyCapRef.current = enemyCap;
+    respawnRef.current = rsp;
     return () => {
-      [main, lobby, debrief, cd, sec].forEach((a) => {
+      [main, lobby, debrief, cd, sec, teamCap, enemyCap, rsp].forEach((a) => {
+
         try {
           a.pause();
           a.src = "";
