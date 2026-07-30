@@ -414,7 +414,13 @@ function MisijaPage() {
     readLocal();
     syncRemote();
     const localTimer = setInterval(readLocal, 1000);
-    const remoteTimer = setInterval(syncRemote, 1500);
+    // Only hammer the server while a respawn lock is actually running; idle
+    // players fall back to a light 15s heartbeat. Keeps load flat at 30 players.
+    const remoteTimer = setInterval(() => {
+      let active = false;
+      try { active = Number(localStorage.getItem(key) ?? 0) > Date.now() - serverOffset; } catch { /* ignore */ }
+      if (active || Date.now() % 15000 < 1600) syncRemote();
+    }, 1500);
     window.addEventListener("focus", syncRemote);
     window.addEventListener("pageshow", syncRemote);
     return () => {
