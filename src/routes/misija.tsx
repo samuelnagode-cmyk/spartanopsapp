@@ -414,7 +414,13 @@ function MisijaPage() {
     readLocal();
     syncRemote();
     const localTimer = setInterval(readLocal, 1000);
-    const remoteTimer = setInterval(syncRemote, 1500);
+    // Only hammer the server while a respawn lock is actually running; idle
+    // players fall back to a light 15s heartbeat. Keeps load flat at 30 players.
+    const remoteTimer = setInterval(() => {
+      let active = false;
+      try { active = Number(localStorage.getItem(key) ?? 0) > Date.now() - serverOffset; } catch { /* ignore */ }
+      if (active || Date.now() % 15000 < 1600) syncRemote();
+    }, 1500);
     window.addEventListener("focus", syncRemote);
     window.addEventListener("pageshow", syncRemote);
     return () => {
@@ -2464,12 +2470,15 @@ function TacticalMap({ state, captures, en, hasPositions, missionName, timeLabel
 
       {open && (
         <div
-          className="fixed inset-0 z-[80] flex flex-col"
+          className="fixed inset-0 z-[200] flex flex-col"
           style={{ background: "rgba(4,6,3,0.98)" }}
           role="dialog"
           aria-modal="true"
         >
-          <div className="flex items-center justify-between gap-3 px-4 py-3" style={{ borderBottom: `1px solid ${ACCENT}44` }}>
+          <div
+            className="flex items-center justify-between gap-3 px-4 py-3"
+            style={{ borderBottom: `1px solid ${ACCENT}44`, paddingTop: "calc(env(safe-area-inset-top, 0px) + 14px)" }}
+          >
             <div
               style={{
                 fontFamily: "'Michroma', monospace",

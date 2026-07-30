@@ -55,7 +55,7 @@ export function HudNotificationStack({
         left: 12,
         right: 12,
         bottom: 96,
-        zIndex: 55,
+        zIndex: 250,
         display: "flex",
         flexDirection: "column",
         gap: 8,
