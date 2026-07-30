@@ -2464,12 +2464,15 @@ function TacticalMap({ state, captures, en, hasPositions, missionName, timeLabel
 
       {open && (
         <div
-          className="fixed inset-0 z-[80] flex flex-col"
+          className="fixed inset-0 z-[200] flex flex-col"
           style={{ background: "rgba(4,6,3,0.98)" }}
           role="dialog"
           aria-modal="true"
         >
-          <div className="flex items-center justify-between gap-3 px-4 py-3" style={{ borderBottom: `1px solid ${ACCENT}44` }}>
+          <div
+            className="flex items-center justify-between gap-3 px-4 py-3"
+            style={{ borderBottom: `1px solid ${ACCENT}44`, paddingTop: "calc(env(safe-area-inset-top, 0px) + 14px)" }}
+          >
             <div
               style={{
                 fontFamily: "'Michroma', monospace",
