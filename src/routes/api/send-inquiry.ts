@@ -58,7 +58,6 @@ export const Route = createFileRoute("/api/send-inquiry")({
         }
 
         const datesDisplay = d.dates || "Ni podan";
-        const firstName = d.name.split(/\s+/)[0] || "spoštovani";
 
 
         const ownerInner = `
@@ -71,19 +70,6 @@ export const Route = createFileRoute("/api/send-inquiry")({
         `;
         const ownerHtml = wrap(ownerInner, "Prejeto preko spletne strani glampingzeleniraj.si");
 
-        const guestInner = `
-          <h2 style="font-family:Georgia,'Times New Roman',serif;color:#3A4A3D;font-size:22px;margin:0 0 16px;">Spoštovani ${esc(firstName)},</h2>
-          <p style="margin:0 0 14px;">Hvala vam za vaše povpraševanje! Prejeli smo ga in vam bomo odgovorili v najkrajšem možnem času, najpozneje v 24 urah.</p>
-          <p style="margin:0 0 6px;font-weight:600;">Povzetek vašega sporočila:</p>
-          <p style="margin:0 0 6px;"><span style="font-weight:600;">Predviden termin:</span> ${esc(datesDisplay)}</p>
-          <p style="margin:0 0 6px;font-weight:600;">Vaše sporočilo:</p>
-          <p style="margin:0 0 16px;">${nl(d.message)}</p>
-          <p style="margin:0 0 14px;">Med tem si lahko ogledate naše enote in fotografije:<br/>
-            <a href="https://glampingzeleniraj.si/glamping" style="color:#1E3F20;">glampingzeleniraj.si/glamping</a>
-          </p>
-          <p style="margin:0;">Lepo vas pozdravljam,<br/>Samuel<br/>Glamping Zeleni raj<br/>tel: 070 761 455<br/>Vače 49, 1252 Vače</p>
-        `;
-        const guestHtml = wrap(guestInner, "Glamping Zeleni raj — glampingzeleniraj.si");
 
         const send = (payload: Record<string, unknown>) =>
           fetch(`${GATEWAY_URL}/emails`, {
