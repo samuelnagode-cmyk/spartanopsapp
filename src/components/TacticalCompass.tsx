@@ -48,7 +48,6 @@ export function TacticalCompass({ size = 96 }: { size?: number }) {
   const attach = () => {
     if (attachedRef.current || typeof window === "undefined") return;
     const handler = (ev: DeviceOrientationEvent) => {
-      const now = performance.now();
       const reliable = ev.type === "deviceorientationabsolute" || (ev as any).absolute === true || typeof (ev as any).webkitCompassHeading === "number";
       if (!reliable) return;
       const wc = (ev as any).webkitCompassHeading;

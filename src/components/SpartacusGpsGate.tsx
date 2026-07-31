@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useLocation } from "@tanstack/react-router";
-import { AlertTriangle, Compass } from "lucide-react";
+import { AlertTriangle } from "lucide-react";
 import { useLang } from "@/lib/i18n";
 
 const OK_KEY = "spartanops:gps_authorized";
