@@ -122,23 +122,6 @@ function TeamChangeNotificationMock({ en, team }: { en: boolean; team: TeamKey }
   );
 }
 
-function ScoreboardRow({ p, en }: { p: typeof PLACEHOLDER_PLAYERS[number]; en: boolean }) {
-  const c = TEAM_COLOR[p.team];
-  return (
-    <div style={{ display: "grid", gridTemplateColumns: "1fr auto auto auto", gap: 10, padding: "8px 10px", background: `${c}0f`, borderLeft: `3px solid ${c}`, alignItems: "center" }}>
-      <div style={{ display: "flex", alignItems: "center", gap: 6, minWidth: 0 }}>
-        <span style={{ fontSize: 12, color: INK, fontFamily: "monospace", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{p.name}</span>
-        {p.warn && <AlertTriangle size={11} style={{ color: "#ff6b6b", flexShrink: 0 }} />}
-      </div>
-      <span title="captures" style={{ fontFamily: "monospace", fontSize: 11, color: ACCENT }}><Crosshair size={10} style={{ display: "inline", marginRight: 3 }} />{p.captures}</span>
-      <span title="deaths" style={{ fontFamily: "monospace", fontSize: 11, color: MUTED }}><Skull size={10} style={{ display: "inline", marginRight: 3 }} />{p.deaths}</span>
-      <span style={{ fontFamily: "monospace", fontSize: 10, color: p.respawn ? "#ff6b6b" : MUTED, minWidth: 44, textAlign: "right" }}>
-        {p.respawn ? `☠ 0:${String(p.respawn).padStart(2, "0")}` : (en ? "LIVE" : "ŽIV")}
-      </span>
-    </div>
-  );
-}
-
 function SuccessCapturePopupMock({ en, team }: { en: boolean; team: TeamKey }) {
   const c = TEAM_COLOR[team];
   return (
