@@ -424,14 +424,15 @@ type OpRow = { id: string; name: string; region: string; status: "ACTIVE" | "DEC
 function Locations() {
   const navigate = useNavigate();
   const listFn = useServerFn(listPublishedLobbies);
-  // Hydrate instantly from cache so the section never flashes "no operations".
-  const [rows, setRows] = useState<OpRow[]>(() => {
-    if (typeof window === "undefined") return [];
+  // Hydrate from cache after mount (never in the initializer — that would
+  // desync the SSR markup) so the section never flashes "no operations".
+  const [rows, setRows] = useState<OpRow[]>([]);
+  useEffect(() => {
     try {
       const raw = localStorage.getItem(OPS_CACHE_KEY);
-      return raw ? (JSON.parse(raw) as OpRow[]) : [];
-    } catch { return []; }
-  });
+      if (raw) setRows((prev) => (prev.length ? prev : (JSON.parse(raw) as OpRow[])));
+    } catch { /* ignore */ }
+  }, []);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
