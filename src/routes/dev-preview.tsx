@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
-import { CheckCircle2, AlertTriangle, Shield, Crosshair, Skull, WifiOff } from "lucide-react";
+import { CheckCircle2, AlertTriangle, Shield, Skull, WifiOff } from "lucide-react";
 
 export const Route = createFileRoute("/dev-preview")({
   head: () => ({
