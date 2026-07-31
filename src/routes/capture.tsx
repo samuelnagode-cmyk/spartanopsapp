@@ -43,7 +43,6 @@ const INK = "#ece3c4";
 const MUTED = "rgba(236,227,196,0.55)";
 const ACCENT = "#E0B04E";
 const TEAM_COLOR: Record<string, string> = { modra: "#3b82f6", rdeca: "#ef4444", rumena: "#eab308" };
-const TEAM_LABEL: Record<string, string> = { modra: "MODRA", rdeca: "RDEČA", rumena: "RUMENA" };
 const LEGACY_FIELDS = new Set(["zeleni-raj", "field-1", "field-2", "field-3"]);
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 

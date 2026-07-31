@@ -121,7 +121,7 @@ export function QRScanner({ open, onClose, onDecode }: Props) {
           try { await videoRef.current.play(); } catch { /* ignore */ }
         }
         beginDecodeLoop();
-      } catch (e: any) {
+      } catch {
         setErr(tRef.current("scanner.cameraDenied"));
       }
     }

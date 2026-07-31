@@ -342,10 +342,7 @@ function MisijaPage() {
   };
 
   useEffect(() => {
-    let alive = true;
-    syncServerClock()
-      .catch(() => {});
-    return () => { alive = false; };
+    syncServerClock().catch(() => {});
   }, [getServerTimeFn]);
 
   useEffect(() => {
@@ -1169,105 +1166,6 @@ function MissionFieldSubline({ missionName, fieldName, en }: { missionName: stri
 
 const GPS_OK_KEY = "spartanops:gps_authorized";
 
-function TelemetryStatusStrip({ en }: { en: boolean }) {
-  const [state, setState] = useState<"disconnected" | "granted" | "denied">("disconnected");
-
-  useEffect(() => {
-    let live = true;
-    (async () => {
-      try {
-        if (typeof navigator !== "undefined" && "permissions" in navigator) {
-          const r = await (navigator as any).permissions.query({ name: "geolocation" });
-          if (!live) return;
-          if (r?.state === "granted") setState("granted");
-          else if (r?.state === "denied") setState("denied");
-        }
-      } catch { /* ignore */ }
-      try {
-        if (typeof window !== "undefined" && localStorage.getItem(GPS_OK_KEY) === "1") {
-          if (live) setState((s) => (s === "denied" ? s : "granted"));
-        }
-      } catch { /* ignore */ }
-    })();
-    return () => { live = false; };
-  }, []);
-
-  const enable = () => {
-    if (typeof navigator === "undefined" || !navigator.geolocation) return;
-    navigator.geolocation.getCurrentPosition(
-      (pos) => {
-        try {
-          localStorage.setItem(GPS_OK_KEY, "1");
-          localStorage.setItem(GPS_FIX_KEY, JSON.stringify({ lat: pos.coords.latitude, lng: pos.coords.longitude, accuracy: pos.coords.accuracy, at: Date.now() }));
-        } catch { /* ignore */ }
-        setState("granted");
-      },
-      () => setState("denied"),
-      { enableHighAccuracy: true, timeout: 12000, maximumAge: 30000 },
-    );
-  };
-
-  const granted = state === "granted";
-  const color = granted ? "#3ddc84" : ACCENT;
-
-  return (
-    <div
-      className="mx-auto mt-2 mb-6"
-      style={{
-        maxWidth: 460,
-        border: `1px solid ${color}66`,
-        background: `linear-gradient(180deg, ${color}0d, rgba(0,0,0,0.4))`,
-        padding: "12px 14px",
-      }}
-    >
-      <div className="flex items-center justify-between gap-3 flex-wrap">
-        <div style={{ minWidth: 0, flex: 1 }}>
-          <p
-            style={{
-              fontFamily: "'Michroma', monospace",
-              fontSize: 10.5,
-              letterSpacing: "0.16em",
-              color,
-              textTransform: "uppercase",
-              fontWeight: 700,
-              margin: 0,
-            }}
-          >
-            📡 {granted
-              ? (en ? "TELEMETRY STATUS: SECURED (LAT/LON ACTIVE)" : "STATUS TELEMETRIJE: ZAVAROVANO (GPS AKTIVEN)")
-              : (en ? "TELEMETRY STATUS: DISCONNECTED" : "STATUS TELEMETRIJE: PREKINJENO")}
-          </p>
-          <p style={{ fontFamily: "monospace", fontSize: 10, color: MUTED, marginTop: 4, lineHeight: 1.55 }}>
-            {en
-              ? "Required for SPARTACUS operational anti-cheat validation."
-              : "Obvezno za SPARTACUS preverjanje varnosti na terenu."}
-          </p>
-        </div>
-        {!granted && (
-          <button
-            type="button"
-            onClick={enable}
-            style={{
-              background: `${ACCENT}18`,
-              border: `1px solid ${ACCENT}`,
-              color: ACCENT,
-              padding: "8px 12px",
-              fontFamily: "'Michroma', monospace",
-              fontSize: 10,
-              letterSpacing: "0.18em",
-              textTransform: "uppercase",
-              cursor: "pointer",
-              whiteSpace: "nowrap",
-            }}
-          >
-            [ {en ? "ENABLE GPS" : "OMOGOČI GPS"} ]
-          </button>
-        )}
-      </div>
-    </div>
-  );
-}
-
 function ChooseFactionButton({ onClick, en }: { onClick: () => void; en: boolean }) {
   return (
     <div className="flex flex-col items-center gap-2">
@@ -1913,7 +1811,6 @@ const PlayerRow = memo(function PlayerRow({ p, isMe, compact, en }: { p: Checkin
   const realName = [p.first_name?.trim(), p.last_initial?.trim() ? `${p.last_initial.trim().charAt(0).toUpperCase()}.` : null]
     .filter(Boolean)
     .join(" ");
-  const showTeamBadge = p.assigned_team && p.assigned_team !== "none";
   return (
     <div
       className="rounded-sm"
@@ -2393,7 +2290,6 @@ function TacticalMap({ state, captures, en, hasPositions, missionName, timeLabel
   // Opens showing the FULL map (no crop) — the operator zooms in from there.
   const [zoom, setZoom] = useState(1);
   useEffect(() => { if (open) setZoom(1); }, [open]);
-  const positions = state.node_positions ?? {};
   const startMs = state.match_started_at ? new Date(state.match_started_at).getTime() : null;
   const mapIsLive = (state.status === "active" || state.status === "paused") && !!startMs;
   const visibleCaptures = useMemo(
@@ -2854,36 +2750,6 @@ function PlayerScoreboard({ roster, captures, respawn, settings, en = false }: {
         );
       })}
     </div>
-  );
-}
-
-const inputStyle: React.CSSProperties = {
-  width: "100%",
-  background: BG,
-  color: INK,
-  border: "1px solid rgba(236,227,196,0.18)",
-  padding: "10px 12px",
-  fontSize: 14,
-  fontFamily: "monospace",
-};
-
-function Field({ label, children }: { label: string; children: React.ReactNode }) {
-  return (
-    <label style={{ display: "block" }}>
-      <div
-        style={{
-          fontSize: 10,
-          letterSpacing: "0.2em",
-          textTransform: "uppercase",
-          color: MUTED,
-          marginBottom: 6,
-          fontFamily: "monospace",
-        }}
-      >
-        {label}
-      </div>
-      {children}
-    </label>
   );
 }
 

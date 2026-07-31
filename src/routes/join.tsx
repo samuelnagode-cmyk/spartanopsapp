@@ -5,7 +5,7 @@ import { ArrowLeft, Lock, MapPin, X, Radio } from "lucide-react";
 import { dtoToRecord, SYSTEM_FIELD, isLobbyRetired, rowToRecord, type LobbyRecord } from "./admin-pregled";
 import { listPublishedLobbies, verifyLobbyPassword } from "@/lib/spartanops-lobbies.functions";
 import { useLang } from "@/lib/i18n";
-import { TacticalUplinkLoader, MissionCardSkeletonGrid } from "@/components/TacticalLoader";
+import { TacticalUplinkLoader } from "@/components/TacticalLoader";
 import { supabase } from "@/integrations/supabase/client";
 
 const LOBBY_CACHE_KEY = "spartanops.lobbies.v1";

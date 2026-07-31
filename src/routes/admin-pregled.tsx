@@ -2,7 +2,7 @@ import { createFileRoute, Link, useSearch } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import {
-  ArrowLeft, Lock, Unlock, ChevronLeft, X, Crosshair, ShieldCheck,
+  ArrowLeft, Lock, ChevronLeft, X, Crosshair, ShieldCheck,
   Eye, EyeOff, Upload, ArrowLeftRight, Phone,
 } from "lucide-react";
 
@@ -409,7 +409,7 @@ function AdminPage() {
   const { lang } = useLang();
   const en = lang === "en";
   const t = useT();
-  const { isPremium, activatePremium, openPremiumModal } = usePremium();
+  const { isPremium, activatePremium } = usePremium();
   const [premiumKeyInput, setPremiumKeyInput] = useState("");
   const [premiumKeyError, setPremiumKeyError] = useState(false);
   const search = useSearch({ from: "/admin-pregled" }) as { edit?: string };
@@ -823,7 +823,6 @@ function CreateFieldForm({ onCancel, onCreated }: { onCancel: () => void; onCrea
     capturePointsScoring: true,
   });
 
-  const [publishToLobby, setPublishToLobby] = useState(true);
   const [err, setErr] = useState("");
   const [ok, setOk] = useState(false);
   const [created, setCreated] = useState<{ rec: LobbyRecord; password: string; marshalPassword: string } | null>(null);
@@ -892,7 +891,7 @@ function CreateFieldForm({ onCancel, onCreated }: { onCancel: () => void; onCrea
           password: password.trim(),
           marshalPassword: marshalPassword.trim(),
           masterPassword: getMasterPw(),
-          published: publishToLobby,
+          published: true,
         },
       });
 
@@ -1682,7 +1681,7 @@ function MarshalPasswordPrompt({ lobby, onClose, onSuccess }: { lobby: LobbyReco
         <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} autoFocus placeholder="••••••••"
           style={{ width: "100%", background: BG, color: INK, border: "1px solid rgba(236,227,196,0.20)", padding: "12px 14px", fontSize: 14, marginBottom: 12, textAlign: "center", letterSpacing: "0.2em" }} />
         {err && <p style={{ color: "#d97a6c", fontSize: 12, marginBottom: 10, textAlign: "center" }}>{err}</p>}
-        <button type="submit" style={{ width: "100%", padding: "12px", background: ACCENT, color: BG, border: "none", fontFamily: "'Michroma', monospace", fontSize: 11, letterSpacing: "0.20em", textTransform: "uppercase", fontWeight: 700, cursor: "pointer" }}>
+        <button type="submit" disabled={busy} style={{ width: "100%", padding: "12px", background: ACCENT, color: BG, border: "none", fontFamily: "'Michroma', monospace", fontSize: 11, letterSpacing: "0.20em", textTransform: "uppercase", fontWeight: 700, cursor: busy ? "wait" : "pointer", opacity: busy ? 0.6 : 1 }}>
           Authorize Marshal
         </button>
       </form>
@@ -1755,10 +1754,7 @@ function MarshalLobbyConsole({ lobby: initialLobby, marshalPassword, lobbyPasswo
   };
 
   useEffect(() => {
-    let alive = true;
-    syncServerClock()
-      .catch(() => {});
-    return () => { alive = false; };
+    syncServerClock().catch(() => {});
   }, [getServerTimeFn]);
 
   // Optimistic patch: update local state instantly, mirror to localStorage,
@@ -2998,67 +2994,6 @@ function LeaderRow({ label, color, score, target }: { label: string; color: stri
   );
 }
 
-function InfoTile({ label, value }: { label: string; value: string }) {
-  return (
-    <div style={{ background: PANEL, border: `1px solid ${ACCENT}30`, padding: "14px 16px" }}>
-      <p style={{ fontFamily: "monospace", fontSize: 10, letterSpacing: "0.24em", color: MUTED, textTransform: "uppercase", marginBottom: 6 }}>
-        {label}
-      </p>
-      <p style={{ fontFamily: "'Michroma', monospace", fontSize: 13, letterSpacing: "0.10em", color: ACCENT, textTransform: "uppercase" }}>
-        {value}
-      </p>
-    </div>
-  );
-}
-
-function EditTile({
-  label,
-  value,
-  onChange,
-  type = "text",
-  options,
-}: {
-  label: string;
-  value: string;
-  onChange: (v: string) => void;
-  type?: "text" | "number";
-  options?: Array<{ value: string; label: string }>;
-}) {
-  return (
-    <div style={{ background: PANEL, border: `1px solid ${ACCENT}30`, padding: "14px 16px" }}>
-      <p style={{ fontFamily: "monospace", fontSize: 10, letterSpacing: "0.24em", color: MUTED, textTransform: "uppercase", marginBottom: 6 }}>
-        {label}
-      </p>
-      {options ? (
-        <select
-          value={value}
-          onChange={(e) => onChange(e.target.value)}
-          style={{
-            width: "100%", background: "rgba(0,0,0,0.35)", color: ACCENT,
-            border: `1px solid ${ACCENT}55`, padding: "8px 10px",
-            fontFamily: "'Michroma', monospace", fontSize: 12, letterSpacing: "0.10em",
-            textTransform: "uppercase",
-          }}
-        >
-          {options.map((o) => (
-            <option key={o.value} value={o.value} style={{ background: "#0b0d09", color: ACCENT }}>{o.label}</option>
-          ))}
-        </select>
-      ) : (
-        <input
-          type={type}
-          value={value}
-          onChange={(e) => onChange(e.target.value)}
-          style={{
-            width: "100%", background: "rgba(0,0,0,0.35)", color: ACCENT,
-            border: `1px solid ${ACCENT}55`, padding: "8px 10px",
-            fontFamily: "'Michroma', monospace", fontSize: 12, letterSpacing: "0.10em",
-          }}
-        />
-      )}
-    </div>
-  );
-}
 
 function TeamConfigSection({ settings, onPatch, en }: { settings: any; onPatch: (s: any) => void; en: boolean }) {
   const teamNames = (settings?.teamNames ?? {}) as Record<string, string>;

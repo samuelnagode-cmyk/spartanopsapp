@@ -1,6 +1,6 @@
 import { memo, useEffect, useRef, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
-import { Award, ChevronUp, ChevronsUp, Compass, Pause, Play, RotateCcw, Square, Trash2, Upload, MapPin, Copy, Check, AlertTriangle, ShieldOff, ShieldCheck, ArrowLeftRight, Info } from "lucide-react";
+import { Award, ChevronUp, ChevronsUp, Compass, Pause, Play, RotateCcw, Trash2, Upload, MapPin, Copy, Check, AlertTriangle, ShieldOff, ShieldCheck, ArrowLeftRight, Info } from "lucide-react";
 import { QRCodeSVG } from "qrcode.react";
 import { TacticalCompass } from "@/components/TacticalCompass";
 
@@ -118,7 +118,6 @@ export function SpartanOpsConsole({ fieldId, password }: { fieldId: string; pass
   const { lang } = useLang();
   const en = lang === "en";
   const { isPremium, openPremiumModal } = usePremium();
-  const TL = en ? TEAM_LABEL_EN : TEAM_LABEL;
   const patchState = useServerFn(spartanopsAdminPatchState);
   const reassign = useServerFn(spartanopsAdminReassignTeam);
   const removePlayer = useServerFn(spartanopsAdminRemovePlayer);
@@ -153,10 +152,7 @@ export function SpartanOpsConsole({ fieldId, password }: { fieldId: string; pass
   };
 
   useEffect(() => {
-    let alive = true;
-    syncServerClock()
-      .catch(() => {});
-    return () => { alive = false; };
+    syncServerClock().catch(() => {});
   }, [getServerTime]);
 
   useEffect(() => {
@@ -290,23 +286,6 @@ export function SpartanOpsConsole({ fieldId, password }: { fieldId: string; pass
       winner_team: null,
     } as any);
   };
-  const stopMatch = async () => {
-    if (!confirm(en ? "Are you sure you want to STOP the mission? (This will end the match, declare a winner and clear all captured sectors)" : "Ali ste prepričani, da želite ZAUSTAVITI misijo? (To bo zaključilo tekmo, razglasilo zmagovalca in počistilo vse zavzete sektorje)")) return;
-    const scores = state?.team_scores ?? {};
-    const winner = (["modra", "rdeca", "rumena"] as const).reduce<"modra" | "rdeca" | "rumena" | null>((best, team) => {
-      if (!best) return team;
-      return (scores[team] ?? 0) > (scores[best] ?? 0) ? team : best;
-    }, null);
-    // End resets scores and captured sectors to neutral. Node positions on
-    // the map are preserved, so a new game starts with the same layout.
-    await callPatch({
-      status: "ended",
-      winner_team: winner,
-      team_scores: Object.fromEntries(configuredTeams(state?.settings, roster).map((t) => [t, 0])) as Record<string, number>,
-      node_holders: { "1": null, "2": null, "3": null, "4": null, "5": null },
-    } as any);
-    setCaptures([]);
-  };
 
   const togglePause = async () => {
     if (!state) return;
@@ -353,7 +332,6 @@ export function SpartanOpsConsole({ fieldId, password }: { fieldId: string; pass
 
   const isActive = state.status === "active";
   const isPaused = state.status === "paused";
-  const isStartable = !isActive && !isPaused; // closed / ended / lobby
 
   const mainAction = async () => {
     if (isActive || isPaused) { await togglePause(); return; }

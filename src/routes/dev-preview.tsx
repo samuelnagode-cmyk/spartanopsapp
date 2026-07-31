@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
-import { CheckCircle2, AlertTriangle, Shield, Crosshair, Skull, Info, Wifi, WifiOff, MapPin } from "lucide-react";
+import { CheckCircle2, AlertTriangle, Shield, Skull, WifiOff } from "lucide-react";
 
 export const Route = createFileRoute("/dev-preview")({
   head: () => ({
@@ -98,61 +98,6 @@ function RealMisijaPreview({ preset, device }: { preset: "registration" | "team"
   );
 }
 
-// ============= Individual UI mocks =============
-
-function DeploymentRegistrationMock({ en }: { en: boolean }) {
-  return (
-    <div style={{ padding: 18, color: INK, height: "100%" }}>
-      <Kicker>{en ? "// DEPLOYMENT REGISTRATION" : "// PRIJAVA V OPERACIJO"}</Kicker>
-      <h3 style={{ fontFamily: "'Michroma', monospace", fontSize: 15, marginTop: 8, marginBottom: 14, fontWeight: 700 }}>
-        {en ? "OPERATION FALLEN ANGEL" : "OPERACIJA FALLEN ANGEL"}
-      </h3>
-      <div style={{ display: "grid", gap: 10 }}>
-        {[
-          [en ? "Callsign" : "Klicni znak", "Kozjak_Marko"],
-          [en ? "Phone number" : "Telefonska št.", "+386 41 234 567"],
-          [en ? "Experience" : "Izkušnje", en ? "Veteran (3-5 yrs)" : "Veteran (3-5 let)"],
-        ].map(([l, v]) => (
-          <div key={l}>
-            <p style={{ fontFamily: "monospace", fontSize: 10, color: MUTED, textTransform: "uppercase", letterSpacing: "0.14em", margin: 0, marginBottom: 4 }}>{l}</p>
-            <div style={{ background: "#0a0c07", border: `1px solid ${ACCENT}44`, padding: "9px 12px", fontSize: 13, color: INK }}>{v}</div>
-          </div>
-        ))}
-        <div style={{ background: `${ACCENT}12`, border: `1px solid ${ACCENT}44`, padding: 10, marginTop: 4, display: "flex", gap: 8, alignItems: "flex-start" }}>
-          <MapPin size={14} style={{ color: ACCENT, marginTop: 2 }} />
-          <p style={{ fontSize: 11, margin: 0, color: INK, lineHeight: 1.5 }}>
-            {en ? "GPS location access is required for capture verification." : "Za potrditev zavzemanja je potreben dostop do GPS lokacije."}
-          </p>
-        </div>
-        <button style={{ background: ACCENT, color: BG, border: "none", padding: "12px 14px", fontFamily: "'Michroma', monospace", fontSize: 12, letterSpacing: "0.2em", fontWeight: 700, cursor: "pointer", marginTop: 6 }}>
-          {en ? "DEPLOY" : "V AKCIJO"}
-        </button>
-      </div>
-    </div>
-  );
-}
-
-function TeamSelectionMock({ en }: { en: boolean }) {
-  return (
-    <div style={{ padding: 18, color: INK }}>
-      <Kicker>{en ? "// SELECT FACTION" : "// IZBERI EKIPO"}</Kicker>
-      <h3 style={{ fontFamily: "'Michroma', monospace", fontSize: 14, margin: "8px 0 14px", fontWeight: 700 }}>
-        {en ? "CHOOSE FACTION" : "IZBERI EKIPO"}
-      </h3>
-      <div style={{ display: "grid", gap: 10 }}>
-        {(["modra", "rdeca"] as TeamKey[]).map((t) => (
-          <button key={t} style={{ background: `${TEAM_COLOR[t]}12`, border: `2px solid ${TEAM_COLOR[t]}`, padding: "14px 14px", color: INK, textAlign: "left", fontFamily: "monospace", fontSize: 13, cursor: "pointer", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-            <span style={{ color: TEAM_COLOR[t], fontFamily: "'Michroma', monospace", fontSize: 13, letterSpacing: "0.14em", fontWeight: 700 }}>
-              {en ? `${TEAM_LABEL_EN[t]} TEAM` : `${TEAM_LABEL_SL[t]} EKIPA`}
-            </span>
-            <span style={{ fontSize: 11, color: MUTED }}>2 {en ? "players" : "igralci"}</span>
-          </button>
-        ))}
-      </div>
-    </div>
-  );
-}
-
 function TeamChangeNotificationMock({ en, team }: { en: boolean; team: TeamKey }) {
   const c = TEAM_COLOR[team];
   const label = en ? TEAM_LABEL_EN[team] : TEAM_LABEL_SL[team];
@@ -172,90 +117,6 @@ function TeamChangeNotificationMock({ en, team }: { en: boolean; team: TeamKey }
         <button style={{ width: "100%", background: ACCENT, color: BG, padding: "11px 14px", fontFamily: "'Michroma', monospace", fontSize: 11, letterSpacing: "0.2em", textTransform: "uppercase", fontWeight: 700, border: "none", cursor: "pointer" }}>
           {en ? "UNDERSTAND AND AGREE" : "RAZUMEM IN SE STRINJAM"}
         </button>
-      </div>
-    </div>
-  );
-}
-
-function PreStartMock({ en }: { en: boolean }) {
-  return (
-    <div style={{ padding: 18, color: INK, textAlign: "center" }}>
-      <Kicker>{en ? "// PRE-START // OPERATION FALLEN ANGEL" : "// PRED-START // OPERACIJA FALLEN ANGEL"}</Kicker>
-      <div style={{ marginTop: 24, fontFamily: "'Michroma', monospace", fontSize: 56, fontWeight: 700, color: ACCENT, letterSpacing: "0.08em", textShadow: `0 0 24px ${ACCENT}88` }}>
-        01:00
-      </div>
-      <p style={{ fontFamily: "monospace", fontSize: 10, color: MUTED, letterSpacing: "0.2em", marginTop: 8 }}>
-        {en ? "MISSION START IN…" : "MISIJA SE ZAČNE ČEZ…"}
-      </p>
-      <div style={{ marginTop: 22, background: "#0a0c07", border: `1px solid ${ACCENT}44`, padding: 12, textAlign: "left" }}>
-        <p style={{ fontFamily: "'Michroma', monospace", fontSize: 10, color: ACCENT, letterSpacing: "0.16em", margin: 0, marginBottom: 6, textTransform: "uppercase" }}>
-          {en ? "Mission description" : "Opis misije"}
-        </p>
-        <p style={{ fontSize: 12, color: INK, lineHeight: 1.6, margin: 0 }}>
-          {en ? "Secure and hold ALPHA and DELTA for a minimum of 6 minutes. Bravo team defends BETA at all costs." : "Zavzemi in obdrži ALPHA in DELTA vsaj 6 minut. Ekipa Bravo brani BETO za vsako ceno."}
-        </p>
-      </div>
-    </div>
-  );
-}
-
-function ScoreboardRow({ p, en }: { p: typeof PLACEHOLDER_PLAYERS[number]; en: boolean }) {
-  const c = TEAM_COLOR[p.team];
-  return (
-    <div style={{ display: "grid", gridTemplateColumns: "1fr auto auto auto", gap: 10, padding: "8px 10px", background: `${c}0f`, borderLeft: `3px solid ${c}`, alignItems: "center" }}>
-      <div style={{ display: "flex", alignItems: "center", gap: 6, minWidth: 0 }}>
-        <span style={{ fontSize: 12, color: INK, fontFamily: "monospace", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{p.name}</span>
-        {p.warn && <AlertTriangle size={11} style={{ color: "#ff6b6b", flexShrink: 0 }} />}
-      </div>
-      <span title="captures" style={{ fontFamily: "monospace", fontSize: 11, color: ACCENT }}><Crosshair size={10} style={{ display: "inline", marginRight: 3 }} />{p.captures}</span>
-      <span title="deaths" style={{ fontFamily: "monospace", fontSize: 11, color: MUTED }}><Skull size={10} style={{ display: "inline", marginRight: 3 }} />{p.deaths}</span>
-      <span style={{ fontFamily: "monospace", fontSize: 10, color: p.respawn ? "#ff6b6b" : MUTED, minWidth: 44, textAlign: "right" }}>
-        {p.respawn ? `☠ 0:${String(p.respawn).padStart(2, "0")}` : (en ? "LIVE" : "ŽIV")}
-      </span>
-    </div>
-  );
-}
-
-function PlayerHudMock({ en, myTeam }: { en: boolean; myTeam: TeamKey }) {
-  const myColor = TEAM_COLOR[myTeam];
-  return (
-    <div style={{ padding: 14, color: INK, height: "100%" }}>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 10 }}>
-        <div>
-          <Kicker>PLAYER HUD</Kicker>
-          <p style={{ fontFamily: "'Michroma', monospace", fontSize: 12, margin: "4px 0 0", color: INK, fontWeight: 700 }}>OPERATION FALLEN ANGEL</p>
-          <p style={{ fontSize: 10, color: MUTED, margin: 0 }}>Field: ZELENI RAJ</p>
-        </div>
-        <div style={{ fontFamily: "'Michroma', monospace", fontSize: 14, color: ACCENT, letterSpacing: "0.08em" }}>32:14</div>
-      </div>
-
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gap: 4, marginBottom: 10 }}>
-        {["A", "B", "G", "D", "E"].map((n, i) => {
-          const owner: (TeamKey | null)[] = ["modra", "rdeca", null, "modra", null];
-          const o = owner[i];
-          const bg = o ? TEAM_COLOR[o] : "#3a3a2a";
-          return (
-            <div key={n} style={{ background: `${bg}22`, border: `1.5px solid ${bg}`, padding: "10px 4px", textAlign: "center", fontFamily: "'Michroma', monospace", fontSize: 12, fontWeight: 700, color: o ? bg : MUTED }}>{n}</div>
-          );
-        })}
-      </div>
-
-      <div style={{ background: `${myColor}12`, border: `1px solid ${myColor}55`, padding: 10, marginBottom: 10 }}>
-        <p style={{ fontFamily: "monospace", fontSize: 10, color: MUTED, letterSpacing: "0.14em", margin: 0, marginBottom: 6, textTransform: "uppercase" }}>
-          {en ? "Scoreboard" : "Točkovna lestvica"}
-        </p>
-        <div style={{ display: "flex", justifyContent: "space-around", fontFamily: "'Michroma', monospace", fontSize: 20, fontWeight: 700 }}>
-          <span style={{ color: TEAM_COLOR.modra }}>7</span>
-          <span style={{ color: MUTED, fontSize: 14 }}>vs</span>
-          <span style={{ color: TEAM_COLOR.rdeca }}>4</span>
-        </div>
-      </div>
-
-      <div style={{ borderTop: `1px dashed ${ACCENT}33`, paddingTop: 10, display: "grid", gap: 4 }}>
-        <p style={{ fontFamily: "monospace", fontSize: 10, color: MUTED, letterSpacing: "0.14em", margin: 0, marginBottom: 4, textTransform: "uppercase" }}>
-          {en ? "Live roster" : "Živa evidenca"}
-        </p>
-        {PLACEHOLDER_PLAYERS.map((p) => <ScoreboardRow key={p.name} p={p} en={en} />)}
       </div>
     </div>
   );

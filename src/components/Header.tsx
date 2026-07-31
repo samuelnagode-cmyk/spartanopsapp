@@ -1,12 +1,11 @@
 import { Link, useLocation } from "@tanstack/react-router";
-import { useEffect, useRef, useState, type MouseEvent as ReactMouseEvent } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Menu, X, ChevronLeft, ChevronDown, Globe } from "lucide-react";
 import logoImg from "@/assets/logo-glamping.png";
 const AIRSOFT_LOGO = "https://res.cloudinary.com/dfifiytid/image/upload/v1783765381/SpartanOps%20app%20v1.0/LOGO/SpartanOps_app_LOGO_NO_BACKROUND-05.webp";
 import { useT, useLang, type Lang } from "@/lib/i18n";
 
 
-type NavLink = { to: string; label: string; hash?: string };
 
 export default function Header() {
   const [open, setOpen] = useState(false);
@@ -124,22 +123,8 @@ export default function Header() {
     return () => window.clearTimeout(timer);
   }, [location.pathname, location.hash]);
 
-  const handleNavClick = (e: ReactMouseEvent<HTMLAnchorElement>, link: NavLink) => {
-    setOpen(false);
-    if (!link.hash) return;
-
-    const hash = normalizeHash(link.hash);
-    if (location.pathname === link.to) {
-      e.preventDefault();
-      window.history.pushState(null, "", `#${hash}`);
-    }
-    window.setTimeout(() => scrollToHashTarget(hash), 400);
-  };
 
 
-  const navLinks: NavLink[] = [
-    { to: "/spartanops", label: t("nav.spartanops") },
-  ];
 
   const muted = isAirsoft ? "#ece3c4" : "#6b6258";
   const forest = isAirsoft ? "#ece3c4" : "#3f5839";
