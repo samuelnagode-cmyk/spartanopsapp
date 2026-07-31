@@ -2141,6 +2141,7 @@ function NodeLabel({ text, side }: { text: string; side: LabelSide }) {
 }
 
 function TacticalMapContent({ state, en, nodeHoldersOverride }: { state: GameState; en: boolean; nodeHoldersOverride?: Record<string, string | null> }) {
+  const positions = state.node_positions ?? {};
   const labelSides = useMemo(() => computeLabelPlacements(positions), [positions]);
   const [localMapUrl, setLocalMapUrl] = useState<string | null>(null);
   useEffect(() => {
