@@ -122,28 +122,6 @@ function TeamChangeNotificationMock({ en, team }: { en: boolean; team: TeamKey }
   );
 }
 
-function PreStartMock({ en }: { en: boolean }) {
-  return (
-    <div style={{ padding: 18, color: INK, textAlign: "center" }}>
-      <Kicker>{en ? "// PRE-START // OPERATION FALLEN ANGEL" : "// PRED-START // OPERACIJA FALLEN ANGEL"}</Kicker>
-      <div style={{ marginTop: 24, fontFamily: "'Michroma', monospace", fontSize: 56, fontWeight: 700, color: ACCENT, letterSpacing: "0.08em", textShadow: `0 0 24px ${ACCENT}88` }}>
-        01:00
-      </div>
-      <p style={{ fontFamily: "monospace", fontSize: 10, color: MUTED, letterSpacing: "0.2em", marginTop: 8 }}>
-        {en ? "MISSION START IN…" : "MISIJA SE ZAČNE ČEZ…"}
-      </p>
-      <div style={{ marginTop: 22, background: "#0a0c07", border: `1px solid ${ACCENT}44`, padding: 12, textAlign: "left" }}>
-        <p style={{ fontFamily: "'Michroma', monospace", fontSize: 10, color: ACCENT, letterSpacing: "0.16em", margin: 0, marginBottom: 6, textTransform: "uppercase" }}>
-          {en ? "Mission description" : "Opis misije"}
-        </p>
-        <p style={{ fontSize: 12, color: INK, lineHeight: 1.6, margin: 0 }}>
-          {en ? "Secure and hold ALPHA and DELTA for a minimum of 6 minutes. Bravo team defends BETA at all costs." : "Zavzemi in obdrži ALPHA in DELTA vsaj 6 minut. Ekipa Bravo brani BETO za vsako ceno."}
-        </p>
-      </div>
-    </div>
-  );
-}
-
 function ScoreboardRow({ p, en }: { p: typeof PLACEHOLDER_PLAYERS[number]; en: boolean }) {
   const c = TEAM_COLOR[p.team];
   return (
@@ -157,51 +135,6 @@ function ScoreboardRow({ p, en }: { p: typeof PLACEHOLDER_PLAYERS[number]; en: b
       <span style={{ fontFamily: "monospace", fontSize: 10, color: p.respawn ? "#ff6b6b" : MUTED, minWidth: 44, textAlign: "right" }}>
         {p.respawn ? `☠ 0:${String(p.respawn).padStart(2, "0")}` : (en ? "LIVE" : "ŽIV")}
       </span>
-    </div>
-  );
-}
-
-function PlayerHudMock({ en, myTeam }: { en: boolean; myTeam: TeamKey }) {
-  const myColor = TEAM_COLOR[myTeam];
-  return (
-    <div style={{ padding: 14, color: INK, height: "100%" }}>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 10 }}>
-        <div>
-          <Kicker>PLAYER HUD</Kicker>
-          <p style={{ fontFamily: "'Michroma', monospace", fontSize: 12, margin: "4px 0 0", color: INK, fontWeight: 700 }}>OPERATION FALLEN ANGEL</p>
-          <p style={{ fontSize: 10, color: MUTED, margin: 0 }}>Field: ZELENI RAJ</p>
-        </div>
-        <div style={{ fontFamily: "'Michroma', monospace", fontSize: 14, color: ACCENT, letterSpacing: "0.08em" }}>32:14</div>
-      </div>
-
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gap: 4, marginBottom: 10 }}>
-        {["A", "B", "G", "D", "E"].map((n, i) => {
-          const owner: (TeamKey | null)[] = ["modra", "rdeca", null, "modra", null];
-          const o = owner[i];
-          const bg = o ? TEAM_COLOR[o] : "#3a3a2a";
-          return (
-            <div key={n} style={{ background: `${bg}22`, border: `1.5px solid ${bg}`, padding: "10px 4px", textAlign: "center", fontFamily: "'Michroma', monospace", fontSize: 12, fontWeight: 700, color: o ? bg : MUTED }}>{n}</div>
-          );
-        })}
-      </div>
-
-      <div style={{ background: `${myColor}12`, border: `1px solid ${myColor}55`, padding: 10, marginBottom: 10 }}>
-        <p style={{ fontFamily: "monospace", fontSize: 10, color: MUTED, letterSpacing: "0.14em", margin: 0, marginBottom: 6, textTransform: "uppercase" }}>
-          {en ? "Scoreboard" : "Točkovna lestvica"}
-        </p>
-        <div style={{ display: "flex", justifyContent: "space-around", fontFamily: "'Michroma', monospace", fontSize: 20, fontWeight: 700 }}>
-          <span style={{ color: TEAM_COLOR.modra }}>7</span>
-          <span style={{ color: MUTED, fontSize: 14 }}>vs</span>
-          <span style={{ color: TEAM_COLOR.rdeca }}>4</span>
-        </div>
-      </div>
-
-      <div style={{ borderTop: `1px dashed ${ACCENT}33`, paddingTop: 10, display: "grid", gap: 4 }}>
-        <p style={{ fontFamily: "monospace", fontSize: 10, color: MUTED, letterSpacing: "0.14em", margin: 0, marginBottom: 4, textTransform: "uppercase" }}>
-          {en ? "Live roster" : "Živa evidenca"}
-        </p>
-        {PLACEHOLDER_PLAYERS.map((p) => <ScoreboardRow key={p.name} p={p} en={en} />)}
-      </div>
     </div>
   );
 }
