@@ -124,22 +124,8 @@ export default function Header() {
     return () => window.clearTimeout(timer);
   }, [location.pathname, location.hash]);
 
-  const handleNavClick = (e: ReactMouseEvent<HTMLAnchorElement>, link: NavLink) => {
-    setOpen(false);
-    if (!link.hash) return;
-
-    const hash = normalizeHash(link.hash);
-    if (location.pathname === link.to) {
-      e.preventDefault();
-      window.history.pushState(null, "", `#${hash}`);
-    }
-    window.setTimeout(() => scrollToHashTarget(hash), 400);
-  };
 
 
-  const navLinks: NavLink[] = [
-    { to: "/spartanops", label: t("nav.spartanops") },
-  ];
 
   const muted = isAirsoft ? "#ece3c4" : "#6b6258";
   const forest = isAirsoft ? "#ece3c4" : "#3f5839";
