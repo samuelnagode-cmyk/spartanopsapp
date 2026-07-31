@@ -16,7 +16,6 @@ export const Route = createFileRoute("/lokacija")({
 });
 
 const ACCENT = "#a8954f";
-const BG = "#11140f";
 const INK = "#ece3c4";
 
 function AirsoftLokacijaPage() {

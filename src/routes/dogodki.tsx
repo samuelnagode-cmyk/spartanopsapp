@@ -3,7 +3,6 @@ import { useState, useEffect, useCallback } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { Plus, MapPin, CalendarDays, Link as LinkIcon, Crosshair } from "lucide-react";
 import { externalSupabase } from "@/integrations/supabase/externalClient";
-import { supabase } from "@/integrations/supabase/client";
 import { useLang } from "@/lib/i18n";
 import AirsoftRegistrationModal from "@/components/AirsoftRegistrationModal";
 import AirsoftAttendeeList from "@/components/AirsoftAttendeeList";
