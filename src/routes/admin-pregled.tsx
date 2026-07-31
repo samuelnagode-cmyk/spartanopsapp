@@ -1681,7 +1681,7 @@ function MarshalPasswordPrompt({ lobby, onClose, onSuccess }: { lobby: LobbyReco
         <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} autoFocus placeholder="••••••••"
           style={{ width: "100%", background: BG, color: INK, border: "1px solid rgba(236,227,196,0.20)", padding: "12px 14px", fontSize: 14, marginBottom: 12, textAlign: "center", letterSpacing: "0.2em" }} />
         {err && <p style={{ color: "#d97a6c", fontSize: 12, marginBottom: 10, textAlign: "center" }}>{err}</p>}
-        <button type="submit" style={{ width: "100%", padding: "12px", background: ACCENT, color: BG, border: "none", fontFamily: "'Michroma', monospace", fontSize: 11, letterSpacing: "0.20em", textTransform: "uppercase", fontWeight: 700, cursor: "pointer" }}>
+        <button type="submit" disabled={busy} style={{ width: "100%", padding: "12px", background: ACCENT, color: BG, border: "none", fontFamily: "'Michroma', monospace", fontSize: 11, letterSpacing: "0.20em", textTransform: "uppercase", fontWeight: 700, cursor: busy ? "wait" : "pointer", opacity: busy ? 0.6 : 1 }}>
           Authorize Marshal
         </button>
       </form>
