@@ -409,7 +409,7 @@ function AdminPage() {
   const { lang } = useLang();
   const en = lang === "en";
   const t = useT();
-  const { isPremium, activatePremium, openPremiumModal } = usePremium();
+  const { isPremium, activatePremium } = usePremium();
   const [premiumKeyInput, setPremiumKeyInput] = useState("");
   const [premiumKeyError, setPremiumKeyError] = useState(false);
   const search = useSearch({ from: "/admin-pregled" }) as { edit?: string };
