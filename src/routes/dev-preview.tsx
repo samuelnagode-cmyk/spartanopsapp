@@ -98,61 +98,6 @@ function RealMisijaPreview({ preset, device }: { preset: "registration" | "team"
   );
 }
 
-// ============= Individual UI mocks =============
-
-function DeploymentRegistrationMock({ en }: { en: boolean }) {
-  return (
-    <div style={{ padding: 18, color: INK, height: "100%" }}>
-      <Kicker>{en ? "// DEPLOYMENT REGISTRATION" : "// PRIJAVA V OPERACIJO"}</Kicker>
-      <h3 style={{ fontFamily: "'Michroma', monospace", fontSize: 15, marginTop: 8, marginBottom: 14, fontWeight: 700 }}>
-        {en ? "OPERATION FALLEN ANGEL" : "OPERACIJA FALLEN ANGEL"}
-      </h3>
-      <div style={{ display: "grid", gap: 10 }}>
-        {[
-          [en ? "Callsign" : "Klicni znak", "Kozjak_Marko"],
-          [en ? "Phone number" : "Telefonska št.", "+386 41 234 567"],
-          [en ? "Experience" : "Izkušnje", en ? "Veteran (3-5 yrs)" : "Veteran (3-5 let)"],
-        ].map(([l, v]) => (
-          <div key={l}>
-            <p style={{ fontFamily: "monospace", fontSize: 10, color: MUTED, textTransform: "uppercase", letterSpacing: "0.14em", margin: 0, marginBottom: 4 }}>{l}</p>
-            <div style={{ background: "#0a0c07", border: `1px solid ${ACCENT}44`, padding: "9px 12px", fontSize: 13, color: INK }}>{v}</div>
-          </div>
-        ))}
-        <div style={{ background: `${ACCENT}12`, border: `1px solid ${ACCENT}44`, padding: 10, marginTop: 4, display: "flex", gap: 8, alignItems: "flex-start" }}>
-          <MapPin size={14} style={{ color: ACCENT, marginTop: 2 }} />
-          <p style={{ fontSize: 11, margin: 0, color: INK, lineHeight: 1.5 }}>
-            {en ? "GPS location access is required for capture verification." : "Za potrditev zavzemanja je potreben dostop do GPS lokacije."}
-          </p>
-        </div>
-        <button style={{ background: ACCENT, color: BG, border: "none", padding: "12px 14px", fontFamily: "'Michroma', monospace", fontSize: 12, letterSpacing: "0.2em", fontWeight: 700, cursor: "pointer", marginTop: 6 }}>
-          {en ? "DEPLOY" : "V AKCIJO"}
-        </button>
-      </div>
-    </div>
-  );
-}
-
-function TeamSelectionMock({ en }: { en: boolean }) {
-  return (
-    <div style={{ padding: 18, color: INK }}>
-      <Kicker>{en ? "// SELECT FACTION" : "// IZBERI EKIPO"}</Kicker>
-      <h3 style={{ fontFamily: "'Michroma', monospace", fontSize: 14, margin: "8px 0 14px", fontWeight: 700 }}>
-        {en ? "CHOOSE FACTION" : "IZBERI EKIPO"}
-      </h3>
-      <div style={{ display: "grid", gap: 10 }}>
-        {(["modra", "rdeca"] as TeamKey[]).map((t) => (
-          <button key={t} style={{ background: `${TEAM_COLOR[t]}12`, border: `2px solid ${TEAM_COLOR[t]}`, padding: "14px 14px", color: INK, textAlign: "left", fontFamily: "monospace", fontSize: 13, cursor: "pointer", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-            <span style={{ color: TEAM_COLOR[t], fontFamily: "'Michroma', monospace", fontSize: 13, letterSpacing: "0.14em", fontWeight: 700 }}>
-              {en ? `${TEAM_LABEL_EN[t]} TEAM` : `${TEAM_LABEL_SL[t]} EKIPA`}
-            </span>
-            <span style={{ fontSize: 11, color: MUTED }}>2 {en ? "players" : "igralci"}</span>
-          </button>
-        ))}
-      </div>
-    </div>
-  );
-}
-
 function TeamChangeNotificationMock({ en, team }: { en: boolean; team: TeamKey }) {
   const c = TEAM_COLOR[team];
   const label = en ? TEAM_LABEL_EN[team] : TEAM_LABEL_SL[team];
