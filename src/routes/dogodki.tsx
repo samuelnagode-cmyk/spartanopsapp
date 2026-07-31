@@ -98,15 +98,7 @@ function AirsoftDogodkiPage() {
     return v;
   };
 
-  // Split a stored image_url string into one-or-more URLs. Supports
-  // comma- or newline-separated values, trims whitespace, drops empties.
-  const parseImages = (raw?: string | null): string[] => {
-    if (!raw) return [];
-    return raw
-      .split(/[\n,]+/)
-      .map((s) => s.trim())
-      .filter(Boolean);
-  };
+
 
   const todayIso = new Date().toISOString().slice(0, 10);
 
