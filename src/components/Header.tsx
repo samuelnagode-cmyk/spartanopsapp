@@ -1,12 +1,11 @@
 import { Link, useLocation } from "@tanstack/react-router";
-import { useEffect, useRef, useState, type MouseEvent as ReactMouseEvent } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Menu, X, ChevronLeft, ChevronDown, Globe } from "lucide-react";
 import logoImg from "@/assets/logo-glamping.png";
 const AIRSOFT_LOGO = "https://res.cloudinary.com/dfifiytid/image/upload/v1783765381/SpartanOps%20app%20v1.0/LOGO/SpartanOps_app_LOGO_NO_BACKROUND-05.webp";
 import { useT, useLang, type Lang } from "@/lib/i18n";
 
 
-type NavLink = { to: string; label: string; hash?: string };
 
 export default function Header() {
   const [open, setOpen] = useState(false);
