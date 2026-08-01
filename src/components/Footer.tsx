@@ -1,9 +1,13 @@
 import { Mail, Phone, MapPin, Instagram, Facebook, ExternalLink } from "lucide-react";
-import { useLocation, Link } from "@tanstack/react-router";
+import { useLocation, Link, useNavigate } from "@tanstack/react-router";
 import { useT } from "@/lib/i18n";
+import { clearMasterPw, useMasterAdmin } from "@/lib/master-admin";
 
 export default function Footer() {
   const t = useT();
+  const navigate = useNavigate();
+  const isAdmin = useMasterAdmin();
+
   useLocation();
   const isAirsoft = true;
 
@@ -238,17 +242,36 @@ export default function Footer() {
           {isAirsoft && (
             <>
               {" · "}
-              <Link
-                to="/admin-pregled"
-                search={{ edit: "1" }}
-                style={{ color: v.ivoryFaint, textDecoration: "none", letterSpacing: "0.2em" }}
-                onMouseEnter={(e) => (e.currentTarget.style.color = v.accent)}
-                onMouseLeave={(e) => (e.currentTarget.style.color = v.ivoryFaint)}
-              >
-                ADMIN
-              </Link>
+              {isAdmin ? (
+                <button
+                  type="button"
+                  onClick={() => {
+                    clearMasterPw();
+                    void navigate({ to: "/spartanops" });
+                  }}
+                  style={{
+                    background: "transparent", border: "none", padding: 0, cursor: "pointer",
+                    font: "inherit", color: v.ivoryFaint, letterSpacing: "0.2em",
+                  }}
+                  onMouseEnter={(e) => (e.currentTarget.style.color = v.accent)}
+                  onMouseLeave={(e) => (e.currentTarget.style.color = v.ivoryFaint)}
+                >
+                  EXIT ADMIN
+                </button>
+              ) : (
+                <Link
+                  to="/admin-pregled"
+                  search={{ edit: "1" }}
+                  style={{ color: v.ivoryFaint, textDecoration: "none", letterSpacing: "0.2em" }}
+                  onMouseEnter={(e) => (e.currentTarget.style.color = v.accent)}
+                  onMouseLeave={(e) => (e.currentTarget.style.color = v.ivoryFaint)}
+                >
+                  ADMIN
+                </Link>
+              )}
             </>
           )}
+
         </p>
       </div>
     </footer>

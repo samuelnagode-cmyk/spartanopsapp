@@ -1,4 +1,6 @@
-import { createFileRoute, Link, useSearch } from "@tanstack/react-router";
+import { createFileRoute, Link, useSearch, useNavigate } from "@tanstack/react-router";
+import { getMasterPw, setMasterPw, clearMasterPw } from "@/lib/master-admin";
+import { missionTitle } from "@/lib/mission-title";
 import { useEffect, useRef, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import {
@@ -60,14 +62,7 @@ const MUTED = "rgba(236,227,196,0.55)";
 const DANGER = "#c0392b";
 const FREE_NODES: Record<string, string | null> = { "1": null, "2": null, "3": null, "4": null, "5": null };
 
-const MASTER_PW_STORAGE_KEY = "spartanops:master_pw";
-export function getMasterPw(): string {
-  if (typeof window === "undefined") return "";
-  return sessionStorage.getItem(MASTER_PW_STORAGE_KEY) ?? "";
-}
-function setMasterPw(pw: string) {
-  if (typeof window !== "undefined") sessionStorage.setItem(MASTER_PW_STORAGE_KEY, pw);
-}
+export { getMasterPw };
 
 type MainSection = "fields" | "statistics";
 type FieldKey = "zeleni-raj";
@@ -413,6 +408,7 @@ function AdminPage() {
   const [premiumKeyInput, setPremiumKeyInput] = useState("");
   const [premiumKeyError, setPremiumKeyError] = useState(false);
   const search = useSearch({ from: "/admin-pregled" }) as { edit?: string };
+  const navigate = useNavigate();
   const [section, setSection] = useState<MainSection>("fields");
   const [fields, setFields] = useState<Field[]>(INITIAL_FIELDS);
   // Hydrate from localStorage cache so mission cards outline instantly on mount
@@ -572,17 +568,28 @@ function AdminPage() {
       await refreshLobbies();
     } catch (e: any) {
       console.error("[admin] master delete failed", e);
+      // A statement timeout can fire after the deletion already committed (or while
+      // it finishes server-side). Re-check the live list before alarming the marshal.
+      let stillThere = true;
+      try {
+        const fresh = await listLobbiesFn({ data: { masterPassword: mpw } } as any);
+        stillThere = Array.isArray(fresh) && fresh.some((l: any) => l?.id === id);
+      } catch {}
+      if (!stillThere) {
+        await refreshLobbies();
+        return;
+      }
       alert(`Failed to decommission lobby: ${e?.message ?? "unknown error"}`);
       setCustomLobbies(prev);
     }
   };
 
   const handleExitAdminView = () => {
-    if (typeof window !== "undefined") {
-      try { sessionStorage.removeItem(MASTER_PW_STORAGE_KEY); } catch {}
-    }
+    clearMasterPw();
     setIsEditMode(false);
     setEditModalOpen(false);
+    // Clear ?edit=1 so the footer ADMIN link can re-trigger the unlock modal.
+    void navigate({ to: "/admin-pregled", search: {} as any, replace: true });
     void refreshLobbies();
   };
 
@@ -825,8 +832,6 @@ function CreateFieldForm({ onCancel, onCreated }: { onCancel: () => void; onCrea
 
   const [err, setErr] = useState("");
   const [ok, setOk] = useState(false);
-  const [created, setCreated] = useState<{ rec: LobbyRecord; password: string; marshalPassword: string } | null>(null);
-  const [copied, setCopied] = useState(false);
   const [showPassword, setShowPassword] = useState(true);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -911,7 +916,9 @@ function CreateFieldForm({ onCancel, onCreated }: { onCancel: () => void; onCrea
         createdAt: rec.createdAt,
       });
       setOk(true);
-      setCreated({ rec, password: password.trim(), marshalPassword: marshalPassword.trim() });
+      // Go straight into the command center for the new mission — the lobby URL
+      // and all controls live there.
+      onCreated(rec, { password: password.trim(), marshalPassword: marshalPassword.trim() });
     } catch (e: any) {
       console.error("[admin] createLobby failed", { error: e, message: e?.message, cause: e?.cause, stack: e?.stack });
       setErr(e?.message ? `Error: ${e.message}` : "Failed to create lobby.");
@@ -919,10 +926,6 @@ function CreateFieldForm({ onCancel, onCreated }: { onCancel: () => void; onCrea
       setBusy(false);
     }
   };
-
-  const lobbyUrl = created && typeof window !== "undefined"
-    ? `${window.location.origin}/misija?field=${created.rec.id}`
-    : "";
 
   return (
     <form onSubmit={submit} style={{ maxWidth: 780, margin: "0 auto" }}>
@@ -1235,43 +1238,6 @@ function CreateFieldForm({ onCancel, onCreated }: { onCancel: () => void; onCrea
         </p>
       </div>
 
-      <div style={{ marginTop: 22, padding: "14px 16px", border: `1px solid ${ACCENT}55`, background: "rgba(224,176,78,0.04)" }}>
-        <p style={{ fontFamily: "'Michroma', monospace", fontSize: 11, letterSpacing: "0.18em", color: ACCENT, textTransform: "uppercase", marginBottom: 10 }}>
-          {en ? "LOBBY URL" : "POVEZAVA DO MISIJE"}
-        </p>
-        {lobbyUrl ? (
-          <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
-            <input readOnly value={lobbyUrl} onFocus={(e) => e.currentTarget.select()} style={{ ...consoleInputStyle, flex: "1 1 240px" }} />
-            <button
-              type="button"
-              onClick={async () => {
-                try { await navigator.clipboard.writeText(lobbyUrl); } catch { /* ignore */ }
-                setCopied(true);
-                setTimeout(() => setCopied(false), 1800);
-              }}
-              style={{ background: "transparent", border: `1px solid ${ACCENT}`, color: ACCENT, padding: "10px 14px", fontFamily: "'Michroma', monospace", fontSize: 10, letterSpacing: "0.16em", textTransform: "uppercase", cursor: "pointer" }}
-            >
-              {copied ? (en ? "COPIED" : "KOPIRANO") : (en ? "COPY LINK" : "KOPIRAJ")}
-            </button>
-          </div>
-        ) : (
-          <p style={{ fontFamily: "monospace", fontSize: 12, color: MUTED, letterSpacing: "0.06em" }}>____</p>
-        )}
-        <p style={{ fontFamily: "monospace", fontSize: 11, color: MUTED, lineHeight: 1.6, marginTop: 10 }}>
-          {en
-            ? "After creating a lobby, you can copy the provided link and send it to your players, so they can join the mission directly."
-            : "Po tem ko vzpostavite misijo, lahko kopirate generirani link, s katerim se lahko vaši igralci povežejo direktno v misijo."}
-        </p>
-        {created && (
-          <button
-            type="button"
-            onClick={() => onCreated(created.rec, { password: created.password, marshalPassword: created.marshalPassword })}
-            style={{ marginTop: 14, background: ACCENT, color: BG, border: "none", padding: "12px 22px", fontFamily: "'Michroma', monospace", fontSize: 11, letterSpacing: "0.2em", textTransform: "uppercase", fontWeight: 700, cursor: "pointer" }}
-          >
-            [ {en ? "ENTER COMMAND CENTER" : "V KOMANDNI CENTER"} ]
-          </button>
-        )}
-      </div>
     </form>
   );
 }
@@ -1399,7 +1365,7 @@ function FieldsWelcome({
                       </span>
                     </div>
                     <p style={{ fontFamily: "'Michroma', monospace", fontSize: 12, letterSpacing: "0.14em", color: ACCENT, marginBottom: 8, textTransform: "uppercase", lineHeight: 1.55 }}>
-                      MISSION: {l.eventName || l.fieldName}
+                      MISSION: {missionTitle(l)}
                     </p>
                     {l.fieldName && (
                       <p style={{ fontFamily: "monospace", fontSize: 10.5, color: MUTED, letterSpacing: "0.14em", marginTop: 6, textTransform: "uppercase" }}>
@@ -1670,7 +1636,7 @@ function MarshalPasswordPrompt({ lobby, onClose, onSuccess }: { lobby: LobbyReco
           <ShieldCheck size={22} />
         </div>
         <h2 style={{ fontFamily: "'Michroma', monospace", fontSize: 13, letterSpacing: "0.18em", color: INK, textAlign: "center", marginBottom: 6, textTransform: "uppercase" }}>
-          {(lang === "en" ? "LOGIN TO MISSION: " : "PRIJAVA V MISIJO: ") + (lobby.eventName || lobby.fieldName)}
+          {(lang === "en" ? "LOGIN TO MISSION: " : "PRIJAVA V MISIJO: ") + missionTitle(lobby)}
         </h2>
         <p style={{ fontSize: 12, color: MUTED, textAlign: "center", marginBottom: 18 }}>
           {lang === "en"
@@ -2203,7 +2169,7 @@ function MarshalLobbyConsole({ lobby: initialLobby, marshalPassword, lobbyPasswo
         </button>
         <div style={{ marginTop: 14, display: "flex", flexWrap: "wrap", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
           <div style={{ fontFamily: "'Michroma', monospace", fontSize: 13, letterSpacing: "0.16em", color: ACCENT, textTransform: "uppercase" }}>
-            Mission: {lobby.eventName || lobby.fieldName}
+            Mission: {missionTitle(lobby)}
           </div>
           <span style={{
             display: "inline-flex", alignItems: "center", gap: 6,
