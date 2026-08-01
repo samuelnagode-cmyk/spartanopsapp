@@ -78,6 +78,7 @@ type Checkin = {
   first_name?: string | null;
   last_initial?: string | null;
   phone_number?: string | null;
+  operator_type?: string | null;
 };
 type Capture = {
   id: string; point_number: number; team: string; player_callsign: string | null; captured_at: string;
@@ -741,7 +742,8 @@ const RosterBoard = memo(function RosterBoard({ roster, settings, onReassign, on
                         className="min-w-0 truncate inline-flex items-center gap-1"
                         style={{ background: "transparent", border: "none", color: INK, padding: 0, cursor: "pointer", font: "inherit", textAlign: "left" }}
                       >
-                        <span className="min-w-0 truncate">{p.callsign}</span>
+                        <span style={{ minWidth: 0, overflowWrap: "anywhere", lineHeight: 1.25 }}>{p.callsign}</span>
+                        {p.operator_type && <span style={{ color: ACCENT, fontFamily: "monospace", fontSize: 9, flexShrink: 0 }}>· {p.operator_type}</span>}
                         <Info size={11} style={{ color: ACCENT, flexShrink: 0 }} aria-hidden="true" />
                       </button>
                       {p.club && <span style={{ color: MUTED, fontWeight: 400 }}>· {p.club}</span>}

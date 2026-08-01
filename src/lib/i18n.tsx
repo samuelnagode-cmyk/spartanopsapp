@@ -27,8 +27,8 @@ export const dict: Dict = {
   "captureSuccessSubtitle": { sl: "", en: "" },
   "captureAckBtn": { sl: "POTRDI IN NAZAJ V HUD", en: "ACKNOWLEDGE & RETURN TO HUD" },
   "captureTelemetryNote": {
-    sl: "// SEKTOR ZAVZET. Telemetrija se prenaša v ozadju. Lahko se vrnete na bojišče.",
-    en: "// SECTOR SECURED. Telemetry transmitting in background. You may return to the field.",
+    sl: "// TA SEKTOR ZDAJ PRINAŠA TOČKE VAŠI EKIPI.",
+    en: "// THIS SECTOR NOW BRINGS POINTS FOR YOUR TEAM.",
   },
 
   // GPS acquiring (iOS precise-location prompt)

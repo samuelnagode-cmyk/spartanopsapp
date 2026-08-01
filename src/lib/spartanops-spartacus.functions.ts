@@ -229,11 +229,11 @@ export const spartanopsSpartacusCapture = createServerFn({ method: "POST" })
       allowed_threshold_meters: allowedRadius,
     } satisfies SpartacusDiagnosticPayload;
 
-    // Hard rule: Marshal-controlled dynamic radius ceiling from the anchored
-    // point coordinates. Overrides Spartacus buffer — no capture row is
-    // written, no marshal review is triggered. Purely a client-facing range
-    // rejection.
-    const HARD_RANGE_M = dynamicRadiusM;
+    // Enforce the Marshal radius around the physical point while accounting
+    // for the uncertainty of both GPS fixes. The previous raw distance gate
+    // ignored accuracy and rejected every legitimate second scan whenever the
+    // first phone's anchor drifted outside the bare radius.
+    const HARD_RANGE_M = dynamicRadiusM + scanBuffer + anchorBuffer;
     if (dist > HARD_RANGE_M) {
       return { ok: false, spartacus: true, error: "out_of_range", distance_m: dist, radius_m: HARD_RANGE_M, diagnostic: logSpartacusDiagnostic({ ...diagnosticBase, stage: "distance_over_hard_range" }) } as const;
     }
