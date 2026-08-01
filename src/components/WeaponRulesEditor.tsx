@@ -140,8 +140,8 @@ export function WeaponRulesEditor({
           style={{ ...inputStyle, minHeight: 76, resize: "vertical" }}
           placeholder={
             en
-              ? "Please play fair and if you notice anyone not playing accordingly let the marshal know."
-              : "Prosimo, igrajte pošteno in če opazite, da kdo ne igra po pravilih, obvestite maršala."
+              ? "The players will see this text before and during the game."
+              : "Igralci bodo ta zapis videli pred igro in med njo."
           }
         />
       </div>
