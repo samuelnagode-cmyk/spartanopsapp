@@ -2289,6 +2289,24 @@ function TacticalMap({ state, captures, en, hasPositions, missionName, timeLabel
   const [open, setOpen] = useState(false);
   // Opens showing the FULL map (no crop) — the operator zooms in from there.
   const [zoom, setZoom] = useState(1);
+  // One-finger (or mouse) drag panning inside the zoomed map.
+  const panRef = useRef<HTMLDivElement | null>(null);
+  const dragRef = useRef<{ id: number; x: number; y: number; left: number; top: number } | null>(null);
+  const onPanStart = (e: React.PointerEvent<HTMLDivElement>) => {
+    const el = panRef.current;
+    if (!el || e.isPrimary === false) return;
+    dragRef.current = { id: e.pointerId, x: e.clientX, y: e.clientY, left: el.scrollLeft, top: el.scrollTop };
+  };
+  const onPanMove = (e: React.PointerEvent<HTMLDivElement>) => {
+    const el = panRef.current;
+    const d = dragRef.current;
+    if (!el || !d || d.id !== e.pointerId) return;
+    el.scrollLeft = d.left - (e.clientX - d.x);
+    el.scrollTop = d.top - (e.clientY - d.y);
+  };
+  const onPanEnd = () => {
+    dragRef.current = null;
+  };
   useEffect(() => { if (open) setZoom(1); }, [open]);
   const startMs = state.match_started_at ? new Date(state.match_started_at).getTime() : null;
   const mapIsLive = (state.status === "active" || state.status === "paused") && !!startMs;
