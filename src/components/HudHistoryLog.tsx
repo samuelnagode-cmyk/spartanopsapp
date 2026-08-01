@@ -30,8 +30,8 @@ function fmtTime(ms: number) {
 }
 
 type Row =
-  | { kind: "capture"; id: string; at: number; team: string; text: string }
-  | { kind: "death"; id: string; at: number; team: string; text: string };
+  | { kind: "capture"; id: string; at: number; team: string; player: string; sector: string }
+  | { kind: "death"; id: string; at: number; team: string; player: string };
 
 export function HudHistoryLog({
   captures,
@@ -59,11 +59,8 @@ export function HudHistoryLog({
       id: `cap-${c.id}`,
       at: new Date(c.captured_at).getTime() || 0,
       team: c.team,
-      text: fillTemplate(t("hudNotif.capture"), {
-        player: c.player_callsign ? String(c.player_callsign).toUpperCase() : "—",
-        sector: nodeNames[c.point_number - 1] ?? `#${c.point_number}`,
-        team: teamLabelFor(c.team),
-      }),
+      player: c.player_callsign ? String(c.player_callsign).toUpperCase() : "—",
+      sector: nodeNames[c.point_number - 1] ?? `#${c.point_number}`,
     }));
     const deathRows: Row[] =
       respawnEnabled && filter === "all"
@@ -72,14 +69,12 @@ export function HudHistoryLog({
             id: `dth-${d.id}`,
             at: d.at,
             team: d.team,
-            text: fillTemplate(t("hudNotif.respawn"), {
-              player: String(d.callsign ?? "—").toUpperCase(),
-              team: teamLabelFor(d.team),
-            }),
+            player: String(d.callsign ?? "—").toUpperCase(),
           }))
         : [];
     return [...capRows, ...deathRows].sort((a, b) => b.at - a.at);
-  }, [captures, deaths, respawnEnabled, filter, t, teamLabelFor, nodeNames]);
+  }, [captures, deaths, respawnEnabled, filter, nodeNames]);
+
 
   return (
     <div style={{ background: PANEL, border: "1px solid rgba(236,227,196,0.12)" }}>
