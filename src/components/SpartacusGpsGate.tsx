@@ -51,6 +51,7 @@ export default function SpartacusGpsGate() {
   const en = lang === "en";
   const active = pathname.startsWith("/misija") || pathname.startsWith("/capture");
   const [perm, setPerm] = useState<Perm>("unknown");
+  const [permChecked, setPermChecked] = useState(false);
   const [dismissedBanner, setDismissedBanner] = useState(false);
   const [isIOSInApp, setIsIOSInApp] = useState(false);
 
@@ -69,7 +70,10 @@ export default function SpartacusGpsGate() {
     let live = true;
     (async () => {
       const p = await readPermission();
-      if (live) setPerm(p);
+      if (live) {
+        setPerm(p);
+        setPermChecked(true);
+      }
     })();
 
     const onFocus = async () => {
@@ -103,7 +107,7 @@ export default function SpartacusGpsGate() {
   void authorize;
 
   // Pasica se prikaže, če je dostop izrecno zavrnjen ali pa če smo ujeti v iOS In-App kameri
-  const showDeniedBanner = (perm === "denied" || isIOSInApp) && !dismissedBanner;
+  const showDeniedBanner = permChecked && (perm === "denied" || isIOSInApp) && !dismissedBanner;
 
   return (
     <>
@@ -111,7 +115,7 @@ export default function SpartacusGpsGate() {
         <div
           style={{
             position: "fixed",
-            top: 68,
+            top: "calc(68px + env(safe-area-inset-top, 0px))",
             left: 12,
             right: 12,
             zIndex: 180,

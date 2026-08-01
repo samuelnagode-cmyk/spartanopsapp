@@ -480,7 +480,7 @@ function MisijaPage() {
       if (cached) setState((prev) => prev ?? (JSON.parse(cached) as GameState));
     } catch { /* ignore */ }
 
-    const load = async () => {
+    const load = async (attempt = 0): Promise<boolean> => {
       // Always try Supabase first — every lobby (legacy fixed IDs + new UUIDs)
       // now has a game_state row created by the lobby bootstrap trigger.
       const { data } = await supabase
@@ -501,9 +501,14 @@ function MisijaPage() {
           return merged;
         });
         if ((data as any).match_started_at) syncServerClock().catch(() => {});
+        return true;
       }
+      if (alive && attempt < 3) {
+        await new Promise((resolve) => setTimeout(resolve, 600 * (attempt + 1)));
+        return load(attempt + 1);
+      }
+      return false;
     };
-    load();
 
     // Safety net: if the DB fetch (or any subscription) hasn't populated state
     // within 1s, drop into the local onboarding flow so the player never sees
@@ -534,7 +539,10 @@ function MisijaPage() {
           }
         },
       )
-      .subscribe();
+      .subscribe((status) => {
+        if (status === "SUBSCRIBED") load().catch(() => {});
+      });
+    load().catch(() => {});
     return () => {
       alive = false;
       clearTimeout(timeout);
