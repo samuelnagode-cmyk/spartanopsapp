@@ -8,7 +8,7 @@ import { spartanopsAckTeamChange, spartanopsSelectTeam } from "@/lib/spartanops-
 import { spartanopsUpsertCheckin, spartanopsGetMyCheckin, spartanopsDeleteMyCheckin, spartanopsGetParticipantRoster, spartanopsGetServerTime, spartanopsGetRespawnLock } from "@/lib/spartanops-checkin.functions";
 import { spartanopsAcknowledgeWarning } from "@/lib/spartanops-spartacus.functions";
 import { SpartacusAlerts } from "@/components/SpartanOpsConsole";
-import { RespawnProtocolBlock } from "@/components/RespawnProtocolBlock";
+import { MissionRulesAccordion } from "@/components/MissionRulesAccordion";
 
 import { OfflineBanner } from "@/components/OfflineBanner";
 import { TacticalCompass } from "@/components/TacticalCompass";
@@ -2111,7 +2111,7 @@ function PreMatchCountdown({ seconds, polygon, eventName, gamemode, pointTarget,
         })}
       </div>
       
-      <RespawnProtocolBlock settings={settings?.respawn} en={en} />
+      <MissionRulesAccordion settings={settings?.respawn} respawn={settings?.respawn} weaponRules={(settings as any)?.weaponRules} en={en} />
     </div>
   );
 }
@@ -2733,7 +2733,9 @@ function LiveMatch({ state, captures, now, roster, myTeam }: { state: GameState;
         </div>
       )}
 
-      <RespawnProtocolBlock settings={state.settings?.respawn} en={en} />
+      <div style={{ marginTop: 12 }}>
+        <MissionRulesAccordion respawn={state.settings?.respawn} weaponRules={(state.settings as any)?.weaponRules} en={en} />
+      </div>
     </div>
   );
 }
