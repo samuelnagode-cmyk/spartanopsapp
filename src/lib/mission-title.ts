@@ -5,10 +5,11 @@ export function missionTitle(
     | {
         fieldName?: string | null;
         eventName?: string | null;
-        settings?: { missionName?: string | null } | null;
+        settings?: Record<string, any> | null;
       }
     | null
     | undefined,
+
   fallback = "",
 ): string {
   if (!lobby) return fallback;
