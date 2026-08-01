@@ -2412,8 +2412,19 @@ function TacticalMap({ state, captures, en, hasPositions, missionName, timeLabel
             </button>
           </div>
           <div
+            ref={panRef}
             className="flex-1"
-            style={{ overflow: "auto", touchAction: "pinch-zoom", WebkitOverflowScrolling: "touch" }}
+            style={{
+              overflow: "auto",
+              // One finger pans, two fingers pinch-zoom the browser view.
+              touchAction: "pan-x pan-y pinch-zoom",
+              WebkitOverflowScrolling: "touch",
+              cursor: "grab",
+            }}
+            onPointerDown={onPanStart}
+            onPointerMove={onPanMove}
+            onPointerUp={onPanEnd}
+            onPointerCancel={onPanEnd}
           >
             <div
               style={{
