@@ -412,10 +412,10 @@ function AdminPage() {
   const navigate = useNavigate();
   const [section, setSection] = useState<MainSection>("fields");
   const [fields, setFields] = useState<Field[]>(INITIAL_FIELDS);
-  // Hydrate from localStorage cache so mission cards outline instantly on mount
-  // and the DB refresh below silently reconciles.
-  const [customLobbies, setCustomLobbies] = useState<LobbyRecord[]>(() => loadLobbies());
-  const [lobbiesLoaded, setLobbiesLoaded] = useState(() => loadLobbies().length > 0);
+  // Keep the server and first browser render identical; hydrate the local
+  // cache immediately after mount, then reconcile with the database below.
+  const [customLobbies, setCustomLobbies] = useState<LobbyRecord[]>([]);
+  const [lobbiesLoaded, setLobbiesLoaded] = useState(false);
   const [activeField, setActiveField] = useState<FieldKey | null>(null);
   const [fieldAuth, setFieldAuth] = useState<Record<string, string>>({});
   const [isEditMode, setIsEditMode] = useState(false);
@@ -431,6 +431,14 @@ function AdminPage() {
   const listLobbiesFn = useServerFn(listAllLobbies);
   const listPublishedLobbiesFn = useServerFn(listPublishedLobbies);
   const masterDeleteLobbyFn = useServerFn(masterDeleteLobby);
+
+  useEffect(() => {
+    const cached = loadLobbies();
+    if (cached.length > 0) {
+      setCustomLobbies(cached);
+      setLobbiesLoaded(true);
+    }
+  }, []);
 
   // Auto-open the edit modal when arriving via footer link (?edit=1)
   useEffect(() => {
