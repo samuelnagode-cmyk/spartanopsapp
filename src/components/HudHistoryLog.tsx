@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { useT } from "@/lib/i18n";
-import { fillTemplate } from "@/components/HudNotificationStack";
+
 import type { DeathEvent } from "@/lib/hud-history";
 
 /**
