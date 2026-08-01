@@ -173,6 +173,7 @@ type Checkin = {
   warning_message?: string | null;
   death_count?: number | null;
   respawn_unlock_at?: string | null;
+  operator_type?: string | null;
 
 };
 type Capture = {
@@ -1376,6 +1377,7 @@ function CheckinForm({ sessionId, fieldId, preview, onGhost, fieldLabel }: { ses
   const [club, setClub] = useState("");
   const [phone, setPhone] = useState("");
   const [exp, setExp] = useState<"slabo" | "dobro" | "zelo_dobro">("dobro");
+  const [operatorType, setOperatorType] = useState<"AEG" | "SNIPER" | "DMR" | "PUMP">("AEG");
   const [err, setErr] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [spartacusCleared, setSpartacusCleared] = useState(false);
@@ -1390,6 +1392,7 @@ function CheckinForm({ sessionId, fieldId, preview, onGhost, fieldLabel }: { ses
     phone: en ? "Phone number (visible only to the marshal)" : "Telefonska številka (vidna samo maršalu)",
     club: en ? "Team / Club (Optional*)" : "Ekipa / Klub (opcijsko*)",
     experience: en ? "Experience level" : "Nivo izkušenj",
+    operatorType: en ? "Operator type" : "Tip operaterja",
     submit: en ? "OK" : "OK",
     submitting: en ? "Sending..." : "Pošiljam...",
     needCallsign: en ? "Enter a callsign (tactical moniker)." : "Vnesite callsign (taktični vzdevek).",
@@ -1417,6 +1420,7 @@ function CheckinForm({ sessionId, fieldId, preview, onGhost, fieldLabel }: { ses
         callsign: cs,
         club: club.trim() || null,
         experience_level: exp,
+        operator_type: operatorType,
         assigned_team: "none",
         team_changed_flag: false,
         first_name: firstName.trim() || null,
@@ -1437,6 +1441,7 @@ function CheckinForm({ sessionId, fieldId, preview, onGhost, fieldLabel }: { ses
           club: club.trim() || null,
           phoneNumber: phone.trim() || null,
           experienceLevel: exp,
+          operatorType,
           firstName: firstName.trim() || null,
           lastInitial: li || null,
         },
@@ -1548,6 +1553,32 @@ function CheckinForm({ sessionId, fieldId, preview, onGhost, fieldLabel }: { ses
               style={inputStyle}
               placeholder="Spartan Airsoft"
             />
+          </div>
+          <div>
+            <label className="block font-mono text-[10px] uppercase tracking-widest mb-2" style={{ color: MUTED }}>
+              {t.operatorType}
+            </label>
+            <div className="grid grid-cols-4 gap-2">
+              {(["AEG", "SNIPER", "DMR", "PUMP"] as const).map((type) => (
+                <button
+                  key={type}
+                  type="button"
+                  onClick={() => setOperatorType(type)}
+                  style={{
+                    background: operatorType === type ? `${ACCENT}20` : "transparent",
+                    border: `1px solid ${operatorType === type ? ACCENT : "rgba(236,227,196,0.18)"}`,
+                    color: operatorType === type ? ACCENT : MUTED,
+                    padding: "10px 4px",
+                    fontFamily: "monospace",
+                    fontSize: 10,
+                    fontWeight: 700,
+                    cursor: "pointer",
+                  }}
+                >
+                  {type}
+                </button>
+              ))}
+            </div>
           </div>
           <div>
             <label className="block font-mono text-[10px] uppercase tracking-widest mb-2" style={{ color: MUTED }}>
@@ -1859,11 +1890,8 @@ const PlayerRow = memo(function PlayerRow({ p, isMe, compact, en }: { p: Checkin
       <span className="inline-flex shrink-0 items-center justify-center" style={{ color: ACCENT }}>
         <RankIcon level={p.experience_level} size={compact ? 14 : 16} />
       </span>
-      <span
-        className="min-w-0 flex-1"
-        style={{ color: INK, fontWeight: 700, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}
-      >
-        {p.callsign}
+      <span className="min-w-0 flex-1" style={{ color: INK, fontWeight: 700, overflowWrap: "anywhere", lineHeight: 1.3 }}>
+        {p.callsign}{p.operator_type && <span style={{ color: ACCENT, fontSize: 10, marginLeft: 6 }}>· {p.operator_type}</span>}
         {realName && (
           <span style={{ color: MUTED, fontWeight: 400, fontSize: compact ? 10 : 11, marginLeft: 6 }}>
             {realName}
@@ -2796,8 +2824,8 @@ function PlayerScoreboard({ roster, captures, respawn, settings, en = false }: {
                     <span style={{ color: ACCENT, display: "inline-flex", alignItems: "center" }}>
                       <ExperienceBadge level={p.experience_level} size={14} />
                     </span>
-                    <span style={{ color: INK, fontWeight: 700, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", minWidth: 0 }}>
-                      {p.callsign}
+                    <span style={{ color: INK, fontWeight: 700, overflowWrap: "anywhere", minWidth: 0, lineHeight: 1.3 }}>
+                      {p.callsign}{p.operator_type && <span style={{ color: ACCENT, fontSize: 9, marginLeft: 5 }}>· {p.operator_type}</span>}
                       {real && <span style={{ color: MUTED, fontWeight: 400, fontSize: 10, marginLeft: 4 }}>({real})</span>}
                     </span>
                     <span style={{ color: TEAM_COLOR[t], fontWeight: 700, textAlign: "right" }}>{p.pts}</span>
@@ -3029,12 +3057,11 @@ function EndgameReport({ state, roster, captures, en, now, myTeam }: { state: Ga
                         fontSize: "clamp(11px, 3.2vw, 13px)",
                         color: INK,
                         letterSpacing: "0.12em",
-                        overflow: "hidden",
-                        textOverflow: "ellipsis",
-                        whiteSpace: "nowrap",
+                        overflowWrap: "anywhere",
+                        lineHeight: 1.3,
                       }}
                     >
-                      {p.callsign}
+                      {p.callsign}{p.operator_type && <span style={{ color: ACCENT, fontSize: 9, marginLeft: 4 }}>· {p.operator_type}</span>}
                     </div>
                     {fmtName(p) && (
                       <div className="font-mono text-[10px] mt-0.5" style={{ color: MUTED, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
@@ -3081,8 +3108,8 @@ function EndgameReport({ state, roster, captures, en, now, myTeam }: { state: Ga
                 const real = fmtName(p);
                 return (
                   <div key={p.id} className="grid gap-2 items-center px-3 py-2 text-[12px] font-mono" style={{ gridTemplateColumns: cols, borderTop: "1px solid rgba(236,227,196,0.06)" }}>
-                    <span style={{ color: INK, fontWeight: 700, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", minWidth: 0 }}>
-                      {p.callsign}{real && <span style={{ color: MUTED, fontWeight: 400, fontSize: 10, marginLeft: 6 }}>({real})</span>}
+                    <span style={{ color: INK, fontWeight: 700, overflowWrap: "anywhere", minWidth: 0, lineHeight: 1.3 }}>
+                      {p.callsign}{p.operator_type && <span style={{ color: ACCENT, fontSize: 9, marginLeft: 5 }}>· {p.operator_type}</span>}{real && <span style={{ color: MUTED, fontWeight: 400, fontSize: 10, marginLeft: 6 }}>({real})</span>}
                     </span>
                     <span style={{ color: INK, fontWeight: 700, textAlign: "right" }}>{p.pts}</span>
                     {showDeaths && <span style={{ color: "#ff7070", textAlign: "right", fontWeight: 700 }}>☠ {p.death_count ?? 0}</span>}
