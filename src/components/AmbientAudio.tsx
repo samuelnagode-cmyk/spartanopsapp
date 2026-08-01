@@ -49,7 +49,7 @@ export function useAmbientAudio() {
 const MUSIC_KEY = "spartanops:music-enabled";
 const SFX_KEY = "spartanops:sfx-enabled";
 
-const FADE_MS = 700;
+const FADE_MS = 1400;
 function fade(el: HTMLAudioElement, to: number, ms = FADE_MS) {
   const from = el.volume;
   const start = performance.now();
