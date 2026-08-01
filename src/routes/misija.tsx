@@ -2859,7 +2859,15 @@ function EndgameReport({ state, roster, captures, en, now, myTeam }: { state: Ga
           {isTie
             ? (en ? "IT'S A TIE! NO DOMINANT FACTION ESTABLISHED." : "NEODLOČENO! NOBENA EKIPA NI PREVLADALA.")
             : winner
-              ? `${en ? "TEAM" : "EKIPA"} ${teamLabelFor(winner)} ${en ? "HAS WON THE MISSION" : "JE ZMAGALA MISIJO"}`
+              ? (myTeam && myTeam !== "none" && myTeam === winner
+                  ? (en
+                      ? `YOUR TEAM ${teamLabelFor(winner)} HAS WON THE MISSION`
+                      : `VAŠA EKIPA ${teamLabelFor(winner)} JE ZMAGALA MISIJO`)
+                  : (myTeam && myTeam !== "none"
+                      ? (en
+                          ? `THE ENEMY TEAM ${teamLabelFor(winner)} HAS WON THE MISSION`
+                          : `NASPROTNA EKIPA ${teamLabelFor(winner)} JE ZMAGALA MISIJO`)
+                      : `${en ? "TEAM" : "EKIPA"} ${teamLabelFor(winner)} ${en ? "HAS WON THE MISSION" : "JE ZMAGALA MISIJO"}`))
               : (en ? "OPERATION COMPLETED" : "OPERACIJA KONČANA")}
         </p>
       </div>
