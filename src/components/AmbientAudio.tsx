@@ -209,11 +209,10 @@ export function AmbientAudioProvider({ children }: { children: ReactNode }) {
       });
     };
     if (!musicEnabled) {
-      // Hard stop — silence must be immediate on mute.
+      // Smooth fade-out — music is never cut off abruptly.
       [main, lobby, debrief].forEach((a) => {
         try {
-          a.pause();
-          a.volume = 0;
+          fade(a, 0, 900);
         } catch {}
       });
       return;
