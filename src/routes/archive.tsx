@@ -4,6 +4,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { ArrowLeft, MapPin, Archive as ArchiveIcon, Trash2, Lock, Unlock } from "lucide-react";
 import { listArchivedMissions, masterDeleteArchivedMission, type SpartanOpsArchiveRow } from "@/lib/spartanops-archive.functions";
 import { verifyMasterPassword } from "@/lib/spartanops-lobbies.functions";
+import { getMasterPw, setMasterPw as persistMasterPw } from "@/lib/master-admin";
 
 export const Route = createFileRoute("/archive")({
   head: () => ({
@@ -24,8 +25,6 @@ const MUTED = "rgba(236,227,196,0.55)";
 const DECOMMISSIONED = "#c86a4a";
 const DANGER = "#ff6b6b";
 const HAIRLINE = "rgba(236,227,196,0.10)";
-
-const MPW_KEY = "spartanops:master_pw";
 
 function ArchivePage() {
   const navigate = useNavigate();
@@ -60,7 +59,7 @@ function ArchivePage() {
   // Auto-unlock if master password is cached in sessionStorage from admin-pregled
   useEffect(() => {
     try {
-      const cached = sessionStorage.getItem(MPW_KEY);
+      const cached = getMasterPw();
       if (cached) {
         verifyMaster({ data: { password: cached } }).then((r) => {
           if (r?.ok) { setMasterPw(cached); setUnlocked(true); }
@@ -78,7 +77,7 @@ function ArchivePage() {
         setUnlocked(true);
         setShowUnlock(false);
         setPwInput("");
-        try { sessionStorage.setItem(MPW_KEY, pwInput); } catch {}
+        persistMasterPw(pwInput);
       } else {
         setPwError(true);
       }
