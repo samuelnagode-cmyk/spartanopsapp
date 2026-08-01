@@ -1,4 +1,6 @@
-import { createFileRoute, Link, useSearch } from "@tanstack/react-router";
+import { createFileRoute, Link, useSearch, useNavigate } from "@tanstack/react-router";
+import { getMasterPw, setMasterPw, clearMasterPw } from "@/lib/master-admin";
+import { missionTitle } from "@/lib/mission-title";
 import { useEffect, useRef, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import {
@@ -60,14 +62,7 @@ const MUTED = "rgba(236,227,196,0.55)";
 const DANGER = "#c0392b";
 const FREE_NODES: Record<string, string | null> = { "1": null, "2": null, "3": null, "4": null, "5": null };
 
-const MASTER_PW_STORAGE_KEY = "spartanops:master_pw";
-export function getMasterPw(): string {
-  if (typeof window === "undefined") return "";
-  return sessionStorage.getItem(MASTER_PW_STORAGE_KEY) ?? "";
-}
-function setMasterPw(pw: string) {
-  if (typeof window !== "undefined") sessionStorage.setItem(MASTER_PW_STORAGE_KEY, pw);
-}
+export { getMasterPw };
 
 type MainSection = "fields" | "statistics";
 type FieldKey = "zeleni-raj";
@@ -413,6 +408,7 @@ function AdminPage() {
   const [premiumKeyInput, setPremiumKeyInput] = useState("");
   const [premiumKeyError, setPremiumKeyError] = useState(false);
   const search = useSearch({ from: "/admin-pregled" }) as { edit?: string };
+  const navigate = useNavigate();
   const [section, setSection] = useState<MainSection>("fields");
   const [fields, setFields] = useState<Field[]>(INITIAL_FIELDS);
   // Hydrate from localStorage cache so mission cards outline instantly on mount
@@ -572,17 +568,28 @@ function AdminPage() {
       await refreshLobbies();
     } catch (e: any) {
       console.error("[admin] master delete failed", e);
+      // A statement timeout can fire after the deletion already committed (or while
+      // it finishes server-side). Re-check the live list before alarming the marshal.
+      let stillThere = true;
+      try {
+        const fresh = await listLobbiesFn({ data: { masterPassword: mpw } } as any);
+        stillThere = Array.isArray(fresh) && fresh.some((l: any) => l?.id === id);
+      } catch {}
+      if (!stillThere) {
+        await refreshLobbies();
+        return;
+      }
       alert(`Failed to decommission lobby: ${e?.message ?? "unknown error"}`);
       setCustomLobbies(prev);
     }
   };
 
   const handleExitAdminView = () => {
-    if (typeof window !== "undefined") {
-      try { sessionStorage.removeItem(MASTER_PW_STORAGE_KEY); } catch {}
-    }
+    clearMasterPw();
     setIsEditMode(false);
     setEditModalOpen(false);
+    // Clear ?edit=1 so the footer ADMIN link can re-trigger the unlock modal.
+    void navigate({ to: "/admin-pregled", search: {} as any, replace: true });
     void refreshLobbies();
   };
 
@@ -1399,7 +1406,7 @@ function FieldsWelcome({
                       </span>
                     </div>
                     <p style={{ fontFamily: "'Michroma', monospace", fontSize: 12, letterSpacing: "0.14em", color: ACCENT, marginBottom: 8, textTransform: "uppercase", lineHeight: 1.55 }}>
-                      MISSION: {l.eventName || l.fieldName}
+                      MISSION: {missionTitle(l)}
                     </p>
                     {l.fieldName && (
                       <p style={{ fontFamily: "monospace", fontSize: 10.5, color: MUTED, letterSpacing: "0.14em", marginTop: 6, textTransform: "uppercase" }}>
@@ -1670,7 +1677,7 @@ function MarshalPasswordPrompt({ lobby, onClose, onSuccess }: { lobby: LobbyReco
           <ShieldCheck size={22} />
         </div>
         <h2 style={{ fontFamily: "'Michroma', monospace", fontSize: 13, letterSpacing: "0.18em", color: INK, textAlign: "center", marginBottom: 6, textTransform: "uppercase" }}>
-          {(lang === "en" ? "LOGIN TO MISSION: " : "PRIJAVA V MISIJO: ") + (lobby.eventName || lobby.fieldName)}
+          {(lang === "en" ? "LOGIN TO MISSION: " : "PRIJAVA V MISIJO: ") + missionTitle(lobby)}
         </h2>
         <p style={{ fontSize: 12, color: MUTED, textAlign: "center", marginBottom: 18 }}>
           {lang === "en"
@@ -2203,7 +2210,7 @@ function MarshalLobbyConsole({ lobby: initialLobby, marshalPassword, lobbyPasswo
         </button>
         <div style={{ marginTop: 14, display: "flex", flexWrap: "wrap", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
           <div style={{ fontFamily: "'Michroma', monospace", fontSize: 13, letterSpacing: "0.16em", color: ACCENT, textTransform: "uppercase" }}>
-            Mission: {lobby.eventName || lobby.fieldName}
+            Mission: {missionTitle(lobby)}
           </div>
           <span style={{
             display: "inline-flex", alignItems: "center", gap: 6,
