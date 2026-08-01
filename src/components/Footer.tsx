@@ -1,9 +1,13 @@
 import { Mail, Phone, MapPin, Instagram, Facebook, ExternalLink } from "lucide-react";
-import { useLocation, Link } from "@tanstack/react-router";
+import { useLocation, Link, useNavigate } from "@tanstack/react-router";
 import { useT } from "@/lib/i18n";
+import { clearMasterPw, useMasterAdmin } from "@/lib/master-admin";
 
 export default function Footer() {
   const t = useT();
+  const navigate = useNavigate();
+  const isAdmin = useMasterAdmin();
+
   useLocation();
   const isAirsoft = true;
 
