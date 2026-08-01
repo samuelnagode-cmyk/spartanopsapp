@@ -643,11 +643,11 @@ export function LiveMatchView({ state, captures, now, en, mapUrl }: { state: Gam
             {visibleCaptures.map((c) => {
               const t = new Date(c.captured_at);
               const time = `${String(t.getHours()).padStart(2, "0")}:${String(t.getMinutes()).padStart(2, "0")}:${String(t.getSeconds()).padStart(2, "0")}`;
-              const tl = en ? TEAM_LABEL_EN : TEAM_LABEL;
               return (
                 <div key={c.id} style={{ padding: "7px 12px", borderTop: "1px solid rgba(236,227,196,0.05)", fontSize: 12, fontFamily: "monospace", display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
                   <span style={{ color: MUTED }}>{time}</span>
-                  <span style={{ color: TEAM_COLOR[c.team], fontWeight: 700, minWidth: 64 }}>{tl[c.team] ?? c.team.toUpperCase()}</span>
+                  <span style={{ color: TEAM_COLOR[c.team], fontWeight: 700, minWidth: 64 }}>{configuredTeamLabel(c.team, state.settings, en)}</span>
+
                   <span style={{ color: INK }}>{en ? "Point" : "Točka"} {c.point_number} ({NODE_NAMES[c.point_number - 1]})</span>
                   <span style={{ color: MUTED, marginLeft: "auto" }}>{c.player_callsign ?? "—"}</span>
                 </div>
