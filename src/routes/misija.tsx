@@ -2111,7 +2111,7 @@ function PreMatchCountdown({ seconds, polygon, eventName, gamemode, pointTarget,
         })}
       </div>
       
-      <MissionRulesAccordion settings={settings?.respawn} respawn={settings?.respawn} weaponRules={(settings as any)?.weaponRules} en={en} />
+      <MissionRulesAccordion respawn={settings?.respawn} weaponRules={(settings as any)?.weaponRules} en={en} />
     </div>
   );
 }
