@@ -2364,7 +2364,7 @@ function MarshalLobbyConsole({ lobby: initialLobby, marshalPassword, lobbyPasswo
           <input value={lobby.fieldName} readOnly disabled style={{ ...consoleInputStyle, opacity: 0.65, cursor: "not-allowed" }} />
         </FieldRow>
         <FieldRow label={en ? "Event name (optional)" : "Ime dogodka (neobvezno)"}>
-          <input value={lobby.eventName ?? ""} onChange={(e) => patch({ eventName: e.target.value })} style={consoleInputStyle} placeholder={en ? "e.g. Operation Ares" : "npr. Operacija Ares"} />
+          <input value={lobby.eventName ?? ""} onChange={(e) => patch({ eventName: e.target.value })} style={consoleInputStyle} placeholder={en ? "e.g. Operation Sparta" : "npr. Operacija Sparta"} />
         </FieldRow>
         <FieldRow label={en ? "Mission description / instructions (optional)" : "Opis misije / navodila (neobvezno)"}>
           <textarea
