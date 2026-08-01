@@ -1,5 +1,5 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { memo, useCallback, useEffect, useMemo, useRef, useState, type PointerEvent as ReactPointerEvent } from "react";
 
 import { useServerFn } from "@tanstack/react-start";
 import { ExperienceBadge, EXPERIENCE_LEVELS } from "@/components/ExperienceBadge";
@@ -2292,12 +2292,12 @@ function TacticalMap({ state, captures, en, hasPositions, missionName, timeLabel
   // One-finger (or mouse) drag panning inside the zoomed map.
   const panRef = useRef<HTMLDivElement | null>(null);
   const dragRef = useRef<{ id: number; x: number; y: number; left: number; top: number } | null>(null);
-  const onPanStart = (e: React.PointerEvent<HTMLDivElement>) => {
+  const onPanStart = (e: ReactPointerEvent<HTMLDivElement>) => {
     const el = panRef.current;
     if (!el || e.isPrimary === false) return;
     dragRef.current = { id: e.pointerId, x: e.clientX, y: e.clientY, left: el.scrollLeft, top: el.scrollTop };
   };
-  const onPanMove = (e: React.PointerEvent<HTMLDivElement>) => {
+  const onPanMove = (e: ReactPointerEvent<HTMLDivElement>) => {
     const el = panRef.current;
     const d = dragRef.current;
     if (!el || !d || d.id !== e.pointerId) return;
