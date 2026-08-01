@@ -213,6 +213,12 @@ function fieldTitleFromState(state: GameState | null, fallback: string): string 
   return fallback;
 }
 
+function stateCacheKey(fieldId: string): string {
+  return `spartanops:state-cache:${fieldId}`;
+}
+function rosterCacheKey(fieldId: string): string {
+  return `spartanops:roster-cache:${fieldId}`;
+}
 function respawnLockKey(fieldId: string, sessionId: string): string {
   return `spartanops:respawn:${fieldId}:${sessionId}`;
 }
@@ -466,6 +472,13 @@ function MisijaPage() {
       }
     };
 
+    // Instant paint: hydrate from the last known snapshot for this field so
+    // mission description / settings are on screen before the network answers.
+    try {
+      const cached = localStorage.getItem(stateCacheKey(field));
+      if (cached) setState((prev) => prev ?? (JSON.parse(cached) as GameState));
+    } catch { /* ignore */ }
+
     const load = async () => {
       // Always try Supabase first — every lobby (legacy fixed IDs + new UUIDs)
       // now has a game_state row created by the lobby bootstrap trigger.
@@ -477,6 +490,7 @@ function MisijaPage() {
       if (alive && data) {
         const liveState = data as unknown as GameState;
         setState(liveState);
+        try { localStorage.setItem(stateCacheKey(field), JSON.stringify(liveState)); } catch { /* ignore */ }
         if ((data as any).match_started_at) syncServerClock().catch(() => {});
       }
     };
@@ -522,12 +536,29 @@ function MisijaPage() {
   useEffect(() => {
     if (preview && preset) return;
     let alive = true;
+    // Instant paint: show the cached roster while the fresh one loads.
+    try {
+      const cached = localStorage.getItem(rosterCacheKey(field));
+      if (cached) setRoster((prev) => (prev.length ? prev : (JSON.parse(cached) as Checkin[])));
+    } catch { /* ignore */ }
+
     const load = async () => {
       if (!sessionId) return;
       const res = await getParticipantRosterFn({ data: { fieldId: field, sessionId } });
-      if (alive) setRoster((res?.ok ? res.rows : []) as unknown as Checkin[]);
+      if (!alive) return;
+      const rows = (res?.ok ? res.rows : []) as unknown as Checkin[];
+      if (rows.length > 0) {
+        setRoster(rows);
+        try { localStorage.setItem(rosterCacheKey(field), JSON.stringify(rows)); } catch { /* ignore */ }
+      } else {
+        setRoster([]);
+        try { localStorage.removeItem(rosterCacheKey(field)); } catch { /* ignore */ }
+      }
     };
     load();
+    // Short retry burst — the roster row may not be readable the instant the
+    // player finishes deployment, and we never want an empty first paint.
+    const retries = [700, 1800, 4000].map((ms) => window.setTimeout(() => { if (alive) load(); }, ms));
     const ch = supabase
       .channel(`misija_roster_${field}`)
       .on(
@@ -553,6 +584,7 @@ function MisijaPage() {
       .subscribe();
     return () => {
       alive = false;
+      retries.forEach((id) => window.clearTimeout(id));
       supabase.removeChannel(ch);
     };
   }, [field, sessionId, getParticipantRosterFn, preview, preset]);
