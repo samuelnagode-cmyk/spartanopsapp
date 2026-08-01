@@ -716,7 +716,15 @@ const RosterBoard = memo(function RosterBoard({ roster, settings, onReassign, on
         return (
           <div key={c} style={{ background: "#0c0e09", border: `1px solid ${TEAM_COLOR[c]}55` }}>
             <div style={{ background: c === "none" ? "rgba(255,255,255,0.05)" : TEAM_COLOR[c], color: c === "none" ? MUTED : "#fff", padding: "6px 10px", fontSize: 10, fontFamily: "'Michroma', monospace", letterSpacing: "0.18em" }}>
-              {c === "none" ? (en ? TEAM_LABEL_EN : TEAM_LABEL)[c] : configuredTeamLabel(c, settings, en)} · {players.length}
+              {(() => {
+                const colorLbl = (en ? TEAM_LABEL_EN : TEAM_LABEL)[c] ?? c.toUpperCase();
+                if (c === "none") return `${colorLbl} · ${players.length}`;
+                const named = configuredTeamLabel(c, settings, en);
+                return named && named !== colorLbl
+                  ? `${named} · ${colorLbl} · ${players.length}`
+                  : `${colorLbl} · ${players.length}`;
+              })()}
+
             </div>
             <div className="p-2 space-y-1">
               {players.length === 0 && <p style={{ color: MUTED, fontSize: 10.5, textAlign: "center", padding: 8, fontFamily: "monospace", letterSpacing: "0.14em" }}>{en ? "[ NO OPERATIVES CHECKED IN ]" : "[ NI PRIJAVLJENIH OPERATIVCEV ]"}</p>}
