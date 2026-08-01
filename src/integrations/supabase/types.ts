@@ -408,6 +408,7 @@ export type Database = {
           experience_level: string
           field_id: string
           id: string
+          operator_type: string | null
           team_changed_flag: boolean
           warning_message: string | null
         }
@@ -419,6 +420,7 @@ export type Database = {
           experience_level?: string
           field_id?: string
           id?: string
+          operator_type?: string | null
           team_changed_flag?: boolean
           warning_message?: string | null
         }
@@ -430,6 +432,7 @@ export type Database = {
           experience_level?: string
           field_id?: string
           id?: string
+          operator_type?: string | null
           team_changed_flag?: boolean
           warning_message?: string | null
         }

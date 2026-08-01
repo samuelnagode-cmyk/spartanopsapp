@@ -283,7 +283,7 @@ export function QRScanner({ open, onClose, onDecode }: Props) {
         <canvas ref={canvasRef} className="hidden" />
 
         {/* Tactical crosshair overlay */}
-        <div className="absolute inset-0 pointer-events-none flex items-center justify-center">
+        <div className="absolute inset-0 pointer-events-none flex flex-col items-center justify-center gap-5 px-4">
           <div
             style={{
               width: "min(72vw, 320px)",
@@ -325,20 +325,13 @@ export function QRScanner({ open, onClose, onDecode }: Props) {
               }}
             />
           </div>
+          <p
+            className="m-0 text-center font-mono uppercase"
+            style={{ color: INK, fontSize: 11, letterSpacing: "0.22em", textShadow: "0 1px 2px rgba(0,0,0,0.8)" }}
+          >
+            {t("scanner.hint")}
+          </p>
         </div>
-
-        <p
-          className="absolute left-0 right-0 text-center font-mono uppercase"
-          style={{
-            bottom: 96,
-            color: INK,
-            fontSize: 11,
-            letterSpacing: "0.22em",
-            textShadow: "0 1px 2px rgba(0,0,0,0.8)",
-          }}
-        >
-          {t("scanner.hint")}
-        </p>
         {err && (
           <p
             className="absolute left-4 right-4 text-center font-mono"

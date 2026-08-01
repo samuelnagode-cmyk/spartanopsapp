@@ -412,10 +412,10 @@ function AdminPage() {
   const navigate = useNavigate();
   const [section, setSection] = useState<MainSection>("fields");
   const [fields, setFields] = useState<Field[]>(INITIAL_FIELDS);
-  // Hydrate from localStorage cache so mission cards outline instantly on mount
-  // and the DB refresh below silently reconciles.
-  const [customLobbies, setCustomLobbies] = useState<LobbyRecord[]>(() => loadLobbies());
-  const [lobbiesLoaded, setLobbiesLoaded] = useState(() => loadLobbies().length > 0);
+  // Keep the server and first browser render identical; hydrate the local
+  // cache immediately after mount, then reconcile with the database below.
+  const [customLobbies, setCustomLobbies] = useState<LobbyRecord[]>([]);
+  const [lobbiesLoaded, setLobbiesLoaded] = useState(false);
   const [activeField, setActiveField] = useState<FieldKey | null>(null);
   const [fieldAuth, setFieldAuth] = useState<Record<string, string>>({});
   const [isEditMode, setIsEditMode] = useState(false);
@@ -431,6 +431,14 @@ function AdminPage() {
   const listLobbiesFn = useServerFn(listAllLobbies);
   const listPublishedLobbiesFn = useServerFn(listPublishedLobbies);
   const masterDeleteLobbyFn = useServerFn(masterDeleteLobby);
+
+  useEffect(() => {
+    const cached = loadLobbies();
+    if (cached.length > 0) {
+      setCustomLobbies(cached);
+      setLobbiesLoaded(true);
+    }
+  }, []);
 
   // Auto-open the edit modal when arriving via footer link (?edit=1)
   useEffect(() => {
@@ -961,9 +969,6 @@ function CreateFieldForm({ onCancel, onCreated }: { onCancel: () => void; onCrea
             placeholder={en ? "The players will see this description/instructions before and during the game." : "Igralci bodo videli ta opis/navodila pred in med igro."}
           />
         </FieldRow>
-        <div style={{ marginTop: 4, marginBottom: 12, paddingTop: 12, borderTop: `1px solid ${ACCENT}25` }}>
-          <WeaponRulesEditor value={weaponRules} onChange={setWeaponRules} />
-        </div>
         <FieldRow label={en ? "After game instructions" : "Navodila po igri"}>
           <textarea
             value={afterGameInstructions}
@@ -972,6 +977,9 @@ function CreateFieldForm({ onCancel, onCreated }: { onCancel: () => void; onCrea
             placeholder={en ? "The players will see this text in the debriefing screen (after the mission is finished)." : "Igralci bodo to besedilo videli na zaključnem zaslonu (po koncu misije)."}
           />
         </FieldRow>
+        <div style={{ marginTop: 4, marginBottom: 12, paddingTop: 12, borderTop: `1px solid ${ACCENT}25` }}>
+          <WeaponRulesEditor value={weaponRules} onChange={setWeaponRules} />
+        </div>
         <div style={{ marginTop: 18, paddingTop: 14, borderTop: `1px solid ${ACCENT}40` }}>
           <p
             style={{
@@ -1692,6 +1700,7 @@ function MarshalLobbyConsole({ lobby: initialLobby, marshalPassword, lobbyPasswo
     experience: "slabo" | "dobro" | "zelo_dobro" | null;
     club: string | null;
     phoneNumber: string | null;
+    operatorType: string | null;
   };
   const [registered, setRegistered] = useState<RegisteredPlayer[]>([]);
   const lobbyState: LobbyState = lobby.state ?? "pending";
@@ -1898,6 +1907,7 @@ function MarshalLobbyConsole({ lobby: initialLobby, marshalPassword, lobbyPasswo
           experience: r.experience_level ?? null,
           club: r.club ?? null,
           phoneNumber: r.phone_number ?? null,
+          operatorType: r.operator_type ?? null,
         })));
       } catch (e) {
         console.error("[marshal] roster fetch failed", e);
@@ -2099,6 +2109,7 @@ function MarshalLobbyConsole({ lobby: initialLobby, marshalPassword, lobbyPasswo
         lastInitial: profile.lastInitial ? profile.lastInitial.charAt(0).toUpperCase() : null,
         club: profile.club || null,
         experienceLevel: profile.experience,
+        operatorType: "AEG",
         assignedTeam: profile.team,
       },
     });
@@ -2347,7 +2358,18 @@ function MarshalLobbyConsole({ lobby: initialLobby, marshalPassword, lobbyPasswo
 
       {/* LIVE TACTICAL MAP + EVENT LOG (visible whenever we have live game state) */}
       {gameState && (
-        <LiveMatchView state={gameState} captures={captures as any} now={now} en={en} mapUrl={lobby.mapUrl || undefined} />
+        <LiveMatchView
+          state={{
+            ...gameState,
+            compressed_map_url: gameState.compressed_map_url || lobby.mapUrl || null,
+            node_positions: Object.keys(gameState.node_positions ?? {}).length ? gameState.node_positions : (lobby.nodePositions as GameState["node_positions"]),
+            settings: { ...(lobby.settings ?? {}), ...(gameState.settings ?? {}) },
+          }}
+          captures={captures as any}
+          now={now}
+          en={en}
+          mapUrl={lobby.mapUrl || undefined}
+        />
       )}
 
 
@@ -2807,6 +2829,7 @@ type RosterPlayer = {
   experience?: "slabo" | "dobro" | "zelo_dobro" | null;
   club?: string | null;
   phoneNumber?: string | null;
+  operatorType?: string | null;
 };
 
 const EXP_LABEL: Record<"slabo" | "dobro" | "zelo_dobro", string> = {
@@ -2924,8 +2947,8 @@ function RosterRow({
                   }}
                   title={phone ? "Show phone number" : ""}
                 >
-                  <span style={{ color: INK, fontWeight: 700, letterSpacing: "0.06em", fontSize: 12.5, textTransform: "uppercase", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                    {p.callsign}
+                  <span style={{ color: INK, fontWeight: 700, letterSpacing: "0.06em", fontSize: 12.5, textTransform: "uppercase", overflowWrap: "anywhere", lineHeight: 1.3 }}>
+                    {p.callsign}{p.operatorType && <span style={{ color: ACCENT, fontSize: 9.5, marginLeft: 6 }}>· {p.operatorType}</span>}
                   </span>
                   {real && (
                     <span style={{ color: MUTED, fontSize: 10.5, marginTop: 2, letterSpacing: "0.02em" }}>

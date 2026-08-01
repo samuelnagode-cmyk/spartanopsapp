@@ -33,6 +33,7 @@ async function verifyMarshalAccess(fieldId: string, password: string): Promise<b
 
 const EXP = new Set(["slabo", "dobro", "zelo_dobro"]);
 const TEAMS = new Set(["none", "modra", "rdeca", "rumena"]);
+const OPERATOR_TYPES = new Set(["AEG", "SNIPER", "DMR", "PUMP"]);
 
 type CheckinInput = {
   fieldId: string;
@@ -43,6 +44,7 @@ type CheckinInput = {
   club?: string | null;
   phoneNumber?: string | null;
   experienceLevel: string;
+  operatorType: string;
   assignedTeam?: string;
 };
 
@@ -59,6 +61,8 @@ export const spartanopsUpsertCheckin = createServerFn({ method: "POST" })
     if (!cs || cs.length > 40) throw new Error("Invalid callsign");
     const exp = String(d?.experienceLevel ?? "dobro");
     if (!EXP.has(exp)) throw new Error("Invalid experience");
+    const operatorType = String(d?.operatorType ?? "").toUpperCase();
+    if (!OPERATOR_TYPES.has(operatorType)) throw new Error("Invalid operator type");
     const team = String(d?.assignedTeam ?? "none");
     if (!TEAMS.has(team)) throw new Error("Invalid team");
     const clip = (v: unknown, max: number) => {
@@ -77,6 +81,7 @@ export const spartanopsUpsertCheckin = createServerFn({ method: "POST" })
       club: clip(d.club, 80),
       phoneNumber: clip(d.phoneNumber, 40),
       experienceLevel: exp,
+      operatorType,
       assignedTeam: team,
     };
   })
@@ -99,6 +104,7 @@ export const spartanopsUpsertCheckin = createServerFn({ method: "POST" })
           field_id: data.fieldId,
           callsign: data.callsign,
           experience_level: data.experienceLevel,
+          operator_type: data.operatorType,
           assigned_team: data.assignedTeam,
         } as any)
         .eq("id", checkinId);
@@ -110,6 +116,7 @@ export const spartanopsUpsertCheckin = createServerFn({ method: "POST" })
           field_id: data.fieldId,
           callsign: data.callsign,
           experience_level: data.experienceLevel,
+          operator_type: data.operatorType,
           assigned_team: data.assignedTeam,
         } as any)
         .select("id")
@@ -158,7 +165,7 @@ export const spartanopsGetMyCheckin = createServerFn({ method: "POST" })
     if (!secret) return { ok: true as const, row: null };
     const { data: row, error } = await supabaseAdmin
       .from("spartanops_checkins")
-      .select("id, field_id, callsign, experience_level, assigned_team, team_changed_flag, created_at, warning_message" as any)
+      .select("id, field_id, callsign, experience_level, operator_type, assigned_team, team_changed_flag, created_at, warning_message" as any)
       .eq("id", (secret as any).checkin_id)
       .eq("field_id", data.fieldId)
       .maybeSingle();
@@ -340,7 +347,7 @@ export const spartanopsAdminGetRoster = createServerFn({ method: "POST" })
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { data: rows, error } = await supabaseAdmin
       .from("spartanops_checkins")
-      .select("id, field_id, callsign, experience_level, assigned_team, team_changed_flag, death_count, created_at")
+      .select("id, field_id, callsign, experience_level, operator_type, assigned_team, team_changed_flag, death_count, created_at")
       .eq("field_id", data.fieldId)
       .order("created_at", { ascending: true });
     if (error) throw new Error(error.message);
@@ -401,7 +408,7 @@ export const spartanopsGetParticipantRoster = createServerFn({ method: "POST" })
 
     const { data: rows, error } = await supabaseAdmin
       .from("spartanops_checkins")
-      .select("id, field_id, callsign, experience_level, assigned_team, team_changed_flag, death_count, created_at")
+      .select("id, field_id, callsign, experience_level, operator_type, assigned_team, team_changed_flag, death_count, created_at")
       .eq("field_id", data.fieldId)
       .order("created_at", { ascending: true });
     if (error) throw new Error(error.message);
