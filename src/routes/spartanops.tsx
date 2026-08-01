@@ -448,7 +448,7 @@ function Locations() {
           .slice(0, 4);
         const next: OpRow[] = records.map((r) => ({
           id: r.id,
-          name: r.fieldName,
+          name: missionTitle(r, r.fieldName),
           region: r.location || "",
           status: "ACTIVE" as const,
         }));
