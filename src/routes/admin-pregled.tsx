@@ -2393,6 +2393,22 @@ function MarshalLobbyConsole({ lobby: initialLobby, marshalPassword, lobbyPasswo
             onChange={(next) => patch({ settings: { ...(lobby.settings ?? {}), weaponRules: next } as any })}
           />
         </div>
+        <div style={{ marginTop: 18, paddingTop: 14, borderTop: `1px solid ${ACCENT}40` }}>
+          <p
+            style={{
+              fontFamily: "'Michroma', monospace",
+              fontSize: 12,
+              letterSpacing: "0.22em",
+              color: ACCENT,
+              textTransform: "uppercase",
+              fontWeight: 700,
+              textShadow: `0 0 12px ${ACCENT}80`,
+              marginBottom: 12,
+            }}
+          >
+            // {en ? "LOCATION, MARSHALS" : "LOKACIJA, MARŠALI"}
+          </p>
+        </div>
         <div className="grid grid-cols-2 gap-3">
           <FieldRow label={en ? "City (locked)" : "Mesto (zaklenjeno)"}>
             <input value={lobby.city ?? ""} readOnly disabled style={{ ...consoleInputStyle, opacity: 0.65, cursor: "not-allowed" }} />
