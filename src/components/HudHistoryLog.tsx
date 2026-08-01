@@ -131,53 +131,62 @@ export function HudHistoryLog({
         )}
         {rows.map((r) => {
           const c = teamColor(r.team) ?? ACCENT;
-          if (r.kind === "capture") {
-            return (
-              <div
-                key={r.id}
-                style={{
-                  width: "100%",
-                  display: "flex",
-                  gap: 10,
-                  alignItems: "flex-start",
-                  padding: "10px 14px",
-                  borderTop: "1px solid rgba(236,227,196,0.05)",
-                  borderLeft: `3px solid ${c}`,
-                  background: `${c}0d`,
-                }}
-              >
-                <span aria-hidden style={{ fontSize: 14, lineHeight: 1.3, color: c }}>🎯</span>
-                <div style={{ minWidth: 0 }}>
-                  <span style={{ fontFamily: "monospace", fontSize: 10, color: MUTED, letterSpacing: "0.1em" }}>
-                    {fmtTime(r.at)}
-                  </span>
-                  <p style={{ margin: "2px 0 0", fontFamily: "monospace", fontSize: 12.5, lineHeight: 1.5, color: INK, fontWeight: 700 }}>
-                    {r.text}
-                  </p>
-                </div>
-              </div>
-            );
-          }
+          const isCap = r.kind === "capture";
           return (
             <div
               key={r.id}
               style={{
                 display: "flex",
-                gap: 8,
                 alignItems: "center",
-                padding: "5px 14px 5px 22px",
-                borderTop: "1px solid rgba(236,227,196,0.04)",
-                borderLeft: `2px solid ${c}66`,
+                gap: 8,
+                whiteSpace: "nowrap",
+                overflow: "hidden",
+                padding: "4px 12px",
+                borderTop: "1px solid rgba(236,227,196,0.05)",
+                borderLeft: `3px solid ${isCap ? c : `${c}66`}`,
+                background: isCap ? `${c}0d` : "transparent",
               }}
             >
-              <span aria-hidden style={{ fontSize: 10, color: c, opacity: 0.85 }}>☠</span>
-              <span style={{ fontFamily: "monospace", fontSize: 9, color: MUTED, letterSpacing: "0.1em" }}>{fmtTime(r.at)}</span>
-              <span style={{ fontFamily: "monospace", fontSize: 10.5, color: "rgba(236,227,196,0.72)", lineHeight: 1.4 }}>
-                {r.text}
+              <span aria-hidden style={{ fontSize: isCap ? 11 : 10, color: c, lineHeight: 1 }}>
+                {isCap ? "🎯" : "☠"}
               </span>
+              <span style={{ fontFamily: "monospace", fontSize: 9.5, color: MUTED, letterSpacing: "0.08em" }}>
+                {fmtTime(r.at)}
+              </span>
+              <span
+                style={{
+                  fontFamily: "monospace",
+                  fontSize: 10.5,
+                  color: c,
+                  fontWeight: 700,
+                  letterSpacing: "0.08em",
+                  textTransform: "uppercase",
+                }}
+              >
+                {teamLabelFor(r.team)}
+              </span>
+              <span
+                style={{
+                  fontFamily: "monospace",
+                  fontSize: isCap ? 11.5 : 10.5,
+                  color: isCap ? INK : "rgba(236,227,196,0.72)",
+                  fontWeight: isCap ? 700 : 400,
+                  letterSpacing: "0.06em",
+                  overflow: "hidden",
+                  textOverflow: "ellipsis",
+                }}
+              >
+                {r.player}
+              </span>
+              {isCap && (
+                <span style={{ marginLeft: "auto", fontFamily: "monospace", fontSize: 10, color: MUTED, letterSpacing: "0.1em" }}>
+                  {r.sector}
+                </span>
+              )}
             </div>
           );
         })}
+
       </div>
     </div>
   );
