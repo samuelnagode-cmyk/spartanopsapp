@@ -245,6 +245,43 @@ function CapturePage() {
   const [resolvedRouteField, setResolvedRouteField] = useState<string>(resolvedField);
   const [acquiringGps, setAcquiringGps] = useState(false);
   const [retryNonce, setRetryNonce] = useState(0);
+
+  // If the match ends while this screen is open (success popup, error, GPS
+  // wait), every player must be pulled to the debriefing screen immediately.
+  useEffect(() => {
+    if (!dbField) return;
+    let alive = true;
+    const check = async () => {
+      const { data } = await supabase
+        .from("spartanops_game_state")
+        .select("status")
+        .eq("field_id", dbField)
+        .maybeSingle();
+      if (!alive) return;
+      if ((data as any)?.status === "ended") {
+        navigate({ to: "/misija", search: { field: resolvedRouteField }, replace: true });
+      }
+    };
+    const id = window.setInterval(check, 3000);
+    const ch = supabase
+      .channel(`capture_state_${dbField}`)
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "spartanops_game_state", filter: `field_id=eq.${dbField}` },
+        (p) => {
+          if ((p.new as any)?.status === "ended") {
+            navigate({ to: "/misija", search: { field: resolvedRouteField }, replace: true });
+          }
+        },
+      )
+      .subscribe();
+    return () => {
+      alive = false;
+      window.clearInterval(id);
+      supabase.removeChannel(ch);
+    };
+  }, [dbField, resolvedRouteField, navigate]);
+  
   
 
   useEffect(() => {
@@ -578,8 +615,8 @@ function CapturePage() {
             <p className="font-mono uppercase text-[11px] tracking-[0.22em]" style={{ color: c }}>
               ▌ {t("captureSuccessTitle")}
             </p>
-            <h2 style={{ fontFamily: "'Michroma', monospace", fontSize: 18, color: INK, fontWeight: 700, marginTop: 10, letterSpacing: "0.06em" }}>
-              {en ? "POINT " : "TOČKA "}{pointName}{en ? " CAPTURED" : " ZAVZETA"}
+            <h2 style={{ fontFamily: "'Michroma', monospace", fontSize: 21, color: INK, fontWeight: 700, marginTop: 10, letterSpacing: "0.06em" }}>
+              {en ? "SECTOR " : "SEKTOR "}{pointName}{en ? " CAPTURED" : " ZAVZET"}
             </h2>
 
             <button

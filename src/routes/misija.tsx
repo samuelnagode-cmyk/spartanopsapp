@@ -1,5 +1,5 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { memo, useCallback, useEffect, useMemo, useRef, useState, type PointerEvent as ReactPointerEvent } from "react";
 
 import { useServerFn } from "@tanstack/react-start";
 import { ExperienceBadge, EXPERIENCE_LEVELS } from "@/components/ExperienceBadge";
@@ -213,6 +213,12 @@ function fieldTitleFromState(state: GameState | null, fallback: string): string 
   return fallback;
 }
 
+function stateCacheKey(fieldId: string): string {
+  return `spartanops:state-cache:${fieldId}`;
+}
+function rosterCacheKey(fieldId: string): string {
+  return `spartanops:roster-cache:${fieldId}`;
+}
 function respawnLockKey(fieldId: string, sessionId: string): string {
   return `spartanops:respawn:${fieldId}:${sessionId}`;
 }
@@ -466,6 +472,13 @@ function MisijaPage() {
       }
     };
 
+    // Instant paint: hydrate from the last known snapshot for this field so
+    // mission description / settings are on screen before the network answers.
+    try {
+      const cached = localStorage.getItem(stateCacheKey(field));
+      if (cached) setState((prev) => prev ?? (JSON.parse(cached) as GameState));
+    } catch { /* ignore */ }
+
     const load = async () => {
       // Always try Supabase first — every lobby (legacy fixed IDs + new UUIDs)
       // now has a game_state row created by the lobby bootstrap trigger.
@@ -477,6 +490,7 @@ function MisijaPage() {
       if (alive && data) {
         const liveState = data as unknown as GameState;
         setState(liveState);
+        try { localStorage.setItem(stateCacheKey(field), JSON.stringify(liveState)); } catch { /* ignore */ }
         if ((data as any).match_started_at) syncServerClock().catch(() => {});
       }
     };
@@ -522,12 +536,29 @@ function MisijaPage() {
   useEffect(() => {
     if (preview && preset) return;
     let alive = true;
+    // Instant paint: show the cached roster while the fresh one loads.
+    try {
+      const cached = localStorage.getItem(rosterCacheKey(field));
+      if (cached) setRoster((prev) => (prev.length ? prev : (JSON.parse(cached) as Checkin[])));
+    } catch { /* ignore */ }
+
     const load = async () => {
       if (!sessionId) return;
       const res = await getParticipantRosterFn({ data: { fieldId: field, sessionId } });
-      if (alive) setRoster((res?.ok ? res.rows : []) as unknown as Checkin[]);
+      if (!alive) return;
+      const rows = (res?.ok ? res.rows : []) as unknown as Checkin[];
+      if (rows.length > 0) {
+        setRoster(rows);
+        try { localStorage.setItem(rosterCacheKey(field), JSON.stringify(rows)); } catch { /* ignore */ }
+      } else {
+        setRoster([]);
+        try { localStorage.removeItem(rosterCacheKey(field)); } catch { /* ignore */ }
+      }
     };
     load();
+    // Short retry burst — the roster row may not be readable the instant the
+    // player finishes deployment, and we never want an empty first paint.
+    const retries = [700, 1800, 4000].map((ms) => window.setTimeout(() => { if (alive) load(); }, ms));
     const ch = supabase
       .channel(`misija_roster_${field}`)
       .on(
@@ -553,6 +584,7 @@ function MisijaPage() {
       .subscribe();
     return () => {
       alive = false;
+      retries.forEach((id) => window.clearTimeout(id));
       supabase.removeChannel(ch);
     };
   }, [field, sessionId, getParticipantRosterFn, preview, preset]);
@@ -824,7 +856,7 @@ function MisijaPage() {
         {reassignedBanner}
         {warningOverlay}
         <EndgameSoundtrackTrigger />
-        <EndgameReport state={state} roster={roster} captures={captures} en={en} now={currentTime} />
+        <EndgameReport state={state} roster={roster} captures={captures} en={en} now={currentTime} myTeam={me.assigned_team} />
         <AbortMissionButton field={field} en={en} settings={state.settings} />
         {preview && <PreviewReturnButton />}
       </div>
@@ -2289,6 +2321,24 @@ function TacticalMap({ state, captures, en, hasPositions, missionName, timeLabel
   const [open, setOpen] = useState(false);
   // Opens showing the FULL map (no crop) — the operator zooms in from there.
   const [zoom, setZoom] = useState(1);
+  // One-finger (or mouse) drag panning inside the zoomed map.
+  const panRef = useRef<HTMLDivElement | null>(null);
+  const dragRef = useRef<{ id: number; x: number; y: number; left: number; top: number } | null>(null);
+  const onPanStart = (e: ReactPointerEvent<HTMLDivElement>) => {
+    const el = panRef.current;
+    if (!el || e.isPrimary === false) return;
+    dragRef.current = { id: e.pointerId, x: e.clientX, y: e.clientY, left: el.scrollLeft, top: el.scrollTop };
+  };
+  const onPanMove = (e: ReactPointerEvent<HTMLDivElement>) => {
+    const el = panRef.current;
+    const d = dragRef.current;
+    if (!el || !d || d.id !== e.pointerId) return;
+    el.scrollLeft = d.left - (e.clientX - d.x);
+    el.scrollTop = d.top - (e.clientY - d.y);
+  };
+  const onPanEnd = () => {
+    dragRef.current = null;
+  };
   useEffect(() => { if (open) setZoom(1); }, [open]);
   const startMs = state.match_started_at ? new Date(state.match_started_at).getTime() : null;
   const mapIsLive = (state.status === "active" || state.status === "paused") && !!startMs;
@@ -2412,8 +2462,19 @@ function TacticalMap({ state, captures, en, hasPositions, missionName, timeLabel
             </button>
           </div>
           <div
+            ref={panRef}
             className="flex-1"
-            style={{ overflow: "auto", touchAction: "pinch-zoom", WebkitOverflowScrolling: "touch" }}
+            style={{
+              overflow: "auto",
+              // One finger pans, two fingers pinch-zoom the browser view.
+              touchAction: "pan-x pan-y pinch-zoom",
+              WebkitOverflowScrolling: "touch",
+              cursor: "grab",
+            }}
+            onPointerDown={onPanStart}
+            onPointerMove={onPanMove}
+            onPointerUp={onPanEnd}
+            onPointerCancel={onPanEnd}
           >
             <div
               style={{
@@ -2760,7 +2821,7 @@ function EndgameSoundtrackTrigger() {
   return null;
 }
 
-function EndgameReport({ state, roster, captures, en, now }: { state: GameState; roster: Checkin[]; captures: Capture[]; en: boolean; now: number }) {
+function EndgameReport({ state, roster, captures, en, now, myTeam }: { state: GameState; roster: Checkin[]; captures: Capture[]; en: boolean; now: number; myTeam?: string }) {
   useEffect(() => {
     return () => {
       try { window.dispatchEvent(new Event("spartanops:debrief-exit")); } catch { /* ignore */ }
@@ -2859,7 +2920,15 @@ function EndgameReport({ state, roster, captures, en, now }: { state: GameState;
           {isTie
             ? (en ? "IT'S A TIE! NO DOMINANT FACTION ESTABLISHED." : "NEODLOČENO! NOBENA EKIPA NI PREVLADALA.")
             : winner
-              ? `${en ? "TEAM" : "EKIPA"} ${teamLabelFor(winner)} ${en ? "HAS WON THE MISSION" : "JE ZMAGALA MISIJO"}`
+              ? (myTeam && myTeam !== "none" && myTeam === winner
+                  ? (en
+                      ? `YOUR TEAM ${teamLabelFor(winner)} HAS WON THE MISSION`
+                      : `VAŠA EKIPA ${teamLabelFor(winner)} JE ZMAGALA MISIJO`)
+                  : (myTeam && myTeam !== "none"
+                      ? (en
+                          ? `THE ENEMY TEAM ${teamLabelFor(winner)} HAS WON THE MISSION`
+                          : `NASPROTNA EKIPA ${teamLabelFor(winner)} JE ZMAGALA MISIJO`)
+                      : `${en ? "TEAM" : "EKIPA"} ${teamLabelFor(winner)} ${en ? "HAS WON THE MISSION" : "JE ZMAGALA MISIJO"}`))
               : (en ? "OPERATION COMPLETED" : "OPERACIJA KONČANA")}
         </p>
       </div>

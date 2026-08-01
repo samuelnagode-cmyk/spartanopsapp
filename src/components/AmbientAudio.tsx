@@ -49,17 +49,26 @@ export function useAmbientAudio() {
 const MUSIC_KEY = "spartanops:music-enabled";
 const SFX_KEY = "spartanops:sfx-enabled";
 
-const FADE_MS = 700;
+const FADE_MS = 1400;
+type Fadable = HTMLAudioElement & { __fadeToken?: number };
 function fade(el: HTMLAudioElement, to: number, ms = FADE_MS) {
+  const node = el as Fadable;
+  // Cancel any in-flight fade on this node so ramps never fight each other.
+  const token = (node.__fadeToken ?? 0) + 1;
+  node.__fadeToken = token;
   const from = el.volume;
+  if (from === to && (to === 0 ? el.paused : !el.paused)) return;
   const start = performance.now();
   if (to > 0 && el.paused) {
     el.volume = 0;
     el.play().catch(() => {});
   }
   const step = (t: number) => {
+    if (node.__fadeToken !== token) return; // superseded by a newer fade
     const k = Math.min(1, (t - start) / ms);
-    el.volume = Math.max(0, Math.min(1, from + (to - from) * k));
+    // Ease-in-out so the ramp never sounds like an abrupt cut.
+    const e = k < 0.5 ? 2 * k * k : 1 - Math.pow(-2 * k + 2, 2) / 2;
+    el.volume = Math.max(0, Math.min(1, from + (to - from) * e));
     if (k < 1) requestAnimationFrame(step);
     else if (to === 0) el.pause();
   };
@@ -200,11 +209,10 @@ export function AmbientAudioProvider({ children }: { children: ReactNode }) {
       });
     };
     if (!musicEnabled) {
-      // Hard stop — silence must be immediate on mute.
+      // Smooth fade-out — music is never cut off abruptly.
       [main, lobby, debrief].forEach((a) => {
         try {
-          a.pause();
-          a.volume = 0;
+          fade(a, 0, 900);
         } catch {}
       });
       return;
