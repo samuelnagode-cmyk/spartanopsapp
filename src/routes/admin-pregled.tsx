@@ -83,6 +83,7 @@ const INITIAL_FIELDS: Field[] = [
 
 import type { GameSettings } from "@/components/SpartanOpsConsole";
 import { MissionCardSkeletonGrid } from "@/components/TacticalLoader";
+import { WeaponRulesEditor, hasWeaponRules, type WeaponRules } from "@/components/WeaponRulesEditor";
 
 export type NodePositions = Record<string, { x: number; y: number } | null>;
 
@@ -804,6 +805,7 @@ function CreateFieldForm({ onCancel, onCreated }: { onCancel: () => void; onCrea
   const [missionName, setMissionName] = useState("");
   const [missionDescription, setMissionDescription] = useState("");
   const [afterGameInstructions, setAfterGameInstructions] = useState("");
+  const [weaponRules, setWeaponRules] = useState<WeaponRules>({});
   const [password, setPassword] = useState("");
   const [marshalPassword, setMarshalPassword] = useState("");
   const [showMarshalPassword, setShowMarshalPassword] = useState(true);
@@ -875,6 +877,7 @@ function CreateFieldForm({ onCancel, onCreated }: { onCancel: () => void; onCrea
       marshalPhone: marshalPhone.trim() || undefined,
       missionDescription: missionDescription.trim() || undefined,
       afterGameInstructions: afterGameInstructions.trim() || undefined,
+      weaponRules: hasWeaponRules(weaponRules) ? weaponRules : undefined,
     } as any;
     setBusy(true);
     setErr("");
@@ -955,6 +958,9 @@ function CreateFieldForm({ onCancel, onCreated }: { onCancel: () => void; onCrea
             placeholder={en ? "The players will see this description/instructions before and during the game." : "Igralci bodo videli ta opis/navodila pred in med igro."}
           />
         </FieldRow>
+        <div style={{ marginTop: 4, marginBottom: 12, paddingTop: 12, borderTop: `1px solid ${ACCENT}25` }}>
+          <WeaponRulesEditor value={weaponRules} onChange={setWeaponRules} />
+        </div>
         <FieldRow label={en ? "After game instructions" : "Navodila po igri"}>
           <textarea
             value={afterGameInstructions}
@@ -2365,6 +2371,12 @@ function MarshalLobbyConsole({ lobby: initialLobby, marshalPassword, lobbyPasswo
             placeholder={en ? "Instruction on what the players should do after the game." : "Navodilo, kaj naj igralci naredijo po koncu igre."}
           />
         </FieldRow>
+        <div style={{ marginTop: 12, paddingTop: 12, borderTop: `1px solid ${ACCENT}25` }}>
+          <WeaponRulesEditor
+            value={(lobby.settings as any)?.weaponRules}
+            onChange={(next) => patch({ settings: { ...(lobby.settings ?? {}), weaponRules: next } as any })}
+          />
+        </div>
         <div className="grid grid-cols-2 gap-3">
           <FieldRow label={en ? "City (locked)" : "Mesto (zaklenjeno)"}>
             <input value={lobby.city ?? ""} readOnly disabled style={{ ...consoleInputStyle, opacity: 0.65, cursor: "not-allowed" }} />
