@@ -245,6 +245,43 @@ function CapturePage() {
   const [resolvedRouteField, setResolvedRouteField] = useState<string>(resolvedField);
   const [acquiringGps, setAcquiringGps] = useState(false);
   const [retryNonce, setRetryNonce] = useState(0);
+
+  // If the match ends while this screen is open (success popup, error, GPS
+  // wait), every player must be pulled to the debriefing screen immediately.
+  useEffect(() => {
+    if (!dbField) return;
+    let alive = true;
+    const check = async () => {
+      const { data } = await supabase
+        .from("spartanops_game_state")
+        .select("status")
+        .eq("field_id", dbField)
+        .maybeSingle();
+      if (!alive) return;
+      if ((data as any)?.status === "ended") {
+        navigate({ to: "/misija", search: { field: resolvedRouteField }, replace: true });
+      }
+    };
+    const id = window.setInterval(check, 3000);
+    const ch = supabase
+      .channel(`capture_state_${dbField}`)
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "spartanops_game_state", filter: `field_id=eq.${dbField}` },
+        (p) => {
+          if ((p.new as any)?.status === "ended") {
+            navigate({ to: "/misija", search: { field: resolvedRouteField }, replace: true });
+          }
+        },
+      )
+      .subscribe();
+    return () => {
+      alive = false;
+      window.clearInterval(id);
+      supabase.removeChannel(ch);
+    };
+  }, [dbField, resolvedRouteField, navigate]);
+  
   
 
   useEffect(() => {
