@@ -832,8 +832,6 @@ function CreateFieldForm({ onCancel, onCreated }: { onCancel: () => void; onCrea
 
   const [err, setErr] = useState("");
   const [ok, setOk] = useState(false);
-  const [created, setCreated] = useState<{ rec: LobbyRecord; password: string; marshalPassword: string } | null>(null);
-  const [copied, setCopied] = useState(false);
   const [showPassword, setShowPassword] = useState(true);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -918,7 +916,9 @@ function CreateFieldForm({ onCancel, onCreated }: { onCancel: () => void; onCrea
         createdAt: rec.createdAt,
       });
       setOk(true);
-      setCreated({ rec, password: password.trim(), marshalPassword: marshalPassword.trim() });
+      // Go straight into the command center for the new mission — the lobby URL
+      // and all controls live there.
+      onCreated(rec, { password: password.trim(), marshalPassword: marshalPassword.trim() });
     } catch (e: any) {
       console.error("[admin] createLobby failed", { error: e, message: e?.message, cause: e?.cause, stack: e?.stack });
       setErr(e?.message ? `Error: ${e.message}` : "Failed to create lobby.");
@@ -926,10 +926,6 @@ function CreateFieldForm({ onCancel, onCreated }: { onCancel: () => void; onCrea
       setBusy(false);
     }
   };
-
-  const lobbyUrl = created && typeof window !== "undefined"
-    ? `${window.location.origin}/misija?field=${created.rec.id}`
-    : "";
 
   return (
     <form onSubmit={submit} style={{ maxWidth: 780, margin: "0 auto" }}>
@@ -1242,43 +1238,6 @@ function CreateFieldForm({ onCancel, onCreated }: { onCancel: () => void; onCrea
         </p>
       </div>
 
-      <div style={{ marginTop: 22, padding: "14px 16px", border: `1px solid ${ACCENT}55`, background: "rgba(224,176,78,0.04)" }}>
-        <p style={{ fontFamily: "'Michroma', monospace", fontSize: 11, letterSpacing: "0.18em", color: ACCENT, textTransform: "uppercase", marginBottom: 10 }}>
-          {en ? "LOBBY URL" : "POVEZAVA DO MISIJE"}
-        </p>
-        {lobbyUrl ? (
-          <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
-            <input readOnly value={lobbyUrl} onFocus={(e) => e.currentTarget.select()} style={{ ...consoleInputStyle, flex: "1 1 240px" }} />
-            <button
-              type="button"
-              onClick={async () => {
-                try { await navigator.clipboard.writeText(lobbyUrl); } catch { /* ignore */ }
-                setCopied(true);
-                setTimeout(() => setCopied(false), 1800);
-              }}
-              style={{ background: "transparent", border: `1px solid ${ACCENT}`, color: ACCENT, padding: "10px 14px", fontFamily: "'Michroma', monospace", fontSize: 10, letterSpacing: "0.16em", textTransform: "uppercase", cursor: "pointer" }}
-            >
-              {copied ? (en ? "COPIED" : "KOPIRANO") : (en ? "COPY LINK" : "KOPIRAJ")}
-            </button>
-          </div>
-        ) : (
-          <p style={{ fontFamily: "monospace", fontSize: 12, color: MUTED, letterSpacing: "0.06em" }}>____</p>
-        )}
-        <p style={{ fontFamily: "monospace", fontSize: 11, color: MUTED, lineHeight: 1.6, marginTop: 10 }}>
-          {en
-            ? "After creating a lobby, you can copy the provided link and send it to your players, so they can join the mission directly."
-            : "Po tem ko vzpostavite misijo, lahko kopirate generirani link, s katerim se lahko vaši igralci povežejo direktno v misijo."}
-        </p>
-        {created && (
-          <button
-            type="button"
-            onClick={() => onCreated(created.rec, { password: created.password, marshalPassword: created.marshalPassword })}
-            style={{ marginTop: 14, background: ACCENT, color: BG, border: "none", padding: "12px 22px", fontFamily: "'Michroma', monospace", fontSize: 11, letterSpacing: "0.2em", textTransform: "uppercase", fontWeight: 700, cursor: "pointer" }}
-          >
-            [ {en ? "ENTER COMMAND CENTER" : "V KOMANDNI CENTER"} ]
-          </button>
-        )}
-      </div>
     </form>
   );
 }
