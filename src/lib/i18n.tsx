@@ -23,7 +23,7 @@ export const dict: Dict = {
   "teamChangeAck": { sl: "RAZUMEM IN SE STRINJAM", en: "UNDERSTAND AND AGREE" },
 
   // Capture Success Popup
-  "captureSuccessTitle": { sl: "SEKTOR ZAVZET", en: "SECTOR SECURED" },
+  "captureSuccessTitle": { sl: "ODOBRENO", en: "APPROVED" },
   "captureSuccessSubtitle": { sl: "", en: "" },
   "captureAckBtn": { sl: "POTRDI IN NAZAJ V HUD", en: "ACKNOWLEDGE & RETURN TO HUD" },
   "captureTelemetryNote": {
