@@ -961,9 +961,6 @@ function CreateFieldForm({ onCancel, onCreated }: { onCancel: () => void; onCrea
             placeholder={en ? "The players will see this description/instructions before and during the game." : "Igralci bodo videli ta opis/navodila pred in med igro."}
           />
         </FieldRow>
-        <div style={{ marginTop: 4, marginBottom: 12, paddingTop: 12, borderTop: `1px solid ${ACCENT}25` }}>
-          <WeaponRulesEditor value={weaponRules} onChange={setWeaponRules} />
-        </div>
         <FieldRow label={en ? "After game instructions" : "Navodila po igri"}>
           <textarea
             value={afterGameInstructions}
@@ -972,6 +969,9 @@ function CreateFieldForm({ onCancel, onCreated }: { onCancel: () => void; onCrea
             placeholder={en ? "The players will see this text in the debriefing screen (after the mission is finished)." : "Igralci bodo to besedilo videli na zaključnem zaslonu (po koncu misije)."}
           />
         </FieldRow>
+        <div style={{ marginTop: 4, marginBottom: 12, paddingTop: 12, borderTop: `1px solid ${ACCENT}25` }}>
+          <WeaponRulesEditor value={weaponRules} onChange={setWeaponRules} />
+        </div>
         <div style={{ marginTop: 18, paddingTop: 14, borderTop: `1px solid ${ACCENT}40` }}>
           <p
             style={{
@@ -2350,7 +2350,18 @@ function MarshalLobbyConsole({ lobby: initialLobby, marshalPassword, lobbyPasswo
 
       {/* LIVE TACTICAL MAP + EVENT LOG (visible whenever we have live game state) */}
       {gameState && (
-        <LiveMatchView state={gameState} captures={captures as any} now={now} en={en} mapUrl={lobby.mapUrl || undefined} />
+        <LiveMatchView
+          state={{
+            ...gameState,
+            compressed_map_url: gameState.compressed_map_url || lobby.mapUrl || null,
+            node_positions: Object.keys(gameState.node_positions ?? {}).length ? gameState.node_positions : (lobby.nodePositions as GameState["node_positions"]),
+            settings: { ...(lobby.settings ?? {}), ...(gameState.settings ?? {}) },
+          }}
+          captures={captures as any}
+          now={now}
+          en={en}
+          mapUrl={lobby.mapUrl || undefined}
+        />
       )}
 
 

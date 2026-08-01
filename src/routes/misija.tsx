@@ -490,8 +490,16 @@ function MisijaPage() {
         .maybeSingle();
       if (alive && data) {
         const liveState = data as unknown as GameState;
-        setState(liveState);
-        try { localStorage.setItem(stateCacheKey(field), JSON.stringify(liveState)); } catch { /* ignore */ }
+        setState((previous) => {
+          const merged: GameState = {
+            ...liveState,
+            compressed_map_url: liveState.compressed_map_url || previous?.compressed_map_url || null,
+            node_positions: Object.keys(liveState.node_positions ?? {}).length ? liveState.node_positions : (previous?.node_positions ?? {}),
+            settings: { ...(previous?.settings ?? {}), ...(liveState.settings ?? {}) },
+          };
+          try { localStorage.setItem(stateCacheKey(field), JSON.stringify(merged)); } catch { /* ignore */ }
+          return merged;
+        });
         if ((data as any).match_started_at) syncServerClock().catch(() => {});
       }
     };
@@ -519,6 +527,7 @@ function MisijaPage() {
               ...incoming,
               compressed_map_url: incoming.compressed_map_url || prev?.compressed_map_url || null,
               node_positions: hasIncomingPositions ? incomingPositions : (prev?.node_positions ?? {}),
+              settings: { ...(prev?.settings ?? {}), ...(incoming.settings ?? {}) },
               match_started_at: incoming.match_started_at || (["active", "paused"].includes(incoming.status) ? (prev?.match_started_at ?? null) : null),
             }));
             if ((p.new as any).match_started_at) syncServerClock().catch(() => {});
