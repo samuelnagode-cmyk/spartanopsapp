@@ -2760,7 +2760,7 @@ function EndgameSoundtrackTrigger() {
   return null;
 }
 
-function EndgameReport({ state, roster, captures, en, now }: { state: GameState; roster: Checkin[]; captures: Capture[]; en: boolean; now: number }) {
+function EndgameReport({ state, roster, captures, en, now, myTeam }: { state: GameState; roster: Checkin[]; captures: Capture[]; en: boolean; now: number; myTeam?: string }) {
   useEffect(() => {
     return () => {
       try { window.dispatchEvent(new Event("spartanops:debrief-exit")); } catch { /* ignore */ }
