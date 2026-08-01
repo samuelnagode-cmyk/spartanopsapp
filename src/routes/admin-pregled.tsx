@@ -944,8 +944,11 @@ function CreateFieldForm({ onCancel, onCreated }: { onCancel: () => void; onCrea
 
       {/* ── CARD 1: MISSION AND FIELD ───────────────────────── */}
       <Pane title={en ? "MISSION AND FIELD" : "MISIJA IN POLIGON"}>
-        <FieldRow label={en ? "Field name *" : "Ime poligona *"}>
+        <FieldRow label={en ? "Field name" : "Ime poligona"}>
           <input required value={fieldName} onChange={(e) => setFieldName(e.target.value)} style={consoleInputStyle} placeholder="Poligon Ljubljana" />
+        </FieldRow>
+        <FieldRow label={en ? "Event name (optional)" : "Ime dogodka (neobvezno)"}>
+          <input value={eventName} onChange={(e) => setEventName(e.target.value)} style={consoleInputStyle} placeholder={en ? "e.g. Operation Sparta" : "npr. Operacija Sparta"} />
         </FieldRow>
         <FieldRow label={en ? "Mission name" : "Ime misije"}>
           <input value={missionName} onChange={(e) => setMissionName(e.target.value)} style={consoleInputStyle} placeholder={en ? "Operation Fallen Angel" : "Operacija Fallen Angel"} />
@@ -966,12 +969,25 @@ function CreateFieldForm({ onCancel, onCreated }: { onCancel: () => void; onCrea
             value={afterGameInstructions}
             onChange={(e) => setAfterGameInstructions(e.target.value)}
             style={{ ...consoleInputStyle, minHeight: 72, resize: "vertical" }}
-            placeholder={en ? "Instruction on what the players should do after the game." : "Navodilo, kaj naj igralci naredijo po koncu igre."}
+            placeholder={en ? "The players will see this text in the debriefing screen (after the mission is finished)." : "Igralci bodo to besedilo videli na zaključnem zaslonu (po koncu misije)."}
           />
         </FieldRow>
-        <FieldRow label={en ? "Event name (optional)" : "Ime dogodka (neobvezno)"}>
-          <input value={eventName} onChange={(e) => setEventName(e.target.value)} style={consoleInputStyle} placeholder={en ? "e.g. Operation Ares" : "npr. Operacija Ares"} />
-        </FieldRow>
+        <div style={{ marginTop: 18, paddingTop: 14, borderTop: `1px solid ${ACCENT}40` }}>
+          <p
+            style={{
+              fontFamily: "'Michroma', monospace",
+              fontSize: 12,
+              letterSpacing: "0.22em",
+              color: ACCENT,
+              textTransform: "uppercase",
+              fontWeight: 700,
+              textShadow: `0 0 12px ${ACCENT}80`,
+              marginBottom: 12,
+            }}
+          >
+            // {en ? "LOCATION, MARSHALS" : "LOKACIJA, MARŠALI"}
+          </p>
+        </div>
         <div className="grid grid-cols-2 gap-3">
           <FieldRow label={en ? "City" : "Mesto"}>
             <input value={city} onChange={(e) => setCity(e.target.value)} style={consoleInputStyle} placeholder="Ljubljana" />
