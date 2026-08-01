@@ -1996,7 +1996,34 @@ function PreMatchCountdown({ seconds, polygon, eventName, gamemode, pointTarget,
       >
         {mm}:{ss}
       </div>
-      {/* 1) Mission description / instructions (from Marshal Command Center) */}
+      {/* 1) Team vs team with player counts (directly under the timer) */}
+      <div
+        className="flex items-center justify-center flex-wrap mt-1 mb-4"
+        style={{ width: "min(640px, 100%)", columnGap: 14, rowGap: 4, textAlign: "center" }}
+      >
+        {(["modra", "rdeca"] as const).map((k, i) => (
+          <div key={k} className="flex items-center flex-wrap justify-center" style={{ columnGap: 14, rowGap: 4 }}>
+            {i === 1 && (
+              <span style={{ color: MUTED, fontFamily: "monospace", fontSize: 12, letterSpacing: "0.2em" }}>VS</span>
+            )}
+            <span
+              style={{
+                fontFamily: "'Michroma', monospace",
+                fontSize: 14,
+                color: TEAM_COLOR[k],
+                letterSpacing: "0.12em",
+                textTransform: "uppercase",
+                whiteSpace: "nowrap",
+              }}
+            >
+              {teamName(k, settings, en)}
+              <span style={{ color: INK, marginLeft: 6 }}>({(roster ?? []).filter((r) => r.assigned_team === k).length})</span>
+            </span>
+          </div>
+        ))}
+      </div>
+
+      {/* 2) Mission description / instructions (from Marshal Command Center) */}
       {description?.trim() && (
         <div
           className="max-w-2xl mt-1 mb-4"
@@ -2017,28 +2044,7 @@ function PreMatchCountdown({ seconds, polygon, eventName, gamemode, pointTarget,
         </div>
       )}
 
-      {/* 2) Team vs team with player counts */}
-      <div className="flex items-center justify-center gap-4 mt-1 mb-4 flex-wrap" style={{ width: "min(640px, 100%)" }}>
-        {(["modra", "rdeca"] as const).map((k, i) => (
-          <div key={k} className="flex items-center gap-3">
-            {i === 1 && (
-              <span style={{ color: MUTED, fontFamily: "monospace", fontSize: 12, letterSpacing: "0.2em", marginRight: 12 }}>VS</span>
-            )}
-            <span
-              style={{
-                fontFamily: "'Michroma', monospace",
-                fontSize: 14,
-                color: TEAM_COLOR[k],
-                letterSpacing: "0.12em",
-                textTransform: "uppercase",
-              }}
-            >
-              {teamName(k, settings, en)}
-              <span style={{ color: INK, marginLeft: 6 }}>({(roster ?? []).filter((r) => r.assigned_team === k).length})</span>
-            </span>
-          </div>
-        ))}
-      </div>
+
 
 
       {/* 3) Standing objective text */}
