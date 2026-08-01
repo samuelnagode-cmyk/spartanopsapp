@@ -643,11 +643,11 @@ export function LiveMatchView({ state, captures, now, en, mapUrl }: { state: Gam
             {visibleCaptures.map((c) => {
               const t = new Date(c.captured_at);
               const time = `${String(t.getHours()).padStart(2, "0")}:${String(t.getMinutes()).padStart(2, "0")}:${String(t.getSeconds()).padStart(2, "0")}`;
-              const tl = en ? TEAM_LABEL_EN : TEAM_LABEL;
               return (
                 <div key={c.id} style={{ padding: "7px 12px", borderTop: "1px solid rgba(236,227,196,0.05)", fontSize: 12, fontFamily: "monospace", display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
                   <span style={{ color: MUTED }}>{time}</span>
-                  <span style={{ color: TEAM_COLOR[c.team], fontWeight: 700, minWidth: 64 }}>{tl[c.team] ?? c.team.toUpperCase()}</span>
+                  <span style={{ color: TEAM_COLOR[c.team], fontWeight: 700, minWidth: 64 }}>{configuredTeamLabel(c.team, state.settings, en)}</span>
+
                   <span style={{ color: INK }}>{en ? "Point" : "Točka"} {c.point_number} ({NODE_NAMES[c.point_number - 1]})</span>
                   <span style={{ color: MUTED, marginLeft: "auto" }}>{c.player_callsign ?? "—"}</span>
                 </div>
@@ -716,7 +716,15 @@ const RosterBoard = memo(function RosterBoard({ roster, settings, onReassign, on
         return (
           <div key={c} style={{ background: "#0c0e09", border: `1px solid ${TEAM_COLOR[c]}55` }}>
             <div style={{ background: c === "none" ? "rgba(255,255,255,0.05)" : TEAM_COLOR[c], color: c === "none" ? MUTED : "#fff", padding: "6px 10px", fontSize: 10, fontFamily: "'Michroma', monospace", letterSpacing: "0.18em" }}>
-              {c === "none" ? (en ? TEAM_LABEL_EN : TEAM_LABEL)[c] : configuredTeamLabel(c, settings, en)} · {players.length}
+              {(() => {
+                const colorLbl = (en ? TEAM_LABEL_EN : TEAM_LABEL)[c] ?? c.toUpperCase();
+                if (c === "none") return `${colorLbl} · ${players.length}`;
+                const named = configuredTeamLabel(c, settings, en);
+                return named && named !== colorLbl
+                  ? `${named} · ${colorLbl} · ${players.length}`
+                  : `${colorLbl} · ${players.length}`;
+              })()}
+
             </div>
             <div className="p-2 space-y-1">
               {players.length === 0 && <p style={{ color: MUTED, fontSize: 10.5, textAlign: "center", padding: 8, fontFamily: "monospace", letterSpacing: "0.14em" }}>{en ? "[ NO OPERATIVES CHECKED IN ]" : "[ NI PRIJAVLJENIH OPERATIVCEV ]"}</p>}
