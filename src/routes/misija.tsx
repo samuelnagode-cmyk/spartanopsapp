@@ -824,7 +824,7 @@ function MisijaPage() {
         {reassignedBanner}
         {warningOverlay}
         <EndgameSoundtrackTrigger />
-        <EndgameReport state={state} roster={roster} captures={captures} en={en} now={currentTime} />
+        <EndgameReport state={state} roster={roster} captures={captures} en={en} now={currentTime} myTeam={me.assigned_team} />
         <AbortMissionButton field={field} en={en} settings={state.settings} />
         {preview && <PreviewReturnButton />}
       </div>
