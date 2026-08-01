@@ -2810,6 +2810,7 @@ type RosterPlayer = {
   experience?: "slabo" | "dobro" | "zelo_dobro" | null;
   club?: string | null;
   phoneNumber?: string | null;
+  operatorType?: string | null;
 };
 
 const EXP_LABEL: Record<"slabo" | "dobro" | "zelo_dobro", string> = {
