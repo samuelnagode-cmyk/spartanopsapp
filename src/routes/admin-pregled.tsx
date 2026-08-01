@@ -1692,6 +1692,7 @@ function MarshalLobbyConsole({ lobby: initialLobby, marshalPassword, lobbyPasswo
     experience: "slabo" | "dobro" | "zelo_dobro" | null;
     club: string | null;
     phoneNumber: string | null;
+    operatorType: string | null;
   };
   const [registered, setRegistered] = useState<RegisteredPlayer[]>([]);
   const lobbyState: LobbyState = lobby.state ?? "pending";
@@ -1898,6 +1899,7 @@ function MarshalLobbyConsole({ lobby: initialLobby, marshalPassword, lobbyPasswo
           experience: r.experience_level ?? null,
           club: r.club ?? null,
           phoneNumber: r.phone_number ?? null,
+          operatorType: r.operator_type ?? null,
         })));
       } catch (e) {
         console.error("[marshal] roster fetch failed", e);
@@ -2099,6 +2101,7 @@ function MarshalLobbyConsole({ lobby: initialLobby, marshalPassword, lobbyPasswo
         lastInitial: profile.lastInitial ? profile.lastInitial.charAt(0).toUpperCase() : null,
         club: profile.club || null,
         experienceLevel: profile.experience,
+        operatorType: "AEG",
         assignedTeam: profile.team,
       },
     });
@@ -2924,8 +2927,8 @@ function RosterRow({
                   }}
                   title={phone ? "Show phone number" : ""}
                 >
-                  <span style={{ color: INK, fontWeight: 700, letterSpacing: "0.06em", fontSize: 12.5, textTransform: "uppercase", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                    {p.callsign}
+                  <span style={{ color: INK, fontWeight: 700, letterSpacing: "0.06em", fontSize: 12.5, textTransform: "uppercase", overflowWrap: "anywhere", lineHeight: 1.3 }}>
+                    {p.callsign}{p.operatorType && <span style={{ color: ACCENT, fontSize: 9.5, marginLeft: 6 }}>· {p.operatorType}</span>}
                   </span>
                   {real && (
                     <span style={{ color: MUTED, fontSize: 10.5, marginTop: 2, letterSpacing: "0.02em" }}>
