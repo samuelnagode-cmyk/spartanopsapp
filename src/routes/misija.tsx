@@ -820,7 +820,11 @@ function MisijaPage() {
     await ackFn({ data: { fieldId: field, sessionId } });
   };
 
-  if (!sessionId || !state) {
+  // Hold the phase decision until we have (a) a session, (b) a trustworthy
+  // game state, and (c) a resolved check-in. Otherwise the screen would flash
+  // registration -> team select -> HUD (or an old debriefing) on every return.
+  const gateLoading = !sessionId || !state || (!preview && (!stateFresh || (!meResolved && !me)));
+  if (gateLoading) {
     return (
       <div style={{ background: BG, color: INK, minHeight: "100vh" }} className="flex items-center justify-center">
         <OfflineBanner />
@@ -840,6 +844,7 @@ function MisijaPage() {
         {preview && <PreviewReturnButton />}
       </>
     );
+
 
   // Fullscreen forced-team-change interrupt (must be acknowledged)
   const teamColorNow = me.assigned_team !== "none" ? TEAM_COLOR[me.assigned_team] : "#ff5050";
