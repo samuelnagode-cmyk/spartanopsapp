@@ -16,7 +16,7 @@ import { Crosshair, Shield } from "lucide-react";
 import { useLang, useT } from "@/lib/i18n";
 import { HudNotificationStack, useHudNotices, fillTemplate } from "@/components/HudNotificationStack";
 import { HudHistoryLog } from "@/components/HudHistoryLog";
-import { appendDeathEvents, readDeathEvents, type DeathEvent } from "@/lib/hud-history";
+import { appendDeathEvents, readDeathEvents, clearDeathEvents, type DeathEvent } from "@/lib/hud-history";
 import { QRScanner, type ScanPayload } from "@/components/QRScanner";
 import { useAmbientAudio } from "@/components/AmbientAudio";
 
