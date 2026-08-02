@@ -557,8 +557,15 @@ function MisijaPage() {
           writeCachedState(field, merged);
           return merged;
         });
+        // Fresh lobby (marshal reset / not started yet) must never show the
+        // previous match's death events.
+        if (liveState.status === "lobby" && !liveState.match_started_at && readDeathEvents(field).length > 0) {
+          clearDeathEvents(field);
+          try { window.dispatchEvent(new Event("spartanops:deathlog")); } catch { /* ignore */ }
+        }
         setStateFresh(true);
         if ((data as any).match_started_at) syncServerClock().catch(() => {});
+
         return true;
 
       }
