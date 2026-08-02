@@ -23,6 +23,8 @@ import {
   type GameState,
 } from "@/components/SpartanOpsConsole";
 import { useLang, useT } from "@/lib/i18n";
+import { CountrySearchInput } from "@/components/CountrySearchInput";
+import { flagFor } from "@/lib/countries";
 import { usePremium } from "@/lib/premium";
 import { supabase } from "@/integrations/supabase/client";
 import {
