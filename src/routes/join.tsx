@@ -5,6 +5,7 @@ import { ArrowLeft, Lock, MapPin, X, Radio } from "lucide-react";
 import { dtoToRecord, SYSTEM_FIELD, isLobbyRetired, rowToRecord, type LobbyRecord } from "./admin-pregled";
 import { listPublishedLobbies, verifyLobbyPassword } from "@/lib/spartanops-lobbies.functions";
 import { useLang } from "@/lib/i18n";
+import { flagFor } from "@/lib/countries";
 import { TacticalUplinkLoader } from "@/components/TacticalLoader";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -300,7 +301,8 @@ function JoinPage() {
 function LobbyCard({ lobby, isSystem, onJoin }: { lobby: LobbyRecord; isSystem: boolean; onJoin: () => void }) {
   const city = lobby.city || (lobby.location?.split(",")[0]?.trim() ?? "");
   const country = lobby.country || (lobby.location?.split(",")[1]?.trim() ?? "");
-  const locationText = [city, country].filter(Boolean).join(", ") || lobby.location || "—";
+  const flag = flagFor(country);
+  const locationText = [city, country ? `${country}${flag ? ` ${flag}` : ""}` : ""].filter(Boolean).join(", ") || lobby.location || "—";
   return (
     <div style={{
       background: "linear-gradient(180deg, rgba(224,176,78,0.05) 0%, rgba(0,0,0,0) 60%), " + PANEL,

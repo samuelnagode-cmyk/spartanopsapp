@@ -16,7 +16,7 @@ import { Crosshair, Shield } from "lucide-react";
 import { useLang, useT } from "@/lib/i18n";
 import { HudNotificationStack, useHudNotices, fillTemplate } from "@/components/HudNotificationStack";
 import { HudHistoryLog } from "@/components/HudHistoryLog";
-import { appendDeathEvents, readDeathEvents, type DeathEvent } from "@/lib/hud-history";
+import { appendDeathEvents, readDeathEvents, clearDeathEvents, type DeathEvent } from "@/lib/hud-history";
 import { QRScanner, type ScanPayload } from "@/components/QRScanner";
 import { useAmbientAudio } from "@/components/AmbientAudio";
 
@@ -220,9 +220,43 @@ function stateCacheKey(fieldId: string): string {
 function rosterCacheKey(fieldId: string): string {
   return `spartanops:roster-cache:${fieldId}`;
 }
+function meCacheKey(fieldId: string, sessionId: string): string {
+  return `spartanops:me-cache:${fieldId}:${sessionId}`;
+}
 function respawnLockKey(fieldId: string, sessionId: string): string {
   return `spartanops:respawn:${fieldId}:${sessionId}`;
 }
+
+/**
+ * Cached game state older than this is only trusted for cosmetic fields
+ * (map, description). Its `status` may describe a finished/previous match,
+ * so the screen waits for the live row before choosing which phase to render.
+ */
+const STATE_CACHE_TTL_MS = 45_000;
+
+function readCachedState(fieldId: string): { state: GameState; fresh: boolean } | null {
+  if (typeof window === "undefined") return null;
+  try {
+    const raw = localStorage.getItem(stateCacheKey(fieldId));
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    if (parsed && typeof parsed === "object" && "state" in parsed) {
+      const at = Number((parsed as any).at ?? 0);
+      return { state: (parsed as any).state as GameState, fresh: Date.now() - at < STATE_CACHE_TTL_MS };
+    }
+    // Legacy (unversioned) payload — treat as stale.
+    return { state: parsed as GameState, fresh: false };
+  } catch {
+    return null;
+  }
+}
+
+function writeCachedState(fieldId: string, state: GameState) {
+  try {
+    localStorage.setItem(stateCacheKey(fieldId), JSON.stringify({ at: Date.now(), state }));
+  } catch { /* ignore */ }
+}
+
 
 function RankIcon({ level, size = 18 }: { level: Checkin["experience_level"]; size?: number }) {
   return <ExperienceBadge level={level} size={size} />;
@@ -326,7 +360,13 @@ function MisijaPage() {
 
   const [sessionId, setSessionId] = useState("");
   const [state, setState] = useState<GameState | null>(null);
+  // True once a live game_state row has been read for this field. Until then a
+  // stale cached snapshot must not decide which phase renders.
+  const [stateFresh, setStateFresh] = useState(false);
   const [dbMe, setDbMe] = useState<Checkin | null>(null);
+  // Null = still resolving. Prevents a flash of the deployment-registration
+  // form for a player who is already checked in.
+  const [meResolved, setMeResolved] = useState(false);
   const [ghostMe, setGhostMe] = useState<Checkin | null>(null);
   const [roster, setRoster] = useState<Checkin[]>([]);
   const [captures, setCaptures] = useState<Capture[]>([]);
@@ -336,6 +376,22 @@ function MisijaPage() {
   const [respawnUntil, setRespawnUntil] = useState(0);
   const me = preview ? ghostMe : dbMe;
   const setMe = (v: Checkin | null) => (preview ? setGhostMe(v) : setDbMe(v));
+
+  // Instant paint of the player's own check-in so returning from /capture or a
+  // notification lands straight on the HUD instead of the registration form.
+  useEffect(() => {
+    if (preview || !sessionId) return;
+    try {
+      const raw = localStorage.getItem(meCacheKey(field, sessionId));
+      if (raw) setDbMe((prev) => prev ?? (JSON.parse(raw) as Checkin));
+    } catch { /* ignore */ }
+  }, [field, sessionId, preview]);
+
+  useEffect(() => {
+    if (preview || !sessionId || !dbMe) return;
+    try { localStorage.setItem(meCacheKey(field, sessionId), JSON.stringify(dbMe)); } catch { /* ignore */ }
+  }, [dbMe, field, sessionId, preview]);
+
 
   const syncServerClock = async () => {
     const before = Date.now();
@@ -475,10 +531,11 @@ function MisijaPage() {
 
     // Instant paint: hydrate from the last known snapshot for this field so
     // mission description / settings are on screen before the network answers.
-    try {
-      const cached = localStorage.getItem(stateCacheKey(field));
-      if (cached) setState((prev) => prev ?? (JSON.parse(cached) as GameState));
-    } catch { /* ignore */ }
+    const cached = readCachedState(field);
+    if (cached) {
+      setState((prev) => prev ?? cached.state);
+      if (cached.fresh) setStateFresh(true);
+    }
 
     const load = async (attempt = 0): Promise<boolean> => {
       // Always try Supabase first — every lobby (legacy fixed IDs + new UUIDs)
@@ -497,11 +554,20 @@ function MisijaPage() {
             node_positions: Object.keys(liveState.node_positions ?? {}).length ? liveState.node_positions : (previous?.node_positions ?? {}),
             settings: { ...(previous?.settings ?? {}), ...(liveState.settings ?? {}) },
           };
-          try { localStorage.setItem(stateCacheKey(field), JSON.stringify(merged)); } catch { /* ignore */ }
+          writeCachedState(field, merged);
           return merged;
         });
+        // Fresh lobby (marshal reset / not started yet) must never show the
+        // previous match's death events.
+        if (liveState.status === "lobby" && !liveState.match_started_at && readDeathEvents(field).length > 0) {
+          clearDeathEvents(field);
+          try { window.dispatchEvent(new Event("spartanops:deathlog")); } catch { /* ignore */ }
+        }
+        setStateFresh(true);
         if ((data as any).match_started_at) syncServerClock().catch(() => {});
+
         return true;
+
       }
       if (alive && attempt < 3) {
         await new Promise((resolve) => setTimeout(resolve, 600 * (attempt + 1)));
@@ -516,6 +582,7 @@ function MisijaPage() {
     const timeout = setTimeout(() => {
       if (!alive) return;
       setState((prev) => prev ?? synthesizeLocal());
+      setStateFresh(true);
     }, 2500);
 
     const ch = supabase
@@ -528,13 +595,25 @@ function MisijaPage() {
             const incoming = p.new as unknown as GameState;
             const incomingPositions = incoming.node_positions ?? {};
             const hasIncomingPositions = Object.keys(incomingPositions).length > 0;
-            setState((prev) => ({
-              ...incoming,
-              compressed_map_url: incoming.compressed_map_url || prev?.compressed_map_url || null,
-              node_positions: hasIncomingPositions ? incomingPositions : (prev?.node_positions ?? {}),
-              settings: { ...(prev?.settings ?? {}), ...(incoming.settings ?? {}) },
-              match_started_at: incoming.match_started_at || (["active", "paused"].includes(incoming.status) ? (prev?.match_started_at ?? null) : null),
-            }));
+            setState((prev) => {
+              // Marshal reset: the match returns to the lobby with no start
+              // time. Wipe the locally persisted death log so the next match
+              // never inherits the previous one's events.
+              if (prev && incoming.status === "lobby" && !incoming.match_started_at && (prev.match_started_at || prev.status !== "lobby")) {
+                clearDeathEvents(field);
+                try { window.dispatchEvent(new Event("spartanops:deathlog")); } catch { /* ignore */ }
+              }
+              const merged: GameState = {
+                ...incoming,
+                compressed_map_url: incoming.compressed_map_url || prev?.compressed_map_url || null,
+                node_positions: hasIncomingPositions ? incomingPositions : (prev?.node_positions ?? {}),
+                settings: { ...(prev?.settings ?? {}), ...(incoming.settings ?? {}) },
+                match_started_at: incoming.match_started_at || (["active", "paused"].includes(incoming.status) ? (prev?.match_started_at ?? null) : null),
+              };
+              writeCachedState(field, merged);
+              return merged;
+            });
+            setStateFresh(true);
             if ((p.new as any).match_started_at) syncServerClock().catch(() => {});
           }
         },
@@ -542,6 +621,7 @@ function MisijaPage() {
       .subscribe((status) => {
         if (status === "SUBSCRIBED") load().catch(() => {});
       });
+
     load().catch(() => {});
     return () => {
       alive = false;
@@ -615,23 +695,33 @@ function MisijaPage() {
 
   useEffect(() => {
     if (preview && preset) return;
+    if (!sessionId) return;
     let cancelled = false;
     (async () => {
       try {
         const res = await getMyCheckinFn({ data: { fieldId: field, sessionId } });
         const row = res?.row as Checkin | null;
         if (cancelled) return;
-        if (!row) { setDbMe(null); return; }
+        if (!row) {
+          setDbMe(null);
+          try { localStorage.removeItem(meCacheKey(field, sessionId)); } catch { /* ignore */ }
+          setMeResolved(true);
+          return;
+        }
         // Prefer the latest row from the realtime roster (fresh assigned_team etc.),
         // fall back to the server-fn row (has PII); identify by id, not session_id.
         const fresh = roster.find((r) => r.id === row.id);
         setDbMe(fresh ? { ...row, ...fresh } : row);
+        setMeResolved(true);
       } catch {
-        if (!cancelled) setDbMe(null);
+        // Network hiccup: keep any cached check-in rather than bouncing the
+        // player back to the registration form.
+        if (!cancelled) setMeResolved(true);
       }
     })();
     return () => { cancelled = true; };
   }, [roster, sessionId, preview, field, getMyCheckinFn]);
+
 
   useEffect(() => {
     if (preview || !dbMe?.id) return;
@@ -737,7 +827,11 @@ function MisijaPage() {
     await ackFn({ data: { fieldId: field, sessionId } });
   };
 
-  if (!sessionId || !state) {
+  // Hold the phase decision until we have (a) a session, (b) a trustworthy
+  // game state, and (c) a resolved check-in. Otherwise the screen would flash
+  // registration -> team select -> HUD (or an old debriefing) on every return.
+  const gateLoading = !sessionId || !state || (!preview && (!stateFresh || (!meResolved && !me)));
+  if (gateLoading) {
     return (
       <div style={{ background: BG, color: INK, minHeight: "100vh" }} className="flex items-center justify-center">
         <OfflineBanner />
@@ -757,6 +851,7 @@ function MisijaPage() {
         {preview && <PreviewReturnButton />}
       </>
     );
+
 
   // Fullscreen forced-team-change interrupt (must be acknowledged)
   const teamColorNow = me.assigned_team !== "none" ? TEAM_COLOR[me.assigned_team] : "#ff5050";

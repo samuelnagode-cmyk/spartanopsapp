@@ -5,6 +5,7 @@ import { Crosshair, QrCode, Users, MapPin, ArrowRight, Printer, CheckCircle2, Fl
 import { SYSTEM_FIELD, dtoToRecord } from "./admin-pregled";
 import { getOperationalTelemetry, type OperationalTelemetry } from "@/lib/spartanops-telemetry.functions";
 import { listPublishedLobbies } from "@/lib/spartanops-lobbies.functions";
+import { flagFor } from "@/lib/countries";
 import { missionTitle } from "@/lib/mission-title";
 import { spartanDevlogEntries, useT } from "@/lib/i18n";
 
@@ -422,6 +423,15 @@ function LiveTracker() {
 const OPS_CACHE_KEY = "spartanops.home.ops.v1";
 type OpRow = { id: string; name: string; region: string; status: "ACTIVE" | "DECOMMISSIONED" };
 
+/** "City, Country 🇸🇮" — flag resolved from the mission's country field. */
+function regionWithFlag(r: { city?: string; country?: string; location?: string }): string {
+  const city = r.city || (r.location?.split(",")[0]?.trim() ?? "");
+  const country = r.country || (r.location?.split(",")[1]?.trim() ?? "");
+  const flag = flagFor(country);
+  return [city, country ? `${country}${flag ? ` ${flag}` : ""}` : ""].filter(Boolean).join(", ") || r.location || "";
+}
+
+
 function Locations() {
   const navigate = useNavigate();
   const listFn = useServerFn(listPublishedLobbies);
@@ -450,7 +460,7 @@ function Locations() {
         const next: OpRow[] = records.map((r) => ({
           id: r.id,
           name: missionTitle(r, r.fieldName),
-          region: r.location || "",
+          region: regionWithFlag(r),
           status: "ACTIVE" as const,
         }));
         setRows(next);

@@ -23,6 +23,8 @@ import {
   type GameState,
 } from "@/components/SpartanOpsConsole";
 import { useLang, useT } from "@/lib/i18n";
+import { CountrySearchInput } from "@/components/CountrySearchInput";
+import { flagFor } from "@/lib/countries";
 import { usePremium } from "@/lib/premium";
 import { supabase } from "@/integrations/supabase/client";
 import {
@@ -996,14 +998,18 @@ function CreateFieldForm({ onCancel, onCreated }: { onCancel: () => void; onCrea
             // {en ? "LOCATION, MARSHALS" : "LOKACIJA, MARŠALI"}
           </p>
         </div>
-        <div className="grid grid-cols-2 gap-3">
-          <FieldRow label={en ? "City" : "Mesto"}>
-            <input value={city} onChange={(e) => setCity(e.target.value)} style={consoleInputStyle} placeholder="Ljubljana" />
-          </FieldRow>
-          <FieldRow label={en ? "Country" : "Država"}>
-            <input value={country} onChange={(e) => setCountry(e.target.value)} style={consoleInputStyle} placeholder="Slovenia" />
-          </FieldRow>
-        </div>
+        <FieldRow label={en ? "City" : "Mesto"}>
+          <input value={city} onChange={(e) => setCity(e.target.value)} style={consoleInputStyle} placeholder="Ljubljana" />
+        </FieldRow>
+        <FieldRow label={en ? "Country" : "Država"}>
+          <CountrySearchInput
+            value={country}
+            onChange={setCountry}
+            inputStyle={consoleInputStyle}
+            placeholder={en ? "Search country…" : "Išči državo…"}
+          />
+        </FieldRow>
+
         <FieldRow label={en ? "Marshal name (mandatory)" : "Ime maršala (obvezno)"}>
           <input required value={marshalName} onChange={(e) => setMarshalName(e.target.value)} style={consoleInputStyle} placeholder={en ? "e.g. Luka" : "npr. Luka"} />
         </FieldRow>
@@ -1352,7 +1358,8 @@ function FieldsWelcome({
               const city = l.city || (l.location?.split(",")[0]?.trim() ?? "");
               const country = l.country || (l.location?.split(",")[1]?.trim() ?? "");
               const status = l.published ? "ACTIVE" : "STANDBY";
-              const locationText = [city, country].filter(Boolean).join(", ") || l.location || "—";
+              const flag = flagFor(country);
+              const locationText = [city, country ? `${country}${flag ? ` ${flag}` : ""}` : ""].filter(Boolean).join(", ") || l.location || "—";
               const statusColor = l.published ? "#3ddc84" : ACCENT;
               return (
                 <div key={l.id}
