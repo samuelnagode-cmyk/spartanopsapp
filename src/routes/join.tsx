@@ -5,6 +5,7 @@ import { ArrowLeft, Lock, MapPin, X, Radio } from "lucide-react";
 import { dtoToRecord, SYSTEM_FIELD, isLobbyRetired, rowToRecord, type LobbyRecord } from "./admin-pregled";
 import { listPublishedLobbies, verifyLobbyPassword } from "@/lib/spartanops-lobbies.functions";
 import { useLang } from "@/lib/i18n";
+import { flagFor } from "@/lib/countries";
 import { TacticalUplinkLoader } from "@/components/TacticalLoader";
 import { supabase } from "@/integrations/supabase/client";
 
