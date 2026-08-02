@@ -300,7 +300,8 @@ function JoinPage() {
 function LobbyCard({ lobby, isSystem, onJoin }: { lobby: LobbyRecord; isSystem: boolean; onJoin: () => void }) {
   const city = lobby.city || (lobby.location?.split(",")[0]?.trim() ?? "");
   const country = lobby.country || (lobby.location?.split(",")[1]?.trim() ?? "");
-  const locationText = [city, country].filter(Boolean).join(", ") || lobby.location || "—";
+  const flag = flagFor(country);
+  const locationText = [city, country ? `${country}${flag ? ` ${flag}` : ""}` : ""].filter(Boolean).join(", ") || lobby.location || "—";
   return (
     <div style={{
       background: "linear-gradient(180deg, rgba(224,176,78,0.05) 0%, rgba(0,0,0,0) 60%), " + PANEL,
