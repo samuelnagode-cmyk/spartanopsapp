@@ -360,7 +360,13 @@ function MisijaPage() {
 
   const [sessionId, setSessionId] = useState("");
   const [state, setState] = useState<GameState | null>(null);
+  // True once a live game_state row has been read for this field. Until then a
+  // stale cached snapshot must not decide which phase renders.
+  const [stateFresh, setStateFresh] = useState(false);
   const [dbMe, setDbMe] = useState<Checkin | null>(null);
+  // Null = still resolving. Prevents a flash of the deployment-registration
+  // form for a player who is already checked in.
+  const [meResolved, setMeResolved] = useState(false);
   const [ghostMe, setGhostMe] = useState<Checkin | null>(null);
   const [roster, setRoster] = useState<Checkin[]>([]);
   const [captures, setCaptures] = useState<Capture[]>([]);
@@ -370,6 +376,22 @@ function MisijaPage() {
   const [respawnUntil, setRespawnUntil] = useState(0);
   const me = preview ? ghostMe : dbMe;
   const setMe = (v: Checkin | null) => (preview ? setGhostMe(v) : setDbMe(v));
+
+  // Instant paint of the player's own check-in so returning from /capture or a
+  // notification lands straight on the HUD instead of the registration form.
+  useEffect(() => {
+    if (preview || !sessionId) return;
+    try {
+      const raw = localStorage.getItem(meCacheKey(field, sessionId));
+      if (raw) setDbMe((prev) => prev ?? (JSON.parse(raw) as Checkin));
+    } catch { /* ignore */ }
+  }, [field, sessionId, preview]);
+
+  useEffect(() => {
+    if (preview || !sessionId || !dbMe) return;
+    try { localStorage.setItem(meCacheKey(field, sessionId), JSON.stringify(dbMe)); } catch { /* ignore */ }
+  }, [dbMe, field, sessionId, preview]);
+
 
   const syncServerClock = async () => {
     const before = Date.now();
