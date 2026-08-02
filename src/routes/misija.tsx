@@ -220,9 +220,43 @@ function stateCacheKey(fieldId: string): string {
 function rosterCacheKey(fieldId: string): string {
   return `spartanops:roster-cache:${fieldId}`;
 }
+function meCacheKey(fieldId: string, sessionId: string): string {
+  return `spartanops:me-cache:${fieldId}:${sessionId}`;
+}
 function respawnLockKey(fieldId: string, sessionId: string): string {
   return `spartanops:respawn:${fieldId}:${sessionId}`;
 }
+
+/**
+ * Cached game state older than this is only trusted for cosmetic fields
+ * (map, description). Its `status` may describe a finished/previous match,
+ * so the screen waits for the live row before choosing which phase to render.
+ */
+const STATE_CACHE_TTL_MS = 45_000;
+
+function readCachedState(fieldId: string): { state: GameState; fresh: boolean } | null {
+  if (typeof window === "undefined") return null;
+  try {
+    const raw = localStorage.getItem(stateCacheKey(fieldId));
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    if (parsed && typeof parsed === "object" && "state" in parsed) {
+      const at = Number((parsed as any).at ?? 0);
+      return { state: (parsed as any).state as GameState, fresh: Date.now() - at < STATE_CACHE_TTL_MS };
+    }
+    // Legacy (unversioned) payload — treat as stale.
+    return { state: parsed as GameState, fresh: false };
+  } catch {
+    return null;
+  }
+}
+
+function writeCachedState(fieldId: string, state: GameState) {
+  try {
+    localStorage.setItem(stateCacheKey(fieldId), JSON.stringify({ at: Date.now(), state }));
+  } catch { /* ignore */ }
+}
+
 
 function RankIcon({ level, size = 18 }: { level: Checkin["experience_level"]; size?: number }) {
   return <ExperienceBadge level={level} size={size} />;
