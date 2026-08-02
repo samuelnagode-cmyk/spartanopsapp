@@ -531,10 +531,11 @@ function MisijaPage() {
 
     // Instant paint: hydrate from the last known snapshot for this field so
     // mission description / settings are on screen before the network answers.
-    try {
-      const cached = localStorage.getItem(stateCacheKey(field));
-      if (cached) setState((prev) => prev ?? (JSON.parse(cached) as GameState));
-    } catch { /* ignore */ }
+    const cached = readCachedState(field);
+    if (cached) {
+      setState((prev) => prev ?? cached.state);
+      if (cached.fresh) setStateFresh(true);
+    }
 
     const load = async (attempt = 0): Promise<boolean> => {
       // Always try Supabase first — every lobby (legacy fixed IDs + new UUIDs)
@@ -553,11 +554,13 @@ function MisijaPage() {
             node_positions: Object.keys(liveState.node_positions ?? {}).length ? liveState.node_positions : (previous?.node_positions ?? {}),
             settings: { ...(previous?.settings ?? {}), ...(liveState.settings ?? {}) },
           };
-          try { localStorage.setItem(stateCacheKey(field), JSON.stringify(merged)); } catch { /* ignore */ }
+          writeCachedState(field, merged);
           return merged;
         });
+        setStateFresh(true);
         if ((data as any).match_started_at) syncServerClock().catch(() => {});
         return true;
+
       }
       if (alive && attempt < 3) {
         await new Promise((resolve) => setTimeout(resolve, 600 * (attempt + 1)));
