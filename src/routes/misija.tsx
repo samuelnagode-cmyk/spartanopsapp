@@ -688,23 +688,33 @@ function MisijaPage() {
 
   useEffect(() => {
     if (preview && preset) return;
+    if (!sessionId) return;
     let cancelled = false;
     (async () => {
       try {
         const res = await getMyCheckinFn({ data: { fieldId: field, sessionId } });
         const row = res?.row as Checkin | null;
         if (cancelled) return;
-        if (!row) { setDbMe(null); return; }
+        if (!row) {
+          setDbMe(null);
+          try { localStorage.removeItem(meCacheKey(field, sessionId)); } catch { /* ignore */ }
+          setMeResolved(true);
+          return;
+        }
         // Prefer the latest row from the realtime roster (fresh assigned_team etc.),
         // fall back to the server-fn row (has PII); identify by id, not session_id.
         const fresh = roster.find((r) => r.id === row.id);
         setDbMe(fresh ? { ...row, ...fresh } : row);
+        setMeResolved(true);
       } catch {
-        if (!cancelled) setDbMe(null);
+        // Network hiccup: keep any cached check-in rather than bouncing the
+        // player back to the registration form.
+        if (!cancelled) setMeResolved(true);
       }
     })();
     return () => { cancelled = true; };
   }, [roster, sessionId, preview, field, getMyCheckinFn]);
+
 
   useEffect(() => {
     if (preview || !dbMe?.id) return;
