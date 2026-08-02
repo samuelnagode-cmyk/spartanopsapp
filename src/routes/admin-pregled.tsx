@@ -996,14 +996,18 @@ function CreateFieldForm({ onCancel, onCreated }: { onCancel: () => void; onCrea
             // {en ? "LOCATION, MARSHALS" : "LOKACIJA, MARŠALI"}
           </p>
         </div>
-        <div className="grid grid-cols-2 gap-3">
-          <FieldRow label={en ? "City" : "Mesto"}>
-            <input value={city} onChange={(e) => setCity(e.target.value)} style={consoleInputStyle} placeholder="Ljubljana" />
-          </FieldRow>
-          <FieldRow label={en ? "Country" : "Država"}>
-            <input value={country} onChange={(e) => setCountry(e.target.value)} style={consoleInputStyle} placeholder="Slovenia" />
-          </FieldRow>
-        </div>
+        <FieldRow label={en ? "City" : "Mesto"}>
+          <input value={city} onChange={(e) => setCity(e.target.value)} style={consoleInputStyle} placeholder="Ljubljana" />
+        </FieldRow>
+        <FieldRow label={en ? "Country" : "Država"}>
+          <CountrySearchInput
+            value={country}
+            onChange={setCountry}
+            inputStyle={consoleInputStyle}
+            placeholder={en ? "Search country…" : "Išči državo…"}
+          />
+        </FieldRow>
+
         <FieldRow label={en ? "Marshal name (mandatory)" : "Ime maršala (obvezno)"}>
           <input required value={marshalName} onChange={(e) => setMarshalName(e.target.value)} style={consoleInputStyle} placeholder={en ? "e.g. Luka" : "npr. Luka"} />
         </FieldRow>
