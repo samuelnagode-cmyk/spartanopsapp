@@ -575,6 +575,7 @@ function MisijaPage() {
     const timeout = setTimeout(() => {
       if (!alive) return;
       setState((prev) => prev ?? synthesizeLocal());
+      setStateFresh(true);
     }, 2500);
 
     const ch = supabase
@@ -587,13 +588,25 @@ function MisijaPage() {
             const incoming = p.new as unknown as GameState;
             const incomingPositions = incoming.node_positions ?? {};
             const hasIncomingPositions = Object.keys(incomingPositions).length > 0;
-            setState((prev) => ({
-              ...incoming,
-              compressed_map_url: incoming.compressed_map_url || prev?.compressed_map_url || null,
-              node_positions: hasIncomingPositions ? incomingPositions : (prev?.node_positions ?? {}),
-              settings: { ...(prev?.settings ?? {}), ...(incoming.settings ?? {}) },
-              match_started_at: incoming.match_started_at || (["active", "paused"].includes(incoming.status) ? (prev?.match_started_at ?? null) : null),
-            }));
+            setState((prev) => {
+              // Marshal reset: the match returns to the lobby with no start
+              // time. Wipe the locally persisted death log so the next match
+              // never inherits the previous one's events.
+              if (prev && incoming.status === "lobby" && !incoming.match_started_at && (prev.match_started_at || prev.status !== "lobby")) {
+                clearDeathEvents(field);
+                try { window.dispatchEvent(new Event("spartanops:deathlog")); } catch { /* ignore */ }
+              }
+              const merged: GameState = {
+                ...incoming,
+                compressed_map_url: incoming.compressed_map_url || prev?.compressed_map_url || null,
+                node_positions: hasIncomingPositions ? incomingPositions : (prev?.node_positions ?? {}),
+                settings: { ...(prev?.settings ?? {}), ...(incoming.settings ?? {}) },
+                match_started_at: incoming.match_started_at || (["active", "paused"].includes(incoming.status) ? (prev?.match_started_at ?? null) : null),
+              };
+              writeCachedState(field, merged);
+              return merged;
+            });
+            setStateFresh(true);
             if ((p.new as any).match_started_at) syncServerClock().catch(() => {});
           }
         },
@@ -601,6 +614,7 @@ function MisijaPage() {
       .subscribe((status) => {
         if (status === "SUBSCRIBED") load().catch(() => {});
       });
+
     load().catch(() => {});
     return () => {
       alive = false;
