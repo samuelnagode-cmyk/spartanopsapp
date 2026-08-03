@@ -479,9 +479,6 @@ function CapturePage() {
             not_checked_in: "Niste prijavljeni v misijo.",
             no_team: "Nimate dodeljene ekipe.",
             invalid_point: "Neveljavna točka.",
-            cooldown: en
-              ? "Cooldown active — wait before rescanning this point."
-              : "Ohladitev aktivna — počakaj pred ponovnim skeniranjem te točke.",
             out_of_range: en
               ? `ERROR: Out of activation range (max ${radiusLabel}m)!`
               : `NAPAKA: Niste v dometu za aktiviranje te funkcije (največ ${radiusLabel}m)!`,
