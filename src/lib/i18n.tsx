@@ -78,10 +78,6 @@ export const dict: Dict = {
     sl: "VARNOSTNO OPOZORILO: Zajem točke je mogoč le preko vgrajenega skenerja v aplikaciji.",
     en: "SECURITY ALERT: Point capture is only valid via the In-App Scanner.",
   },
-  "scanner.cooldown": {
-    sl: "Ohladitev aktivna — počakaj pred ponovnim skeniranjem te točke.",
-    en: "Cooldown active — wait before rescanning this point.",
-  },
   "scanner.outOfRange": {
     sl: "NAPAKA: Niste v dometu točke (največ 15m)!",
     en: "ERROR: Out of range (max 15m)!",
