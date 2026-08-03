@@ -6,6 +6,7 @@ import { dtoToRecord, SYSTEM_FIELD, isLobbyRetired, rowToRecord, type LobbyRecor
 import { listPublishedLobbies, verifyLobbyPassword } from "@/lib/spartanops-lobbies.functions";
 import { useLang } from "@/lib/i18n";
 import { flagFor } from "@/lib/countries";
+import { missionTitle } from "@/lib/mission-title";
 import { TacticalUplinkLoader } from "@/components/TacticalLoader";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -310,7 +311,7 @@ function LobbyCard({ lobby, isSystem, onJoin }: { lobby: LobbyRecord; isSystem: 
     }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8, gap: 12, flexWrap: "wrap" }}>
         <p style={{ fontFamily: "'Michroma', monospace", fontSize: 13, letterSpacing: "0.14em", color: ACCENT, textTransform: "uppercase", lineHeight: 1.45 }}>
-          MISSION: {lobby.eventName || lobby.fieldName}
+          MISSION: {missionTitle(lobby, lobby.fieldName)}
         </p>
         <span style={{
           fontFamily: "monospace", fontSize: 10, letterSpacing: "0.20em",
@@ -349,7 +350,7 @@ function JoinPrompt({ lobby, onClose, onSuccess }: { lobby: LobbyRecord; onClose
   const [err, setErr] = useState("");
   const [busy, setBusy] = useState(false);
   const verifyFn = useServerFn(verifyLobbyPassword);
-  const missionName = (lobby.eventName || lobby.fieldName || "").toUpperCase();
+  const missionName = missionTitle(lobby, lobby.fieldName ?? "").toUpperCase();
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (busy) return;

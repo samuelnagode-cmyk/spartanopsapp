@@ -197,7 +197,6 @@ function nodeHoldersFromCaptures(captures: Capture[]): Record<string, string | n
 function missionTitleFromState(state: GameState | null, fallback: string): string {
   const configured = state?.settings?.missionName;
   if (typeof configured === "string" && configured.trim()) return configured.trim();
-  if (state?.event_name?.trim()) return state.event_name.trim();
   if (state?.field_label?.trim()) return state.field_label.trim();
   if (state?.current_polygon_name?.trim()) return state.current_polygon_name.trim();
   return fallback;
