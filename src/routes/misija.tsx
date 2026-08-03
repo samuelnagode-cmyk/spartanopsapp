@@ -926,7 +926,7 @@ function MisijaPage() {
         {reassignedBanner}
         {warningOverlay}
         {pauseOverlay}
-        <PreMatchCountdown seconds={preMatchSecEarly} polygon={state.current_polygon_name} eventName={state.event_name} gamemode={state.gamemode} pointTarget={state.point_target} settings={state.settings} en={en} state={state} roster={roster} />
+        <PreMatchCountdown seconds={preMatchSecEarly} polygon={state.current_polygon_name} eventName={missionTitleFromState(state, "")} gamemode={state.gamemode} pointTarget={state.point_target} settings={state.settings} en={en} state={state} roster={roster} />
         <div className="flex flex-col items-center px-4 pb-8"><MarshalContactBlock settings={state.settings} en={en} /></div>
         {preview && <PreviewReturnButton />}
       </div>
@@ -2757,7 +2757,7 @@ function LiveMatch({ state, captures, now, roster, myTeam }: { state: GameState;
   const scoreFor = (t: string) => Math.floor(dynamicScores[t] ?? 0);
 
   return (
-    <div className="max-w-5xl mx-auto px-4 py-6" style={{ paddingTop: 112 }}>
+    <div className="max-w-5xl mx-auto px-4 py-6" style={{ paddingTop: 84 }}>
       <HudNoticeFeed captures={visibleCaptures} roster={roster} myTeam={myTeam} teamLabelFor={teamLabelFor} respawnEnabled={!!state.settings?.respawn?.enabled} fieldId={state.field_id ?? ""} />
       {preMatchSec > 0 && <PreMatchCountdown seconds={preMatchSec} polygon={fieldTitleFromState(state, "")} eventName={missionTitleFromState(state, "")} gamemode={state.gamemode} pointTarget={state.point_target} settings={state.settings} en={en} state={state} roster={roster} />}
 
@@ -2773,12 +2773,6 @@ function LiveMatch({ state, captures, now, roster, myTeam }: { state: GameState;
           {en ? "Field" : "Poligon"}: {fieldTitleFromState(state, "")}
         </p>
       )}
-
-      <p className="text-center font-mono text-[11px] mt-2 mb-6" style={{ color: MUTED, lineHeight: 1.7 }}>
-        {en
-          ? "Scan the QR codes at flagged locations to score points for your team."
-          : "Z skeniranjem QR kode na posameznih lokacijah z zastavico vaša ekipa pridobiva točke."}
-      </p>
 
       {/* Score header — team label above, big centered "score / target" in team color */}
       {(() => {
@@ -2829,6 +2823,15 @@ function LiveMatch({ state, captures, now, roster, myTeam }: { state: GameState;
           </div>
         );
       })()}
+
+      <p
+        className="text-center font-mono mb-5"
+        style={{ color: MUTED, fontSize: 9.5, lineHeight: 1.4, letterSpacing: "0.04em", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}
+      >
+        {en
+          ? "Scan the QR codes at flagged locations to score points for your team."
+          : "Z skeniranjem QR kod na lokacijah z zastavico vaša ekipa pridobiva točke."}
+      </p>
 
       <div className="text-center mb-6 font-mono text-[12px] uppercase tracking-widest" style={{ color: ACCENT }}>
         {en ? "TIME REMAINING:" : "Preostali čas:"}{" "}
