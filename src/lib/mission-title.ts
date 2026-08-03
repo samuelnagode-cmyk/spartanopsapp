@@ -1,5 +1,6 @@
 /** Single source of truth for how a mission is titled across every surface.
- *  Priority: explicit mission name (settings) → event name → field name. */
+ *  Always the explicit mission name (settings); the field name is only a
+ *  last-resort fallback. The event name is never used as a mission title. */
 export function missionTitle(
   lobby:
     | {
@@ -16,8 +17,8 @@ export function missionTitle(
   const fromSettings = (lobby.settings as any)?.missionName;
   const mission =
     (typeof fromSettings === "string" && fromSettings.trim()) ||
-    (typeof lobby.eventName === "string" && lobby.eventName.trim()) ||
     (typeof lobby.fieldName === "string" && lobby.fieldName.trim()) ||
     "";
   return mission || fallback;
 }
+
