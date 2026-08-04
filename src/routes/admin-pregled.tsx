@@ -1359,7 +1359,7 @@ function FieldsWelcome({
               const country = l.country || (l.location?.split(",")[1]?.trim() ?? "");
               const status = l.published ? "ACTIVE" : "STANDBY";
               const flag = flagFor(country);
-              const locationText = [city, country ? `${country}${flag ? ` ${flag}` : ""}` : ""].filter(Boolean).join(", ") || l.location || "—";
+              const locationText = [city, country ? `${country}${flag ? `\u00A0${flag}` : ""}` : ""].filter(Boolean).join(", ") || l.location || "—";
               const statusColor = l.published ? "#3ddc84" : ACCENT;
               return (
                 <div key={l.id}
