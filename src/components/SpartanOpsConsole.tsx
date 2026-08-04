@@ -720,9 +720,10 @@ const RosterBoard = memo(function RosterBoard({ roster, settings, onReassign, on
                 if (c === "none") return `${colorLbl} · ${players.length}`;
                 const named = configuredTeamLabel(c, settings, en);
                 return named && named !== colorLbl
-                  ? `${named} · ${colorLbl} · ${players.length}`
+                  ? `${named} - ${colorLbl} · ${players.length}`
                   : `${colorLbl} · ${players.length}`;
               })()}
+
 
             </div>
             <div className="p-2 space-y-1">
