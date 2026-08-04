@@ -3211,26 +3211,29 @@ function EndgameReport({ state, roster, captures, en, now, myTeam }: { state: Ga
           const teamCol = TEAM_COLOR[team] ?? ACCENT;
           const members = enriched.filter((p) => p.assigned_team === team);
           const teamDeaths = members.reduce((sum, p) => sum + (p.death_count ?? 0), 0);
-          const cols = showDeaths ? "minmax(0,1fr) 56px 70px" : "minmax(0,1fr) 56px";
+          const cols = showDeaths ? "minmax(0,1fr) 44px 48px" : "minmax(0,1fr) 44px";
           return (
             <div key={team} style={{ background: PANEL, border: `1px solid ${teamCol}66` }}>
               <div style={{ padding: "10px 14px", borderBottom: `1px solid ${teamCol}44`, fontFamily: "'Michroma', monospace", fontSize: 12, letterSpacing: "0.16em", color: teamCol, textTransform: "uppercase" }}>
                 ▌ {teamLabelFor(team)} {en ? "SCOREBOARD" : "LESTVICA"}
               </div>
-              <div className="grid gap-2 px-3 py-2 text-[9px] font-mono uppercase tracking-widest" style={{ color: MUTED, gridTemplateColumns: cols }}>
+              <div className="grid gap-1.5 px-3 py-2 text-[9px] font-mono uppercase tracking-widest" style={{ color: MUTED, gridTemplateColumns: cols }}>
                 <span>Callsign</span>
-                <span style={{ textAlign: "right" }}>{en ? "Points" : "Točke"}</span>
-                {showDeaths && <span style={{ textAlign: "right" }}>{en ? "Deaths" : "Smrti"}</span>}
+                <span style={{ textAlign: "right", letterSpacing: "0.04em" }}>{en ? "Points" : "Točke"}</span>
+                {showDeaths && <span style={{ textAlign: "right", letterSpacing: "0.04em" }}>{en ? "Deaths" : "Smrti"}</span>}
               </div>
               {members.length === 0 ? (
                 <p className="text-center py-6 font-mono text-[11px]" style={{ color: MUTED }}>—</p>
               ) : members.map((p) => {
                 const real = fmtName(p);
+                const infoLen = p.callsign.length + (p.operator_type?.length ?? 0) + real.length;
+                const baseSize = infoLen > 40 ? 9 : infoLen > 32 ? 10 : infoLen > 24 ? 11 : 12;
                 return (
-                  <div key={p.id} className="grid gap-2 items-center px-3 py-2 text-[12px] font-mono" style={{ gridTemplateColumns: cols, borderTop: "1px solid rgba(236,227,196,0.06)" }}>
-                    <span style={{ color: INK, fontWeight: 700, overflowWrap: "anywhere", minWidth: 0, lineHeight: 1.3 }}>
-                      {p.callsign}{p.operator_type && <span style={{ color: ACCENT, fontSize: 9, marginLeft: 5 }}>· {p.operator_type}</span>}{real && <span style={{ color: MUTED, fontWeight: 400, fontSize: 10, marginLeft: 6 }}>({real})</span>}
+                  <div key={p.id} className="grid gap-1.5 items-center px-3 py-2 text-[12px] font-mono" style={{ gridTemplateColumns: cols, borderTop: "1px solid rgba(236,227,196,0.06)" }}>
+                    <span style={{ color: INK, fontWeight: 700, minWidth: 0, lineHeight: 1.3, fontSize: baseSize, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                      {p.callsign}{p.operator_type && <span style={{ color: ACCENT, fontSize: baseSize - 2, marginLeft: 5 }}>· {p.operator_type}</span>}{real && <span style={{ color: MUTED, fontWeight: 400, fontSize: baseSize - 2, marginLeft: 6 }}>({real})</span>}
                     </span>
+
                     <span style={{ color: INK, fontWeight: 700, textAlign: "right" }}>{p.pts}</span>
                     {showDeaths && <span style={{ color: "#ff7070", textAlign: "right", fontWeight: 700 }}>☠ {p.death_count ?? 0}</span>}
                   </div>
