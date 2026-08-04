@@ -1,10 +1,13 @@
 import { useEffect, useRef, useState } from "react";
+import { useLang } from "@/lib/i18n";
 
 /**
  * Tactical compass — Slovenian cardinal letters (S/V/J/Z).
  * Perfectly centered rotating dial with fixed crosshair overlay.
  */
 export function TacticalCompass({ size = 96 }: { size?: number }) {
+  const { lang } = useLang();
+  const en = lang === "en";
   const [heading, setHeading] = useState(0);
   const [needsPermission, setNeedsPermission] = useState(false);
   const [enabled, setEnabled] = useState(false);
@@ -75,10 +78,10 @@ export function TacticalCompass({ size = 96 }: { size?: number }) {
   const ACCENT = "#E0B04E";
   const rot = -heading;
   const cardinals = [
-    { l: "S", a: 0, c: "#ff5a5a" },
-    { l: "V", a: 90, c: ACCENT },
-    { l: "J", a: 180, c: ACCENT },
-    { l: "Z", a: 270, c: ACCENT },
+    { l: en ? "N" : "S", a: 0, c: "#ff5a5a" },
+    { l: en ? "E" : "V", a: 90, c: ACCENT },
+    { l: en ? "S" : "J", a: 180, c: ACCENT },
+    { l: en ? "W" : "Z", a: 270, c: ACCENT },
   ];
   const radius = size / 2;
   const labelRadius = radius - size * 0.14;
@@ -160,7 +163,7 @@ export function TacticalCompass({ size = 96 }: { size?: number }) {
             color: ACCENT, border: `1px solid ${ACCENT}`, fontFamily: "monospace",
             fontSize: 8, letterSpacing: "0.16em", textTransform: "uppercase",
             padding: "3px 6px", cursor: "pointer", whiteSpace: "nowrap",
-          }}>Omogoči senzor</button>
+          }}>{en ? "Enable sensor" : "Omogoči senzor"}</button>
       )}
       {!supported && (
         <div style={{ position: "absolute", left: "50%", bottom: -18, transform: "translateX(-50%)", fontSize: 7, color: ACCENT, fontFamily: "monospace", letterSpacing: "0.12em", whiteSpace: "nowrap" }}>N-LOCK</div>

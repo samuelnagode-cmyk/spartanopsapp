@@ -428,7 +428,7 @@ function regionWithFlag(r: { city?: string; country?: string; location?: string 
   const city = r.city || (r.location?.split(",")[0]?.trim() ?? "");
   const country = r.country || (r.location?.split(",")[1]?.trim() ?? "");
   const flag = flagFor(country);
-  return [city, country ? `${country}${flag ? ` ${flag}` : ""}` : ""].filter(Boolean).join(", ") || r.location || "";
+  return [city, country ? `${country}${flag ? `\u00A0${flag}` : ""}` : ""].filter(Boolean).join(", ") || r.location || "";
 }
 
 
