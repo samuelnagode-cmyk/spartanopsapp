@@ -2138,12 +2138,12 @@ function PreMatchCountdown({ seconds, polygon, eventName, gamemode, pointTarget,
       {/* 1) Team vs team with player counts (directly under the timer) */}
       <div
         className="flex items-center justify-center flex-wrap mt-1 mb-4"
-        style={{ width: "min(640px, 100%)", columnGap: 14, rowGap: 4, textAlign: "center" }}
+        style={{ width: "min(640px, 100%)", columnGap: 14, rowGap: 2, textAlign: "center" }}
       >
         {(["modra", "rdeca"] as const).map((k, i) => (
-          <div key={k} className="flex items-center flex-wrap justify-center" style={{ columnGap: 14, rowGap: 4 }}>
+          <Fragment key={k}>
             {i === 1 && (
-              <span style={{ color: MUTED, fontFamily: "monospace", fontSize: 12, letterSpacing: "0.2em" }}>VS</span>
+              <span style={{ color: MUTED, fontFamily: "monospace", fontSize: 12, letterSpacing: "0.2em", flex: "0 0 auto" }}>VS</span>
             )}
             <span
               style={{
@@ -2153,14 +2153,17 @@ function PreMatchCountdown({ seconds, polygon, eventName, gamemode, pointTarget,
                 letterSpacing: "0.12em",
                 textTransform: "uppercase",
                 whiteSpace: "nowrap",
+                flex: "0 0 auto",
+                maxWidth: "100%",
               }}
             >
               {teamName(k, settings, en)}
               <span style={{ color: INK, marginLeft: 6 }}>({(roster ?? []).filter((r) => r.assigned_team === k).length})</span>
             </span>
-          </div>
+          </Fragment>
         ))}
       </div>
+
 
       {/* 2) Mission description / instructions (from Marshal Command Center) */}
       {description?.trim() && (
