@@ -96,11 +96,9 @@ function nodeHoldersFromCaptures(captures: Capture[]): Record<string, string | n
   return holders;
 }
 
-function configuredTeams(settings?: GameSettings | null, roster: Checkin[] = [], scores: Record<string, number> = {}) {
+function configuredTeams(settings?: GameSettings | null, _roster: Checkin[] = [], _scores: Record<string, number> = {}) {
   const count = Math.max(2, Math.min(3, Number(settings?.teamCount ?? 2)));
-  const base = TEAM_KEYS.slice(0, count);
-  if (count < 3 && (roster.some((r) => r.assigned_team === "rumena") || (scores.rumena ?? 0) > 0)) return TEAM_KEYS;
-  return base;
+  return TEAM_KEYS.slice(0, count);
 }
 
 function configuredTeamLabel(team: string, settings: GameSettings | null | undefined, en: boolean) {
@@ -722,9 +720,10 @@ const RosterBoard = memo(function RosterBoard({ roster, settings, onReassign, on
                 if (c === "none") return `${colorLbl} · ${players.length}`;
                 const named = configuredTeamLabel(c, settings, en);
                 return named && named !== colorLbl
-                  ? `${named} · ${colorLbl} · ${players.length}`
+                  ? `${named} - ${colorLbl} · ${players.length}`
                   : `${colorLbl} · ${players.length}`;
               })()}
+
 
             </div>
             <div className="p-2 space-y-1">

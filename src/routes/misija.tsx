@@ -1,5 +1,5 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { memo, useCallback, useEffect, useMemo, useRef, useState, type PointerEvent as ReactPointerEvent } from "react";
+import { Fragment, memo, useCallback, useEffect, useMemo, useRef, useState, type PointerEvent as ReactPointerEvent } from "react";
 
 import { useServerFn } from "@tanstack/react-start";
 import { ExperienceBadge, EXPERIENCE_LEVELS } from "@/components/ExperienceBadge";
@@ -2138,12 +2138,12 @@ function PreMatchCountdown({ seconds, polygon, eventName, gamemode, pointTarget,
       {/* 1) Team vs team with player counts (directly under the timer) */}
       <div
         className="flex items-center justify-center flex-wrap mt-1 mb-4"
-        style={{ width: "min(640px, 100%)", columnGap: 14, rowGap: 4, textAlign: "center" }}
+        style={{ width: "min(640px, 100%)", columnGap: 14, rowGap: 2, textAlign: "center" }}
       >
         {(["modra", "rdeca"] as const).map((k, i) => (
-          <div key={k} className="flex items-center flex-wrap justify-center" style={{ columnGap: 14, rowGap: 4 }}>
+          <Fragment key={k}>
             {i === 1 && (
-              <span style={{ color: MUTED, fontFamily: "monospace", fontSize: 12, letterSpacing: "0.2em" }}>VS</span>
+              <span style={{ color: MUTED, fontFamily: "monospace", fontSize: 12, letterSpacing: "0.2em", flex: "0 0 auto" }}>VS</span>
             )}
             <span
               style={{
@@ -2153,14 +2153,17 @@ function PreMatchCountdown({ seconds, polygon, eventName, gamemode, pointTarget,
                 letterSpacing: "0.12em",
                 textTransform: "uppercase",
                 whiteSpace: "nowrap",
+                flex: "0 0 auto",
+                maxWidth: "100%",
               }}
             >
               {teamName(k, settings, en)}
               <span style={{ color: INK, marginLeft: 6 }}>({(roster ?? []).filter((r) => r.assigned_team === k).length})</span>
             </span>
-          </div>
+          </Fragment>
         ))}
       </div>
+
 
       {/* 2) Mission description / instructions (from Marshal Command Center) */}
       {description?.trim() && (
@@ -2916,11 +2919,11 @@ function PlayerScoreboard({ roster, captures, respawn, settings, en = false }: {
               {teamLabelFor(t)} SCOREBOARD
             </div>
             <div className="divide-y" style={{ borderColor: "rgba(236,227,196,0.08)" }}>
-              <div className="grid gap-2 px-3 py-1 text-[9px] font-mono uppercase tracking-widest" style={{ color: MUTED, gridTemplateColumns: `28px minmax(0,1fr) 56px${respawn?.publicDeaths ? " 40px" : ""}${respawn?.enabled ? " 70px" : ""}` }}>
+              <div className="grid gap-1.5 px-3 py-1 text-[9px] font-mono uppercase tracking-widest" style={{ color: MUTED, gridTemplateColumns: `24px minmax(0,1fr) 42px${respawn?.publicDeaths ? " 46px" : ""}${respawn?.enabled ? " 62px" : ""}` }}>
                 <span></span>
                 <span>{en ? "Callsign" : "Callsign"}</span>
-                <span style={{ textAlign: "right" }}>{en ? "PTS" : "TOČ"}</span>
-                {respawn?.publicDeaths && <span style={{ textAlign: "right" }} title={en ? "Deaths" : "Smrti"}>☠</span>}
+                <span style={{ textAlign: "right", letterSpacing: "0.04em" }}>{en ? "Points" : "Točke"}</span>
+                {respawn?.publicDeaths && <span style={{ textAlign: "right", letterSpacing: "0.04em" }}>{en ? "Deaths" : "Smrti"}</span>}
                 {respawn?.enabled && <span style={{ textAlign: "right" }}>RSP</span>}
               </div>
               {players.length === 0 && (
@@ -2933,15 +2936,18 @@ function PlayerScoreboard({ roster, captures, respawn, settings, en = false }: {
                 const leftSec = showTimer ? Math.max(0, Math.ceil((unlockMs - Date.now()) / 1000)) : 0;
                 const tmm = String(Math.floor(leftSec / 60)).padStart(2, "0");
                 const tss = String(leftSec % 60).padStart(2, "0");
+                const infoLen = p.callsign.length + (p.operator_type?.length ?? 0) + real.length;
+                const baseSize = infoLen > 40 ? 9 : infoLen > 32 ? 10 : infoLen > 24 ? 11 : 12;
                 return (
-                  <div key={p.id} className="grid gap-2 items-center px-3 py-2 text-[12px] font-mono" style={{ gridTemplateColumns: `28px minmax(0,1fr) 56px${respawn?.publicDeaths ? " 40px" : ""}${respawn?.enabled ? " 70px" : ""}` }}>
+                  <div key={p.id} className="grid gap-1.5 items-center px-3 py-2 text-[12px] font-mono" style={{ gridTemplateColumns: `24px minmax(0,1fr) 42px${respawn?.publicDeaths ? " 46px" : ""}${respawn?.enabled ? " 62px" : ""}` }}>
                     <span style={{ color: ACCENT, display: "inline-flex", alignItems: "center" }}>
                       <ExperienceBadge level={p.experience_level} size={14} />
                     </span>
-                    <span style={{ color: INK, fontWeight: 700, overflowWrap: "anywhere", minWidth: 0, lineHeight: 1.3 }}>
-                      {p.callsign}{p.operator_type && <span style={{ color: ACCENT, fontSize: 9, marginLeft: 5 }}>· {p.operator_type}</span>}
-                      {real && <span style={{ color: MUTED, fontWeight: 400, fontSize: 10, marginLeft: 4 }}>({real})</span>}
+                    <span style={{ color: INK, fontWeight: 700, minWidth: 0, lineHeight: 1.3, fontSize: baseSize, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                      {p.callsign}{p.operator_type && <span style={{ color: ACCENT, fontSize: baseSize - 2, marginLeft: 5 }}>· {p.operator_type}</span>}
+                      {real && <span style={{ color: MUTED, fontWeight: 400, fontSize: baseSize - 2, marginLeft: 4 }}>({real})</span>}
                     </span>
+
                     <span style={{ color: TEAM_COLOR[t], fontWeight: 700, textAlign: "right" }}>{p.pts}</span>
                     {respawn?.publicDeaths && (
                       <span style={{ color: "#ff7070", textAlign: "right", fontSize: 11, letterSpacing: "0.06em" }}>☠ {p.death_count ?? 0}</span>
@@ -3205,26 +3211,29 @@ function EndgameReport({ state, roster, captures, en, now, myTeam }: { state: Ga
           const teamCol = TEAM_COLOR[team] ?? ACCENT;
           const members = enriched.filter((p) => p.assigned_team === team);
           const teamDeaths = members.reduce((sum, p) => sum + (p.death_count ?? 0), 0);
-          const cols = showDeaths ? "minmax(0,1fr) 56px 70px" : "minmax(0,1fr) 56px";
+          const cols = showDeaths ? "minmax(0,1fr) 44px 48px" : "minmax(0,1fr) 44px";
           return (
             <div key={team} style={{ background: PANEL, border: `1px solid ${teamCol}66` }}>
               <div style={{ padding: "10px 14px", borderBottom: `1px solid ${teamCol}44`, fontFamily: "'Michroma', monospace", fontSize: 12, letterSpacing: "0.16em", color: teamCol, textTransform: "uppercase" }}>
                 ▌ {teamLabelFor(team)} {en ? "SCOREBOARD" : "LESTVICA"}
               </div>
-              <div className="grid gap-2 px-3 py-2 text-[9px] font-mono uppercase tracking-widest" style={{ color: MUTED, gridTemplateColumns: cols }}>
+              <div className="grid gap-1.5 px-3 py-2 text-[9px] font-mono uppercase tracking-widest" style={{ color: MUTED, gridTemplateColumns: cols }}>
                 <span>Callsign</span>
-                <span style={{ textAlign: "right" }}>{en ? "Points" : "Točke"}</span>
-                {showDeaths && <span style={{ textAlign: "right" }}>{en ? "Deaths" : "Smrti"}</span>}
+                <span style={{ textAlign: "right", letterSpacing: "0.04em" }}>{en ? "Points" : "Točke"}</span>
+                {showDeaths && <span style={{ textAlign: "right", letterSpacing: "0.04em" }}>{en ? "Deaths" : "Smrti"}</span>}
               </div>
               {members.length === 0 ? (
                 <p className="text-center py-6 font-mono text-[11px]" style={{ color: MUTED }}>—</p>
               ) : members.map((p) => {
                 const real = fmtName(p);
+                const infoLen = p.callsign.length + (p.operator_type?.length ?? 0) + real.length;
+                const baseSize = infoLen > 40 ? 9 : infoLen > 32 ? 10 : infoLen > 24 ? 11 : 12;
                 return (
-                  <div key={p.id} className="grid gap-2 items-center px-3 py-2 text-[12px] font-mono" style={{ gridTemplateColumns: cols, borderTop: "1px solid rgba(236,227,196,0.06)" }}>
-                    <span style={{ color: INK, fontWeight: 700, overflowWrap: "anywhere", minWidth: 0, lineHeight: 1.3 }}>
-                      {p.callsign}{p.operator_type && <span style={{ color: ACCENT, fontSize: 9, marginLeft: 5 }}>· {p.operator_type}</span>}{real && <span style={{ color: MUTED, fontWeight: 400, fontSize: 10, marginLeft: 6 }}>({real})</span>}
+                  <div key={p.id} className="grid gap-1.5 items-center px-3 py-2 text-[12px] font-mono" style={{ gridTemplateColumns: cols, borderTop: "1px solid rgba(236,227,196,0.06)" }}>
+                    <span style={{ color: INK, fontWeight: 700, minWidth: 0, lineHeight: 1.3, fontSize: baseSize, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                      {p.callsign}{p.operator_type && <span style={{ color: ACCENT, fontSize: baseSize - 2, marginLeft: 5 }}>· {p.operator_type}</span>}{real && <span style={{ color: MUTED, fontWeight: 400, fontSize: baseSize - 2, marginLeft: 6 }}>({real})</span>}
                     </span>
+
                     <span style={{ color: INK, fontWeight: 700, textAlign: "right" }}>{p.pts}</span>
                     {showDeaths && <span style={{ color: "#ff7070", textAlign: "right", fontWeight: 700 }}>☠ {p.death_count ?? 0}</span>}
                   </div>
