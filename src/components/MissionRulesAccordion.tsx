@@ -13,22 +13,38 @@ const ACCENT = "#E0B04E";
 const INK = "#ece3c4";
 const MUTED = "rgba(236,227,196,0.55)";
 
+export function TankIcon({ size = 18 }: { size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <rect x="2" y="13" width="17" height="6" rx="3" />
+      <circle cx="6" cy="16" r="1" />
+      <circle cx="10.5" cy="16" r="1" />
+      <circle cx="15" cy="16" r="1" />
+      <path d="M4 13V9.5h9V13" />
+      <path d="M13 10.5h4.5V8H22" />
+    </svg>
+  );
+}
+
 function Card({
   icon,
   title,
   children,
+  emphasis = false,
 }: {
   icon: React.ReactNode;
   title: string;
   children: React.ReactNode;
+  emphasis?: boolean;
 }) {
   const [open, setOpen] = useState(false);
   return (
     <section
       style={{
-        border: `1px solid ${ACCENT}66`,
-        borderLeft: `5px solid ${ACCENT}`,
-        background: "rgba(0,0,0,0.45)",
+        border: `1px solid ${emphasis ? ACCENT : `${ACCENT}66`}`,
+        borderLeft: `${emphasis ? 6 : 5}px solid ${ACCENT}`,
+        background: emphasis ? "rgba(224,176,78,0.07)" : "rgba(0,0,0,0.45)",
+        boxShadow: emphasis ? `0 0 22px -12px ${ACCENT}` : "none",
         textAlign: "left",
       }}
     >
@@ -44,7 +60,7 @@ function Card({
           background: "transparent",
           border: "none",
           cursor: "pointer",
-          padding: "12px 14px",
+          padding: emphasis ? "15px 16px" : "12px 14px",
           color: ACCENT,
         }}
       >
@@ -54,8 +70,9 @@ function Card({
             flex: 1,
             color: ACCENT,
             fontFamily: "monospace",
-            fontSize: 10,
-            letterSpacing: "0.22em",
+            fontSize: emphasis ? 12 : 10,
+            fontWeight: emphasis ? 700 : 400,
+            letterSpacing: emphasis ? "0.2em" : "0.22em",
             textTransform: "uppercase",
             textAlign: "left",
           }}
@@ -63,12 +80,30 @@ function Card({
           {title}
         </span>
         <ChevronDown
-          size={16}
+          size={emphasis ? 18 : 16}
           style={{ transition: "transform 180ms ease", transform: open ? "rotate(180deg)" : "none" }}
         />
       </button>
-      {open && <div style={{ padding: "0 14px 12px" }}>{children}</div>}
+      {open && <div style={{ padding: emphasis ? "0 16px 14px" : "0 14px 12px" }}>{children}</div>}
     </section>
+  );
+}
+
+export function MissionDescriptionCard({ description, en = false }: { description?: string | null; en?: boolean }) {
+  const text = (description ?? "").trim();
+  if (!text) return null;
+  return (
+    <div style={{ width: "min(640px, 100%)", margin: "14px auto 0" }}>
+      <Card
+        emphasis
+        icon={<TankIcon size={20} />}
+        title={en ? "MISSION DESCRIPTION / INSTRUCTIONS" : "OPIS MISIJE / NAVODILA"}
+      >
+        <p style={{ color: INK, fontFamily: "monospace", fontSize: 12.5, lineHeight: 1.75, margin: 0, whiteSpace: "pre-wrap" }}>
+          {text}
+        </p>
+      </Card>
+    </div>
   );
 }
 
