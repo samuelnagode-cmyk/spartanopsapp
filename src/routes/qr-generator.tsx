@@ -25,7 +25,7 @@ const DOMAIN = "https://www.spartanopsapp.com";
 
 type Row = { label: string; url: string };
 
-function buildRows(fieldId: string): { section: string; rows: Row[] }[] {
+function buildRows(fieldId: string): { section: string; rows: Row[]; beta?: boolean }[] {
   const points = ["alpha", "beta", "gamma", "delta", "epsilon"];
   const encodedFieldId = encodeURIComponent(fieldId.trim());
   return [
@@ -45,6 +45,24 @@ function buildRows(fieldId: string): { section: string; rows: Row[] }[] {
     {
       section: "DIRECT LOBBY JOIN",
       rows: [{ label: "LOBBY ENTRY", url: `${DOMAIN}/join?field_id=${encodedFieldId}` }],
+    },
+    {
+      section: "FUTURE EXPANSION — SEARCH & DESTROY",
+      beta: true,
+      rows: [
+        { label: "SND POINT A", url: `${DOMAIN}/capture?field=${encodedFieldId}&point=A&type=snd` },
+        { label: "SND POINT B", url: `${DOMAIN}/capture?field=${encodedFieldId}&point=B&type=snd` },
+        { label: "SND POINT C", url: `${DOMAIN}/capture?field=${encodedFieldId}&point=C&type=snd` },
+        { label: "SND BOMB", url: `${DOMAIN}/bomb?field=${encodedFieldId}` },
+      ],
+    },
+    {
+      section: "FUTURE EXPANSION — POWER-UPS",
+      beta: true,
+      rows: [
+        { label: "MYSTERY BOX", url: `${DOMAIN}/mystery?field=${encodedFieldId}` },
+        { label: "PERK BOX", url: `${DOMAIN}/perk?field=${encodedFieldId}` },
+      ],
     },
   ];
 }
