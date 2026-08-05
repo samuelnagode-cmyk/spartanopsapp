@@ -54,9 +54,23 @@ export function parseScanPayload(raw: string): ScanPayload | null {
     return { kind: "respawn", fieldId, point: "", type: "respawn", raw: text };
   }
 
+  // Future expansion: Mystery Box and Perk Box (chest) power-ups.
+  if (path.includes("/mystery") || type === "mystery") {
+    return { kind: "mystery", fieldId, point: "", type: "mystery", raw: text };
+  }
+  if (path.includes("/perk") || type === "perk" || type === "chest") {
+    return { kind: "perk", fieldId, point: "", type: type || "perk", raw: text };
+  }
+
+  // Future expansion: Search & Destroy bomb objective.
+  if (path.includes("/bomb") || (type === "snd" && point === "bomb")) {
+    return { kind: "capture", fieldId, point: "bomb", type: "snd", raw: text };
+  }
+
   if (!point) return null;
-  if (type && type !== "domination") return null;
-  if (!POINT_NAMES.has(point) && !/^[1-5]$/.test(point)) return null;
+  // Allow legacy domination points, numeric points, S&D points (A-C), and the bomb marker.
+  if (type && type !== "domination" && type !== "snd") return null;
+  if (!POINT_NAMES.has(point) && !/^[1-5]$/.test(point) && !/^[abc]$/.test(point)) return null;
   return { kind: "capture", fieldId, point, type: type || "domination", raw: text };
 }
 
