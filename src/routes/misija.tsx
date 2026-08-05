@@ -2591,8 +2591,8 @@ function TacticalMap({ state, captures, en, hasPositions, missionName, timeLabel
                 minWidth: 0,
               }}
             >
-              {(missionName || (en ? "ACTIVE MISSION" : "AKTIVNA MISIJA")).toUpperCase()},{" "}
-              {en ? "TIME REMAINING" : "PREOSTALI ČAS"}: {timeLabel ?? "--:--"}
+              <div>{(missionName || (en ? "ACTIVE MISSION" : "AKTIVNA MISIJA")).toUpperCase()}</div>
+              <div>{en ? "TIME REMAINING" : "PREOSTALI ČAS"}: {timeLabel ?? "--:--"}</div>
             </div>
             <button
               type="button"
