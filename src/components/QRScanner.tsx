@@ -8,7 +8,7 @@ const INK = "#ece3c4";
 const POINT_NAMES = new Set(["alpha", "bravo", "beta", "charlie", "gamma", "delta", "echo", "epsilon"]);
 
 export type ScanPayload = {
-  kind: "capture" | "respawn";
+  kind: "capture" | "respawn" | "mystery" | "perk";
   fieldId: string;
   point: string;
   type: string;
