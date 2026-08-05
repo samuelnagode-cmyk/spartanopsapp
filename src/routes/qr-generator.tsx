@@ -25,7 +25,7 @@ const DOMAIN = "https://www.spartanopsapp.com";
 
 type Row = { label: string; url: string };
 
-function buildRows(fieldId: string): { section: string; rows: Row[] }[] {
+function buildRows(fieldId: string): { section: string; rows: Row[]; beta?: boolean }[] {
   const points = ["alpha", "beta", "gamma", "delta", "epsilon"];
   const encodedFieldId = encodeURIComponent(fieldId.trim());
   return [
@@ -45,6 +45,24 @@ function buildRows(fieldId: string): { section: string; rows: Row[] }[] {
     {
       section: "DIRECT LOBBY JOIN",
       rows: [{ label: "LOBBY ENTRY", url: `${DOMAIN}/join?field_id=${encodedFieldId}` }],
+    },
+    {
+      section: "FUTURE EXPANSION — SEARCH & DESTROY",
+      beta: true,
+      rows: [
+        { label: "SND POINT A", url: `${DOMAIN}/capture?field=${encodedFieldId}&point=A&type=snd` },
+        { label: "SND POINT B", url: `${DOMAIN}/capture?field=${encodedFieldId}&point=B&type=snd` },
+        { label: "SND POINT C", url: `${DOMAIN}/capture?field=${encodedFieldId}&point=C&type=snd` },
+        { label: "SND BOMB", url: `${DOMAIN}/bomb?field=${encodedFieldId}` },
+      ],
+    },
+    {
+      section: "FUTURE EXPANSION — POWER-UPS",
+      beta: true,
+      rows: [
+        { label: "MYSTERY BOX", url: `${DOMAIN}/mystery?field=${encodedFieldId}` },
+        { label: "PERK BOX", url: `${DOMAIN}/perk?field=${encodedFieldId}` },
+      ],
     },
   ];
 }
@@ -88,9 +106,26 @@ function QrGeneratorPage() {
         <div className="mt-8 space-y-10">
           {sections.map((s) => (
             <section key={s.section}>
-              <h2 style={{ fontFamily: "'Michroma', monospace", fontSize: 13, letterSpacing: "0.2em", color: ACCENT, borderBottom: `1px solid ${ACCENT}33`, paddingBottom: 8 }}>
-                {s.section}
-              </h2>
+              <div className="flex items-center gap-3" style={{ borderBottom: `1px solid ${ACCENT}33`, paddingBottom: 8 }}>
+                <h2 style={{ fontFamily: "'Michroma', monospace", fontSize: 13, letterSpacing: "0.2em", color: ACCENT, margin: 0 }}>
+                  {s.section}
+                </h2>
+                {s.beta && (
+                  <span
+                    className="font-mono uppercase"
+                    style={{
+                      fontSize: 9,
+                      letterSpacing: "0.14em",
+                      color: "#0b0d09",
+                      background: ACCENT,
+                      padding: "2px 6px",
+                      borderRadius: 2,
+                    }}
+                  >
+                    BETA
+                  </span>
+                )}
+              </div>
               <div className="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                 {s.rows.map((r) => (
                   <QrCard key={r.label} row={r} disabled={!activeId} />
