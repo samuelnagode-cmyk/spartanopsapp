@@ -983,7 +983,7 @@ function MisijaPage() {
 
   // 4) INACTIVE (closed/lobby) — team select + waiting. Pre-match countdown if scheduled.
   const startMs = state.match_started_at ? new Date(state.match_started_at).getTime() : null;
-  const preMatchSec = startMs && currentTime < startMs ? Math.ceil((startMs - currentTime) / 1000) : 0;
+  const preMatchSec = startMs && clockNow < startMs ? Math.ceil((startMs - clockNow) / 1000) : 0;
 
   return (
     <div style={{ background: BG, color: INK, minHeight: "100vh", paddingTop: 112 }}>
