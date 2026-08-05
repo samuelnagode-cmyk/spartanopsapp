@@ -8,7 +8,7 @@ import { spartanopsAckTeamChange, spartanopsSelectTeam } from "@/lib/spartanops-
 import { spartanopsUpsertCheckin, spartanopsGetMyCheckin, spartanopsDeleteMyCheckin, spartanopsGetParticipantRoster, spartanopsGetServerTime, spartanopsGetRespawnLock } from "@/lib/spartanops-checkin.functions";
 import { spartanopsAcknowledgeWarning } from "@/lib/spartanops-spartacus.functions";
 import { SpartacusAlerts } from "@/components/SpartanOpsConsole";
-import { MissionRulesAccordion } from "@/components/MissionRulesAccordion";
+import { MissionRulesAccordion, MissionDescriptionCard } from "@/components/MissionRulesAccordion";
 
 import { OfflineBanner } from "@/components/OfflineBanner";
 import { TacticalCompass } from "@/components/TacticalCompass";
@@ -910,15 +910,21 @@ function MisijaPage() {
   ) : null;
 
 
+  // Freeze every client-side clock while the marshal has the match paused.
+  const pausedAtMsTop = state.status === "paused" && state.updated_at
+    ? new Date(state.updated_at).getTime()
+    : null;
+  const clockNow = pausedAtMsTop ?? currentTime;
+
   // Force endgame view when timer expires client-side, even if the DB status
   // hasn't flipped to "ended" yet — guarantees the After-Action Report renders.
   const startMsForEnd = state.match_started_at ? new Date(state.match_started_at).getTime() : null;
   const matchEndsAtMs = startMsForEnd ? startMsForEnd + state.match_duration_minutes * 60_000 : null;
-  const timerExpired = !!(matchEndsAtMs && currentTime >= matchEndsAtMs);
+  const timerExpired = !!(matchEndsAtMs && clockNow >= matchEndsAtMs);
 
   // 1a) PRE-MATCH WINDOW — marshal has scheduled a start in the future.
   // Only players who have already selected a team enter the HUD/countdown.
-  const preMatchSecEarly = startMsForEnd && currentTime < startMsForEnd ? Math.ceil((startMsForEnd - currentTime) / 1000) : 0;
+  const preMatchSecEarly = startMsForEnd && clockNow < startMsForEnd ? Math.ceil((startMsForEnd - clockNow) / 1000) : 0;
   if (preMatchSecEarly > 0) {
     return (
       <div style={{ background: BG, color: INK, minHeight: "100vh" }}>
@@ -977,7 +983,7 @@ function MisijaPage() {
 
   // 4) INACTIVE (closed/lobby) — team select + waiting. Pre-match countdown if scheduled.
   const startMs = state.match_started_at ? new Date(state.match_started_at).getTime() : null;
-  const preMatchSec = startMs && currentTime < startMs ? Math.ceil((startMs - currentTime) / 1000) : 0;
+  const preMatchSec = startMs && clockNow < startMs ? Math.ceil((startMs - clockNow) / 1000) : 0;
 
   return (
     <div style={{ background: BG, color: INK, minHeight: "100vh", paddingTop: 112 }}>
@@ -2585,8 +2591,8 @@ function TacticalMap({ state, captures, en, hasPositions, missionName, timeLabel
                 minWidth: 0,
               }}
             >
-              {(missionName || (en ? "ACTIVE MISSION" : "AKTIVNA MISIJA")).toUpperCase()},{" "}
-              {en ? "TIME REMAINING" : "PREOSTALI ČAS"}: {timeLabel ?? "--:--"}
+              <div>{(missionName || (en ? "ACTIVE MISSION" : "AKTIVNA MISIJA")).toUpperCase()}</div>
+              <div>{en ? "TIME REMAINING" : "PREOSTALI ČAS"}: {timeLabel ?? "--:--"}</div>
             </div>
             <button
               type="button"
@@ -2872,17 +2878,8 @@ function LiveMatch({ state, captures, now, roster, myTeam }: { state: GameState;
       {/* Separator between scoreboard and the rest of the HUD */}
       <div style={{ height: 1, background: `linear-gradient(90deg, transparent, ${ACCENT}66, transparent)`, margin: "24px 0" }} />
 
-      {/* Mission description / instructions — rendered under the scoreboard */}
-      {((state.settings as any)?.missionDescription as string | undefined)?.trim() && (
-        <div style={{ marginTop: 4, background: PANEL, border: `1px solid ${ACCENT}55`, padding: "12px 14px" }}>
-          <div style={{ fontFamily: "monospace", fontSize: 10, letterSpacing: "0.2em", color: ACCENT, textTransform: "uppercase", marginBottom: 6 }}>
-            ▌ {en ? "MISSION DESCRIPTION / INSTRUCTIONS" : "OPIS MISIJE / NAVODILA"}
-          </div>
-          <p style={{ fontFamily: "monospace", fontSize: 12, color: INK, lineHeight: 1.65, whiteSpace: "pre-wrap", margin: 0 }}>
-            {(state.settings as any).missionDescription}
-          </p>
-        </div>
-      )}
+      {/* Mission description / instructions — collapsible, emphasized card */}
+      <MissionDescriptionCard description={(state.settings as any)?.missionDescription} en={en} />
 
       <div style={{ marginTop: 12 }}>
         <MissionRulesAccordion respawn={state.settings?.respawn} weaponRules={(state.settings as any)?.weaponRules} en={en} />

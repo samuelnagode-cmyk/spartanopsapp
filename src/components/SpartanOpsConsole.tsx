@@ -823,8 +823,12 @@ const RosterBoard = memo(function RosterBoard({ roster, settings, onReassign, on
 function PreMatchAdminCountdown({ state, now, en }: { state: GameState; now: number; en: boolean }) {
   if (!state.match_started_at) return null;
   const startMs = new Date(state.match_started_at).getTime();
-  if (now >= startMs) return null;
-  const secs = Math.ceil((startMs - now) / 1000);
+  // Freeze the pre-start countdown while the marshal has the match paused.
+  const effectiveNow = state.status === "paused" && state.updated_at
+    ? new Date(state.updated_at).getTime()
+    : now;
+  if (effectiveNow >= startMs) return null;
+  const secs = Math.ceil((startMs - effectiveNow) / 1000);
   const mm = String(Math.floor(secs / 60)).padStart(2, "0");
   const ss = String(secs % 60).padStart(2, "0");
   return (
