@@ -8,7 +8,7 @@ import { spartanopsAckTeamChange, spartanopsSelectTeam } from "@/lib/spartanops-
 import { spartanopsUpsertCheckin, spartanopsGetMyCheckin, spartanopsDeleteMyCheckin, spartanopsGetParticipantRoster, spartanopsGetServerTime, spartanopsGetRespawnLock } from "@/lib/spartanops-checkin.functions";
 import { spartanopsAcknowledgeWarning } from "@/lib/spartanops-spartacus.functions";
 import { SpartacusAlerts } from "@/components/SpartanOpsConsole";
-import { MissionRulesAccordion } from "@/components/MissionRulesAccordion";
+import { MissionRulesAccordion, MissionDescriptionCard } from "@/components/MissionRulesAccordion";
 
 import { OfflineBanner } from "@/components/OfflineBanner";
 import { TacticalCompass } from "@/components/TacticalCompass";
