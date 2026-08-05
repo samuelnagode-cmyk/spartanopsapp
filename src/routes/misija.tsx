@@ -2878,17 +2878,8 @@ function LiveMatch({ state, captures, now, roster, myTeam }: { state: GameState;
       {/* Separator between scoreboard and the rest of the HUD */}
       <div style={{ height: 1, background: `linear-gradient(90deg, transparent, ${ACCENT}66, transparent)`, margin: "24px 0" }} />
 
-      {/* Mission description / instructions — rendered under the scoreboard */}
-      {((state.settings as any)?.missionDescription as string | undefined)?.trim() && (
-        <div style={{ marginTop: 4, background: PANEL, border: `1px solid ${ACCENT}55`, padding: "12px 14px" }}>
-          <div style={{ fontFamily: "monospace", fontSize: 10, letterSpacing: "0.2em", color: ACCENT, textTransform: "uppercase", marginBottom: 6 }}>
-            ▌ {en ? "MISSION DESCRIPTION / INSTRUCTIONS" : "OPIS MISIJE / NAVODILA"}
-          </div>
-          <p style={{ fontFamily: "monospace", fontSize: 12, color: INK, lineHeight: 1.65, whiteSpace: "pre-wrap", margin: 0 }}>
-            {(state.settings as any).missionDescription}
-          </p>
-        </div>
-      )}
+      {/* Mission description / instructions — collapsible, emphasized card */}
+      <MissionDescriptionCard description={(state.settings as any)?.missionDescription} en={en} />
 
       <div style={{ marginTop: 12 }}>
         <MissionRulesAccordion respawn={state.settings?.respawn} weaponRules={(state.settings as any)?.weaponRules} en={en} />
