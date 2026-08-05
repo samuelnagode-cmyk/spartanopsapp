@@ -106,9 +106,26 @@ function QrGeneratorPage() {
         <div className="mt-8 space-y-10">
           {sections.map((s) => (
             <section key={s.section}>
-              <h2 style={{ fontFamily: "'Michroma', monospace", fontSize: 13, letterSpacing: "0.2em", color: ACCENT, borderBottom: `1px solid ${ACCENT}33`, paddingBottom: 8 }}>
-                {s.section}
-              </h2>
+              <div className="flex items-center gap-3" style={{ borderBottom: `1px solid ${ACCENT}33`, paddingBottom: 8 }}>
+                <h2 style={{ fontFamily: "'Michroma', monospace", fontSize: 13, letterSpacing: "0.2em", color: ACCENT, margin: 0 }}>
+                  {s.section}
+                </h2>
+                {s.beta && (
+                  <span
+                    className="font-mono uppercase"
+                    style={{
+                      fontSize: 9,
+                      letterSpacing: "0.14em",
+                      color: "#0b0d09",
+                      background: ACCENT,
+                      padding: "2px 6px",
+                      borderRadius: 2,
+                    }}
+                  >
+                    BETA
+                  </span>
+                )}
+              </div>
               <div className="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                 {s.rows.map((r) => (
                   <QrCard key={r.label} row={r} disabled={!activeId} />
