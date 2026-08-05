@@ -910,15 +910,21 @@ function MisijaPage() {
   ) : null;
 
 
+  // Freeze every client-side clock while the marshal has the match paused.
+  const pausedAtMsTop = state.status === "paused" && state.updated_at
+    ? new Date(state.updated_at).getTime()
+    : null;
+  const clockNow = pausedAtMsTop ?? currentTime;
+
   // Force endgame view when timer expires client-side, even if the DB status
   // hasn't flipped to "ended" yet — guarantees the After-Action Report renders.
   const startMsForEnd = state.match_started_at ? new Date(state.match_started_at).getTime() : null;
   const matchEndsAtMs = startMsForEnd ? startMsForEnd + state.match_duration_minutes * 60_000 : null;
-  const timerExpired = !!(matchEndsAtMs && currentTime >= matchEndsAtMs);
+  const timerExpired = !!(matchEndsAtMs && clockNow >= matchEndsAtMs);
 
   // 1a) PRE-MATCH WINDOW — marshal has scheduled a start in the future.
   // Only players who have already selected a team enter the HUD/countdown.
-  const preMatchSecEarly = startMsForEnd && currentTime < startMsForEnd ? Math.ceil((startMsForEnd - currentTime) / 1000) : 0;
+  const preMatchSecEarly = startMsForEnd && clockNow < startMsForEnd ? Math.ceil((startMsForEnd - clockNow) / 1000) : 0;
   if (preMatchSecEarly > 0) {
     return (
       <div style={{ background: BG, color: INK, minHeight: "100vh" }}>
