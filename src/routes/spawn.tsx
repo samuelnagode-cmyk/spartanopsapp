@@ -1,7 +1,7 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
-import { AlertTriangle, ShieldCheck } from "lucide-react";
+import { AlertTriangle, Skull } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { spartanopsGetMyCheckin, spartanopsResolveSessionField, spartanopsSetRespawnLock } from "@/lib/spartanops-checkin.functions";
 import { useLang } from "@/lib/i18n";
@@ -152,6 +152,7 @@ function SpawnPage() {
   const [team, setTeam] = useState<string | null>(null);
   const [errMsg, setErrMsg] = useState("");
   const [respawnLeft, setRespawnLeft] = useState<number | null>(null);
+  const [respawnTotal, setRespawnTotal] = useState<number>(0);
   const [respawnEnabled, setRespawnEnabled] = useState(false);
   const [returnField, setReturnField] = useState(resolvedField);
 
@@ -271,6 +272,7 @@ function SpawnPage() {
         }
         const waitSeconds = respawnSeconds((gs as unknown as SpawnGameState | null) ?? null);
         setRespawnEnabled(waitSeconds > 0);
+        setRespawnTotal(waitSeconds);
         setRespawnLeft(waitSeconds);
         try {
           const lock = await setRespawnLockFn({ data: { fieldId: effectiveField, sessionId: session, seconds: waitSeconds } });
@@ -348,7 +350,7 @@ function SpawnPage() {
           </>
         ) : (
           <>
-            <ShieldCheck size={56} style={{ color: c }} className="mx-auto mb-3" />
+            <Skull size={56} style={{ color: c }} className="mx-auto mb-3" />
             <p className="font-mono uppercase text-[11px] tracking-[0.22em]" style={{ color: c }}>▌ {en ? "RESPAWN AUTHORIZED" : "RESPAWN POTRJEN"}</p>
             <h2 style={{ fontFamily: "'Michroma', monospace", fontSize: 18, color: INK, fontWeight: 700, marginTop: 10 }}>
               {label} {en ? "TEAM SPAWN" : "EKIPA SPAWN"}
@@ -360,6 +362,20 @@ function SpawnPage() {
                 </p>
                 <div className="mt-5" style={{ fontFamily: "'Michroma', monospace", fontSize: 46, color: c, textShadow: `0 0 24px ${c}88` }}>
                   {mm}:{ss}
+                </div>
+                {/* Respawn progress bar — fills up as the lock expires */}
+                <div style={{ marginTop: 14, height: 4, background: `${c}22`, borderRadius: 2, overflow: "hidden" }}>
+                  <div
+                    style={{
+                      height: "100%",
+                      width: "100%",
+                      background: c,
+                      boxShadow: `0 0 8px ${c}`,
+                      transformOrigin: "left center",
+                      transform: `scaleX(${respawnTotal > 0 ? Math.min(1, Math.max(0, 1 - (respawnLeft ?? 0) / respawnTotal)) : 0})`,
+                      transition: "transform 1000ms linear",
+                    }}
+                  />
                 </div>
               </>
             ) : (
