@@ -26,7 +26,7 @@ export function TankIcon({ size = 18 }: { size?: number }) {
   );
 }
 
-function Card({
+export function CollapsibleCard({
   icon,
   title,
   children,
@@ -89,6 +89,8 @@ function Card({
   );
 }
 
+const Card = CollapsibleCard;
+
 export function MissionDescriptionCard({ description, en = false }: { description?: string | null; en?: boolean }) {
   const text = (description ?? "").trim();
   if (!text) return null;
@@ -137,8 +139,6 @@ export function MissionRulesAccordion({
 }) {
   const showRespawn = !!respawn?.enabled;
   const showWeapons = hasWeaponRules(weaponRules);
-  if (!showRespawn && !showWeapons) return null;
-
   const [intro, ...rest] = showRespawn ? buildRespawnProtocolLines(respawn!, en) : [];
   const modes = weaponRules?.fireModes;
   const modeList = [
@@ -146,6 +146,8 @@ export function MissionRulesAccordion({
     modes?.burst ? (en ? "Burst" : "Rafal") : null,
     modes?.auto ? (en ? "Auto" : "Avtomatsko") : null,
   ].filter(Boolean) as string[];
+
+  if (!showRespawn && !showWeapons && modeList.length === 0) return null;
 
   return (
     <div style={{ width: "min(640px, 100%)", margin: "14px auto 0", display: "grid", gap: 10 }}>
@@ -179,12 +181,6 @@ export function MissionRulesAccordion({
                 </Bullet>
               );
             })}
-            {modeList.length > 0 && (
-              <Bullet>
-                {en ? "Mode of fire: " : "Način streljanja: "}
-                <span style={{ color: INK }}>{modeList.join(" / ")}</span>
-              </Bullet>
-            )}
           </ul>
           {(weaponRules?.additionalRules ?? "").trim() && (
             <p
@@ -201,6 +197,35 @@ export function MissionRulesAccordion({
             </p>
           )}
         </Card>
+      )}
+
+      {modeList.length > 0 && (
+        <section
+          style={{
+            border: `1px solid ${ACCENT}66`,
+            borderLeft: `5px solid ${ACCENT}`,
+            background: "rgba(0,0,0,0.45)",
+            padding: "12px 14px",
+            textAlign: "left",
+            display: "flex",
+            alignItems: "center",
+            gap: 10,
+          }}
+        >
+          <Crosshair size={16} color={ACCENT} />
+          <span
+            style={{
+              fontFamily: "monospace",
+              fontSize: 10,
+              letterSpacing: "0.22em",
+              textTransform: "uppercase",
+              color: ACCENT,
+            }}
+          >
+            {en ? "Shooting mode: " : "Način streljanja: "}
+            <span style={{ color: "#F2CE7B", fontWeight: 700 }}>{modeList.join(" / ")}</span>
+          </span>
+        </section>
       )}
     </div>
   );
