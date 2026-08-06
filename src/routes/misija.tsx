@@ -8,11 +8,11 @@ import { spartanopsAckTeamChange, spartanopsSelectTeam } from "@/lib/spartanops-
 import { spartanopsUpsertCheckin, spartanopsGetMyCheckin, spartanopsDeleteMyCheckin, spartanopsGetParticipantRoster, spartanopsGetServerTime, spartanopsGetRespawnLock } from "@/lib/spartanops-checkin.functions";
 import { spartanopsAcknowledgeWarning } from "@/lib/spartanops-spartacus.functions";
 import { SpartacusAlerts } from "@/components/SpartanOpsConsole";
-import { MissionRulesAccordion, MissionDescriptionCard } from "@/components/MissionRulesAccordion";
+import { MissionRulesAccordion, MissionDescriptionCard, CollapsibleCard } from "@/components/MissionRulesAccordion";
 
 import { OfflineBanner } from "@/components/OfflineBanner";
 import { TacticalCompass } from "@/components/TacticalCompass";
-import { Crosshair, Shield } from "lucide-react";
+import { Crosshair, Shield, Phone } from "lucide-react";
 import { useLang, useT } from "@/lib/i18n";
 import { HudNotificationStack, useHudNotices, fillTemplate } from "@/components/HudNotificationStack";
 import { HudHistoryLog } from "@/components/HudHistoryLog";
@@ -958,7 +958,7 @@ function MisijaPage() {
         {reassignedBanner}
         {warningOverlay}
         {pauseOverlay}
-        <LiveMatch state={state} captures={captures} now={currentTime} roster={roster} myTeam={me.assigned_team} />
+        <LiveMatch state={state} captures={captures} now={currentTime} roster={roster} myTeam={me.assigned_team} meId={me.id} meCallsign={me.callsign ?? ""} />
         <AbortMissionButton field={field} en={en} settings={state.settings} />
         {preview && <PreviewReturnButton />}
       </div>
@@ -1111,27 +1111,19 @@ function MarshalContactBlock({ settings, en }: { settings?: GameSettings | null;
   const phone = (settings?.marshalPhone ?? "").trim();
   if (!name || !phone) return null;
   return (
-    <div
-      style={{
-        width: "100%",
-        maxWidth: 520,
-        margin: "18px auto 12px",
-        padding: "12px 14px",
-        border: "1px dashed rgba(224,176,78,0.45)",
-        background: "rgba(224,176,78,0.05)",
-        fontFamily: "monospace",
-        fontSize: 11,
-        lineHeight: 1.7,
-        letterSpacing: "0.04em",
-        color: "rgba(224,176,78,0.9)",
-        textAlign: "center",
-      }}
-    >
-      {en ? (
-        <>This game is marshaled by <strong style={{ color: "#E0B04E" }}>{name}</strong>, you can reach him at: <a href={`tel:${phone.replace(/\s+/g, "")}`} style={{ color: "#E0B04E", textDecoration: "underline" }}>{phone}</a></>
-      ) : (
-        <>To igro vodi marshal <strong style={{ color: "#E0B04E" }}>{name}</strong>, dosegljiv je na telefonski številki: <a href={`tel:${phone.replace(/\s+/g, "")}`} style={{ color: "#E0B04E", textDecoration: "underline" }}>{phone}</a></>
-      )}
+    <div style={{ width: "min(640px, 100%)", margin: "18px auto 12px" }}>
+      <CollapsibleCard
+        icon={<Phone size={16} />}
+        title={en ? "MARSHAL - CONTACT" : "MARŠAL - KONTAKT"}
+      >
+        <p style={{ color: INK, fontFamily: "monospace", fontSize: 12, lineHeight: 1.7, margin: 0 }}>
+          {en ? (
+            <>This game is marshaled by <strong style={{ color: ACCENT }}>{name}</strong>, you can reach him at: <a href={`tel:${phone.replace(/\s+/g, "")}`} style={{ color: ACCENT, textDecoration: "underline" }}>{phone}</a></>
+          ) : (
+            <>To igro vodi marshal <strong style={{ color: ACCENT }}>{name}</strong>, dosegljiv je na telefonski številki: <a href={`tel:${phone.replace(/\s+/g, "")}`} style={{ color: ACCENT, textDecoration: "underline" }}>{phone}</a></>
+          )}
+        </p>
+      </CollapsibleCard>
     </div>
   );
 }
@@ -2726,7 +2718,7 @@ function ScanCodeButton({ fieldId, paused, en }: { fieldId: string; paused: bool
   );
 }
 
-function LiveMatch({ state, captures, now, roster, myTeam }: { state: GameState; captures: Capture[]; now: number; roster: Checkin[]; myTeam: string }) {
+function LiveMatch({ state, captures, now, roster, myTeam, meId, meCallsign }: { state: GameState; captures: Capture[]; now: number; roster: Checkin[]; myTeam: string; meId?: string; meCallsign?: string }) {
 
   const deathLog = useDeathLog(state.field_id ?? "");
   const { lang } = useLang();
@@ -2767,7 +2759,7 @@ function LiveMatch({ state, captures, now, roster, myTeam }: { state: GameState;
 
   return (
     <div className="max-w-5xl mx-auto px-4 py-6" style={{ paddingTop: 84 }}>
-      <HudNoticeFeed captures={visibleCaptures} roster={roster} myTeam={myTeam} teamLabelFor={teamLabelFor} respawnEnabled={!!state.settings?.respawn?.enabled} fieldId={state.field_id ?? ""} />
+      <HudNoticeFeed captures={visibleCaptures} roster={roster} myTeam={myTeam} meId={meId} meCallsign={meCallsign} teamLabelFor={teamLabelFor} respawnEnabled={!!state.settings?.respawn?.enabled} fieldId={state.field_id ?? ""} />
       {preMatchSec > 0 && <PreMatchCountdown seconds={preMatchSec} polygon={fieldTitleFromState(state, "")} eventName={missionTitleFromState(state, "")} gamemode={state.gamemode} pointTarget={state.point_target} settings={state.settings} en={en} state={state} roster={roster} />}
 
       <PlayerHudHeader en={en} />
@@ -2835,7 +2827,7 @@ function LiveMatch({ state, captures, now, roster, myTeam }: { state: GameState;
 
       <p
         className="text-center font-mono mb-5"
-        style={{ color: MUTED, fontSize: 9.5, lineHeight: 1.4, letterSpacing: "0.04em", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}
+        style={{ color: MUTED, fontSize: "clamp(12px, 3.4vw, 15px)", lineHeight: 1.45, letterSpacing: "0.02em", maxWidth: 560, marginLeft: "auto", marginRight: "auto" }}
       >
         {en
           ? "Scan the QR codes at flagged locations to score points for your team."
@@ -3289,6 +3281,8 @@ function HudNoticeFeed({
   captures,
   roster,
   myTeam,
+  meId,
+  meCallsign,
   teamLabelFor,
   respawnEnabled,
   fieldId,
@@ -3296,6 +3290,8 @@ function HudNoticeFeed({
   captures: Capture[];
   roster: Checkin[];
   myTeam: string;
+  meId?: string;
+  meCallsign?: string;
   teamLabelFor: (t: string) => string;
   respawnEnabled: boolean;
   fieldId: string;
@@ -3319,7 +3315,8 @@ function HudNoticeFeed({
     fresh.forEach((c) => seenRef.current.add(c.id));
     fresh.slice(-3).forEach((c) => {
       const color = TEAM_COLOR[c.team] ?? ACCENT;
-      push({
+      const mine = !!meCallsign && String(c.player_callsign ?? "").trim().toLowerCase() === meCallsign.trim().toLowerCase();
+      if (!mine) push({
         id: `cap-${c.id}`,
         kind: "capture",
         title: t("hudNotif.captureTitle"),
@@ -3334,7 +3331,7 @@ function HudNoticeFeed({
       const evt = c.team === myTeam ? "spartanops:sfx-team-capture" : "spartanops:sfx-enemy-capture";
       try { window.dispatchEvent(new Event(evt)); } catch { /* ignore */ }
     });
-  }, [captures, myTeam, push, t, teamLabelFor]);
+  }, [captures, myTeam, meCallsign, push, t, teamLabelFor]);
 
   // Player deaths (respawn lock started) -> notice + respawn SFX.
   useEffect(() => {
@@ -3367,7 +3364,7 @@ function HudNoticeFeed({
     }
     fresh.slice(-3).forEach((p) => {
       const color = TEAM_COLOR[p.assigned_team] ?? ACCENT;
-      push({
+      if (p.id !== meId) push({
         id: `rsp-${p.id}-${p.respawn_unlock_at}`,
         kind: "respawn",
         title: t("hudNotif.respawnTitle"),
@@ -3380,7 +3377,7 @@ function HudNoticeFeed({
       });
       try { window.dispatchEvent(new Event("spartanops:sfx-respawn")); } catch { /* ignore */ }
     });
-  }, [roster, respawnEnabled, push, t, teamLabelFor, fieldId]);
+  }, [roster, respawnEnabled, meId, push, t, teamLabelFor, fieldId]);
 
   return <HudNotificationStack notices={notices} onDismiss={dismiss} />;
 }
