@@ -933,7 +933,7 @@ function MisijaPage() {
         {warningOverlay}
         {pauseOverlay}
         <PreMatchCountdown seconds={preMatchSecEarly} polygon={state.current_polygon_name} eventName={missionTitleFromState(state, "")} gamemode={state.gamemode} pointTarget={state.point_target} settings={state.settings} en={en} state={state} roster={roster} />
-        <div className="flex flex-col items-center px-4 pb-8"><MarshalContactBlock settings={state.settings} en={en} /></div>
+        
         {preview && <PreviewReturnButton />}
       </div>
     );
@@ -986,12 +986,13 @@ function MisijaPage() {
   const preMatchSec = startMs && clockNow < startMs ? Math.ceil((startMs - clockNow) / 1000) : 0;
 
   return (
-    <div style={{ background: BG, color: INK, minHeight: "100vh", paddingTop: 112 }}>
+    <div style={{ background: BG, color: INK, minHeight: "100vh", paddingTop: 84 }}>
       <OfflineBanner />
       {reassignedBanner}
         {warningOverlay}
       {preMatchSec > 0 && <PreMatchCountdown seconds={preMatchSec} polygon={fieldTitleFromState(state, field)} eventName={missionTitleFromState(state, field)} gamemode={state.gamemode} pointTarget={state.point_target} settings={state.settings} en={en} state={state} roster={roster} /> }
-      <div className="max-w-5xl mx-auto px-4 py-8">
+      <div className="max-w-5xl mx-auto px-4 pt-1 pb-8">
+
         <PlayerHudHeader en={en} />
         <h1
           className="text-center font-display tracking-widest mb-2"
@@ -1111,7 +1112,8 @@ function MarshalContactBlock({ settings, en }: { settings?: GameSettings | null;
   const phone = (settings?.marshalPhone ?? "").trim();
   if (!name || !phone) return null;
   return (
-    <div style={{ width: "min(640px, 100%)", margin: "18px auto 12px" }}>
+    <div style={{ width: "min(640px, 100%)", margin: "10px auto 0" }}>
+
       <CollapsibleCard
         icon={<Phone size={16} />}
         title={en ? "MARSHAL - CONTACT" : "MARŠAL - KONTAKT"}
@@ -1154,9 +1156,11 @@ function AbortMissionButton({ field, en, settings }: { field: string; en: boolea
     if (typeof window !== "undefined") window.location.href = `/join`;
   };
   return (
-    <div className="mt-4 mb-2 flex flex-col items-center px-4">
+    <div className="mt-0 mb-2 flex flex-col items-center px-4">
       <MarshalContactBlock settings={settings} en={en} />
+      <div style={{ height: 72 }} aria-hidden="true" />
       <button
+
         onClick={onClick}
         className="transition-colors"
         style={{
@@ -2117,13 +2121,18 @@ function PreMatchCountdown({ seconds, polygon, eventName, gamemode, pointTarget,
           textTransform: "uppercase",
         }}
       >
-        MISSION:<br />{missionName}
+        <span style={{ display: "block", fontSize: "clamp(11px, 2.4vw, 18px)", letterSpacing: "0.34em", color: `${ACCENT}bb`, textShadow: "none", marginBottom: 6 }}>MISSION:</span>
+        {missionName}
       </h2>
       {fieldName && (
-        <p className="font-mono uppercase mt-2" style={{ color: MUTED, fontSize: 10, letterSpacing: "0.22em" }}>
+        <p
+          className="uppercase mt-3"
+          style={{ color: INK, fontFamily: "'Michroma', monospace", fontSize: 13, letterSpacing: "0.14em", opacity: 0.85 }}
+        >
           {fieldName}
         </p>
       )}
+
       <p className="font-mono text-[10px] uppercase tracking-[0.2em] mt-5" style={{ color: MUTED }}>
         {en ? "Mission begins in:" : "Misija se bo začela čez:"}
       </p>
@@ -2258,6 +2267,8 @@ function PreMatchCountdown({ seconds, polygon, eventName, gamemode, pointTarget,
       </div>
       
       <MissionRulesAccordion respawn={settings?.respawn} weaponRules={(settings as any)?.weaponRules} en={en} />
+      <MarshalContactBlock settings={settings} en={en} />
+
     </div>
   );
 }
