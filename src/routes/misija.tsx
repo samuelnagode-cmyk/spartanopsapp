@@ -2121,13 +2121,18 @@ function PreMatchCountdown({ seconds, polygon, eventName, gamemode, pointTarget,
           textTransform: "uppercase",
         }}
       >
-        MISSION:<br />{missionName}
+        <span style={{ display: "block", fontSize: "clamp(11px, 2.4vw, 18px)", letterSpacing: "0.34em", color: `${ACCENT}bb`, textShadow: "none", marginBottom: 6 }}>MISSION:</span>
+        {missionName}
       </h2>
       {fieldName && (
-        <p className="font-mono uppercase mt-2" style={{ color: MUTED, fontSize: 10, letterSpacing: "0.22em" }}>
+        <p
+          className="uppercase mt-3"
+          style={{ color: INK, fontFamily: "'Michroma', monospace", fontSize: 13, letterSpacing: "0.14em", opacity: 0.85 }}
+        >
           {fieldName}
         </p>
       )}
+
       <p className="font-mono text-[10px] uppercase tracking-[0.2em] mt-5" style={{ color: MUTED }}>
         {en ? "Mission begins in:" : "Misija se bo začela čez:"}
       </p>
