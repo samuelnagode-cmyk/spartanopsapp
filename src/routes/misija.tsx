@@ -986,12 +986,13 @@ function MisijaPage() {
   const preMatchSec = startMs && clockNow < startMs ? Math.ceil((startMs - clockNow) / 1000) : 0;
 
   return (
-    <div style={{ background: BG, color: INK, minHeight: "100vh", paddingTop: 112 }}>
+    <div style={{ background: BG, color: INK, minHeight: "100vh", paddingTop: 84 }}>
       <OfflineBanner />
       {reassignedBanner}
         {warningOverlay}
       {preMatchSec > 0 && <PreMatchCountdown seconds={preMatchSec} polygon={fieldTitleFromState(state, field)} eventName={missionTitleFromState(state, field)} gamemode={state.gamemode} pointTarget={state.point_target} settings={state.settings} en={en} state={state} roster={roster} /> }
-      <div className="max-w-5xl mx-auto px-4 py-8">
+      <div className="max-w-5xl mx-auto px-4 pt-1 pb-8">
+
         <PlayerHudHeader en={en} />
         <h1
           className="text-center font-display tracking-widest mb-2"
