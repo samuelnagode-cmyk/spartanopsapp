@@ -175,10 +175,14 @@ export function MissionRulesAccordion({
               return (
                 <Bullet key={c.key}>
                   {en ? `Max replica power ${c.label}: ` : `Maks. moč replike ${c.label}: `}
-                  <span style={{ color: INK }}>{j ? `${j} J` : "—"}</span>
-                  {en ? ", max fire range: " : ", maks. domet: "}
-                  <span style={{ color: INK }}>{r ? `${r} m` : "—"}</span>
+                  <span style={{ color: INK, whiteSpace: "nowrap" }}>{j ? `${j} J` : "—"}</span>
+                  {", "}
+                  <span style={{ whiteSpace: "nowrap" }}>
+                    {en ? "max fire range: " : "maks. domet: "}
+                    <span style={{ color: INK }}>{r ? (en ? `${r} meters` : `${r} metrov`) : "—"}</span>
+                  </span>
                 </Bullet>
+
               );
             })}
           </ul>
