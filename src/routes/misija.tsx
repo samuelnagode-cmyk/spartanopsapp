@@ -1156,9 +1156,11 @@ function AbortMissionButton({ field, en, settings }: { field: string; en: boolea
     if (typeof window !== "undefined") window.location.href = `/join`;
   };
   return (
-    <div className="mt-4 mb-2 flex flex-col items-center px-4">
+    <div className="mt-0 mb-2 flex flex-col items-center px-4">
       <MarshalContactBlock settings={settings} en={en} />
+      <div style={{ height: 72 }} aria-hidden="true" />
       <button
+
         onClick={onClick}
         className="transition-colors"
         style={{
