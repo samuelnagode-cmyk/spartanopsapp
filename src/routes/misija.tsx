@@ -1112,7 +1112,8 @@ function MarshalContactBlock({ settings, en }: { settings?: GameSettings | null;
   const phone = (settings?.marshalPhone ?? "").trim();
   if (!name || !phone) return null;
   return (
-    <div style={{ width: "min(640px, 100%)", margin: "18px auto 12px" }}>
+    <div style={{ width: "min(640px, 100%)", margin: "10px auto 0" }}>
+
       <CollapsibleCard
         icon={<Phone size={16} />}
         title={en ? "MARSHAL - CONTACT" : "MARŠAL - KONTAKT"}
