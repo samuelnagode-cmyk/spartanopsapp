@@ -187,19 +187,34 @@ export function MissionRulesAccordion({
             })}
           </ul>
           {(weaponRules?.additionalRules ?? "").trim() && (
-            <p
-              style={{
-                color: INK,
-                fontFamily: "monospace",
-                fontSize: 11.5,
-                lineHeight: 1.7,
-                marginTop: 10,
-                whiteSpace: "pre-wrap",
-              }}
-            >
-              {weaponRules!.additionalRules}
-            </p>
+            <div style={{ marginTop: 12, borderTop: `1px solid ${ACCENT}44`, paddingTop: 10 }}>
+              <div
+                style={{
+                  fontFamily: "monospace",
+                  fontSize: 10,
+                  letterSpacing: "0.22em",
+                  textTransform: "uppercase",
+                  color: ACCENT,
+                  marginBottom: 6,
+                }}
+              >
+                {en ? "Additional rules" : "Dodatna pravila"}
+              </div>
+              <p
+                style={{
+                  color: INK,
+                  fontFamily: "monospace",
+                  fontSize: 11.5,
+                  lineHeight: 1.7,
+                  margin: 0,
+                  whiteSpace: "pre-wrap",
+                }}
+              >
+                {weaponRules!.additionalRules}
+              </p>
+            </div>
           )}
+
         </Card>
       )}
 
