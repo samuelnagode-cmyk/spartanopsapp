@@ -933,7 +933,7 @@ function MisijaPage() {
         {warningOverlay}
         {pauseOverlay}
         <PreMatchCountdown seconds={preMatchSecEarly} polygon={state.current_polygon_name} eventName={missionTitleFromState(state, "")} gamemode={state.gamemode} pointTarget={state.point_target} settings={state.settings} en={en} state={state} roster={roster} />
-        <div className="flex flex-col items-center px-4 pb-8"><MarshalContactBlock settings={state.settings} en={en} /></div>
+        
         {preview && <PreviewReturnButton />}
       </div>
     );
