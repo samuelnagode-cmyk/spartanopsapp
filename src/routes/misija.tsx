@@ -599,6 +599,7 @@ function MisijaPage() {
             const incomingPositions = incoming.node_positions ?? {};
             const hasIncomingPositions = Object.keys(incomingPositions).length > 0;
             setState((prev) => {
+              if (isStaleState(prev, incoming)) return prev;
               // Marshal reset: the match returns to the lobby with no start
               // time. Wipe the locally persisted death log so the next match
               // never inherits the previous one's events.
@@ -626,12 +627,28 @@ function MisijaPage() {
       });
 
     load().catch(() => {});
+
+    // Realtime safety net: on mobile browsers the websocket can be throttled or
+    // silently re-handshaking, which delayed marshal commands (start / pause)
+    // by 10+ seconds. A light 2s poll guarantees every phone reacts near
+    // instantly; the monotonic `updated_at` guard keeps snapshots ordered.
+    const poll = window.setInterval(() => { load().catch(() => {}); }, 2000);
+    const onWake = () => { if (document.visibilityState === "visible") load().catch(() => {}); };
+    document.addEventListener("visibilitychange", onWake);
+    window.addEventListener("focus", onWake);
+    window.addEventListener("pageshow", onWake);
+
     return () => {
       alive = false;
       clearTimeout(timeout);
+      window.clearInterval(poll);
+      document.removeEventListener("visibilitychange", onWake);
+      window.removeEventListener("focus", onWake);
+      window.removeEventListener("pageshow", onWake);
       supabase.removeChannel(ch);
     };
   }, [field, preview, preset]);
+
 
   // Load + subscribe roster (per field)
   useEffect(() => {
