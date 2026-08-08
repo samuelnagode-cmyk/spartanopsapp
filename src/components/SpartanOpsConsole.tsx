@@ -175,7 +175,12 @@ export function SpartanOpsConsole({ fieldId, password }: { fieldId: string; pass
       const { data } = await supabase.from("spartanops_game_state").select("*").eq("field_id", fieldId).maybeSingle();
       if (!alive || !data) return;
       const g = data as unknown as GameState;
-      setState(g);
+      let applied = true;
+      setState((prev) => {
+        if (isStaleState(prev, g)) { applied = false; return prev; }
+        return g;
+      });
+      if (!applied) return;
       if (g.match_started_at) syncServerClock().catch(() => {});
       setPolygonName(g.current_polygon_name ?? "");
       setEventName(g.event_name ?? "");
@@ -191,12 +196,18 @@ export function SpartanOpsConsole({ fieldId, password }: { fieldId: string; pass
         (p) => {
           if (p.new) {
             const next = p.new as unknown as GameState;
-            setState(next);
+            let applied = true;
+            setState((prev) => {
+              if (isStaleState(prev, next)) { applied = false; return prev; }
+              return next;
+            });
+            if (!applied) return;
             setMapUrl(next.compressed_map_url ?? "");
             if (next.match_started_at) syncServerClock().catch(() => {});
           }
         })
       .subscribe();
+
     return () => { alive = false; supabase.removeChannel(ch); };
   }, [fieldId]);
 
