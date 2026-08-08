@@ -5,6 +5,8 @@ import { QRCodeSVG } from "qrcode.react";
 import { TacticalCompass } from "@/components/TacticalCompass";
 
 import { supabase } from "@/integrations/supabase/client";
+import { isStaleState } from "@/lib/game-state-sync";
+
 import { OfflineBanner } from "@/components/OfflineBanner";
 import {
   spartanopsAdminPatchState,
