@@ -547,6 +547,7 @@ function MisijaPage() {
       if (alive && data) {
         const liveState = data as unknown as GameState;
         setState((previous) => {
+          if (isStaleState(previous, liveState)) return previous;
           const merged: GameState = {
             ...liveState,
             compressed_map_url: liveState.compressed_map_url || previous?.compressed_map_url || null,
@@ -556,6 +557,7 @@ function MisijaPage() {
           writeCachedState(field, merged);
           return merged;
         });
+
         // Fresh lobby (marshal reset / not started yet) must never show the
         // previous match's death events.
         if (liveState.status === "lobby" && !liveState.match_started_at && readDeathEvents(field).length > 0) {
