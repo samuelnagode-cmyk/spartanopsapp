@@ -4,6 +4,8 @@ import { Fragment, memo, useCallback, useEffect, useMemo, useRef, useState, type
 import { useServerFn } from "@tanstack/react-start";
 import { ExperienceBadge, EXPERIENCE_LEVELS } from "@/components/ExperienceBadge";
 import { supabase } from "@/integrations/supabase/client";
+import { isStaleState } from "@/lib/game-state-sync";
+
 import { spartanopsAckTeamChange, spartanopsSelectTeam } from "@/lib/spartanops-game.functions";
 import { spartanopsUpsertCheckin, spartanopsGetMyCheckin, spartanopsDeleteMyCheckin, spartanopsGetParticipantRoster, spartanopsGetServerTime, spartanopsGetRespawnLock } from "@/lib/spartanops-checkin.functions";
 import { spartanopsAcknowledgeWarning } from "@/lib/spartanops-spartacus.functions";
