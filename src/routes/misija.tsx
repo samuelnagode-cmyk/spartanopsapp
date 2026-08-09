@@ -2112,12 +2112,13 @@ function PreMatchCountdown({ seconds, polygon, eventName, gamemode, pointTarget,
   const missionName = (eventName?.trim() || configuredMission?.trim() || polygon?.trim() || (en ? "ACTIVE MISSION" : "AKTIVNA MISIJA")).toUpperCase();
   const fieldName = (polygon?.trim() || state?.field_label?.trim() || "").toUpperCase();
   const duration = state?.match_duration_minutes ?? 0;
-  // Fire the tactical countdown SFX exactly once when the visible timer
-  // hits T-15s so the audio aligns with the final phase.
+  // The supplied countdown cue is ~28 seconds long. Start it at T-28 (or at
+  // the first received tick below that threshold) so its ending aligns with
+  // 00:00 even when a mobile client wakes between timer ticks.
   const firedRef = useRef(false);
   useEffect(() => {
     if (firedRef.current) return;
-    if (seconds === 15) {
+    if (seconds <= 28) {
       firedRef.current = true;
       try { window.dispatchEvent(new Event("spartanops:countdown")); } catch { /* ignore */ }
     }

@@ -136,8 +136,8 @@ export const spartanopsAdminPatchState = createServerFn({ method: "POST" })
     const serverNowIso = new Date(serverNowMs).toISOString();
     const { start_after_seconds: startAfterSeconds, ...rawPatch } = data.patch;
     const patch: Record<string, any> = { ...rawPatch };
-    if (data.patch.status === "active" && typeof startAfterSeconds === "number" && Number.isFinite(startAfterSeconds)) {
-      await clearMissionRuntimeForStart(supabaseAdmin, data.fieldId);
+    const isFreshStart = data.patch.status === "active" && typeof startAfterSeconds === "number" && Number.isFinite(startAfterSeconds);
+    if (isFreshStart) {
       patch.match_started_at = new Date(serverNowMs + Math.max(0, startAfterSeconds) * 1000).toISOString();
       patch.team_scores = freshScores(patch.team_scores);
       patch.node_holders = FREE_NODES;
@@ -164,6 +164,9 @@ export const spartanopsAdminPatchState = createServerFn({ method: "POST" })
       .update({ ...patch, updated_at: serverNowIso } as any)
       .eq("field_id", data.fieldId);
     if (error) throw new Error(error.message);
+    // Cleanup follows the state broadcast so player clients never remain in
+    // lobby while the Marshal is already displaying the pre-start countdown.
+    if (isFreshStart) await clearMissionRuntimeForStart(supabaseAdmin, data.fieldId);
     if ("compressed_map_url" in patch) {
       await supabaseAdmin
         .from("spartanops_lobbies" as any)

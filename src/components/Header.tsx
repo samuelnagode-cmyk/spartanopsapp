@@ -228,9 +228,9 @@ export default function Header() {
   return (
     <>
       <header
-        className="fixed top-0 left-0 right-0 backdrop-blur-sm"
+        className="fixed top-0 left-0 right-0"
         style={{
-          zIndex: 100,
+          zIndex: 1000,
           width: "100%",
           backgroundColor: headerBg,
           borderBottom: headerBorder,
@@ -238,12 +238,7 @@ export default function Header() {
             ? "none"
             : "0 1px 0 rgba(255,255,255,0.5) inset, 0 6px 24px -18px rgba(45, 62, 42, 0.35)",
           transition: "background-color 0.3s ease, box-shadow 0.3s ease",
-          transform: "translateZ(0)",
-          WebkitTransform: "translateZ(0)",
-          willChange: "transform",
-          backfaceVisibility: "hidden",
-          WebkitBackfaceVisibility: "hidden",
-
+          isolation: "isolate",
           overflow: "visible",
         }}
       >
