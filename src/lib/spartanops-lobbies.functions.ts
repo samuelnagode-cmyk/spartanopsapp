@@ -319,7 +319,6 @@ export const updateLobbyServer = createServerFn({ method: "POST" })
       if (isResumePatch) {
         gsPatch.match_started_at = p.startedAt ?? serverNowIso;
       } else {
-        await clearMissionRuntimeForStart(supabaseAdmin, data.id);
         gsPatch.match_started_at = serverStartedAt ?? serverNowIso;
         gsPatch.team_scores = freshScores();
         gsPatch.node_holders = FREE_NODES;
@@ -338,14 +337,9 @@ export const updateLobbyServer = createServerFn({ method: "POST" })
       gsPatch.winner_team = null;
     }
 
-    const { data: updated, error } = await supabaseAdmin
-      .from("spartanops_lobbies" as any)
-      .update(row)
-      .eq("id", data.id)
-      .select("*")
-      .single();
-    if (error) throw new Error(error.message);
-
+    // Publish the authoritative game-state transition first. Runtime cleanup
+    // can take several seconds on larger missions; doing it before this write
+    // made the Marshal look started while player phones still saw the lobby.
     if (Object.keys(gsPatch).length > 1) {
       const { error: gsError } = await supabaseAdmin
         .from("spartanops_game_state" as any)
@@ -353,6 +347,18 @@ export const updateLobbyServer = createServerFn({ method: "POST" })
         .eq("field_id", data.id);
       if (gsError) throw new Error(gsError.message);
     }
+
+    if (p.state === "active" && !isResumePatch) {
+      await clearMissionRuntimeForStart(supabaseAdmin, data.id);
+    }
+
+    const { data: updated, error } = await supabaseAdmin
+      .from("spartanops_lobbies" as any)
+      .update(row)
+      .eq("id", data.id)
+      .select("*")
+      .single();
+    if (error) throw new Error(error.message);
 
     return mapRow(updated);
   });

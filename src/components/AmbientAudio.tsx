@@ -381,7 +381,7 @@ function AudioFab() {
   }, [open]);
 
   return (
-    <div ref={wrapRef} style={{ position: "fixed", bottom: 24, left: 24, zIndex: 60 }}>
+    <div ref={wrapRef} style={{ position: "fixed", bottom: 24, left: 24, zIndex: 900, isolation: "isolate" }}>
       {open && (
         <div
           role="menu"
@@ -393,7 +393,6 @@ function AudioFab() {
             background: "rgba(11,13,10,0.94)",
             border: "1px solid rgba(224,176,78,0.55)",
             boxShadow: "0 18px 40px -12px rgba(0,0,0,0.75), 0 0 24px -6px rgba(224,176,78,0.45)",
-            backdropFilter: "blur(8px)",
             padding: 8,
             display: "flex",
             flexDirection: "column",
@@ -434,7 +433,6 @@ function AudioFab() {
           background: "rgba(11,13,10,0.85)",
           border: "1px solid rgba(224,176,78,0.55)",
           boxShadow: "0 0 24px -4px rgba(224,176,78,0.55)",
-          backdropFilter: "blur(6px)",
           color: "#E0B04E",
           display: "flex",
           alignItems: "center",

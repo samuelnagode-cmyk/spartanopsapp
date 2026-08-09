@@ -41,6 +41,7 @@ import {
 } from "@/lib/spartanops-lobbies.functions";
 import { spartanopsUpsertCheckin, spartanopsAdminGetRoster, spartanopsGetServerTime } from "@/lib/spartanops-checkin.functions";
 import { spartanopsAdminVerify, spartanopsAdminReassignTeam } from "@/lib/spartanops-admin.functions";
+import { isStaleState } from "@/lib/game-state-sync";
 
 
 export const Route = createFileRoute("/admin-pregled")({
@@ -1945,7 +1946,12 @@ function MarshalLobbyConsole({ lobby: initialLobby, marshalPassword, lobbyPasswo
         .maybeSingle();
       if (alive && data) {
         const next = data as unknown as GameState;
-        setGameState(next);
+        let applied = true;
+        setGameState((prev) => {
+          if (isStaleState(prev, next)) { applied = false; return prev; }
+          return next;
+        });
+        if (!applied) return;
         const nextLobbyState = gameStatusToLobbyState(next.status);
         if (nextLobbyState) {
           setLobby((prev) => ({ ...prev, state: nextLobbyState, startedAt: next.match_started_at ? new Date(next.match_started_at).getTime() : prev.startedAt ?? null }));
@@ -1961,7 +1967,12 @@ function MarshalLobbyConsole({ lobby: initialLobby, marshalPassword, lobbyPasswo
         (p) => {
           if (p.new) {
             const next = p.new as unknown as GameState;
-            setGameState(next);
+            let applied = true;
+            setGameState((prev) => {
+              if (isStaleState(prev, next)) { applied = false; return prev; }
+              return next;
+            });
+            if (!applied) return;
             const nextLobbyState = gameStatusToLobbyState(next.status);
             if (nextLobbyState) {
               setLobby((prev) => ({ ...prev, state: nextLobbyState, startedAt: next.match_started_at ? new Date(next.match_started_at).getTime() : prev.startedAt ?? null }));
