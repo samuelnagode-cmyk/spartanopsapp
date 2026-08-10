@@ -12,6 +12,7 @@ const GOLD = "#FFB800";
 type Tab = {
   id: string;
   tab: { en: string; sl: string };
+  short: { en: string; sl: string };
   title: { en: string; sl: string };
   desc: { en: string; sl: string };
   images: string[];
@@ -22,6 +23,7 @@ const TABS: Tab[] = [
   {
     id: "domination",
     tab: { en: "Domination", sl: "Sektorji" },
+    short: { en: "DOM", sl: "SEKT" },
     title: { en: "Domination Sectors", sl: "Domination Sektorji" },
     desc: {
       en: "Real-world tactical field control. Physical QR targets placed across the forest or field. Scan to capture, defend and hold, and generate real-time points for your faction.",
@@ -36,6 +38,7 @@ const TABS: Tab[] = [
   {
     id: "hud",
     tab: { en: "Player HUD", sl: "Pregled Igre" },
+    short: { en: "HUD", sl: "PREG" },
     title: { en: "Player HUD & Live Overview", sl: "Player HUD & Pregled Igre" },
     desc: {
       en: "Live operational telemetry in the palm of your hand. Track match timers, active faction points, and objective status without slowing down your advance.",
@@ -50,6 +53,7 @@ const TABS: Tab[] = [
   {
     id: "respawn",
     tab: { en: "Respawn", sl: "Oživljanje" },
+    short: { en: "RESPAWN", sl: "OŽIV" },
     title: { en: "Smart Respawn System", sl: "Pametni Respawn Sistem" },
     desc: {
       en: "Eliminate time cheating and human error. Players scan automated QR checkpoints at spawn zones to trigger precise cooldown countdowns straight to their device.",
@@ -62,6 +66,7 @@ const TABS: Tab[] = [
   {
     id: "identity",
     tab: { en: "Identity", sl: "Kartice" },
+    short: { en: "ID", sl: "KART" },
     title: { en: "Gear, Cards & Marshal Identity", sl: "Oprema, Kartice & Maršali" },
     desc: {
       en: "Seamlessly bridge physical gear with digital tracking. Scan specialized cards and patches to easily register and access the webapp.",
@@ -77,6 +82,7 @@ const TABS: Tab[] = [
   {
     id: "sd",
     tab: { en: "Search & Destroy", sl: "Search & Destroy" },
+    short: { en: "S&D", sl: "S&D" },
     title: { en: "Search & Destroy", sl: "Search & Destroy" },
     desc: {
       en: "High-stakes bomb defusal scenarios. Plant bombs on different points via the bomb prop that you create yourself. Advancing airsoft mechanics to unmatched levels.",
@@ -92,6 +98,7 @@ const TABS: Tab[] = [
   {
     id: "expansions",
     tab: { en: "Expansions", sl: "Razširitve" },
+    short: { en: "EXP", sl: "RAZŠ" },
     title: { en: "Tactical Expansions", sl: "Taktične Razširitve" },
     desc: {
       en: "Unlock strategic game variables. Interact with physical prop features like mystery boxes and secure intel suitcases.",
@@ -135,11 +142,12 @@ export default function FeatureShowcase() {
         aria-label={en ? "Feature tabs" : "Zavihki funkcij"}
         style={{
           display: "flex",
-          gap: 8,
-          overflowX: "auto",
+          gap: 4,
+          flexWrap: "nowrap",
+          overflowX: "visible",
           padding: "2px 2px 10px",
           scrollbarWidth: "none",
-          justifyContent: "flex-start",
+          justifyContent: "space-between",
           WebkitOverflowScrolling: "touch",
         }}
       >
@@ -152,23 +160,26 @@ export default function FeatureShowcase() {
               aria-selected={on}
               type="button"
               onClick={() => pick(i)}
+              className="fs-tab"
               style={{
-                flex: "0 0 auto",
+                flex: "1 1 0",
+                minWidth: 0,
                 cursor: "pointer",
-                padding: "10px 14px",
+                padding: "8px 4px",
                 background: on ? "rgba(255,184,0,0.12)" : "rgba(255,255,255,0.02)",
                 border: `1px solid ${on ? GOLD : "rgba(255,184,0,0.22)"}`,
                 color: on ? GOLD : "rgba(236,227,196,0.65)",
                 fontFamily: "'Michroma', monospace",
-                fontSize: 10,
-                letterSpacing: "0.16em",
+                fontSize: 8,
+                letterSpacing: "0.08em",
                 textTransform: "uppercase",
                 whiteSpace: "nowrap",
                 transition: "all 220ms ease",
                 boxShadow: on ? "0 0 18px -6px rgba(255,184,0,0.55)" : "none",
               }}
             >
-              {en ? tb.tab.en : tb.tab.sl}
+              <span className="fs-tab-full">{en ? tb.tab.en : tb.tab.sl}</span>
+              <span className="fs-tab-short">{en ? tb.short.en : tb.short.sl}</span>
             </button>
           );
         })}
@@ -318,6 +329,16 @@ export default function FeatureShowcase() {
       </div>
 
       <style>{`
+        .fs-tab-short { display: inline; }
+        .fs-tab-full { display: none; }
+        @media (min-width: 480px) {
+          .fs-tab-short { display: none; }
+          .fs-tab-full { display: inline; }
+          .fs-tab { font-size: 9px !important; letter-spacing: 0.12em !important; padding: 9px 6px !important; }
+        }
+        @media (min-width: 720px) {
+          .fs-tab { font-size: 10px !important; letter-spacing: 0.16em !important; padding: 10px 14px !important; }
+        }
         @media (min-width: 900px) {
           .so-fs-grid { grid-template-columns: 1.15fr 1fr !important; align-items: stretch; }
         }
