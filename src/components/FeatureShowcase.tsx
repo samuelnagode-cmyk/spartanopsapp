@@ -329,6 +329,16 @@ export default function FeatureShowcase() {
       </div>
 
       <style>{`
+        .fs-tab-short { display: inline; }
+        .fs-tab-full { display: none; }
+        @media (min-width: 480px) {
+          .fs-tab-short { display: none; }
+          .fs-tab-full { display: inline; }
+          .fs-tab { font-size: 9px !important; letter-spacing: 0.12em !important; padding: 9px 6px !important; }
+        }
+        @media (min-width: 720px) {
+          .fs-tab { font-size: 10px !important; letter-spacing: 0.16em !important; padding: 10px 14px !important; gap: 8px !important; }
+        }
         @media (min-width: 900px) {
           .so-fs-grid { grid-template-columns: 1.15fr 1fr !important; align-items: stretch; }
         }
