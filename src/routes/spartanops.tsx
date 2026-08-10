@@ -8,6 +8,8 @@ import { listPublishedLobbies } from "@/lib/spartanops-lobbies.functions";
 import { flagFor } from "@/lib/countries";
 import { missionTitle } from "@/lib/mission-title";
 import { spartanDevlogEntries, useT } from "@/lib/i18n";
+import FeatureShowcase from "@/components/FeatureShowcase";
+
 
 export const Route = createFileRoute("/spartanops")({
   head: () => ({
