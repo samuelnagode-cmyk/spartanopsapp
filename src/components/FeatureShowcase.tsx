@@ -142,11 +142,12 @@ export default function FeatureShowcase() {
         aria-label={en ? "Feature tabs" : "Zavihki funkcij"}
         style={{
           display: "flex",
-          gap: 8,
-          overflowX: "auto",
+          gap: 4,
+          flexWrap: "nowrap",
+          overflowX: "visible",
           padding: "2px 2px 10px",
           scrollbarWidth: "none",
-          justifyContent: "flex-start",
+          justifyContent: "space-between",
           WebkitOverflowScrolling: "touch",
         }}
       >
@@ -159,23 +160,26 @@ export default function FeatureShowcase() {
               aria-selected={on}
               type="button"
               onClick={() => pick(i)}
+              className="fs-tab"
               style={{
-                flex: "0 0 auto",
+                flex: "1 1 0",
+                minWidth: 0,
                 cursor: "pointer",
-                padding: "10px 14px",
+                padding: "8px 4px",
                 background: on ? "rgba(255,184,0,0.12)" : "rgba(255,255,255,0.02)",
                 border: `1px solid ${on ? GOLD : "rgba(255,184,0,0.22)"}`,
                 color: on ? GOLD : "rgba(236,227,196,0.65)",
                 fontFamily: "'Michroma', monospace",
-                fontSize: 10,
-                letterSpacing: "0.16em",
+                fontSize: 8,
+                letterSpacing: "0.08em",
                 textTransform: "uppercase",
                 whiteSpace: "nowrap",
                 transition: "all 220ms ease",
                 boxShadow: on ? "0 0 18px -6px rgba(255,184,0,0.55)" : "none",
               }}
             >
-              {en ? tb.tab.en : tb.tab.sl}
+              <span className="fs-tab-full">{en ? tb.tab.en : tb.tab.sl}</span>
+              <span className="fs-tab-short">{en ? tb.short.en : tb.short.sl}</span>
             </button>
           );
         })}
