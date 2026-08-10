@@ -38,6 +38,7 @@ const TABS: Tab[] = [
   {
     id: "hud",
     tab: { en: "Player HUD", sl: "Pregled Igre" },
+    short: { en: "HUD", sl: "PREG" },
     title: { en: "Player HUD & Live Overview", sl: "Player HUD & Pregled Igre" },
     desc: {
       en: "Live operational telemetry in the palm of your hand. Track match timers, active faction points, and objective status without slowing down your advance.",
@@ -52,6 +53,7 @@ const TABS: Tab[] = [
   {
     id: "respawn",
     tab: { en: "Respawn", sl: "Oživljanje" },
+    short: { en: "RESPAWN", sl: "OŽIV" },
     title: { en: "Smart Respawn System", sl: "Pametni Respawn Sistem" },
     desc: {
       en: "Eliminate time cheating and human error. Players scan automated QR checkpoints at spawn zones to trigger precise cooldown countdowns straight to their device.",
@@ -64,6 +66,7 @@ const TABS: Tab[] = [
   {
     id: "identity",
     tab: { en: "Identity", sl: "Kartice" },
+    short: { en: "ID", sl: "KART" },
     title: { en: "Gear, Cards & Marshal Identity", sl: "Oprema, Kartice & Maršali" },
     desc: {
       en: "Seamlessly bridge physical gear with digital tracking. Scan specialized cards and patches to easily register and access the webapp.",
@@ -79,6 +82,7 @@ const TABS: Tab[] = [
   {
     id: "sd",
     tab: { en: "Search & Destroy", sl: "Search & Destroy" },
+    short: { en: "S&D", sl: "S&D" },
     title: { en: "Search & Destroy", sl: "Search & Destroy" },
     desc: {
       en: "High-stakes bomb defusal scenarios. Plant bombs on different points via the bomb prop that you create yourself. Advancing airsoft mechanics to unmatched levels.",
@@ -94,6 +98,7 @@ const TABS: Tab[] = [
   {
     id: "expansions",
     tab: { en: "Expansions", sl: "Razširitve" },
+    short: { en: "EXP", sl: "RAZŠ" },
     title: { en: "Tactical Expansions", sl: "Taktične Razširitve" },
     desc: {
       en: "Unlock strategic game variables. Interact with physical prop features like mystery boxes and secure intel suitcases.",
