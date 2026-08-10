@@ -23,6 +23,7 @@ const TABS: Tab[] = [
   {
     id: "domination",
     tab: { en: "Domination", sl: "Sektorji" },
+    short: { en: "DOM", sl: "SEKT" },
     title: { en: "Domination Sectors", sl: "Domination Sektorji" },
     desc: {
       en: "Real-world tactical field control. Physical QR targets placed across the forest or field. Scan to capture, defend and hold, and generate real-time points for your faction.",
