@@ -12,6 +12,7 @@ const GOLD = "#FFB800";
 type Tab = {
   id: string;
   tab: { en: string; sl: string };
+  short: { en: string; sl: string };
   title: { en: string; sl: string };
   desc: { en: string; sl: string };
   images: string[];
