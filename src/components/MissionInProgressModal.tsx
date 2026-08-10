@@ -94,7 +94,7 @@ export default function MissionInProgressModal() {
           background: "#13160f",
           border: "1.5px solid #E0B04E",
           boxShadow: "0 24px 60px -12px rgba(0,0,0,0.8), 0 0 40px -8px rgba(224,176,78,0.35)",
-          maxWidth: 460, width: "100%",
+          maxWidth: 520, width: "100%",
           padding: 22, position: "relative",
           color: "#ece3c4",
         }}
@@ -118,7 +118,7 @@ export default function MissionInProgressModal() {
             letterSpacing: "0.28em", color: "#E0B04E", textTransform: "uppercase", marginBottom: 8,
           }}
         >
-          // {en ? "MISSION IN PROGRESS" : "MISIJA V TEKU"}
+          // {en ? "ATTENTION" : "POZOR"},
         </p>
         <h2
           style={{
@@ -127,23 +127,24 @@ export default function MissionInProgressModal() {
             fontWeight: 700, marginBottom: 12,
           }}
         >
-          {en ? "Mission in Progress" : "Misija v teku"}
+          {en ? "Mission in progress" : "Misija je aktivna"}
         </h2>
         <p style={{ fontSize: 14, lineHeight: 1.7, color: "rgba(236,227,196,0.85)", marginBottom: 22 }}>
           {en
             ? "You are currently registered in an active mission. Would you like to return to your Player HUD?"
             : "Trenutno si prijavljen v aktivno misijo. Se želiš vrniti na svoj nadzorni meni (Player HUD)?"}
         </p>
-        <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+        <div style={{ display: "flex", gap: 8, flexWrap: "nowrap", alignItems: "stretch" }}>
           <button
             type="button"
             onClick={goToHud}
             style={{
-              flex: 1, minWidth: 180,
+              flex: "1 1 auto", minWidth: 0,
               background: "#E0B04E22", color: "#E0B04E",
-              border: "1px solid #E0B04E", padding: "12px 14px",
-              fontFamily: "'Michroma', monospace", fontSize: 11,
-              letterSpacing: "0.2em", textTransform: "uppercase", cursor: "pointer", fontWeight: 700,
+              border: "1px solid #E0B04E", padding: "12px 10px",
+              fontFamily: "'Michroma', monospace", fontSize: 10,
+              letterSpacing: "0.12em", textTransform: "uppercase", cursor: "pointer", fontWeight: 700,
+              whiteSpace: "nowrap",
             }}
           >
             [ {en ? "RETURN TO HUD" : "NAZAJ NA HUD"} ]
@@ -152,15 +153,18 @@ export default function MissionInProgressModal() {
             type="button"
             onClick={dismiss}
             style={{
+              flex: "0 1 auto", minWidth: 0,
               background: "transparent", color: "rgba(236,227,196,0.7)",
-              border: "1px solid rgba(236,227,196,0.25)", padding: "12px 14px",
-              fontFamily: "'Michroma', monospace", fontSize: 11,
-              letterSpacing: "0.18em", textTransform: "uppercase", cursor: "pointer",
+              border: "1px solid rgba(236,227,196,0.25)", padding: "12px 10px",
+              fontFamily: "'Michroma', monospace", fontSize: 10,
+              letterSpacing: "0.12em", textTransform: "uppercase", cursor: "pointer",
+              whiteSpace: "nowrap",
             }}
           >
             {en ? "Stay here" : "Ostani tukaj"}
           </button>
         </div>
+
       </div>
     </div>
   );
