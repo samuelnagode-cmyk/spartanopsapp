@@ -765,59 +765,8 @@ function SectorShowcase() {
           >
             {t("spartan.titleRevolutionize")}
           </h2>
-          <img
-            src={SECTOR_IMG}
-            alt="SpartanOps tactical QR plate assortment"
-            className="block w-full h-auto mt-8"
-            style={{
-              maxWidth: "min(880px, 96vw)",
-              filter: "drop-shadow(0 24px 60px rgba(232,154,10,0.25)) drop-shadow(0 0 24px rgba(0,0,0,0.6))",
-            }}
-            loading="lazy"
-            decoding="async"
-          />
-          <p
-            className="mt-8 text-[14px] md:text-[15px] leading-[1.75]"
-            style={{ color: MUTED, maxWidth: 720 }}
-          >
-            {t("spartan.descProblem")}
-          </p>
-
-          <div
-            className="mt-8 grid grid-cols-1 md:grid-cols-3 gap-4"
-            style={{ maxWidth: 820 }}
-          >
-            {[
-              {
-                k: t("spartan.featureZeroElecTitle"),
-                v: t("spartan.featureZeroElecDesc"),
-              },
-              {
-                k: t("spartan.featureLiveTrackingTitle"),
-                v: t("spartan.featureLiveTrackingDesc"),
-              },
-              {
-                k: t("spartan.featurePureImmersionTitle"),
-                v: t("spartan.featurePureImmersionDesc"),
-              },
-            ].map((b) => (
-              <div
-                key={b.k}
-                className="p-4"
-                style={{
-                  border: `1px solid ${ACCENT}33`,
-                  background: "rgba(224,176,78,0.04)",
-                }}
-              >
-                <p
-                  className="font-mono uppercase mb-2"
-                  style={{ fontSize: 10, letterSpacing: "0.24em", color: ACCENT }}
-                >
-                  {b.k}
-                </p>
-                <p style={{ fontSize: 13, color: MUTED, lineHeight: 1.6 }}>{b.v}</p>
-              </div>
-            ))}
+          <div className="mt-8 w-full">
+            <FeatureShowcase />
           </div>
 
           <div className="mt-8">
@@ -825,6 +774,7 @@ function SectorShowcase() {
               <Printer size={14} /> {t("spartan.btnGetPrintFiles")}
             </BtnOutline>
           </div>
+
         </div>
       </div>
     </section>
