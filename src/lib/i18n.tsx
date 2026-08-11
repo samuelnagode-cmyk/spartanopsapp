@@ -514,7 +514,7 @@ export const dict: Dict = {
   "spartan.btnCreateMission": { sl: "USTVARI MISIJO", en: "CREATE MISSION" },
   "spartan.btnJoinMission": { sl: "PRIDRUŽI SE MISIJI", en: "JOIN MISSION" },
   "spartan.tagSimplicity": { sl: "// TAKTIČNA PREPROSTOST", en: "// TACTICAL SIMPLICITY" },
-  "spartan.titleRevolutionize": { sl: "REVOLUCIONIRAJTE VAŠE AIRSOFT POLJE", en: "REVOLUTIONIZE YOUR AIRSOFT FIELD" },
+  "spartan.titleRevolutionize": { sl: "REVOLUCIJA AIRSOFT MISIJ", en: "REVOLUTIONIZE YOUR AIRSOFT FIELD" },
   "spartan.descProblem": { sl: "Airsoft spopadi so izjemno zabavni, vendar je organizacija in spremljanje ciljev na terenu pogosto tehnično zapleteno. Tradicionalni elektronski rekviziti za sledenje sektorjem v realnem času predstavljajo ogromno finančno breme — še posebej za manjše klube in upravljavce polj.", en: "Airsoft games are incredibly fun, but organizing and tracking objectives on the field is often technically complicated. Traditional electronic props used for real-time sector tracking can be an immense financial burden — especially for smaller clubs and field operators." },
   "spartan.featureZeroElecTitle": { sl: "// BREZ ELEKTRONIKE", en: "// ZERO ELECTRONICS" },
   "spartan.featureZeroElecDesc": { sl: "Brez dragih rekvizitov, brez baterij, brez kablov in brez vzdrževanja. Preprosto natisnite, zaščitite pred vremenom in namestite.", en: "No expensive props, no batteries, no wiring, no maintenance. Just print, weatherproof, and deploy." },
