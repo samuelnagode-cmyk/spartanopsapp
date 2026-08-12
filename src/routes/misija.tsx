@@ -21,6 +21,7 @@ import { HudHistoryLog } from "@/components/HudHistoryLog";
 import { appendDeathEvents, readDeathEvents, clearDeathEvents, type DeathEvent } from "@/lib/hud-history";
 import { QRScanner, type ScanPayload } from "@/components/QRScanner";
 import { useAmbientAudio } from "@/components/AmbientAudio";
+import { DebriefShareButton } from "@/components/DebriefShareCard";
 
 import landingView from "@/assets/landing-view.webp.asset.json";
 
