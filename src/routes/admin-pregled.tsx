@@ -45,7 +45,7 @@ import { isStaleState } from "@/lib/game-state-sync";
 
 
 export const Route = createFileRoute("/admin-pregled")({
-  validateSearch: (s: Record<string, unknown>) => ({
+  validateSearch: (s: Record<string, unknown>): { edit?: "1" } => ({
     edit: s.edit === "1" || s.edit === 1 ? "1" : undefined,
   }),
   head: () => ({

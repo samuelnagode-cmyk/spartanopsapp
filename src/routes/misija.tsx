@@ -28,7 +28,7 @@ export const Route = createFileRoute("/misija")({
   head: () => ({
     meta: [{ title: "SpartanOps · Misija" }, { name: "robots", content: "noindex,nofollow" }],
   }),
-  validateSearch: (s: Record<string, unknown>) => {
+  validateSearch: (s: Record<string, unknown>): { field: string; point?: string; preview?: boolean; marshal?: boolean; preset?: string } => {
     return {
       field: typeof s.field === "string" ? s.field : (typeof s.field_id === "string" ? s.field_id : "zeleni-raj"),
       point: typeof s.point === "string" || typeof s.point === "number" ? String(s.point) : undefined,

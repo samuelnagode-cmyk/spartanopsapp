@@ -24,7 +24,7 @@ export const Route = createFileRoute("/spawn")({
       { name: "robots", content: "noindex,nofollow" },
     ],
   }),
-  validateSearch: (s: Record<string, unknown>) => {
+  validateSearch: (s: Record<string, unknown>): { field?: string } => {
     const rawField = typeof s.field === "string" ? s.field : (typeof s.field_id === "string" ? s.field_id : "");
     const field = rawField.length <= 120 ? rawField : "";
     return { field };
