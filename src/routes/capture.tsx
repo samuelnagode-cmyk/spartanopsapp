@@ -14,7 +14,7 @@ export const Route = createFileRoute("/capture")({
       { name: "robots", content: "noindex,nofollow" },
     ],
   }),
-  validateSearch: (s: Record<string, unknown>): { point?: 1 | 2 | 3 | 4 | 5; field?: string } => {
+  validateSearch: (s: Record<string, unknown>): { point?: 1 | 2 | 3 | 4 | 5; field: string } => {
     const NAME_TO_NUM: Record<string, 1 | 2 | 3 | 4 | 5> = {
       alpha: 1, bravo: 2, beta: 2, charlie: 3, gamma: 3,
       delta: 4, echo: 5, epsilon: 5,
