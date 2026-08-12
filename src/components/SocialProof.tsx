@@ -181,13 +181,13 @@ export default function SocialProof() {
         </div>
 
         <div className="mt-10">
-          <Link
-            to="/ocene"
+          <a
+              href="/ocene"
             className="font-accent transition-all hover:underline"
             style={{ color: "#1E3F20", fontSize: 14, fontWeight: 500 }}
           >
             {en ? "See all reviews →" : "Glej vse ocene →"}
-          </Link>
+          </a>
         </div>
       </div>
     </section>

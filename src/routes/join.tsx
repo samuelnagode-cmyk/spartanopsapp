@@ -51,7 +51,7 @@ export const Route = createFileRoute("/join")({
       { name: "robots", content: "noindex,nofollow" },
     ],
   }),
-  validateSearch: (s: Record<string, unknown>) => ({
+  validateSearch: (s: Record<string, unknown>): { lobby?: string; field_id?: string; browse?: string } => ({
     lobby: typeof s.lobby === "string" ? s.lobby : undefined,
     field_id: typeof s.field_id === "string" ? s.field_id : undefined,
     browse: typeof s.browse === "string" ? s.browse : undefined,

@@ -24,7 +24,7 @@ export const Route = createFileRoute("/scan")({
       { name: "robots", content: "noindex,nofollow" },
     ],
   }),
-  validateSearch: (s: Record<string, unknown>) => ({
+  validateSearch: (s: Record<string, unknown>): { field_id?: string; type?: string; point?: string } => ({
     field_id: typeof s.field_id === "string" ? s.field_id : (typeof s.field === "string" ? s.field : ""),
     type: typeof s.type === "string" ? s.type : "",
     point: typeof s.point === "string" ? s.point : "",

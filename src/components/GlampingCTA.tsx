@@ -69,8 +69,8 @@ export default function GlampingCTA() {
         </p>
 
         <div className="flex flex-col sm:flex-row items-center justify-center gap-3 sm:gap-4">
-          <Link
-            to="/rezervacije"
+          <a
+              href="/rezervacije"
             className={primary}
             style={{
               background: "#FAF6EC",
@@ -85,9 +85,9 @@ export default function GlampingCTA() {
             onMouseLeave={(e) => (e.currentTarget.style.background = "#FAF6EC")}
           >
             {en ? "Book your stay →" : "Rezerviraj oddih →"}
-          </Link>
-          <Link
-            to="/rezervacije"
+          </a>
+          <a
+              href="/rezervacije"
             className={secondary}
             style={{
               background: "transparent",
@@ -109,7 +109,7 @@ export default function GlampingCTA() {
             }}
           >
             {en ? "Send an inquiry" : "Pošlji povpraševanje"}
-          </Link>
+          </a>
         </div>
 
         <div
