@@ -131,10 +131,25 @@ export default function FeatureShowcase() {
   const [active, setActive] = useState(0);
   const [slide, setSlide] = useState(0);
   const [fade, setFade] = useState(true);
+  const [atStart, setAtStart] = useState(true);
+  const [atEnd, setAtEnd] = useState(false);
   const tabsRef = useRef<HTMLDivElement | null>(null);
   const btnRefs = useRef<(HTMLButtonElement | null)[]>([]);
 
   const tab = TABS[active];
+
+  const updateEdges = () => {
+    const el = tabsRef.current;
+    if (!el) return;
+    setAtStart(el.scrollLeft <= 2);
+    setAtEnd(el.scrollLeft + el.clientWidth >= el.scrollWidth - 2);
+  };
+
+  useEffect(() => {
+    updateEdges();
+    window.addEventListener("resize", updateEdges);
+    return () => window.removeEventListener("resize", updateEdges);
+  }, []);
 
   useEffect(() => {
     setSlide(0);
@@ -155,12 +170,13 @@ export default function FeatureShowcase() {
   return (
     <div style={{ width: "100%", maxWidth: 980, margin: "0 auto" }}>
       {/* Tab bar — horizontal tactical slider */}
-      <div className="so-fs-tabwrap">
+      <div className={`so-fs-tabwrap${atStart ? " at-start" : ""}${atEnd ? " at-end" : ""}`}>
         <div
           ref={tabsRef}
           role="tablist"
           aria-label={en ? "Feature tabs" : "Zavihki funkcij"}
           className="so-fs-tabs"
+          onScroll={updateEdges}
         >
           {TABS.map((tb, i) => {
             const on = i === active;
@@ -339,14 +355,26 @@ export default function FeatureShowcase() {
 
       <style>{`
         .so-fs-tabwrap { position: relative; }
+        .so-fs-tabwrap::before,
         .so-fs-tabwrap::after {
           content: "";
           position: absolute;
-          right: 0; top: 0;
-          width: 64px; height: 100%;
-          background: linear-gradient(to left, rgba(0,0,0,0.95), rgba(0,0,0,0));
+          top: 0;
+          width: 56px; height: 100%;
           pointer-events: none;
+          opacity: 1;
+          transition: opacity 220ms ease;
         }
+        .so-fs-tabwrap::before {
+          left: 0;
+          background: linear-gradient(to right, rgba(0,0,0,0.95), rgba(0,0,0,0));
+        }
+        .so-fs-tabwrap::after {
+          right: 0;
+          background: linear-gradient(to left, rgba(0,0,0,0.95), rgba(0,0,0,0));
+        }
+        .so-fs-tabwrap.at-start::before { opacity: 0; }
+        .so-fs-tabwrap.at-end::after { opacity: 0; }
         .so-fs-tabs {
           display: flex;
           flex-direction: row;
@@ -355,7 +383,8 @@ export default function FeatureShowcase() {
           overflow-x: auto;
           white-space: nowrap;
           scroll-behavior: smooth;
-          scroll-snap-type: x mandatory;
+          scroll-snap-type: x proximity;
+          scroll-padding-inline: 8px;
           -webkit-overflow-scrolling: touch;
           scrollbar-width: none;
           padding: 2px 2px 10px;
