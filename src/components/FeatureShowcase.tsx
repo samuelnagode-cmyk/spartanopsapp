@@ -131,10 +131,25 @@ export default function FeatureShowcase() {
   const [active, setActive] = useState(0);
   const [slide, setSlide] = useState(0);
   const [fade, setFade] = useState(true);
+  const [atStart, setAtStart] = useState(true);
+  const [atEnd, setAtEnd] = useState(false);
   const tabsRef = useRef<HTMLDivElement | null>(null);
   const btnRefs = useRef<(HTMLButtonElement | null)[]>([]);
 
   const tab = TABS[active];
+
+  const updateEdges = () => {
+    const el = tabsRef.current;
+    if (!el) return;
+    setAtStart(el.scrollLeft <= 2);
+    setAtEnd(el.scrollLeft + el.clientWidth >= el.scrollWidth - 2);
+  };
+
+  useEffect(() => {
+    updateEdges();
+    window.addEventListener("resize", updateEdges);
+    return () => window.removeEventListener("resize", updateEdges);
+  }, []);
 
   useEffect(() => {
     setSlide(0);
