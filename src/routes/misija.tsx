@@ -3226,6 +3226,26 @@ function EndgameReport({ state, roster, captures, en, now, myTeam }: { state: Ga
         })}
       </div>
 
+      <DebriefShareButton
+        accentColor={winnerColor}
+        data={{
+          missionName: missionTitleFromState(state, state.field_id ?? "SPARTANOPS"),
+          fieldName: fieldTitleFromState(state, state.field_id ?? ""),
+          marshalName: state.settings?.marshalName?.trim() || undefined,
+          en,
+          showDeaths,
+          teams: activeTeams.map((tm) => ({ key: tm, name: teamLabelFor(tm), color: TEAM_COLOR[tm] ?? ACCENT, score: teamScoresFinal[tm] ?? 0 })),
+          top3: enriched.slice(0, 3).map((p) => ({ callsign: p.callsign, pts: p.pts, deaths: p.death_count ?? 0, color: TEAM_COLOR[p.assigned_team] ?? ACCENT })),
+          nodes: Object.entries(state.node_positions ?? {})
+            .filter(([, pos]) => !!pos)
+            .map(([k, pos]) => ({
+              n: Number(k),
+              x: (pos as { x: number; y: number }).x,
+              y: (pos as { x: number; y: number }).y,
+              color: TEAM_COLOR[state.node_holders?.[k] ?? ""] ?? NEUTRAL_NODE,
+            })),
+        }}
+      />
 
 
       <div className="grid gap-4 md:grid-cols-2">
