@@ -355,14 +355,26 @@ export default function FeatureShowcase() {
 
       <style>{`
         .so-fs-tabwrap { position: relative; }
+        .so-fs-tabwrap::before,
         .so-fs-tabwrap::after {
           content: "";
           position: absolute;
-          right: 0; top: 0;
-          width: 64px; height: 100%;
-          background: linear-gradient(to left, rgba(0,0,0,0.95), rgba(0,0,0,0));
+          top: 0;
+          width: 56px; height: 100%;
           pointer-events: none;
+          opacity: 1;
+          transition: opacity 220ms ease;
         }
+        .so-fs-tabwrap::before {
+          left: 0;
+          background: linear-gradient(to right, rgba(0,0,0,0.95), rgba(0,0,0,0));
+        }
+        .so-fs-tabwrap::after {
+          right: 0;
+          background: linear-gradient(to left, rgba(0,0,0,0.95), rgba(0,0,0,0));
+        }
+        .so-fs-tabwrap.at-start::before { opacity: 0; }
+        .so-fs-tabwrap.at-end::after { opacity: 0; }
         .so-fs-tabs {
           display: flex;
           flex-direction: row;
@@ -371,7 +383,8 @@ export default function FeatureShowcase() {
           overflow-x: auto;
           white-space: nowrap;
           scroll-behavior: smooth;
-          scroll-snap-type: x mandatory;
+          scroll-snap-type: x proximity;
+          scroll-padding-inline: 8px;
           -webkit-overflow-scrolling: touch;
           scrollbar-width: none;
           padding: 2px 2px 10px;
