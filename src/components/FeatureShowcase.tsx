@@ -155,12 +155,13 @@ export default function FeatureShowcase() {
   return (
     <div style={{ width: "100%", maxWidth: 980, margin: "0 auto" }}>
       {/* Tab bar — horizontal tactical slider */}
-      <div className="so-fs-tabwrap">
+      <div className={`so-fs-tabwrap${atStart ? " at-start" : ""}${atEnd ? " at-end" : ""}`}>
         <div
           ref={tabsRef}
           role="tablist"
           aria-label={en ? "Feature tabs" : "Zavihki funkcij"}
           className="so-fs-tabs"
+          onScroll={updateEdges}
         >
           {TABS.map((tb, i) => {
             const on = i === active;
