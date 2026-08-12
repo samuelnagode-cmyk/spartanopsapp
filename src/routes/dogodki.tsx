@@ -536,9 +536,8 @@ function AirsoftDogodkiPage() {
                 "Are you organizing airsoft events or looking for a premium field for your club?",
               )}
             </h3>
-            <Link
-              to="/rezervacije"
-              hash="povprasevanje"
+            <a
+              href="/rezervacije#povprasevanje"
               style={{
                 display: "inline-block",
                 background: ACCENT,
@@ -552,7 +551,7 @@ function AirsoftDogodkiPage() {
               }}
             >
               {t("Rezerviraj poligon", "Reserve the Field")}
-            </Link>
+            </a>
           </div>
         </div>
       </div>
