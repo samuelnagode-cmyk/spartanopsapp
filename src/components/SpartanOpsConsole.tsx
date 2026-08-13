@@ -17,6 +17,7 @@ import {
   spartanopsAdminUploadMap,
 } from "@/lib/spartanops-admin.functions";
 import { spartanopsAdminGetRoster, spartanopsGetServerTime } from "@/lib/spartanops-checkin.functions";
+import { spartanopsTickScores } from "@/lib/spartanops-game.functions";
 import { spartanopsSpartacusReview, spartanopsListSuspiciousCaptures } from "@/lib/spartanops-spartacus.functions";
 import { useLang } from "@/lib/i18n";
 import { usePremium } from "@/lib/premium";
@@ -126,6 +127,7 @@ export function SpartanOpsConsole({ fieldId, password }: { fieldId: string; pass
   const removeAllPlayers = useServerFn(spartanopsAdminRemoveAllPlayers);
   const getRoster = useServerFn(spartanopsAdminGetRoster);
   const getServerTime = useServerFn(spartanopsGetServerTime);
+  const tickScores = useServerFn(spartanopsTickScores);
 
   const [state, setState] = useState<GameState | null>(null);
   const [roster, setRoster] = useState<Checkin[]>([]);
