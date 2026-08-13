@@ -817,19 +817,28 @@ function MisijaPage() {
       if (alive) setCaptures((data ?? []) as unknown as Capture[]);
     };
     load();
+    // Coalesce capture bursts (several sectors flipping at once) into a single
+    // refetch per device instead of one query per realtime event.
+    let debounce = 0;
+    const scheduleLoad = () => {
+      window.clearTimeout(debounce);
+      debounce = window.setTimeout(() => { if (alive) load(); }, 250);
+    };
     const ch = supabase
       .channel(`misija_captures_${field}`)
       .on(
         "postgres_changes",
         { event: "*", schema: "public", table: "spartanops_captures", filter: `field_id=eq.${field}` },
-        load,
+        scheduleLoad,
       )
       .subscribe();
     return () => {
       alive = false;
+      window.clearTimeout(debounce);
       supabase.removeChannel(ch);
     };
   }, [field, preview, preset]);
+
 
   // Bridge lobby / match transitions to the ambient audio provider so the
   // lobby track plays on entry and fades out when the match actually begins.
