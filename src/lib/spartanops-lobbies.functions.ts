@@ -318,8 +318,11 @@ export const updateLobbyServer = createServerFn({ method: "POST" })
       gsPatch.status = "active";
       if (isResumePatch) {
         gsPatch.match_started_at = p.startedAt ?? serverNowIso;
+        // Resume: never back-pay points for the paused window.
+        gsPatch.score_ticked_at = serverNowIso;
       } else {
         gsPatch.match_started_at = serverStartedAt ?? serverNowIso;
+        gsPatch.score_ticked_at = gsPatch.match_started_at;
         gsPatch.team_scores = freshScores();
         gsPatch.node_holders = FREE_NODES;
         gsPatch.winner_team = null;
@@ -332,6 +335,7 @@ export const updateLobbyServer = createServerFn({ method: "POST" })
       await resetMissionRuntime(supabaseAdmin, data.id);
       gsPatch.status = "lobby";
       gsPatch.match_started_at = null;
+      gsPatch.score_ticked_at = null;
       gsPatch.team_scores = freshScores();
       gsPatch.node_holders = FREE_NODES;
       gsPatch.winner_team = null;

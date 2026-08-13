@@ -471,6 +471,7 @@ export type Database = {
           node_holders: Json
           node_positions: Json
           point_target: number
+          score_ticked_at: string | null
           settings: Json
           status: string
           team_scores: Json
@@ -492,6 +493,7 @@ export type Database = {
           node_holders?: Json
           node_positions?: Json
           point_target?: number
+          score_ticked_at?: string | null
           settings?: Json
           status?: string
           team_scores?: Json
@@ -513,6 +515,7 @@ export type Database = {
           node_holders?: Json
           node_positions?: Json
           point_target?: number
+          score_ticked_at?: string | null
           settings?: Json
           status?: string
           team_scores?: Json
@@ -803,6 +806,7 @@ export type Database = {
         Args: { p_field_id: string }
         Returns: undefined
       }
+      spartanops_tick_scores: { Args: { p_field_id: string }; Returns: Json }
       spartanops_verify_lobby_password: {
         Args: { p_kind: string; p_lobby_id: string; p_password: string }
         Returns: boolean

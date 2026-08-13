@@ -1139,8 +1139,8 @@ function CreateFieldForm({ onCancel, onCreated }: { onCancel: () => void; onCrea
           </div>
           <p style={{ fontSize: 10, color: MUTED, fontFamily: "monospace", lineHeight: 1.55, marginBottom: 8, fontStyle: "italic" }}>
             {en
-              ? "Planning note: the system is balanced so a standard game lasts exactly 40 minutes if a team constantly holds the majority (3 of 5 flags)."
-              : "Pojasnilo: sistem je uravnotežen tako, da standardna igra traja natanko 40 minut, če ekipa konstantno drži večino (3 od 5 zastavic)."}
+              ? "Planning note: the system is balanced so that a team holding 3 sectors for 55 minutes gains 100 points."
+              : "Pojasnilo: točkovanje je narejeno tako, da ekipa, ki zavzame in drži 3 sektorje, pridobi 100 točk v 55 minutah."}
           </p>
           <select value={pointTarget} onChange={(e) => setPointTarget(Number(e.target.value))} style={consoleSelectStyle}>
             {Array.from({ length: 30 }, (_, i) => (i + 1) * 10).map((p) => (
@@ -2592,8 +2592,8 @@ function MarshalLobbyConsole({ lobby: initialLobby, marshalPassword, lobbyPasswo
           </div>
           <p style={{ fontSize: 10, color: MUTED, fontFamily: "monospace", lineHeight: 1.55, marginBottom: 8, fontStyle: "italic" }}>
             {en
-              ? "Planning note: the system is balanced so a standard game lasts exactly 40 minutes if a team constantly holds the majority (3 of 5 flags)."
-              : "Pojasnilo: sistem je uravnotežen tako, da standardna igra traja natanko 40 minut, če ekipa konstantno drži večino (3 od 5 zastavic)."}
+              ? "Planning note: the system is balanced so that a team holding 3 sectors for 55 minutes gains 100 points."
+              : "Pojasnilo: točkovanje je narejeno tako, da ekipa, ki zavzame in drži 3 sektorje, pridobi 100 točk v 55 minutah."}
           </p>
           <select value={target} onChange={(e) => patch({ pointTarget: Number(e.target.value) })} style={consoleSelectStyle}>
             {Array.from({ length: 30 }, (_, i) => (i + 1) * 10).map((p) => (

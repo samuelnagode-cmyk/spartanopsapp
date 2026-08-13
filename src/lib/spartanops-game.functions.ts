@@ -77,3 +77,20 @@ export const spartanopsSelectTeam = createServerFn({ method: "POST" })
     if (error) throw new Error(error.message);
     return { ok: true, team: data.team };
   });
+
+/**
+ * Advance the Domination scoreboard. Scoring is purely time-based: every
+ * 30 seconds a team gains +1 point for each sector it holds. The SQL side is
+ * idempotent (driven by `score_ticked_at`), so any client may call this.
+ */
+export const spartanopsTickScores = createServerFn({ method: "POST" })
+  .inputValidator((d: { fieldId: string }) => ({ fieldId: String(d?.fieldId ?? "") }))
+  .handler(async ({ data }) => {
+    if (!isField(data.fieldId)) throw new Error("Invalid field");
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data: result, error } = await supabaseAdmin.rpc("spartanops_tick_scores" as any, {
+      p_field_id: data.fieldId,
+    });
+    if (error) throw new Error(error.message);
+    return result as { ok: boolean; ticks?: number; ended?: boolean };
+  });

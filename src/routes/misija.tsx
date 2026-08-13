@@ -6,7 +6,7 @@ import { ExperienceBadge, EXPERIENCE_LEVELS } from "@/components/ExperienceBadge
 import { supabase } from "@/integrations/supabase/client";
 import { isStaleState } from "@/lib/game-state-sync";
 
-import { spartanopsAckTeamChange, spartanopsSelectTeam } from "@/lib/spartanops-game.functions";
+import { spartanopsAckTeamChange, spartanopsSelectTeam, spartanopsTickScores } from "@/lib/spartanops-game.functions";
 import { spartanopsUpsertCheckin, spartanopsGetMyCheckin, spartanopsDeleteMyCheckin, spartanopsGetParticipantRoster, spartanopsGetServerTime, spartanopsGetRespawnLock } from "@/lib/spartanops-checkin.functions";
 import { spartanopsAcknowledgeWarning } from "@/lib/spartanops-spartacus.functions";
 import { SpartacusAlerts } from "@/components/SpartanOpsConsole";
@@ -359,6 +359,7 @@ function MisijaPage() {
   const getParticipantRosterFn = useServerFn(spartanopsGetParticipantRoster);
   const getServerTimeFn = useServerFn(spartanopsGetServerTime);
   const getRespawnLockFn = useServerFn(spartanopsGetRespawnLock);
+  const tickScoresFn = useServerFn(spartanopsTickScores);
 
   const [sessionId, setSessionId] = useState("");
   const [state, setState] = useState<GameState | null>(null);
@@ -416,6 +417,20 @@ function MisijaPage() {
     const timer = setInterval(() => syncServerClock().catch(() => {}), 15000);
     return () => clearInterval(timer);
   }, [state?.status, state?.match_started_at, getServerTimeFn]);
+
+  // Domination scoring: +1 point per held sector every 30 seconds. The RPC is
+  // idempotent and timestamp-driven, so every connected client can safely
+  // drive it — whoever fires first advances the shared scoreboard.
+  useEffect(() => {
+    if (preview || !field) return;
+    if (state?.status !== "active" || !state.match_started_at) return;
+    const run = () => { tickScoresFn({ data: { fieldId: field } }).catch(() => {}); };
+    run();
+    const timer = setInterval(run, 5000);
+    const onFocus = () => run();
+    window.addEventListener("focus", onFocus);
+    return () => { clearInterval(timer); window.removeEventListener("focus", onFocus); };
+  }, [field, preview, state?.status, state?.match_started_at, tickScoresFn]);
 
   useEffect(() => {
     const timer = setInterval(() => {
@@ -2793,7 +2808,7 @@ function LiveMatch({ state, captures, now, roster, myTeam, meId, meCallsign }: {
 
   return (
     <div className="max-w-5xl mx-auto px-4 py-6" style={{ paddingTop: 84 }}>
-      <HudNoticeFeed captures={visibleCaptures} roster={roster} myTeam={myTeam} meId={meId} meCallsign={meCallsign} teamLabelFor={teamLabelFor} respawnEnabled={!!state.settings?.respawn?.enabled} fieldId={state.field_id ?? ""} />
+      <HudNoticeFeed captures={visibleCaptures} roster={roster} myTeam={myTeam} meId={meId} meCallsign={meCallsign} teamLabelFor={teamLabelFor} respawnEnabled={!!state.settings?.respawn?.enabled || !!state.settings?.respawn?.publicDeaths} fieldId={state.field_id ?? ""} />
       {preMatchSec > 0 && <PreMatchCountdown seconds={preMatchSec} polygon={fieldTitleFromState(state, "")} eventName={missionTitleFromState(state, "")} gamemode={state.gamemode} pointTarget={state.point_target} settings={state.settings} en={en} state={state} roster={roster} />}
 
       <PlayerHudHeader en={en} />
@@ -2889,7 +2904,7 @@ function LiveMatch({ state, captures, now, roster, myTeam, meId, meCallsign }: {
       <HudHistoryLog
         captures={visibleCaptures}
         deaths={deathLog}
-        respawnEnabled={!!state.settings?.respawn?.enabled}
+        showDeaths={!!state.settings?.respawn?.enabled || !!state.settings?.respawn?.publicDeaths}
         teamLabelFor={teamLabelFor}
         teamColor={(t) => TEAM_COLOR[t] ?? ACCENT}
         nodeNames={NODE_NAMES}
@@ -3009,7 +3024,7 @@ function EndgameReport({ state, roster, captures, en, now, myTeam }: { state: Ga
   const t = useT();
   const deathLog = useDeathLog(state.field_id ?? "");
   const respawnEnabled = !!state.settings?.respawn?.enabled;
-  const showDeaths = respawnEnabled && !!state.settings?.respawn?.publicDeaths;
+  const showDeaths = !!state.settings?.respawn?.publicDeaths;
   const teamLabelFor = (tm: string) => teamName(tm, state.settings, en);
   const counts: Record<string, number> = {};
   for (const c of captures) counts[c.player_callsign ?? "—"] = (counts[c.player_callsign ?? "—"] ?? 0) + 1;
@@ -3309,7 +3324,7 @@ function EndgameReport({ state, roster, captures, en, now, myTeam }: { state: Ga
         <HudHistoryLog
           captures={captures}
           deaths={deathLog}
-          respawnEnabled={respawnEnabled}
+          showDeaths={respawnEnabled || !!state.settings?.respawn?.publicDeaths}
           teamLabelFor={teamLabelFor}
           teamColor={(x) => TEAM_COLOR[x] ?? ACCENT}
           nodeNames={NODE_NAMES}

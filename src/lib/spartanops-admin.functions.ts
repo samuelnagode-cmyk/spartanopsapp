@@ -139,6 +139,7 @@ export const spartanopsAdminPatchState = createServerFn({ method: "POST" })
     const isFreshStart = data.patch.status === "active" && typeof startAfterSeconds === "number" && Number.isFinite(startAfterSeconds);
     if (isFreshStart) {
       patch.match_started_at = new Date(serverNowMs + Math.max(0, startAfterSeconds) * 1000).toISOString();
+      patch.score_ticked_at = patch.match_started_at;
       patch.team_scores = freshScores(patch.team_scores);
       patch.node_holders = FREE_NODES;
       patch.winner_team = null;
@@ -150,6 +151,7 @@ export const spartanopsAdminPatchState = createServerFn({ method: "POST" })
       // with the same layout but no captured points.
       await resetMissionRuntime(supabaseAdmin, data.fieldId);
       patch.match_started_at = null;
+      patch.score_ticked_at = null;
       patch.team_scores = freshScores(patch.team_scores);
       patch.node_holders = FREE_NODES;
       // Preserve an incoming winner_team only when the caller ended the
@@ -239,6 +241,7 @@ export const spartanopsAdminReset = createServerFn({ method: "POST" })
         status: "closed",
         team_selection_open: false,
         match_started_at: null,
+        score_ticked_at: null,
         team_scores: freshScores(),
         node_holders: FREE_NODES,
         updated_at: new Date().toISOString(),
