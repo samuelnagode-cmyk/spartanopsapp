@@ -414,23 +414,33 @@ function MisijaPage() {
   useEffect(() => {
     if (state?.status !== "active" || !state.match_started_at) return;
     syncServerClock().catch(() => {});
-    const timer = setInterval(() => syncServerClock().catch(() => {}), 15000);
+    const timer = setInterval(() => {
+      if (document.visibilityState !== "visible") return;
+      syncServerClock().catch(() => {});
+    }, 30000);
     return () => clearInterval(timer);
   }, [state?.status, state?.match_started_at, getServerTimeFn]);
 
   // Domination scoring: +1 point per held sector every 30 seconds. The RPC is
   // idempotent and timestamp-driven, so every connected client can safely
-  // drive it — whoever fires first advances the shared scoreboard.
+  // drive it — whoever fires first advances the shared scoreboard. Players tick
+  // on a jittered ~30s cadence (the accrual window) so a 30-player lobby does
+  // not hammer the same idempotent write; the marshal console keeps a fast 5s
+  // cadence so the scoreboard stays snappy for whoever is running the match.
   useEffect(() => {
     if (preview || !field) return;
     if (state?.status !== "active" || !state.match_started_at) return;
     const run = () => { tickScoresFn({ data: { fieldId: field } }).catch(() => {}); };
     run();
-    const timer = setInterval(run, 5000);
+    const timer = setInterval(() => {
+      if (document.visibilityState !== "visible") return;
+      run();
+    }, 25000 + Math.floor(Math.random() * 10000));
     const onFocus = () => run();
     window.addEventListener("focus", onFocus);
     return () => { clearInterval(timer); window.removeEventListener("focus", onFocus); };
   }, [field, preview, state?.status, state?.match_started_at, tickScoresFn]);
+
 
   useEffect(() => {
     const timer = setInterval(() => {
