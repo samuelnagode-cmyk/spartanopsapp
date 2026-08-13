@@ -565,8 +565,8 @@ export function SpartanOpsConsole({ fieldId, password }: { fieldId: string; pass
             </div>
             <p style={{ fontSize: 10, color: MUTED, fontFamily: "monospace", lineHeight: 1.55, marginBottom: 8, fontStyle: "italic" }}>
               {en
-                ? "Planning note: the system is balanced so a standard game lasts exactly 40 minutes if a team constantly holds the majority (3 of 5 flags). If a team holds more flags (4 or 5), the target is reached faster. If they hold fewer, the game lasts longer. Adjust the final point count based on desired event duration."
-                : "Pojasnilo za lažje načrtovanje: Sistem je uravnotežen tako, da standardna igra traja natanko 40 minut, če ekipa konstantno drži večino (3 od 5 zastavic). Če ekipa drži več zastavic (4 ali 5), bo cilj dosežen hitreje. Če drži manj, bo igra trajala dlje. Prilagodite končno število točk glede na želeno trajanje dogodka."}
+                ? "Planning note: the system is balanced so that a team holding 3 sectors for 55 minutes gains 100 points."
+                : "Pojasnilo: točkovanje je narejeno tako, da ekipa, ki zavzame in drži 3 sektorje, pridobi 100 točk v 55 minutah."}
             </p>
             <select value={pointTarget} onChange={(e) => setPointTarget(Number(e.target.value))} style={selectStyle}>
               {Array.from({ length: 30 }, (_, i) => (i + 1) * 10).map((p) => (
