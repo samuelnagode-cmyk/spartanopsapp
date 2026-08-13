@@ -525,6 +525,8 @@ function MisijaPage() {
   useEffect(() => {
     if (preview && preset) return;
     let alive = true;
+    let rtLive = false;
+
 
     const synthesizeLocal = (): GameState | null => {
       if (typeof window === "undefined") return null;
