@@ -6,7 +6,7 @@ import { ExperienceBadge, EXPERIENCE_LEVELS } from "@/components/ExperienceBadge
 import { supabase } from "@/integrations/supabase/client";
 import { isStaleState } from "@/lib/game-state-sync";
 
-import { spartanopsAckTeamChange, spartanopsSelectTeam } from "@/lib/spartanops-game.functions";
+import { spartanopsAckTeamChange, spartanopsSelectTeam, spartanopsTickScores } from "@/lib/spartanops-game.functions";
 import { spartanopsUpsertCheckin, spartanopsGetMyCheckin, spartanopsDeleteMyCheckin, spartanopsGetParticipantRoster, spartanopsGetServerTime, spartanopsGetRespawnLock } from "@/lib/spartanops-checkin.functions";
 import { spartanopsAcknowledgeWarning } from "@/lib/spartanops-spartacus.functions";
 import { SpartacusAlerts } from "@/components/SpartanOpsConsole";
@@ -359,6 +359,7 @@ function MisijaPage() {
   const getParticipantRosterFn = useServerFn(spartanopsGetParticipantRoster);
   const getServerTimeFn = useServerFn(spartanopsGetServerTime);
   const getRespawnLockFn = useServerFn(spartanopsGetRespawnLock);
+  const tickScoresFn = useServerFn(spartanopsTickScores);
 
   const [sessionId, setSessionId] = useState("");
   const [state, setState] = useState<GameState | null>(null);
@@ -416,6 +417,20 @@ function MisijaPage() {
     const timer = setInterval(() => syncServerClock().catch(() => {}), 15000);
     return () => clearInterval(timer);
   }, [state?.status, state?.match_started_at, getServerTimeFn]);
+
+  // Domination scoring: +1 point per held sector every 30 seconds. The RPC is
+  // idempotent and timestamp-driven, so every connected client can safely
+  // drive it — whoever fires first advances the shared scoreboard.
+  useEffect(() => {
+    if (preview || !field) return;
+    if (state?.status !== "active" || !state.match_started_at) return;
+    const run = () => { tickScoresFn({ data: { fieldId: field } }).catch(() => {}); };
+    run();
+    const timer = setInterval(run, 5000);
+    const onFocus = () => run();
+    window.addEventListener("focus", onFocus);
+    return () => { clearInterval(timer); window.removeEventListener("focus", onFocus); };
+  }, [field, preview, state?.status, state?.match_started_at, tickScoresFn]);
 
   useEffect(() => {
     const timer = setInterval(() => {

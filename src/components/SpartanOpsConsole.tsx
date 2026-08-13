@@ -163,6 +163,16 @@ export function SpartanOpsConsole({ fieldId, password }: { fieldId: string; pass
     return () => clearInterval(timer);
   }, [state?.status, state?.match_started_at, getServerTime]);
 
+  // Drive the 30-second Domination scoring tick from the Marshal console too,
+  // so the scoreboard advances even when no player HUD is open.
+  useEffect(() => {
+    if (state?.status !== "active" || !state.match_started_at || !fieldId) return;
+    const run = () => { tickScores({ data: { fieldId } }).catch(() => {}); };
+    run();
+    const timer = setInterval(run, 5000);
+    return () => clearInterval(timer);
+  }, [state?.status, state?.match_started_at, fieldId, tickScores]);
+
   useEffect(() => {
     const timer = setInterval(() => {
       setCurrentTime(Date.now() - serverOffset);
