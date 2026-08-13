@@ -718,6 +718,14 @@ function MisijaPage() {
     // Short retry burst — the roster row may not be readable the instant the
     // player finishes deployment, and we never want an empty first paint.
     const retries = [700, 1800, 4000].map((ms) => window.setTimeout(() => { if (alive) load(); }, ms));
+    // Realtime rows are merged instantly; the authoritative refetch is debounced
+    // so a burst of check-ins (30 players deploying at once) triggers one
+    // reconciliation instead of one per event per device.
+    let reconcile = 0;
+    const scheduleReconcile = () => {
+      window.clearTimeout(reconcile);
+      reconcile = window.setTimeout(() => { if (alive) load(); }, 600);
+    };
     const ch = supabase
       .channel(`misija_roster_${field}`)
       .on(
@@ -737,9 +745,10 @@ function MisijaPage() {
               setDbMe((prev) => (prev ? { ...prev, ...next } : next));
             }
           }
-          window.setTimeout(load, 150);
+          scheduleReconcile();
         },
       )
+
       .subscribe();
     return () => {
       alive = false;
