@@ -752,9 +752,11 @@ function MisijaPage() {
       .subscribe();
     return () => {
       alive = false;
+      window.clearTimeout(reconcile);
       retries.forEach((id) => window.clearTimeout(id));
       supabase.removeChannel(ch);
     };
+
   }, [field, sessionId, getParticipantRosterFn, preview, preset]);
 
   // Derive my checkin (only for real DB player; ghost is local). Fetch PII
