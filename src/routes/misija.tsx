@@ -649,16 +649,28 @@ function MisijaPage() {
         },
       )
       .subscribe((status) => {
-        if (status === "SUBSCRIBED") load().catch(() => {});
+        rtLive = status === "SUBSCRIBED";
+        if (rtLive) load().catch(() => {});
       });
 
     load().catch(() => {});
 
     // Realtime safety net: on mobile browsers the websocket can be throttled or
     // silently re-handshaking, which delayed marshal commands (start / pause)
-    // by 10+ seconds. A light 2s poll guarantees every phone reacts near
-    // instantly; the monotonic `updated_at` guard keeps snapshots ordered.
-    const poll = window.setInterval(() => { load().catch(() => {}); }, 2000);
+    // by 10+ seconds. We keep a fast 2s poll until the websocket confirms it is
+    // live, then back off to ~6s (jittered, and paused while the tab is hidden)
+    // so a full 30-player lobby does not fan out 15 requests/second. The
+    // monotonic `updated_at` guard keeps snapshots ordered either way.
+    let pollTimer = 0;
+    const schedule = () => {
+      const base = rtLive ? 6000 : 2000;
+      pollTimer = window.setTimeout(async () => {
+        if (!alive) return;
+        if (document.visibilityState === "visible") await load().catch(() => {});
+        if (alive) schedule();
+      }, base + Math.floor(Math.random() * 800));
+    };
+    schedule();
     const onWake = () => { if (document.visibilityState === "visible") load().catch(() => {}); };
     document.addEventListener("visibilitychange", onWake);
     window.addEventListener("focus", onWake);
@@ -667,12 +679,13 @@ function MisijaPage() {
     return () => {
       alive = false;
       clearTimeout(timeout);
-      window.clearInterval(poll);
+      window.clearTimeout(pollTimer);
       document.removeEventListener("visibilitychange", onWake);
       window.removeEventListener("focus", onWake);
       window.removeEventListener("pageshow", onWake);
       supabase.removeChannel(ch);
     };
+
   }, [field, preview, preset]);
 
 
