@@ -1500,7 +1500,13 @@ export function SpartacusAlerts({ fieldId, password, en }: { fieldId: string; pa
       } catch { /* ignore */ }
     };
     load();
-    const interval = window.setInterval(load, 1500);
+    // Realtime INSERT/UPDATE events drive this list; the interval is only a
+    // reconnect safety net, so it stays slow instead of polling every 1.5s.
+    const interval = window.setInterval(() => {
+      if (document.visibilityState !== "visible") return;
+      load();
+    }, 10000);
+
 
     const ch = supabase
       .channel(`spartacus_alerts_${fieldId}`)

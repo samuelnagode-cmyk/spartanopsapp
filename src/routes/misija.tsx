@@ -414,23 +414,33 @@ function MisijaPage() {
   useEffect(() => {
     if (state?.status !== "active" || !state.match_started_at) return;
     syncServerClock().catch(() => {});
-    const timer = setInterval(() => syncServerClock().catch(() => {}), 15000);
+    const timer = setInterval(() => {
+      if (document.visibilityState !== "visible") return;
+      syncServerClock().catch(() => {});
+    }, 30000);
     return () => clearInterval(timer);
   }, [state?.status, state?.match_started_at, getServerTimeFn]);
 
   // Domination scoring: +1 point per held sector every 30 seconds. The RPC is
   // idempotent and timestamp-driven, so every connected client can safely
-  // drive it — whoever fires first advances the shared scoreboard.
+  // drive it — whoever fires first advances the shared scoreboard. Players tick
+  // on a jittered ~30s cadence (the accrual window) so a 30-player lobby does
+  // not hammer the same idempotent write; the marshal console keeps a fast 5s
+  // cadence so the scoreboard stays snappy for whoever is running the match.
   useEffect(() => {
     if (preview || !field) return;
     if (state?.status !== "active" || !state.match_started_at) return;
     const run = () => { tickScoresFn({ data: { fieldId: field } }).catch(() => {}); };
     run();
-    const timer = setInterval(run, 5000);
+    const timer = setInterval(() => {
+      if (document.visibilityState !== "visible") return;
+      run();
+    }, 25000 + Math.floor(Math.random() * 10000));
     const onFocus = () => run();
     window.addEventListener("focus", onFocus);
     return () => { clearInterval(timer); window.removeEventListener("focus", onFocus); };
   }, [field, preview, state?.status, state?.match_started_at, tickScoresFn]);
+
 
   useEffect(() => {
     const timer = setInterval(() => {
@@ -494,10 +504,12 @@ function MisijaPage() {
     // Only hammer the server while a respawn lock is actually running; idle
     // players fall back to a light 15s heartbeat. Keeps load flat at 30 players.
     const remoteTimer = setInterval(() => {
+      if (document.visibilityState !== "visible") return;
       let active = false;
       try { active = Number(localStorage.getItem(key) ?? 0) > Date.now() - serverOffset; } catch { /* ignore */ }
       if (active || Date.now() % 15000 < 1600) syncRemote();
     }, 1500);
+
     window.addEventListener("focus", syncRemote);
     window.addEventListener("pageshow", syncRemote);
     return () => {
@@ -515,6 +527,8 @@ function MisijaPage() {
   useEffect(() => {
     if (preview && preset) return;
     let alive = true;
+    let rtLive = false;
+
 
     const synthesizeLocal = (): GameState | null => {
       if (typeof window === "undefined") return null;
@@ -639,16 +653,28 @@ function MisijaPage() {
         },
       )
       .subscribe((status) => {
-        if (status === "SUBSCRIBED") load().catch(() => {});
+        rtLive = status === "SUBSCRIBED";
+        if (rtLive) load().catch(() => {});
       });
 
     load().catch(() => {});
 
     // Realtime safety net: on mobile browsers the websocket can be throttled or
     // silently re-handshaking, which delayed marshal commands (start / pause)
-    // by 10+ seconds. A light 2s poll guarantees every phone reacts near
-    // instantly; the monotonic `updated_at` guard keeps snapshots ordered.
-    const poll = window.setInterval(() => { load().catch(() => {}); }, 2000);
+    // by 10+ seconds. We keep a fast 2s poll until the websocket confirms it is
+    // live, then back off to ~6s (jittered, and paused while the tab is hidden)
+    // so a full 30-player lobby does not fan out 15 requests/second. The
+    // monotonic `updated_at` guard keeps snapshots ordered either way.
+    let pollTimer = 0;
+    const schedule = () => {
+      const base = rtLive ? 6000 : 2000;
+      pollTimer = window.setTimeout(async () => {
+        if (!alive) return;
+        if (document.visibilityState === "visible") await load().catch(() => {});
+        if (alive) schedule();
+      }, base + Math.floor(Math.random() * 800));
+    };
+    schedule();
     const onWake = () => { if (document.visibilityState === "visible") load().catch(() => {}); };
     document.addEventListener("visibilitychange", onWake);
     window.addEventListener("focus", onWake);
@@ -657,12 +683,13 @@ function MisijaPage() {
     return () => {
       alive = false;
       clearTimeout(timeout);
-      window.clearInterval(poll);
+      window.clearTimeout(pollTimer);
       document.removeEventListener("visibilitychange", onWake);
       window.removeEventListener("focus", onWake);
       window.removeEventListener("pageshow", onWake);
       supabase.removeChannel(ch);
     };
+
   }, [field, preview, preset]);
 
 
@@ -693,6 +720,14 @@ function MisijaPage() {
     // Short retry burst — the roster row may not be readable the instant the
     // player finishes deployment, and we never want an empty first paint.
     const retries = [700, 1800, 4000].map((ms) => window.setTimeout(() => { if (alive) load(); }, ms));
+    // Realtime rows are merged instantly; the authoritative refetch is debounced
+    // so a burst of check-ins (30 players deploying at once) triggers one
+    // reconciliation instead of one per event per device.
+    let reconcile = 0;
+    const scheduleReconcile = () => {
+      window.clearTimeout(reconcile);
+      reconcile = window.setTimeout(() => { if (alive) load(); }, 600);
+    };
     const ch = supabase
       .channel(`misija_roster_${field}`)
       .on(
@@ -712,15 +747,18 @@ function MisijaPage() {
               setDbMe((prev) => (prev ? { ...prev, ...next } : next));
             }
           }
-          window.setTimeout(load, 150);
+          scheduleReconcile();
         },
       )
+
       .subscribe();
     return () => {
       alive = false;
+      window.clearTimeout(reconcile);
       retries.forEach((id) => window.clearTimeout(id));
       supabase.removeChannel(ch);
     };
+
   }, [field, sessionId, getParticipantRosterFn, preview, preset]);
 
   // Derive my checkin (only for real DB player; ghost is local). Fetch PII
@@ -781,19 +819,28 @@ function MisijaPage() {
       if (alive) setCaptures((data ?? []) as unknown as Capture[]);
     };
     load();
+    // Coalesce capture bursts (several sectors flipping at once) into a single
+    // refetch per device instead of one query per realtime event.
+    let debounce = 0;
+    const scheduleLoad = () => {
+      window.clearTimeout(debounce);
+      debounce = window.setTimeout(() => { if (alive) load(); }, 250);
+    };
     const ch = supabase
       .channel(`misija_captures_${field}`)
       .on(
         "postgres_changes",
         { event: "*", schema: "public", table: "spartanops_captures", filter: `field_id=eq.${field}` },
-        load,
+        scheduleLoad,
       )
       .subscribe();
     return () => {
       alive = false;
+      window.clearTimeout(debounce);
       supabase.removeChannel(ch);
     };
   }, [field, preview, preset]);
+
 
   // Bridge lobby / match transitions to the ambient audio provider so the
   // lobby track plays on entry and fades out when the match actually begins.
