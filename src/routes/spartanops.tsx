@@ -350,7 +350,11 @@ function LiveTracker() {
       try { const data = await fetchTelemetry(); if (alive) setT(data); } catch {}
     };
     void load();
-    const id = window.setInterval(load, 20000);
+    // Marketing counters: never poll a backgrounded tab.
+    const id = window.setInterval(() => {
+      if (document.visibilityState === "visible") void load();
+    }, 30000);
+
     return () => { alive = false; window.clearInterval(id); };
   }, [fetchTelemetry]);
 
