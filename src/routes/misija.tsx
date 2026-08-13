@@ -2808,7 +2808,7 @@ function LiveMatch({ state, captures, now, roster, myTeam, meId, meCallsign }: {
 
   return (
     <div className="max-w-5xl mx-auto px-4 py-6" style={{ paddingTop: 84 }}>
-      <HudNoticeFeed captures={visibleCaptures} roster={roster} myTeam={myTeam} meId={meId} meCallsign={meCallsign} teamLabelFor={teamLabelFor} respawnEnabled={!!state.settings?.respawn?.enabled} fieldId={state.field_id ?? ""} />
+      <HudNoticeFeed captures={visibleCaptures} roster={roster} myTeam={myTeam} meId={meId} meCallsign={meCallsign} teamLabelFor={teamLabelFor} respawnEnabled={!!state.settings?.respawn?.enabled || !!state.settings?.respawn?.publicDeaths} fieldId={state.field_id ?? ""} />
       {preMatchSec > 0 && <PreMatchCountdown seconds={preMatchSec} polygon={fieldTitleFromState(state, "")} eventName={missionTitleFromState(state, "")} gamemode={state.gamemode} pointTarget={state.point_target} settings={state.settings} en={en} state={state} roster={roster} />}
 
       <PlayerHudHeader en={en} />
@@ -2904,7 +2904,7 @@ function LiveMatch({ state, captures, now, roster, myTeam, meId, meCallsign }: {
       <HudHistoryLog
         captures={visibleCaptures}
         deaths={deathLog}
-        respawnEnabled={!!state.settings?.respawn?.enabled}
+        showDeaths={!!state.settings?.respawn?.enabled || !!state.settings?.respawn?.publicDeaths}
         teamLabelFor={teamLabelFor}
         teamColor={(t) => TEAM_COLOR[t] ?? ACCENT}
         nodeNames={NODE_NAMES}
@@ -3324,7 +3324,7 @@ function EndgameReport({ state, roster, captures, en, now, myTeam }: { state: Ga
         <HudHistoryLog
           captures={captures}
           deaths={deathLog}
-          respawnEnabled={respawnEnabled}
+          showDeaths={respawnEnabled || !!state.settings?.respawn?.publicDeaths}
           teamLabelFor={teamLabelFor}
           teamColor={(x) => TEAM_COLOR[x] ?? ACCENT}
           nodeNames={NODE_NAMES}

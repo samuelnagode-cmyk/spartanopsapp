@@ -6,8 +6,8 @@ import type { DeathEvent } from "@/lib/hud-history";
 /**
  * Two-tier tactical History Log.
  * Major events (sector captures) are full-width and bold; minor events
- * (player deaths / respawn requests) are compact and only rendered when
- * respawn QR codes are enabled for the mission.
+ * (player deaths / respawn requests) are compact and rendered whenever the
+ * mission enables respawn QR codes or public death counts.
  */
 
 export type CaptureEntry = {
@@ -36,7 +36,7 @@ type Row =
 export function HudHistoryLog({
   captures,
   deaths,
-  respawnEnabled,
+  showDeaths,
   teamLabelFor,
   teamColor,
   nodeNames,
@@ -44,7 +44,7 @@ export function HudHistoryLog({
 }: {
   captures: CaptureEntry[];
   deaths: DeathEvent[];
-  respawnEnabled: boolean;
+  showDeaths: boolean;
   teamLabelFor: (t: string) => string;
   teamColor: (t: string) => string;
   nodeNames: string[];
@@ -63,7 +63,7 @@ export function HudHistoryLog({
       sector: nodeNames[c.point_number - 1] ?? `#${c.point_number}`,
     }));
     const deathRows: Row[] =
-      respawnEnabled && filter === "all"
+      showDeaths && filter === "all"
         ? deaths.map((d) => ({
             kind: "death" as const,
             id: `dth-${d.id}`,
@@ -73,7 +73,7 @@ export function HudHistoryLog({
           }))
         : [];
     return [...capRows, ...deathRows].sort((a, b) => b.at - a.at);
-  }, [captures, deaths, respawnEnabled, filter, nodeNames]);
+  }, [captures, deaths, showDeaths, filter, nodeNames]);
 
 
   return (
@@ -94,7 +94,7 @@ export function HudHistoryLog({
         }}
       >
         <span>▌ {t("hudLog.title")}</span>
-        {respawnEnabled && (
+        {showDeaths && (
           <div style={{ marginLeft: "auto", display: "inline-flex", border: `1px solid ${ACCENT}55` }}>
             {(["all", "sectors"] as const).map((f) => {
               const active = filter === f;
