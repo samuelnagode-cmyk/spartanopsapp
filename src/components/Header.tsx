@@ -244,7 +244,7 @@ export default function Header() {
       >
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className={`grid ${layoutCols} items-center h-16 lg:h-20`}>
-            <div className="flex items-center justify-start">
+            <div className="flex items-center justify-start gap-2 sm:gap-3">
               {!isHome && (
                 <button
                   type="button"
@@ -276,6 +276,23 @@ export default function Header() {
                   <span className="hidden sm:inline">{t("nav.back")}</span>
                 </button>
               )}
+              <span
+                className="font-mono uppercase select-none"
+                style={{
+                  fontSize: 10,
+                  letterSpacing: "0.28em",
+                  fontWeight: 700,
+                  color: "#E0B04E",
+                  padding: "4px 8px 3px",
+                  borderRadius: 3,
+                  background: "linear-gradient(135deg, rgba(248,216,140,0.14) 0%, rgba(224,176,78,0.10) 100%)",
+                  border: "1px solid rgba(224,176,78,0.45)",
+                  boxShadow: "0 0 14px -4px rgba(224,176,78,0.35), inset 0 1px 0 rgba(255,255,255,0.12)",
+                  textShadow: "0 0 10px rgba(224,176,78,0.35)",
+                }}
+              >
+                BETA
+              </span>
             </div>
 
             <div className="flex items-center justify-center">
@@ -283,6 +300,11 @@ export default function Header() {
                 to={logoTo}
                 aria-label="SpartanOps"
                 className="relative z-[95] inline-flex"
+                onClick={() => {
+                  if (typeof window !== "undefined") {
+                    window.scrollTo({ top: 0, behavior: "smooth" });
+                  }
+                }}
               >
                 <img
                   src={headerLogo}
