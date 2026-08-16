@@ -1,3 +1,4 @@
+import { bumpTelemetryClient } from "@/lib/telemetry-client";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { Fragment, memo, useCallback, useEffect, useMemo, useRef, useState, type PointerEvent as ReactPointerEvent } from "react";
 
@@ -3064,10 +3065,13 @@ function EndgameSoundtrackTrigger() {
 
 function EndgameReport({ state, roster, captures, en, now, myTeam }: { state: GameState; roster: Checkin[]; captures: Capture[]; en: boolean; now: number; myTeam?: string }) {
   useEffect(() => {
+    // Mission completed — counted once per mission run (deduped server-side).
+    bumpTelemetryClient("mission_complete", `${state.field_id ?? "unknown"}:${state.match_started_at ?? "na"}`);
     return () => {
       try { window.dispatchEvent(new Event("spartanops:debrief-exit")); } catch { /* ignore */ }
     };
-  }, []);
+  }, [state.field_id, state.match_started_at]);
+
   const t = useT();
   const deathLog = useDeathLog(state.field_id ?? "");
   const respawnEnabled = !!state.settings?.respawn?.enabled;

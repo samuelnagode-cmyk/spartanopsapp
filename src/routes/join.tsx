@@ -1,3 +1,4 @@
+import { bumpTelemetryOnce } from "@/lib/telemetry-client";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
@@ -129,6 +130,9 @@ function JoinPage() {
 
     (async () => {
       const browseMode = search.browse === "1";
+      // A lobby id in the URL means the player arrived from a printed QR code.
+      if (!browseMode && directLobbyId) bumpTelemetryOnce("qr_entry", `join:${directLobbyId}`);
+
       if (browseMode) {
         try { localStorage.removeItem(SESSION_KEY); } catch { /* ignore */ }
       }
