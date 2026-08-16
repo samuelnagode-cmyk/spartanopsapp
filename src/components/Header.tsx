@@ -277,7 +277,7 @@ export default function Header() {
                 </button>
               )}
               <span
-                className="font-mono uppercase select-none"
+                className="font-mono uppercase select-none ml-auto"
                 style={{
                   fontSize: 10,
                   letterSpacing: "0.28em",
