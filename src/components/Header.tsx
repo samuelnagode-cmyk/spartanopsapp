@@ -277,7 +277,7 @@ export default function Header() {
                 </button>
               )}
               <span
-                className="font-mono uppercase select-none ml-auto"
+                className={`font-mono uppercase select-none ${isHome ? "" : "ml-auto"}`}
                 style={{
                   fontSize: 10,
                   letterSpacing: "0.28em",
