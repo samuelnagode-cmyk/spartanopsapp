@@ -276,8 +276,11 @@ export default function Header() {
                   <span className="hidden sm:inline">{t("nav.back")}</span>
                 </button>
               )}
+            </div>
+
+            <div className="flex items-center justify-center gap-2">
               <span
-                className="font-mono uppercase select-none ml-auto"
+                className="font-mono uppercase select-none"
                 style={{
                   fontSize: 10,
                   letterSpacing: "0.28em",
@@ -293,9 +296,6 @@ export default function Header() {
               >
                 BETA
               </span>
-            </div>
-
-            <div className="flex items-center justify-center">
               <Link
                 to={logoTo}
                 aria-label="SpartanOps"
