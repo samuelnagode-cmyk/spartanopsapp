@@ -247,25 +247,6 @@ function Hero() {
               loading="eager"
               decoding="async"
             />
-            <span
-              className="absolute font-mono uppercase select-none"
-              style={{
-                top: "-8%",
-                right: "14%",
-                transform: "translateX(0)",
-                fontSize: "clamp(7px, 1.2vw, 10px)",
-                letterSpacing: "0.32em",
-                padding: "5px 11px 4px",
-                color: "#0b0d09",
-                fontWeight: 800,
-                borderRadius: 4,
-                background: "linear-gradient(135deg, #F8D88C 0%, #E0B04E 50%, #C9983A 100%)",
-                boxShadow: "0 8px 22px -6px rgba(224,176,78,0.65), inset 0 1px 0 rgba(255,255,255,0.5)",
-                border: "2px solid rgba(255,240,200,0.85)",
-              }}
-            >
-              BETA
-            </span>
           </div>
           <p
             className="mx-auto mt-2 text-[14px] md:text-[16px] leading-[1.6]"
@@ -1050,6 +1031,12 @@ function OperationalPlans() {
 
 /* ---------- PAGE ---------- */
 function SpartanOpsHome() {
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      window.scrollTo({ top: 0, behavior: "auto" });
+    }
+  }, []);
+
   return (
     <div style={{ background: BG, color: INK, minHeight: "100vh", paddingTop: 80 }}>
       {/* Modular sections — reorder or remove freely */}
