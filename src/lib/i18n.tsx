@@ -527,7 +527,7 @@ export const dict: Dict = {
   "spartan.titleTelemetry": { sl: "OPERATIVNA TELEMETRIJA", en: "OPERATIONAL TELEMETRY" },
   "spartan.statOperators": { sl: "AKTIVIRANIH OPERATIVCEV", en: "OPERATORS DEPLOYED" },
   "spartan.statQRScanned": { sl: "SKENIRANIH QR KOD", en: "QR CODES SCANNED" },
-  "spartan.statRespawns": { sl: "OBDELANIH OŽIVITEV", en: "RESPAWNS PROCESSED" },
+  "spartan.statRespawns": { sl: "RESPAWNS DONE", en: "RESPAWNS DONE" },
   "spartan.statMissions": { sl: "ZAKLJUČENIH MISIJ", en: "MISSIONS COMPLETED" },
   "spartan.tagManual": { sl: "// TERENSKI PRIROČNIK", en: "// FIELD MANUAL" },
   "spartan.titleManual": { sl: "KAKO DELUJE / OPERATIVNI PRIROČNIK", en: "HOW IT WORKS / OPERATIONAL MANUAL" },

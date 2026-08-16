@@ -1,3 +1,4 @@
+import { bumpTelemetryClient, bumpTelemetryOnce } from "@/lib/telemetry-client";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
@@ -191,7 +192,15 @@ function SpawnPage() {
   // player hears the countdown cue the moment their timer starts.
   useEffect(() => {
     try { window.dispatchEvent(new Event("spartanops:sfx-respawn")); } catch { /* ignore */ }
-  }, []);
+    bumpTelemetryOnce("qr_entry", `spawn:${resolvedField}:${Math.floor(Date.now() / 60000)}`);
+  }, [resolvedField]);
+
+  // Count the respawn only once the mission accepted it (match running).
+  useEffect(() => {
+    if (state !== "success") return;
+    bumpTelemetryClient("respawn");
+  }, [state]);
+
 
 
   useEffect(() => {

@@ -1,3 +1,4 @@
+import { bumpTelemetryOnce } from "@/lib/telemetry-client";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect } from "react";
 
@@ -36,7 +37,10 @@ function ScanPage() {
   const navigate = useNavigate();
 
   useEffect(() => {
+    // 0) Marketing telemetry: this route is only ever reached from a printed QR.
+    bumpTelemetryOnce("qr_entry", `scan:${Math.floor(Date.now() / 60000)}`);
     // 1) Instantly erase the executable URL from history so back/forward/reload
+
     //    cannot replay a QR-derived payload. Do this BEFORE anything else.
     try {
       window.history.replaceState(null, "", "/misija");

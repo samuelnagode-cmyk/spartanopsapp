@@ -1,7 +1,7 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { type ReactNode, useEffect, useRef, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
-import { Crosshair, QrCode, Users, MapPin, ArrowRight, Printer, CheckCircle2, Flag, RefreshCw, Target } from "lucide-react";
+import { Crosshair, QrCode, Users, MapPin, ArrowRight, Printer, CheckCircle2, Flag, Skull, Target } from "lucide-react";
 import { SYSTEM_FIELD, dtoToRecord } from "./admin-pregled";
 import { getOperationalTelemetry, type OperationalTelemetry } from "@/lib/spartanops-telemetry.functions";
 import { listPublishedLobbies } from "@/lib/spartanops-lobbies.functions";
@@ -239,14 +239,34 @@ function Hero() {
             {t("spartan.heroTag")}
           </p>
           <h1 className="sr-only">SpartanOps</h1>
-          <img
-            src={LOGO_URL}
-            alt="SpartanOps"
-            className="mx-auto block w-full h-auto"
-            style={{ maxWidth: "min(560px, 88vw)" }}
-            loading="eager"
-            decoding="async"
-          />
+          <div className="relative mx-auto" style={{ maxWidth: "min(560px, 88vw)", width: "100%" }}>
+            <img
+              src={LOGO_URL}
+              alt="SpartanOps"
+              className="mx-auto block w-full h-auto"
+              loading="eager"
+              decoding="async"
+            />
+            <span
+              className="absolute font-mono uppercase select-none"
+              style={{
+                top: "4%",
+                right: "-2%",
+                transform: "rotate(8deg)",
+                fontSize: "clamp(9px, 1.7vw, 12px)",
+                letterSpacing: "0.28em",
+                padding: "4px 10px 3px",
+                color: "#0b0d09",
+                fontWeight: 700,
+                borderRadius: 3,
+                background: "linear-gradient(135deg, #F5D07A 0%, #E0B04E 45%, #B8862B 100%)",
+                boxShadow: "0 6px 18px -6px rgba(224,176,78,0.75), inset 0 1px 0 rgba(255,255,255,0.45)",
+                border: "1px solid rgba(255,236,190,0.65)",
+              }}
+            >
+              BETA
+            </span>
+          </div>
           <p
             className="mx-auto mt-2 text-[14px] md:text-[16px] leading-[1.6]"
             style={{ color: INK, maxWidth: 620 }}
@@ -358,11 +378,11 @@ function LiveTracker() {
     return () => { alive = false; window.clearInterval(id); };
   }, [fetchTelemetry]);
 
-  const items: Array<{ label: string; value: number; Icon: typeof CheckCircle2; live: boolean }> = [
-    { label: tl("spartan.statOperators"), value: t.operators, Icon: Users, live: false },
-    { label: tl("spartan.statQRScanned"), value: t.scans, Icon: QrCode, live: false },
-    { label: tl("spartan.statRespawns"), value: t.respawns, Icon: RefreshCw, live: true },
-    { label: tl("spartan.statMissions"), value: t.missions, Icon: Target, live: false },
+  const items: Array<{ label: string; value: number; Icon: typeof CheckCircle2 }> = [
+    { label: tl("spartan.statOperators"), value: t.operators, Icon: Users },
+    { label: tl("spartan.statQRScanned"), value: t.scans, Icon: QrCode },
+    { label: tl("spartan.statRespawns"), value: t.respawns, Icon: Skull },
+    { label: tl("spartan.statMissions"), value: t.missions, Icon: Target },
   ];
   return (
     <SectionShell>
@@ -373,32 +393,13 @@ function LiveTracker() {
             key={it.label}
             className="p-4 md:p-5 h-full flex flex-col"
           >
-            <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center mb-3">
               <span
                 className="inline-flex items-center gap-2 font-mono uppercase"
                 style={{ fontSize: 10, letterSpacing: "0.24em", color: ACCENT }}
               >
                 <it.Icon size={13} strokeWidth={1.8} />
               </span>
-              {it.live ? (
-                <span
-                  className="inline-flex items-center gap-1.5 font-mono uppercase"
-                  style={{ fontSize: 9, letterSpacing: "0.24em", color: "#3ddc84" }}
-                >
-                  <span
-                    className="animate-pulse-dot"
-                    style={{ width: 6, height: 6, background: "#3ddc84", display: "inline-block", borderRadius: 999 }}
-                  />
-                  LIVE
-                </span>
-              ) : (
-                <span
-                  className="font-mono uppercase"
-                  style={{ fontSize: 9, letterSpacing: "0.24em", color: MUTED }}
-                >
-                  TOTAL
-                </span>
-              )}
             </div>
             <div
               style={{

@@ -624,6 +624,27 @@ export type Database = {
         }
         Relationships: []
       }
+      spartanops_telemetry_events: {
+        Row: {
+          created_at: string
+          dedupe_key: string | null
+          id: string
+          kind: string
+        }
+        Insert: {
+          created_at?: string
+          dedupe_key?: string | null
+          id?: string
+          kind: string
+        }
+        Update: {
+          created_at?: string
+          dedupe_key?: string | null
+          id?: string
+          kind?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       event_registrations_public: {
