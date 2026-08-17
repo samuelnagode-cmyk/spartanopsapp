@@ -557,13 +557,6 @@ function AdminPage() {
     if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
   };
 
-  const handleDecommission = (key: FieldKey) => {
-    const msg = "CRITICAL: Are you sure you want to completely decommission and wipe this field?";
-    if (!confirm(msg)) return;
-    setFields((f) => f.filter((x) => x.key !== key));
-    if (activeField === key) setActiveField(null);
-  };
-
   const handleDecommissionLobby = async (id: string) => {
     const mpw = getMasterPw();
     if (!mpw) {
