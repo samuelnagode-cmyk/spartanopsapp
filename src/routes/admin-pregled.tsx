@@ -806,7 +806,7 @@ function AdminPage() {
   );
 }
 
-function CreateFieldForm({ onCancel, onCreated }: { onCancel: () => void; onCreated: (rec: LobbyRecord, pws: { password: string; marshalPassword: string }) => void }) {
+function CreateFieldForm({ onCreated }: { onCreated: (rec: LobbyRecord, pws: { password: string; marshalPassword: string }) => void }) {
   const { lang } = useLang();
   const en = lang === "en";
   const { isPremium, openPremiumModal } = usePremium();

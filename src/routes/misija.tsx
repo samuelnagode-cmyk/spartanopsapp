@@ -2753,7 +2753,7 @@ function TacticalMap({ state, captures, en, hasPositions, missionName, timeLabel
 
 
 
-function ScanCodeButton({ fieldId, paused, en }: { fieldId: string; paused: boolean; en: boolean }) {
+function ScanCodeButton({ paused }: { paused: boolean }) {
   const t = useT();
   const navigate = useNavigate();
   const [open, setOpen] = useState(false);
@@ -2942,7 +2942,7 @@ function LiveMatch({ state, captures, now, roster, myTeam, meId, meCallsign }: {
       <TacticalMap state={state} captures={visibleCaptures} en={en} hasPositions={hasPositions} missionName={missionTitleFromState(state, en ? "Active Mission" : "Aktivna misija")} timeLabel={`${mm}:${ss}`} />
 
       {/* In-app Scan Code button — the ONLY sanctioned capture path */}
-      <ScanCodeButton fieldId={state.field_id ?? ""} paused={state.status === "paused"} en={en} />
+      <ScanCodeButton paused={state.status === "paused"} />
 
 
 
