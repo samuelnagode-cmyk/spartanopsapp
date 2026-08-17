@@ -714,9 +714,6 @@ function HowItWorks() {
 
 
 /* ---------- SECTOR SHOWCASE (right below hero) ---------- */
-const SECTOR_IMG =
-  "https://res.cloudinary.com/dfifiytid/image/upload/v1783854912/SpartanOps%20app%20v1.0/GALERIJA/homepage_asortiman-14.webp";
-
 function SectorShowcase() {
   const t = useT();
   return (

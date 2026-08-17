@@ -714,7 +714,6 @@ function AdminPage() {
 
         {section === "fields" && creating && (
           <CreateFieldForm
-            onCancel={() => setCreating(false)}
             onCreated={(rec, pws) => {
               setCreating(false);
               setCustomLobbies(loadLobbies());
@@ -727,14 +726,11 @@ function AdminPage() {
 
         {section === "fields" && !creating && !activeField && !marshalActiveLobby && (
           <FieldsWelcome
-            fields={fields}
             customLobbies={customLobbies}
             lobbiesLoaded={lobbiesLoaded}
             isEditMode={isEditMode}
             onCreate={() => setCreating(true)}
             onUseExisting={scrollToList}
-            onOpenField={(k) => setActiveField(k)}
-            onDecommission={handleDecommission}
             onOpenLobby={(id) => {
               const l = customLobbies.find((x) => x.id === id);
               if (l) setMarshalPromptLobby(l);
@@ -1283,16 +1279,13 @@ function CreateFieldForm({ onCreated }: { onCreated: (rec: LobbyRecord, pws: { p
 
 
 function FieldsWelcome({
-  fields, customLobbies, lobbiesLoaded, isEditMode, onCreate, onUseExisting, onOpenField, onDecommission, onOpenLobby, onDecommissionLobby,
+  customLobbies, lobbiesLoaded, isEditMode, onCreate, onUseExisting, onOpenLobby, onDecommissionLobby,
 }: {
-  fields: Field[];
   customLobbies: LobbyRecord[];
   lobbiesLoaded: boolean;
   isEditMode: boolean;
   onCreate: () => void;
   onUseExisting: () => void;
-  onOpenField: (k: FieldKey) => void;
-  onDecommission: (k: FieldKey) => void;
   onOpenLobby: (id: string) => void;
   onDecommissionLobby: (id: string) => void;
 }) {
