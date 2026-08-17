@@ -1,5 +1,4 @@
 import { useEffect, useState } from "react";
-import { Link } from "@tanstack/react-router";
 import { ChevronLeft, ChevronRight, Star } from "lucide-react";
 import { useLang } from "@/lib/i18n";
 import { reviews, aggregateScore, featuredReviewIndices } from "@/data/reviews";
