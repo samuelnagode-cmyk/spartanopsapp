@@ -414,7 +414,7 @@ function AdminPage() {
   const search = useSearch({ from: "/admin-pregled" }) as { edit?: string };
   const navigate = useNavigate();
   const [section, setSection] = useState<MainSection>("fields");
-  const [fields, setFields] = useState<Field[]>(INITIAL_FIELDS);
+  const [fields] = useState<Field[]>(INITIAL_FIELDS);
   // Keep the server and first browser render identical; hydrate the local
   // cache immediately after mount, then reconcile with the database below.
   const [customLobbies, setCustomLobbies] = useState<LobbyRecord[]>([]);
