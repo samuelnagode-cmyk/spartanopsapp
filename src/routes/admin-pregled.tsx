@@ -414,7 +414,7 @@ function AdminPage() {
   const search = useSearch({ from: "/admin-pregled" }) as { edit?: string };
   const navigate = useNavigate();
   const [section, setSection] = useState<MainSection>("fields");
-  const [fields, setFields] = useState<Field[]>(INITIAL_FIELDS);
+  const [fields] = useState<Field[]>(INITIAL_FIELDS);
   // Keep the server and first browser render identical; hydrate the local
   // cache immediately after mount, then reconcile with the database below.
   const [customLobbies, setCustomLobbies] = useState<LobbyRecord[]>([]);
@@ -555,13 +555,6 @@ function AdminPage() {
   const scrollToList = () => {
     const el = document.getElementById("fields-list");
     if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
-  };
-
-  const handleDecommission = (key: FieldKey) => {
-    const msg = "CRITICAL: Are you sure you want to completely decommission and wipe this field?";
-    if (!confirm(msg)) return;
-    setFields((f) => f.filter((x) => x.key !== key));
-    if (activeField === key) setActiveField(null);
   };
 
   const handleDecommissionLobby = async (id: string) => {
@@ -714,7 +707,6 @@ function AdminPage() {
 
         {section === "fields" && creating && (
           <CreateFieldForm
-            onCancel={() => setCreating(false)}
             onCreated={(rec, pws) => {
               setCreating(false);
               setCustomLobbies(loadLobbies());
@@ -727,14 +719,11 @@ function AdminPage() {
 
         {section === "fields" && !creating && !activeField && !marshalActiveLobby && (
           <FieldsWelcome
-            fields={fields}
             customLobbies={customLobbies}
             lobbiesLoaded={lobbiesLoaded}
             isEditMode={isEditMode}
             onCreate={() => setCreating(true)}
             onUseExisting={scrollToList}
-            onOpenField={(k) => setActiveField(k)}
-            onDecommission={handleDecommission}
             onOpenLobby={(id) => {
               const l = customLobbies.find((x) => x.id === id);
               if (l) setMarshalPromptLobby(l);
@@ -806,7 +795,7 @@ function AdminPage() {
   );
 }
 
-function CreateFieldForm({ onCancel, onCreated }: { onCancel: () => void; onCreated: (rec: LobbyRecord, pws: { password: string; marshalPassword: string }) => void }) {
+function CreateFieldForm({ onCreated }: { onCreated: (rec: LobbyRecord, pws: { password: string; marshalPassword: string }) => void }) {
   const { lang } = useLang();
   const en = lang === "en";
   const { isPremium, openPremiumModal } = usePremium();
@@ -1283,16 +1272,13 @@ function CreateFieldForm({ onCancel, onCreated }: { onCancel: () => void; onCrea
 
 
 function FieldsWelcome({
-  fields, customLobbies, lobbiesLoaded, isEditMode, onCreate, onUseExisting, onOpenField, onDecommission, onOpenLobby, onDecommissionLobby,
+  customLobbies, lobbiesLoaded, isEditMode, onCreate, onUseExisting, onOpenLobby, onDecommissionLobby,
 }: {
-  fields: Field[];
   customLobbies: LobbyRecord[];
   lobbiesLoaded: boolean;
   isEditMode: boolean;
   onCreate: () => void;
   onUseExisting: () => void;
-  onOpenField: (k: FieldKey) => void;
-  onDecommission: (k: FieldKey) => void;
   onOpenLobby: (id: string) => void;
   onDecommissionLobby: (id: string) => void;
 }) {
