@@ -214,8 +214,8 @@ export default function Footer() {
         {/* Social */}
         <div className="mt-6 md:mt-5 flex justify-center items-center gap-7">
           {[
-            { href: "https://instagram.com/glampingzeleniraj", label: "Instagram", Icon: Instagram },
-            { href: "https://facebook.com", label: "Facebook", Icon: Facebook },
+            { href: "https://www.instagram.com/spartanopsapp/", label: "Instagram", Icon: Instagram },
+            { href: "https://www.facebook.com/profile.php?id=61593535313976", label: "Facebook", Icon: Facebook },
           ].map(({ href, label, Icon }) => (
             <a
               key={label}
@@ -223,12 +223,10 @@ export default function Footer() {
               target="_blank"
               rel="noopener noreferrer"
               aria-label={label}
-              style={{ color: v.ivoryMuted }}
-              className="hover:opacity-100 transition-opacity"
-              onMouseEnter={(e) => (e.currentTarget.style.color = v.ivory)}
-              onMouseLeave={(e) => (e.currentTarget.style.color = v.ivoryMuted)}
+              style={{ color: v.accent }}
+              className="transition-opacity opacity-90 hover:opacity-100"
             >
-              <Icon size={19} strokeWidth={1.5} />
+              <Icon size={20} strokeWidth={1.5} />
             </a>
           ))}
         </div>
