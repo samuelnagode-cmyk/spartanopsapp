@@ -600,7 +600,7 @@ function AdminPage() {
 
 
   return (
-    <div style={{ background: BG, color: INK, minHeight: "100vh", padding: "32px 16px 80px" }}>
+    <div style={{ background: BG, color: INK, minHeight: "100dvh", padding: "32px 16px 80px" }}>
       <div style={{ maxWidth: 1200, margin: "0 auto" }}>
         {/* Top bar */}
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12, marginTop: 0, gap: 12 }}>

@@ -101,7 +101,7 @@ function PrintStation() {
   const t = useT();
 
   return (
-    <div style={{ background: BG, color: INK, minHeight: "100vh", paddingTop: 80 }}>
+    <div style={{ background: BG, color: INK, minHeight: "100dvh", paddingTop: 80 }}>
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-6 md:py-8">
         {/* Header */}
         <div className="mb-10 md:mb-12">

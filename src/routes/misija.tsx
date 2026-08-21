@@ -917,7 +917,7 @@ function MisijaPage() {
   const gateLoading = !sessionId || !state || (!preview && (!stateFresh || (!meResolved && !me)));
   if (gateLoading) {
     return (
-      <div style={{ background: BG, color: INK, minHeight: "100vh" }} className="flex items-center justify-center">
+      <div style={{ background: BG, color: INK, minHeight: "100dvh" }} className="flex items-center justify-center">
         <OfflineBanner />
         <p className="font-mono text-sm" style={{ color: MUTED }}>
           Povezovanje...
@@ -1012,7 +1012,7 @@ function MisijaPage() {
   const preMatchSecEarly = startMsForEnd && clockNow < startMsForEnd ? Math.ceil((startMsForEnd - clockNow) / 1000) : 0;
   if (preMatchSecEarly > 0) {
     return (
-      <div style={{ background: BG, color: INK, minHeight: "100vh" }}>
+      <div style={{ background: BG, color: INK, minHeight: "100dvh" }}>
         <OfflineBanner />
         {reassignedBanner}
         {warningOverlay}
@@ -1028,7 +1028,7 @@ function MisijaPage() {
   if ((state.status === "active" || state.status === "paused") && me.assigned_team !== "none" && !timerExpired) {
     if (!preview && respawnUntil > currentTime) {
       return (
-        <div style={{ background: BG, color: INK, minHeight: "100vh" }}>
+        <div style={{ background: BG, color: INK, minHeight: "100dvh" }}>
           <OfflineBanner />
           {reassignedBanner}
         {warningOverlay}
@@ -1038,7 +1038,7 @@ function MisijaPage() {
       );
     }
     return (
-      <div style={{ background: BG, color: INK, minHeight: "100vh" }}>
+      <div style={{ background: BG, color: INK, minHeight: "100dvh" }}>
         <OfflineBanner />
         {reassignedBanner}
         {warningOverlay}
@@ -1054,7 +1054,7 @@ function MisijaPage() {
   // 3) ENDED — grandiose After-Action Report
   if (state.status === "ended" || timerExpired) {
     return (
-      <div style={{ background: BG, color: INK, minHeight: "100vh" }}>
+      <div style={{ background: BG, color: INK, minHeight: "100dvh" }}>
         <OfflineBanner />
         {reassignedBanner}
         {warningOverlay}
@@ -1071,7 +1071,7 @@ function MisijaPage() {
   const preMatchSec = startMs && clockNow < startMs ? Math.ceil((startMs - clockNow) / 1000) : 0;
 
   return (
-    <div style={{ background: BG, color: INK, minHeight: "100vh", paddingTop: 84 }}>
+    <div style={{ background: BG, color: INK, minHeight: "100dvh", paddingTop: 84 }}>
       <OfflineBanner />
       {reassignedBanner}
         {warningOverlay}
@@ -1669,7 +1669,7 @@ function CheckinForm({ sessionId, fieldId, preview, onGhost, fieldLabel }: { ses
   };
 
   return (
-    <div style={{ background: BG, color: INK, minHeight: "100vh", padding: "60px 16px" }}>
+    <div style={{ background: BG, color: INK, minHeight: "100dvh", padding: "60px 16px" }}>
       <div className="max-w-md mx-auto">
         <h1
           className="text-center mb-2"
