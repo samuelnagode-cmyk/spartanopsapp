@@ -74,7 +74,7 @@ function QrGeneratorPage() {
   const sections = buildRows(activeId || "[FIELD_UUID]");
 
   return (
-    <div style={{ background: BG, color: INK, minHeight: "100vh", paddingTop: 80 }} className="pb-16">
+    <div style={{ background: BG, color: INK, minHeight: "100dvh", paddingTop: 80 }} className="pb-16">
       <div className="max-w-5xl mx-auto px-4">
         <Link to="/admin-pregled" style={{ color: ACCENT, fontFamily: "monospace", fontSize: 11, letterSpacing: "0.16em", textTransform: "uppercase", textDecoration: "none", display: "inline-flex", alignItems: "center", gap: 6 }}>
           <ChevronLeft size={12} /> Back to Command Center

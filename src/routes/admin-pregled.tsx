@@ -600,7 +600,7 @@ function AdminPage() {
 
 
   return (
-    <div style={{ background: BG, color: INK, minHeight: "100vh", padding: "32px 16px 80px" }}>
+    <div style={{ background: BG, color: INK, minHeight: "100dvh", padding: "32px 16px 80px" }}>
       <div style={{ maxWidth: 1200, margin: "0 auto" }}>
         {/* Top bar */}
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12, marginTop: 0, gap: 12 }}>
@@ -1931,13 +1931,18 @@ function MarshalLobbyConsole({ lobby: initialLobby, marshalPassword, lobbyPasswo
         .eq("field_id", lobby.id)
         .maybeSingle();
       if (alive && data) {
-        const next = data as unknown as GameState;
+        const incoming = data as unknown as GameState;
         let applied = true;
         setGameState((prev) => {
-          if (isStaleState(prev, next)) { applied = false; return prev; }
-          return next;
+          if (isStaleState(prev, incoming)) { applied = false; return prev; }
+          // A running match must never lose its start time to a partial read.
+          return {
+            ...incoming,
+            match_started_at: incoming.match_started_at || (["active", "paused"].includes(incoming.status) ? (prev?.match_started_at ?? null) : null),
+          };
         });
         if (!applied) return;
+        const next = incoming;
         const nextLobbyState = gameStatusToLobbyState(next.status);
         if (nextLobbyState) {
           setLobby((prev) => ({ ...prev, state: nextLobbyState, startedAt: next.match_started_at ? new Date(next.match_started_at).getTime() : prev.startedAt ?? null }));
@@ -1947,6 +1952,7 @@ function MarshalLobbyConsole({ lobby: initialLobby, marshalPassword, lobbyPasswo
       }
     };
     load();
+    let rtLive = false;
     const ch = supabase
       .channel(`marshal-gs-${lobby.id}`)
       .on("postgres_changes", { event: "*", schema: "public", table: "spartanops_game_state", filter: `field_id=eq.${lobby.id}` },
@@ -1956,7 +1962,10 @@ function MarshalLobbyConsole({ lobby: initialLobby, marshalPassword, lobbyPasswo
             let applied = true;
             setGameState((prev) => {
               if (isStaleState(prev, next)) { applied = false; return prev; }
-              return next;
+              return {
+                ...next,
+                match_started_at: next.match_started_at || (["active", "paused"].includes(next.status) ? (prev?.match_started_at ?? null) : null),
+              };
             });
             if (!applied) return;
             const nextLobbyState = gameStatusToLobbyState(next.status);
@@ -1967,9 +1976,36 @@ function MarshalLobbyConsole({ lobby: initialLobby, marshalPassword, lobbyPasswo
             if (next.match_started_at) syncServerClock().catch(() => {});
           }
         })
-      .subscribe();
-    return () => { alive = false; supabase.removeChannel(ch); };
+      .subscribe((status) => {
+        rtLive = status === "SUBSCRIBED";
+        if (rtLive) load();
+      });
+
+    // Websocket safety net (mirrors the player HUD): poll fast until realtime
+    // confirms, then back off. Keeps the marshal console honest if the socket
+    // silently drops mid-match.
+    let pollTimer = 0;
+    const schedule = () => {
+      pollTimer = window.setTimeout(() => {
+        if (!alive) return;
+        if (document.visibilityState === "visible") load();
+        if (alive) schedule();
+      }, (rtLive ? 8000 : 2500) + Math.floor(Math.random() * 800));
+    };
+    schedule();
+    const onWake = () => { if (document.visibilityState === "visible") load(); };
+    document.addEventListener("visibilitychange", onWake);
+    window.addEventListener("focus", onWake);
+
+    return () => {
+      alive = false;
+      window.clearTimeout(pollTimer);
+      document.removeEventListener("visibilitychange", onWake);
+      window.removeEventListener("focus", onWake);
+      supabase.removeChannel(ch);
+    };
   }, [lobby.id]);
+
 
   // Live captures (for the event log)
   type CaptureRow = { id: string; point_number: number; team: string; player_callsign: string | null; captured_at: string };

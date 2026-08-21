@@ -158,7 +158,7 @@ function IntelPage() {
   ];
 
   return (
-    <div style={{ background: BG, color: INK, minHeight: "100vh", paddingTop: 80 }}>
+    <div style={{ background: BG, color: INK, minHeight: "100dvh", paddingTop: 80 }}>
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12 md:py-16">
         <p className="font-mono uppercase mb-3" style={{ fontSize: 11, letterSpacing: "0.32em", color: ACCENT }}>
           // INTEL / FIELD MANUAL

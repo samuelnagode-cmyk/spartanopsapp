@@ -308,7 +308,7 @@ function SpawnPage() {
 
   if (state === "error") {
     return (
-      <div style={{ background: BG, color: INK, minHeight: "100vh" }} className="flex items-center justify-center p-6">
+      <div style={{ background: BG, color: INK, minHeight: "100dvh" }} className="flex items-center justify-center p-6">
         <div className="max-w-md w-full text-center rounded-xl p-8" style={{ background: "#1a0808", border: "2px solid #ff3b3b" }}>
           <AlertTriangle size={42} style={{ color: "#ff3b3b" }} className="mx-auto mb-3" />
           <h2 style={{ color: "#ffd6d6", fontFamily: "'Michroma', monospace", fontSize: 14 }}>
@@ -322,7 +322,7 @@ function SpawnPage() {
 
   if (state === "unassigned") {
     return (
-      <div style={{ background: BG, color: INK, minHeight: "100vh" }} className="flex items-center justify-center p-6">
+      <div style={{ background: BG, color: INK, minHeight: "100dvh" }} className="flex items-center justify-center p-6">
         <div className="max-w-md w-full text-center rounded-xl p-8" style={{ background: `${ACCENT}0a`, border: `2px solid ${ACCENT}` }}>
           <AlertTriangle size={42} style={{ color: ACCENT }} className="mx-auto mb-3" />
           <p className="font-mono uppercase text-[11px] tracking-[0.22em]" style={{ color: ACCENT }}>
@@ -350,7 +350,7 @@ function SpawnPage() {
   const ss = String((respawnLeft ?? 0) % 60).padStart(2, "0");
 
   return (
-    <div style={{ background: BG, color: INK, minHeight: "100vh", backgroundImage: `radial-gradient(ellipse at center, ${c}22, transparent 60%)` }} className="flex items-center justify-center p-6">
+    <div style={{ background: BG, color: INK, minHeight: "100dvh", backgroundImage: `radial-gradient(ellipse at center, ${c}22, transparent 60%)` }} className="flex items-center justify-center p-6">
       <div className="max-w-md w-full text-center rounded-xl p-8" style={{ background: `${c}0a`, border: `2px solid ${c}`, boxShadow: `0 0 60px -10px ${c}88` }}>
         {state === "loading" ? (
           <>

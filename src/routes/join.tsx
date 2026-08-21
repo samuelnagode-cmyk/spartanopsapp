@@ -219,7 +219,7 @@ function JoinPage() {
   }
 
   return (
-    <div style={{ background: BG, color: INK, minHeight: "100vh", padding: "32px 16px 80px" }}>
+    <div style={{ background: BG, color: INK, minHeight: "100dvh", padding: "32px 16px 80px" }}>
       <div style={{ maxWidth: 780, margin: "0 auto" }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 24 }}>
           <button

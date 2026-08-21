@@ -32,7 +32,7 @@ function UpdatesPage() {
   const t = useT();
   const entries = spartanDevlogEntries(t);
   return (
-    <div style={{ background: BG, color: INK, minHeight: "100vh", paddingTop: 80, paddingBottom: 96 }}>
+    <div style={{ background: BG, color: INK, minHeight: "100dvh", paddingTop: 80, paddingBottom: 96 }}>
       <section className="w-full px-4 sm:px-6 lg:px-8">
         <div className="max-w-4xl mx-auto">
           <Link

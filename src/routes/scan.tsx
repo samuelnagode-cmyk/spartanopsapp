@@ -64,7 +64,7 @@ function ScanPage() {
   }, [navigate]);
 
   return (
-    <div style={{ minHeight: "100vh", background: "#0b0d09", color: "#ece3c4", display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "monospace", letterSpacing: "0.2em", fontSize: 12 }}>
+    <div style={{ minHeight: "100dvh", background: "#0b0d09", color: "#ece3c4", display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "monospace", letterSpacing: "0.2em", fontSize: 12 }}>
       SECURING…
     </div>
   );
