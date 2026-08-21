@@ -586,7 +586,12 @@ function MisijaPage() {
             compressed_map_url: liveState.compressed_map_url || previous?.compressed_map_url || null,
             node_positions: Object.keys(liveState.node_positions ?? {}).length ? liveState.node_positions : (previous?.node_positions ?? {}),
             settings: { ...(previous?.settings ?? {}), ...(liveState.settings ?? {}) },
+            // A running match must never lose its start time to a partial /
+            // replica read — that is what made the countdown vanish and the
+            // "start match" state flash back mid-countdown.
+            match_started_at: liveState.match_started_at || (["active", "paused"].includes(liveState.status) ? (previous?.match_started_at ?? null) : null),
           };
+
           writeCachedState(field, merged);
           return merged;
         });
