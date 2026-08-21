@@ -58,14 +58,19 @@ export default function SpartacusGpsGate() {
   useEffect(() => {
     if (!active) return;
 
-    // Zaznavanje, če je uporabnik na iPhonu znotraj vgrajene kamere / In-App brskalnika
-    const ua = window.navigator.userAgent.toLowerCase();
-    const isIOS = /iphone|ipad|ipod/.test(ua);
-    const isSafari = /safari/.test(ua);
-    // Če je iOS, a ni čistega Safarija, gre skoraj zagotovo za In-App kamero
-    if (isIOS && !isSafari) {
+    // Zaznavanje vgrajenih (in-app) brskalnikov na iOS IN Androidu.
+    // Instagram / Facebook / TikTok / Snapchat webview pogosto blokirajo ali
+    // močno degradirajo GPS in kamero — igralca je treba poslati v Safari/Chrome.
+    const ua = window.navigator.userAgent;
+    const uaLower = ua.toLowerCase();
+    const isIOS = /iphone|ipad|ipod/.test(uaLower);
+    const isSafari = /safari/.test(uaLower);
+    const knownInApp = /(fban|fbav|fb_iab|instagram|line\/|micromessenger|tiktok|snapchat|twitter|linkedin|pinterest|gsa\/)/i.test(ua);
+    const androidWebView = /android/i.test(ua) && /\bwv\b/i.test(ua);
+    if ((isIOS && !isSafari) || knownInApp || androidWebView) {
       setIsIOSInApp(true);
     }
+
 
     let live = true;
     (async () => {
