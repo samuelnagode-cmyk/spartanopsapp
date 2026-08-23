@@ -142,9 +142,8 @@ export const listAllLobbies = createServerFn({ method: "POST" })
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { data: rows, error } = await supabaseAdmin
       .from("spartanops_lobbies" as any)
-      .select(LOBBY_LIST_COLUMNS)
-      .order("created_at", { ascending: false })
-      .limit(200);
+      .select("*")
+      .order("created_at", { ascending: false });
     if (error) throw new Error(error.message);
     return (rows ?? []).map(mapRow);
   });
