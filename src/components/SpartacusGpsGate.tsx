@@ -64,12 +64,9 @@ export default function SpartacusGpsGate() {
     const ua = window.navigator.userAgent;
     const uaLower = ua.toLowerCase();
     const isIOS = /iphone|ipad|ipod/.test(uaLower);
-    const isSafari = /safari/.test(uaLower);
-    const knownInApp = /(fban|fbav|fb_iab|instagram|line\/|micromessenger|tiktok|snapchat|twitter|linkedin|pinterest|gsa\/)/i.test(ua);
-    const androidWebView = /android/i.test(ua) && /\bwv\b/i.test(ua);
-    if ((isIOS && !isSafari) || knownInApp || androidWebView) {
-      setIsIOSInApp(true);
-    }
+    const knownInApp = /(fban|fbav|fb_iab|instagram|line\/|micromessenger|tiktok|snapchat)/i.test(ua);
+    // Samo iOS vgrajeni brskalniki dejansko blokirajo GPS — Android WebView tega sporočila ne rabi.
+    setIsIOSInApp(isIOS && knownInApp);
 
 
     let live = true;
@@ -112,7 +109,9 @@ export default function SpartacusGpsGate() {
   void authorize;
 
   // Pasica se prikaže, če je dostop izrecno zavrnjen ali pa če smo ujeti v iOS In-App kameri
-  const showDeniedBanner = permChecked && (perm === "denied" || isIOSInApp) && !dismissedBanner;
+  // Opozorilo prikažemo šele, ko je uporabnik dostop do lokacije izrecno zavrnil.
+  // Če dovoljenja še ni podal (prompt/unknown), ne prikazujemo ničesar.
+  const showDeniedBanner = permChecked && perm === "denied" && !dismissedBanner;
 
   return (
     <>
