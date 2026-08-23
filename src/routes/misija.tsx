@@ -2187,7 +2187,7 @@ function PreMatchCountdown({ seconds, polygon, eventName, gamemode, pointTarget,
   const firedRef = useRef(false);
   useEffect(() => {
     if (firedRef.current) return;
-    if (seconds <= 28) {
+    if (seconds <= 14) {
       firedRef.current = true;
       try { window.dispatchEvent(new Event("spartanops:countdown")); } catch { /* ignore */ }
     }
