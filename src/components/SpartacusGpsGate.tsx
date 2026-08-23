@@ -109,7 +109,9 @@ export default function SpartacusGpsGate() {
   void authorize;
 
   // Pasica se prikaže, če je dostop izrecno zavrnjen ali pa če smo ujeti v iOS In-App kameri
-  const showDeniedBanner = permChecked && (perm === "denied" || isIOSInApp) && !dismissedBanner;
+  // Opozorilo prikažemo šele, ko je uporabnik dostop do lokacije izrecno zavrnil.
+  // Če dovoljenja še ni podal (prompt/unknown), ne prikazujemo ničesar.
+  const showDeniedBanner = permChecked && perm === "denied" && !dismissedBanner;
 
   return (
     <>
