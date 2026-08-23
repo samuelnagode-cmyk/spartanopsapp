@@ -64,12 +64,9 @@ export default function SpartacusGpsGate() {
     const ua = window.navigator.userAgent;
     const uaLower = ua.toLowerCase();
     const isIOS = /iphone|ipad|ipod/.test(uaLower);
-    const isSafari = /safari/.test(uaLower);
-    const knownInApp = /(fban|fbav|fb_iab|instagram|line\/|micromessenger|tiktok|snapchat|twitter|linkedin|pinterest|gsa\/)/i.test(ua);
-    const androidWebView = /android/i.test(ua) && /\bwv\b/i.test(ua);
-    if ((isIOS && !isSafari) || knownInApp || androidWebView) {
-      setIsIOSInApp(true);
-    }
+    const knownInApp = /(fban|fbav|fb_iab|instagram|line\/|micromessenger|tiktok|snapchat)/i.test(ua);
+    // Samo iOS vgrajeni brskalniki dejansko blokirajo GPS — Android WebView tega sporočila ne rabi.
+    setIsIOSInApp(isIOS && knownInApp);
 
 
     let live = true;
