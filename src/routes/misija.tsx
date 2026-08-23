@@ -2187,7 +2187,7 @@ function PreMatchCountdown({ seconds, polygon, eventName, gamemode, pointTarget,
   const firedRef = useRef(false);
   useEffect(() => {
     if (firedRef.current) return;
-    if (seconds <= 28) {
+    if (seconds <= 14) {
       firedRef.current = true;
       try { window.dispatchEvent(new Event("spartanops:countdown")); } catch { /* ignore */ }
     }
@@ -2235,13 +2235,13 @@ function PreMatchCountdown({ seconds, polygon, eventName, gamemode, pointTarget,
       </div>
       {/* 1) Team vs team with player counts (directly under the timer) */}
       <div
-        className="flex items-center justify-center flex-wrap mt-1 mb-4"
-        style={{ width: "min(640px, 100%)", columnGap: 14, rowGap: 2, textAlign: "center" }}
+        className="flex flex-col items-center justify-center mt-1 mb-4"
+        style={{ width: "min(640px, 100%)", rowGap: 4, textAlign: "center" }}
       >
         {(["modra", "rdeca"] as const).map((k, i) => (
           <Fragment key={k}>
             {i === 1 && (
-              <span style={{ color: MUTED, fontFamily: "monospace", fontSize: 12, letterSpacing: "0.2em", flex: "0 0 auto" }}>VS</span>
+              <span style={{ color: MUTED, fontFamily: "monospace", fontSize: 12, letterSpacing: "0.2em" }}>VS</span>
             )}
             <span
               style={{
@@ -2250,8 +2250,7 @@ function PreMatchCountdown({ seconds, polygon, eventName, gamemode, pointTarget,
                 color: TEAM_COLOR[k],
                 letterSpacing: "0.12em",
                 textTransform: "uppercase",
-                whiteSpace: "nowrap",
-                flex: "0 0 auto",
+                textAlign: "center",
                 maxWidth: "100%",
               }}
             >
@@ -3453,8 +3452,10 @@ function HudNoticeFeed({
           team: teamLabelFor(c.team),
         }),
       });
-      const evt = c.team === myTeam ? "spartanops:sfx-team-capture" : "spartanops:sfx-enemy-capture";
-      try { window.dispatchEvent(new Event(evt)); } catch { /* ignore */ }
+      if (!mine) {
+        const evt = c.team === myTeam ? "spartanops:sfx-team-capture" : "spartanops:sfx-enemy-capture";
+        try { window.dispatchEvent(new Event(evt)); } catch { /* ignore */ }
+      }
     });
   }, [captures, myTeam, meCallsign, push, t, teamLabelFor]);
 
