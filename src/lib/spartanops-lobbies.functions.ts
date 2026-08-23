@@ -118,12 +118,18 @@ export const verifyMasterPassword = createServerFn({ method: "POST" })
   .handler(async ({ data }) => ({ ok: checkMaster(data.password) }));
 
 /** List every published lobby (public, no auth required). */
+// Zemljevidi so lahko večmegabajtni base64 data URL-ji — na seznamu misij jih ne
+// prenašamo, ker je to glavni razlog za počasno nalaganje /join.
+const LOBBY_LIST_COLUMNS =
+  "id,field_name,event_name,location,country,city,gamemode,match_duration_minutes,countdown_seconds,point_target,node_positions,settings,published,state,started_at,created_at,updated_at";
+
 export const listPublishedLobbies = createServerFn({ method: "GET" }).handler(async () => {
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
   const { data, error } = await supabaseAdmin
     .from("spartanops_lobbies_public" as any)
-    .select("*")
-    .order("created_at", { ascending: false });
+    .select(LOBBY_LIST_COLUMNS)
+    .order("created_at", { ascending: false })
+    .limit(60);
   if (error) throw new Error(error.message);
   return (data ?? []).map(mapRow);
 });
