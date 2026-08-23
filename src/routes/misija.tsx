@@ -3453,8 +3453,10 @@ function HudNoticeFeed({
           team: teamLabelFor(c.team),
         }),
       });
-      const evt = c.team === myTeam ? "spartanops:sfx-team-capture" : "spartanops:sfx-enemy-capture";
-      try { window.dispatchEvent(new Event(evt)); } catch { /* ignore */ }
+      if (!mine) {
+        const evt = c.team === myTeam ? "spartanops:sfx-team-capture" : "spartanops:sfx-enemy-capture";
+        try { window.dispatchEvent(new Event(evt)); } catch { /* ignore */ }
+      }
     });
   }, [captures, myTeam, meCallsign, push, t, teamLabelFor]);
 
