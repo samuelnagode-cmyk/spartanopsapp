@@ -3307,6 +3307,7 @@ function EndgameReport({ state, roster, captures, en, now, myTeam }: { state: Ga
           showDeaths,
           teams: activeTeams.map((tm) => ({ key: tm, name: teamLabelFor(tm), color: TEAM_COLOR[tm] ?? ACCENT, score: teamScoresFinal[tm] ?? 0 })),
           top3: enriched.slice(0, 3).map((p) => ({ callsign: p.callsign, pts: p.pts, deaths: p.death_count ?? 0, color: TEAM_COLOR[p.assigned_team] ?? ACCENT })),
+          leaderboard: enriched.slice(0, 8).map((p) => ({ callsign: p.callsign, pts: p.pts, deaths: p.death_count ?? 0, color: TEAM_COLOR[p.assigned_team] ?? ACCENT, team: p.assigned_team })),
           nodes: Object.entries(state.node_positions ?? {})
             .filter(([, pos]) => !!pos)
             .map(([k, pos]) => ({
