@@ -330,7 +330,10 @@ export function AmbientAudioProvider({ children }: { children: ReactNode }) {
     fade(lobby, 0);
     fade(debrief, 0);
     fade(main, 0.5);
-  }, [musicEnabled, activeTrack]);
+    // unlockTick re-runs this after a gesture / app resume, because autoplay
+    // before the first gesture is refused on both iOS and Android.
+  }, [musicEnabled, activeTrack, unlockTick]);
+
 
   // SFX event bridges. Countdown is dispatched by pre-match at T-14s AND by
   // /spawn on respawn scan; sector-secured by /capture on success.
