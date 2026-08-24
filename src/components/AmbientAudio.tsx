@@ -404,7 +404,7 @@ export function AmbientAudioProvider({ children }: { children: ReactNode }) {
   // node with a truly silent play (gain 0, not el.volume 0 — iOS ignores that)
   // so later programmatic playback is accepted. Never touches a playing node.
   const unlockedRef = useRef(false);
-  const [unlockTick, setUnlockTick] = useState(0);
+
   const unlock = useCallback(() => {
     // Always resume: iOS suspends the context on interruptions (calls, silent
     // switch, backgrounding), and only a gesture can bring it back.
