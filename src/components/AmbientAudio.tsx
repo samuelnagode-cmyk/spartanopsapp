@@ -335,27 +335,33 @@ export function AmbientAudioProvider({ children }: { children: ReactNode }) {
   // SFX event bridges. Countdown is dispatched by pre-match at T-14s AND by
   // /spawn on respawn scan; sector-secured by /capture on success.
   useEffect(() => {
-    const onCountdown = () => {
-      const cd = countdownRef.current;
-      if (!cd || !sfxEnabled) return;
+    // One shared one-shot player: gain via Web Audio (iOS-safe), no load()
+    // call — load() aborts the buffered stream and forces a refetch, which is
+    // exactly what makes SFX arrive late (or not at all) on mobile data.
+    const playOneShot = (el: HTMLAudioElement | null, vol: number) => {
+      if (!el || !sfxEnabled) return;
+      resumeAudioContext();
       try {
-        cd.load(); // Prisili iOS, da pravilno inicializira zvok šele ob kliku/dogodku
-        cd.currentTime = 0;
-      } catch {}
-      cd.volume = 1;
-      cd.play().catch(() => {});
+        el.currentTime = 0;
+      } catch {
+        /* not seekable yet */
+      }
+      writeLevel(el, vol);
+      const p = el.play();
+      if (p && typeof p.catch === "function") {
+        p.catch(() => {
+          // Autoplay refused (no gesture yet) or the buffer was evicted by iOS
+          // memory pressure — re-arm the element so the next trigger works.
+          try {
+            el.load();
+          } catch {
+            /* ignore */
+          }
+        });
+      }
     };
-
-    const onSector = () => {
-      const s = sectorRef.current;
-      if (!s || !sfxEnabled) return;
-      try {
-        s.load(); // Enako dodaj tukaj za sector secured zvok
-        s.currentTime = 0;
-      } catch {}
-      s.volume = 0.95;
-      s.play().catch(() => {});
-    };
+    const onCountdown = () => playOneShot(countdownRef.current, 1);
+    const onSector = () => playOneShot(sectorRef.current, 0.95);
     const onMatchStart = () => setMissionPhase("active");
     const onMatchEnd = () => setMissionPhase("debrief");
     const onDebriefExit = () => setMissionPhase("lobby");
@@ -364,19 +370,9 @@ export function AmbientAudioProvider({ children }: { children: ReactNode }) {
       // Explicit lobby signal from misija — keep us in lobby phase.
       if (detail && detail.active) setMissionPhase("lobby");
     };
-    const playOneShot = (ref: typeof sectorRef, vol: number) => {
-      const a = ref.current;
-      if (!a || !sfxEnabled) return;
-      try {
-        a.load();
-        a.currentTime = 0;
-      } catch {}
-      a.volume = vol;
-      a.play().catch(() => {});
-    };
-    const onTeamCapture = () => playOneShot(teamCapRef, 0.95);
-    const onEnemyCapture = () => playOneShot(enemyCapRef, 0.95);
-    const onRespawnSfx = () => playOneShot(respawnRef, 0.95);
+    const onTeamCapture = () => playOneShot(teamCapRef.current, 0.95);
+    const onEnemyCapture = () => playOneShot(enemyCapRef.current, 0.95);
+    const onRespawnSfx = () => playOneShot(respawnRef.current, 0.95);
     window.addEventListener("spartanops:sfx-team-capture", onTeamCapture);
     window.addEventListener("spartanops:sfx-enemy-capture", onEnemyCapture);
     window.addEventListener("spartanops:sfx-respawn", onRespawnSfx);
@@ -401,36 +397,85 @@ export function AmbientAudioProvider({ children }: { children: ReactNode }) {
     };
   }, [sfxEnabled]);
 
-  // Unlock: on first user interaction, prime audio nodes with a silent play so
-  // mobile Safari/Chrome accepts later programmatic playback. Runs once, and
-  // never touches a node that is already playing (that would cut the music).
+  // Unlock: on first user interaction, resume the AudioContext and prime every
+  // node with a truly silent play (gain 0, not el.volume 0 — iOS ignores that)
+  // so later programmatic playback is accepted. Never touches a playing node.
   const unlockedRef = useRef(false);
+  const [unlockTick, setUnlockTick] = useState(0);
   const unlock = useCallback(() => {
+    // Always resume: iOS suspends the context on interruptions (calls, silent
+    // switch, backgrounding), and only a gesture can bring it back.
+    resumeAudioContext();
     if (unlockedRef.current) return;
     unlockedRef.current = true;
-    const nodes = [mainRef.current, lobbyRef.current, debriefRef.current, countdownRef.current, sectorRef.current, teamCapRef.current, enemyCapRef.current, respawnRef.current];
+    const nodes = [
+      mainRef.current,
+      lobbyRef.current,
+      debriefRef.current,
+      countdownRef.current,
+      sectorRef.current,
+      teamCapRef.current,
+      enemyCapRef.current,
+      respawnRef.current,
+    ];
     nodes.forEach((a) => {
       if (!a || !a.paused) return;
-      const wasVol = a.volume;
       try {
-        a.volume = 0;
+        writeLevel(a, 0);
         a.play()
           .then(() => {
             try {
               a.pause();
-              a.volume = wasVol;
-            } catch {}
+              a.currentTime = 0;
+            } catch {
+              /* ignore */
+            }
           })
           .catch(() => {
-            try {
-              a.volume = wasVol;
-            } catch {}
+            /* still locked; the next gesture retries */
           });
       } catch {
         /* ignore */
       }
     });
+    // Autoplay was likely refused before this gesture, so re-run the music
+    // effect to actually start the track the route asks for.
+    setUnlockTick((n) => n + 1);
   }, []);
+
+  // Any first tap anywhere counts as the unlock gesture — a player who enabled
+  // music on a previous visit should not have to open the FAB again.
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const onGesture = () => unlock();
+    window.addEventListener("pointerdown", onGesture, { passive: true });
+    window.addEventListener("touchend", onGesture, { passive: true });
+    window.addEventListener("keydown", onGesture);
+    return () => {
+      window.removeEventListener("pointerdown", onGesture);
+      window.removeEventListener("touchend", onGesture);
+      window.removeEventListener("keydown", onGesture);
+    };
+  }, [unlock]);
+
+  // Mobile lifecycle: returning to the tab/app must resume the context, settle
+  // any fade that was frozen mid-ramp, and restart music iOS silently paused.
+  useEffect(() => {
+    if (typeof document === "undefined") return;
+    const onVisible = () => {
+      if (document.visibilityState !== "visible") return;
+      resumeAudioContext();
+      settleFades([mainRef.current, lobbyRef.current, debriefRef.current]);
+      setUnlockTick((n) => n + 1);
+    };
+    document.addEventListener("visibilitychange", onVisible);
+    window.addEventListener("pageshow", onVisible);
+    return () => {
+      document.removeEventListener("visibilitychange", onVisible);
+      window.removeEventListener("pageshow", onVisible);
+    };
+  }, []);
+
 
   const value = useMemo<Ctx>(
     () => ({ musicEnabled, sfxEnabled, toggleMusic, toggleSfx, setMusicEnabled, setSfxEnabled, unlock }),
