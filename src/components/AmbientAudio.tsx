@@ -231,36 +231,31 @@ export function AmbientAudioProvider({ children }: { children: ReactNode }) {
   const respawnRef = useRef<HTMLAudioElement | null>(null);
 
 
-  // Instantiate audio nodes once.
+  // Instantiate audio nodes once. Levels are controlled by the Web Audio gain
+  // graph (see writeLevel) because iOS ignores el.volume assignments.
   useEffect(() => {
-    const main = new Audio(songMain.url);
-    main.loop = true;
-    main.preload = "auto";
-    main.volume = 0;
-    const lobby = new Audio(songLobby.url);
-    lobby.loop = true;
-    lobby.preload = "auto";
-    lobby.volume = 0;
+    const mk = (url: string, opts: { loop?: boolean; preload?: "auto" | "none" }) => {
+      const a = new Audio(url);
+      a.loop = !!opts.loop;
+      a.preload = opts.preload ?? "auto";
+      // iOS refuses inline playback for media without this hint in some webviews.
+      a.setAttribute("playsinline", "");
+      (a as HTMLAudioElement & { playsInline?: boolean }).playsInline = true;
+      writeLevel(a, 0);
+      return a;
+    };
+    const main = mk(songMain.url, { loop: true, preload: "auto" });
+    const lobby = mk(songLobby.url, { loop: true, preload: "auto" });
     // Debrief is heavier and not needed until match end — lazy load.
-    const debrief = new Audio(songDebrief.url);
-    debrief.loop = false;
-    debrief.preload = "none";
-    debrief.volume = 0;
-    const cd = new Audio(sfxCountdown.url);
-    cd.preload = "none";
-    cd.volume = 1;
-    const sec = new Audio(sfxSector.url);
-    sec.preload = "none";
-    sec.volume = 0.95;
-    const teamCap = new Audio(sfxTeamCapture.url);
-    teamCap.preload = "none";
-    teamCap.volume = 0.95;
-    const enemyCap = new Audio(sfxEnemyCapture.url);
-    enemyCap.preload = "none";
-    enemyCap.volume = 0.95;
-    const rsp = new Audio(sfxRespawn.url);
-    rsp.preload = "none";
-    rsp.volume = 0.95;
+    const debrief = mk(songDebrief.url, { preload: "none" });
+    // SFX must fire with zero latency, and iOS will not fetch mid-event without
+    // a prior gesture — so they are eagerly buffered instead of preload="none".
+    const cd = mk(sfxCountdown.url, { preload: "auto" });
+    const sec = mk(sfxSector.url, { preload: "auto" });
+    const teamCap = mk(sfxTeamCapture.url, { preload: "auto" });
+    const enemyCap = mk(sfxEnemyCapture.url, { preload: "auto" });
+    const rsp = mk(sfxRespawn.url, { preload: "auto" });
+
     mainRef.current = main;
     lobbyRef.current = lobby;
     debriefRef.current = debrief;
