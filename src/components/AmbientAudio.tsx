@@ -221,7 +221,10 @@ export function AmbientAudioProvider({ children }: { children: ReactNode }) {
     if (!isMissionPath(pathname)) setMissionPhase("lobby");
   }, [pathname]);
 
+  // Bumped on unlock gesture / app resume to re-drive blocked autoplay.
+  const [unlockTick, setUnlockTick] = useState(0);
   const mainRef = useRef<HTMLAudioElement | null>(null);
+
   const lobbyRef = useRef<HTMLAudioElement | null>(null);
   const debriefRef = useRef<HTMLAudioElement | null>(null);
   const countdownRef = useRef<HTMLAudioElement | null>(null);
