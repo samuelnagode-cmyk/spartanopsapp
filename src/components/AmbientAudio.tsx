@@ -50,17 +50,101 @@ const MUSIC_KEY = "spartanops:music-enabled";
 const SFX_KEY = "spartanops:sfx-enabled";
 
 const FADE_MS = 1400;
+
+/**
+ * iOS Safari makes HTMLAudioElement.volume READ-ONLY — assignments are silently
+ * ignored. That would make every fade below a no-op on iPhone (music would snap
+ * in at full blast, and the silent unlock priming would be audible).
+ *
+ * So all gain is done through a Web Audio graph: element -> GainNode ->
+ * destination. GainNode.gain works identically on iOS, Android and desktop.
+ * If Web Audio is unavailable we fall back to el.volume (fine on Android).
+ */
+let sharedCtx: AudioContext | null = null;
+let webAudioBroken = false;
+const gainByEl = new WeakMap<HTMLAudioElement, GainNode>();
+
+export function getAudioContext(): AudioContext | null {
+  if (typeof window === "undefined" || webAudioBroken) return null;
+  if (sharedCtx) return sharedCtx;
+  const AC: typeof AudioContext | undefined =
+    window.AudioContext ?? (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
+  if (!AC) {
+    webAudioBroken = true;
+    return null;
+  }
+  try {
+    sharedCtx = new AC();
+  } catch {
+    webAudioBroken = true;
+    sharedCtx = null;
+  }
+  return sharedCtx;
+}
+
+/** Route an element through a GainNode once; returns null if Web Audio is unusable. */
+function gainFor(el: HTMLAudioElement): GainNode | null {
+  const ctx = getAudioContext();
+  if (!ctx) return null;
+  const existing = gainByEl.get(el);
+  if (existing) return existing;
+  try {
+    const src = ctx.createMediaElementSource(el);
+    const g = ctx.createGain();
+    g.gain.value = 0;
+    src.connect(g);
+    g.connect(ctx.destination);
+    gainByEl.set(el, g);
+    // Element volume must sit at 1 — the GainNode is now the only volume control.
+    try {
+      el.volume = 1;
+    } catch {
+      /* iOS ignores this anyway */
+    }
+    return g;
+  } catch {
+    // Same-origin CDN assets, so this should not throw; if it does, degrade.
+    return null;
+  }
+}
+
+/** A suspended context produces total silence, so resume before any playback. */
+export function resumeAudioContext() {
+  const ctx = sharedCtx;
+  if (ctx && ctx.state !== "running") ctx.resume().catch(() => {});
+}
+
+function readLevel(el: HTMLAudioElement) {
+  const g = gainFor(el);
+  return g ? g.gain.value : el.volume;
+}
+
+function writeLevel(el: HTMLAudioElement, v: number) {
+  const clamped = Math.max(0, Math.min(1, v));
+  const g = gainFor(el);
+  if (g) {
+    g.gain.value = clamped;
+    return;
+  }
+  try {
+    el.volume = clamped;
+  } catch {
+    /* read-only on iOS without Web Audio — nothing we can do */
+  }
+}
+
 type Fadable = HTMLAudioElement & { __fadeToken?: number };
 function fade(el: HTMLAudioElement, to: number, ms = FADE_MS) {
   const node = el as Fadable;
   // Cancel any in-flight fade on this node so ramps never fight each other.
   const token = (node.__fadeToken ?? 0) + 1;
   node.__fadeToken = token;
-  const from = el.volume;
+  const from = readLevel(el);
   if (from === to && (to === 0 ? el.paused : !el.paused)) return;
   const start = performance.now();
   if (to > 0 && el.paused) {
-    el.volume = 0;
+    writeLevel(el, 0);
+    resumeAudioContext();
     el.play().catch(() => {});
   }
   const step = (t: number) => {
@@ -68,12 +152,25 @@ function fade(el: HTMLAudioElement, to: number, ms = FADE_MS) {
     const k = Math.min(1, (t - start) / ms);
     // Ease-in-out so the ramp never sounds like an abrupt cut.
     const e = k < 0.5 ? 2 * k * k : 1 - Math.pow(-2 * k + 2, 2) / 2;
-    el.volume = Math.max(0, Math.min(1, from + (to - from) * e));
+    writeLevel(el, from + (to - from) * e);
     if (k < 1) requestAnimationFrame(step);
     else if (to === 0) el.pause();
   };
   requestAnimationFrame(step);
 }
+
+/**
+ * rAF is frozen while a tab/app is backgrounded, so a fade started right before
+ * a mobile backgrounding can strand a node mid-ramp. Snap any such node to its
+ * target when we come back. Called on visibilitychange.
+ */
+function settleFades(els: (HTMLAudioElement | null)[]) {
+  els.forEach((el) => {
+    if (!el) return;
+    if (el.paused && readLevel(el) !== 0) writeLevel(el, 0);
+  });
+}
+
 
 type Track = "main" | "lobby" | "debrief" | "silent";
 
