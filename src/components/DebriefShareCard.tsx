@@ -11,10 +11,10 @@ import { Share2 } from "lucide-react";
 
 const ACCENT = "#E0B04E";
 const INK = "#ece3c4";
-const MUTED = "rgba(236,227,196,0.6)";
+const MUTED = "rgba(236,227,196,0.62)";
 
 export type ShareTeam = { key: string; name: string; color: string; score: number };
-export type SharePlayer = { callsign: string; pts: number; deaths?: number | null; color: string };
+export type SharePlayer = { callsign: string; pts: number; deaths?: number | null; color: string; team?: string };
 export type ShareNode = { n: number; x: number; y: number; color: string };
 
 export type DebriefShareData = {
@@ -23,6 +23,8 @@ export type DebriefShareData = {
   marshalName?: string;
   teams: ShareTeam[];
   top3: SharePlayer[];
+  /** Full ranked player list; the card renders ranks 4-8 below the podium. */
+  leaderboard?: SharePlayer[];
   nodes: ShareNode[];
   showDeaths: boolean;
   en: boolean;
@@ -135,19 +137,36 @@ export function DebriefShareButton({ data, accentColor }: { data: DebriefShareDa
   );
 }
 
+const MEDALS = ["#E9C64B", "#CFD4D8", "#C08048"];
+const mono = "'Michroma', monospace";
+
+function fitSize(text: string, base: number, min: number, maxChars: number) {
+  if (text.length <= maxChars) return base;
+  return Math.max(min, Math.round(base * (maxChars / text.length)));
+}
+
 function ShareCard({ ref, data }: { ref: React.Ref<HTMLDivElement>; data: DebriefShareData }) {
   const en = data.en;
-  const maxScore = Math.max(1, ...data.teams.map((t) => t.score));
-  const mono = "'Michroma', monospace";
+  const teams = [...data.teams].sort((a, b) => b.score - a.score);
+  const maxScore = Math.max(1, ...teams.map((t) => t.score));
+  const winner = teams[0];
+  const draw = teams.length > 1 && teams[0].score === teams[1].score;
+  const board = (data.leaderboard ?? data.top3).slice(3, 8);
+
+  // podium order: 2nd, 1st, 3rd
+  const podiumOrder = [data.top3[1], data.top3[0], data.top3[2]];
+  const podiumRank = [2, 1, 3];
+  const podiumH = [206, 288, 158];
+
   return (
     <div
       ref={ref}
       style={{
         width: CARD_W,
         height: CARD_H,
-        background: "linear-gradient(165deg, #0d1109 0%, #070906 45%, #100c04 100%)",
+        background: "linear-gradient(168deg, #0f1409 0%, #070906 42%, #120d04 100%)",
         color: INK,
-        padding: "78px 70px",
+        padding: "70px 62px 58px",
         display: "flex",
         flexDirection: "column",
         fontFamily: "monospace",
@@ -155,128 +174,228 @@ function ShareCard({ ref, data }: { ref: React.Ref<HTMLDivElement>; data: Debrie
         overflow: "hidden",
       }}
     >
-      {/* corner brackets */}
-      <div style={{ position: "absolute", inset: 34, border: `2px solid ${ACCENT}33` }} />
+      {/* ambient glow */}
+      <div style={{ position: "absolute", top: -260, left: "50%", marginLeft: -420, width: 840, height: 640, background: `radial-gradient(closest-side, ${ACCENT}22, transparent)` }} />
+      <div style={{ position: "absolute", inset: 30, border: `2px solid ${ACCENT}2e` }} />
+      {/* corner ticks */}
+      {[["30px", "30px"], ["30px", "auto"], ["auto", "30px"], ["auto", "auto"]].map(([t, l], i) => (
+        <div key={i} style={{ position: "absolute", top: t === "auto" ? undefined : t, bottom: t === "auto" ? 30 : undefined, left: l === "auto" ? undefined : l, right: l === "auto" ? 30 : undefined, width: 46, height: 46, borderTop: t === "auto" ? "none" : `4px solid ${ACCENT}`, borderBottom: t === "auto" ? `4px solid ${ACCENT}` : "none", borderLeft: l === "auto" ? "none" : `4px solid ${ACCENT}`, borderRight: l === "auto" ? `4px solid ${ACCENT}` : "none" }} />
+      ))}
 
       {/* HEADER */}
-      <div style={{ textAlign: "center" }}>
-        <p style={{ fontFamily: mono, fontSize: 24, letterSpacing: "0.42em", color: ACCENT, textTransform: "uppercase" }}>
-          SPARTANOPS DOMINATION
+      <div style={{ textAlign: "center", position: "relative" }}>
+        <p style={{ fontFamily: mono, fontSize: 21, letterSpacing: "0.44em", color: ACCENT, textTransform: "uppercase" }}>
+          SPARTANOPS · DOMINATION
         </p>
-        <div style={{ height: 2, margin: "26px auto", width: 380, background: `linear-gradient(90deg, transparent, ${ACCENT}, transparent)` }} />
-        <p style={{ fontFamily: mono, fontSize: 20, letterSpacing: "0.3em", color: MUTED, textTransform: "uppercase" }}>
+        <p style={{ fontFamily: mono, fontSize: 16, letterSpacing: "0.34em", color: MUTED, textTransform: "uppercase", marginTop: 14 }}>
           {en ? "MISSION REPORT" : "POROČILO MISIJE"}
         </p>
-        <p style={{ fontFamily: mono, fontSize: 52, lineHeight: 1.2, letterSpacing: "0.06em", color: INK, marginTop: 22, textTransform: "uppercase" }}>
+        <p
+          style={{
+            fontFamily: mono,
+            fontSize: fitSize(data.missionName, 50, 28, 22),
+            lineHeight: 1.16,
+            letterSpacing: "0.05em",
+            color: INK,
+            marginTop: 20,
+            textTransform: "uppercase",
+          }}
+        >
           {data.missionName}
         </p>
-        <p style={{ fontFamily: mono, fontSize: 26, letterSpacing: "0.2em", color: ACCENT, marginTop: 16, textTransform: "uppercase" }}>
+        <p style={{ fontFamily: mono, fontSize: 20, letterSpacing: "0.22em", color: ACCENT, marginTop: 14, textTransform: "uppercase" }}>
           {data.fieldName}
         </p>
-        {data.marshalName && (
-          <p style={{ fontSize: 24, letterSpacing: "0.08em", color: MUTED, marginTop: 18 }}>
-            {en ? "Organized by" : "Igro organiziral"}: {data.marshalName}
-          </p>
-        )}
+        <div style={{ height: 2, margin: "26px auto 0", width: 520, background: `linear-gradient(90deg, transparent, ${ACCENT}, transparent)` }} />
       </div>
 
-      {/* MINI MAP */}
-      <div style={{ marginTop: 52, height: 420, border: `2px solid ${ACCENT}55`, background: "rgba(0,0,0,0.55)", position: "relative", overflow: "hidden" }}>
-        <div
-          style={{
-            position: "absolute",
-            inset: 0,
-            backgroundImage: `linear-gradient(${ACCENT}14 1px, transparent 1px), linear-gradient(90deg, ${ACCENT}14 1px, transparent 1px)`,
-            backgroundSize: "60px 60px",
-          }}
-        />
-        {data.nodes.map((n) => (
-          <div
-            key={n.n}
-            style={{
-              position: "absolute",
-              left: `${Math.min(94, Math.max(6, n.x))}%`,
-              top: `${Math.min(90, Math.max(10, n.y))}%`,
-              transform: "translate(-50%, -50%)",
-              width: 54,
-              height: 54,
-              borderRadius: "50%",
-              background: `${n.color}33`,
-              border: `3px solid ${n.color}`,
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              fontFamily: mono,
-              fontSize: 22,
-              color: n.color,
-              boxShadow: `0 0 26px ${n.color}88`,
-            }}
-          >
-            {n.n}
-          </div>
-        ))}
-        <p style={{ position: "absolute", left: 18, bottom: 12, fontFamily: mono, fontSize: 16, letterSpacing: "0.24em", color: MUTED, textTransform: "uppercase" }}>
-          {en ? "SECTOR GRID" : "MREŽA SEKTORJEV"}
+      {/* WINNER BANNER */}
+      <div
+        style={{
+          marginTop: 30,
+          padding: "22px 30px",
+          textAlign: "center",
+          background: draw ? "rgba(255,255,255,0.05)" : `linear-gradient(90deg, transparent, ${winner?.color ?? ACCENT}33, transparent)`,
+          border: `2px solid ${draw ? `${ACCENT}66` : `${winner?.color ?? ACCENT}`}`,
+        }}
+      >
+        <p style={{ fontFamily: mono, fontSize: 17, letterSpacing: "0.32em", color: MUTED, textTransform: "uppercase" }}>
+          {draw ? (en ? "RESULT" : "IZID") : (en ? "VICTORY" : "ZMAGOVALEC")}
+        </p>
+        <p style={{ fontFamily: mono, fontSize: 42, letterSpacing: "0.1em", color: draw ? INK : winner?.color ?? ACCENT, marginTop: 12, textTransform: "uppercase" }}>
+          {draw ? (en ? "DRAW" : "NEODLOČENO") : winner?.name}
         </p>
       </div>
 
       {/* TEAM SCORES */}
-      <div style={{ marginTop: 46 }}>
-        {data.teams.map((t) => (
-          <div key={t.key} style={{ marginBottom: 26 }}>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 10 }}>
-              <span style={{ fontFamily: mono, fontSize: 26, letterSpacing: "0.16em", color: t.color, textTransform: "uppercase" }}>{t.name}</span>
-              <span style={{ fontFamily: mono, fontSize: 34, color: t.color, fontWeight: 700 }}>{t.score}</span>
+      <div style={{ marginTop: 32 }}>
+        {teams.map((t) => (
+          <div key={t.key} style={{ marginBottom: 20 }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 9 }}>
+              <span style={{ fontFamily: mono, fontSize: 22, letterSpacing: "0.16em", color: t.color, textTransform: "uppercase" }}>{t.name}</span>
+              <span style={{ fontFamily: mono, fontSize: 30, color: t.color, fontWeight: 700 }}>{t.score}</span>
             </div>
-            <div style={{ height: 16, background: "rgba(255,255,255,0.07)", border: `1px solid ${t.color}55` }}>
+            <div style={{ height: 14, background: "rgba(255,255,255,0.07)", border: `1px solid ${t.color}55` }}>
               <div style={{ width: `${Math.round((t.score / maxScore) * 100)}%`, height: "100%", background: t.color, boxShadow: `0 0 20px ${t.color}` }} />
             </div>
           </div>
         ))}
       </div>
 
-      {/* TOP 3 */}
-      <div style={{ marginTop: 26, flex: 1 }}>
-        <p style={{ fontFamily: mono, fontSize: 22, letterSpacing: "0.26em", color: ACCENT, textTransform: "uppercase", marginBottom: 22 }}>
-          ▌ {en ? "TOP 3 PLAYERS" : "NAJBOLJŠI 3 IGRALCI"}
+      {/* PODIUM */}
+      <div style={{ marginTop: 26 }}>
+        <p style={{ fontFamily: mono, fontSize: 18, letterSpacing: "0.28em", color: ACCENT, textTransform: "uppercase", marginBottom: 18, textAlign: "center" }}>
+          {en ? "TOP OPERATORS" : "NAJBOLJŠI OPERATIVCI"}
         </p>
-        {data.top3.map((p, i) => {
-          const medal = ["#D4AF37", "#C8CBCE", "#A87C53"][i];
-          return (
-            <div
-              key={`${p.callsign}-${i}`}
-              style={{
-                display: "flex",
-                alignItems: "center",
-                gap: 22,
-                padding: "20px 22px",
-                marginBottom: 14,
-                background: "rgba(255,255,255,0.035)",
-                border: `2px solid ${medal}66`,
-              }}
-            >
-              <span style={{ fontFamily: mono, fontSize: 30, color: medal, width: 70 }}>#{i + 1}</span>
-              <span style={{ fontFamily: mono, fontSize: 28, color: INK, flex: 1, letterSpacing: "0.06em", textTransform: "uppercase", overflow: "hidden", whiteSpace: "nowrap", textOverflow: "ellipsis" }}>
-                {p.callsign}
-              </span>
-              <span style={{ fontFamily: mono, fontSize: 26, color: p.color }}>
-                {p.pts} {en ? "PTS" : "TOČ"}
-              </span>
-              {data.showDeaths && (
-                <span style={{ fontFamily: mono, fontSize: 24, color: "#ff7070", minWidth: 90, textAlign: "right" }}>
-                  ☠ {p.deaths ?? 0}
-                </span>
-              )}
-            </div>
-          );
-        })}
+        <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "center", gap: 18 }}>
+          {podiumOrder.map((p, i) => {
+            const rank = podiumRank[i];
+            const medal = MEDALS[rank - 1];
+            if (!p) return <div key={i} style={{ width: 300 }} />;
+            return (
+              <div key={`${p.callsign}-${rank}`} style={{ width: 300, display: "flex", flexDirection: "column", alignItems: "center" }}>
+                <div
+                  style={{
+                    width: 96,
+                    height: 96,
+                    borderRadius: "50%",
+                    border: `4px solid ${medal}`,
+                    background: `${medal}1f`,
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    fontFamily: mono,
+                    fontSize: 34,
+                    color: medal,
+                    boxShadow: `0 0 34px ${medal}55`,
+                    marginBottom: 14,
+                  }}
+                >
+                  {rank}
+                </div>
+                <p
+                  style={{
+                    fontFamily: mono,
+                    fontSize: fitSize(p.callsign, rank === 1 ? 25 : 21, 13, rank === 1 ? 11 : 12),
+                    color: INK,
+                    textTransform: "uppercase",
+                    letterSpacing: "0.05em",
+                    textAlign: "center",
+                    marginBottom: 12,
+                    maxWidth: 290,
+                    overflow: "hidden",
+                    whiteSpace: "nowrap",
+                    textOverflow: "ellipsis",
+                  }}
+                >
+                  {p.callsign}
+                </p>
+                <div
+                  style={{
+                    width: "100%",
+                    height: podiumH[i],
+                    background: `linear-gradient(180deg, ${medal}3a, ${medal}0d)`,
+                    borderTop: `4px solid ${medal}`,
+                    borderLeft: `2px solid ${medal}55`,
+                    borderRight: `2px solid ${medal}55`,
+                    display: "flex",
+                    flexDirection: "column",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    gap: 8,
+                  }}
+                >
+                  <span style={{ fontFamily: mono, fontSize: rank === 1 ? 46 : 38, color: p.color, fontWeight: 700 }}>{p.pts}</span>
+                  <span style={{ fontFamily: mono, fontSize: 15, letterSpacing: "0.22em", color: MUTED }}>{en ? "PTS" : "TOČ"}</span>
+                  {data.showDeaths && (
+                    <span style={{ fontFamily: mono, fontSize: 16, color: "#ff8080" }}>☠ {p.deaths ?? 0}</span>
+                  )}
+                </div>
+              </div>
+            );
+          })}
+        </div>
       </div>
 
+      {/* LEADERBOARD 4+ */}
+      <div style={{ marginTop: 30, flex: 1 }}>
+        {board.length > 0 && (
+          <>
+            <p style={{ fontFamily: mono, fontSize: 16, letterSpacing: "0.26em", color: ACCENT, textTransform: "uppercase", marginBottom: 14 }}>
+              ▌ {en ? "LEADERBOARD" : "LESTVICA"}
+            </p>
+            {board.map((p, i) => (
+              <div
+                key={`${p.callsign}-${i}`}
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 18,
+                  padding: "14px 20px",
+                  marginBottom: 10,
+                  background: "rgba(255,255,255,0.035)",
+                  borderLeft: `4px solid ${p.color}`,
+                }}
+              >
+                <span style={{ fontFamily: mono, fontSize: 20, color: MUTED, width: 56 }}>#{i + 4}</span>
+                <span style={{ fontFamily: mono, fontSize: 22, color: INK, flex: 1, letterSpacing: "0.05em", textTransform: "uppercase", overflow: "hidden", whiteSpace: "nowrap", textOverflow: "ellipsis" }}>
+                  {p.callsign}
+                </span>
+                {data.showDeaths && (
+                  <span style={{ fontFamily: mono, fontSize: 18, color: "#ff8080", minWidth: 78, textAlign: "right" }}>☠ {p.deaths ?? 0}</span>
+                )}
+                <span style={{ fontFamily: mono, fontSize: 22, color: p.color, minWidth: 110, textAlign: "right" }}>
+                  {p.pts} {en ? "PTS" : "TOČ"}
+                </span>
+              </div>
+            ))}
+          </>
+        )}
+      </div>
+
+      {/* SECTOR STRIP */}
+      {data.nodes.length > 0 && (
+        <div style={{ display: "flex", alignItems: "center", gap: 12, justifyContent: "center", marginTop: 12, flexWrap: "wrap" }}>
+          <span style={{ fontFamily: mono, fontSize: 14, letterSpacing: "0.22em", color: MUTED, textTransform: "uppercase", marginRight: 6 }}>
+            {en ? "SECTORS" : "SEKTORJI"}
+          </span>
+          {data.nodes.slice(0, 12).map((n) => (
+            <div
+              key={n.n}
+              style={{
+                width: 46,
+                height: 46,
+                borderRadius: "50%",
+                background: `${n.color}2e`,
+                border: `3px solid ${n.color}`,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                fontFamily: mono,
+                fontSize: 18,
+                color: n.color,
+                boxShadow: `0 0 18px ${n.color}66`,
+              }}
+            >
+              {n.n}
+            </div>
+          ))}
+        </div>
+      )}
+
       {/* FOOTER */}
-      <div style={{ textAlign: "center", marginTop: 20 }}>
-        <div style={{ height: 2, margin: "0 auto 24px", width: 480, background: `linear-gradient(90deg, transparent, ${ACCENT}88, transparent)` }} />
-        <p style={{ fontFamily: mono, fontSize: 22, letterSpacing: "0.22em", color: ACCENT, textTransform: "uppercase" }}>
-          {en ? "Visit us at SpartanOpsapp.com" : "Obiščite nas na SpartanOpsapp.com"}
+      <div style={{ textAlign: "center", marginTop: 26 }}>
+        {data.marshalName && (
+          <p style={{ fontFamily: mono, fontSize: 15, letterSpacing: "0.14em", color: MUTED, marginBottom: 16, textTransform: "uppercase" }}>
+            {en ? "ORGANIZED BY" : "IGRO ORGANIZIRAL"}: {data.marshalName}
+          </p>
+        )}
+        <div style={{ height: 2, margin: "0 auto 20px", width: 520, background: `linear-gradient(90deg, transparent, ${ACCENT}88, transparent)` }} />
+        <p style={{ fontFamily: mono, fontSize: 24, letterSpacing: "0.2em", color: ACCENT, textTransform: "uppercase" }}>
+          SPARTANOPSAPP.COM
+        </p>
+        <p style={{ fontFamily: mono, fontSize: 14, letterSpacing: "0.2em", color: MUTED, marginTop: 12, textTransform: "uppercase" }}>
+          {en ? "RUN YOUR OWN AIRSOFT MISSION" : "VODI SVOJO AIRSOFT MISIJO"}
         </p>
       </div>
     </div>
