@@ -30,8 +30,6 @@ async function verifyMarshalAccess(fieldId: string, password: string): Promise<b
   return false;
 }
 
-// Marshal-controlled dynamic anti-cheat radius (3–50m), fallback 15m — set in
-// the handler below once game state is loaded.
 // Keep the strict physical radius, but use the browser's raw reported accuracy
 // as tolerance. iOS/Android can hand back approximate fixes hundreds of metres
 // away; clamping that value before validation creates false Spartacus flags.
