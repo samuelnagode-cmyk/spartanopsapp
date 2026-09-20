@@ -29,6 +29,7 @@ import { Route as AdminPregledRouteImport } from './routes/admin-pregled'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as ApiSendReservationRouteImport } from './routes/api/send-reservation'
 import { Route as ApiSendInquiryRouteImport } from './routes/api/send-inquiry'
+import { Route as ApiPublicSpartanopsCronTickRouteImport } from './routes/api/public/spartanops-cron-tick'
 
 const UpdatesRoute = UpdatesRouteImport.update({
   id: '/updates',
@@ -130,6 +131,12 @@ const ApiSendInquiryRoute = ApiSendInquiryRouteImport.update({
   path: '/api/send-inquiry',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiPublicSpartanopsCronTickRoute =
+  ApiPublicSpartanopsCronTickRouteImport.update({
+    id: '/api/public/spartanops-cron-tick',
+    path: '/api/public/spartanops-cron-tick',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -152,6 +159,7 @@ export interface FileRoutesByFullPath {
   '/updates': typeof UpdatesRoute
   '/api/send-inquiry': typeof ApiSendInquiryRoute
   '/api/send-reservation': typeof ApiSendReservationRoute
+  '/api/public/spartanops-cron-tick': typeof ApiPublicSpartanopsCronTickRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -174,6 +182,7 @@ export interface FileRoutesByTo {
   '/updates': typeof UpdatesRoute
   '/api/send-inquiry': typeof ApiSendInquiryRoute
   '/api/send-reservation': typeof ApiSendReservationRoute
+  '/api/public/spartanops-cron-tick': typeof ApiPublicSpartanopsCronTickRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -197,6 +206,7 @@ export interface FileRoutesById {
   '/updates': typeof UpdatesRoute
   '/api/send-inquiry': typeof ApiSendInquiryRoute
   '/api/send-reservation': typeof ApiSendReservationRoute
+  '/api/public/spartanops-cron-tick': typeof ApiPublicSpartanopsCronTickRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -221,6 +231,7 @@ export interface FileRouteTypes {
     | '/updates'
     | '/api/send-inquiry'
     | '/api/send-reservation'
+    | '/api/public/spartanops-cron-tick'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -243,6 +254,7 @@ export interface FileRouteTypes {
     | '/updates'
     | '/api/send-inquiry'
     | '/api/send-reservation'
+    | '/api/public/spartanops-cron-tick'
   id:
     | '__root__'
     | '/'
@@ -265,6 +277,7 @@ export interface FileRouteTypes {
     | '/updates'
     | '/api/send-inquiry'
     | '/api/send-reservation'
+    | '/api/public/spartanops-cron-tick'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -288,6 +301,7 @@ export interface RootRouteChildren {
   UpdatesRoute: typeof UpdatesRoute
   ApiSendInquiryRoute: typeof ApiSendInquiryRoute
   ApiSendReservationRoute: typeof ApiSendReservationRoute
+  ApiPublicSpartanopsCronTickRoute: typeof ApiPublicSpartanopsCronTickRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -432,6 +446,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiSendInquiryRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/spartanops-cron-tick': {
+      id: '/api/public/spartanops-cron-tick'
+      path: '/api/public/spartanops-cron-tick'
+      fullPath: '/api/public/spartanops-cron-tick'
+      preLoaderRoute: typeof ApiPublicSpartanopsCronTickRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -456,6 +477,7 @@ const rootRouteChildren: RootRouteChildren = {
   UpdatesRoute: UpdatesRoute,
   ApiSendInquiryRoute: ApiSendInquiryRoute,
   ApiSendReservationRoute: ApiSendReservationRoute,
+  ApiPublicSpartanopsCronTickRoute: ApiPublicSpartanopsCronTickRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
