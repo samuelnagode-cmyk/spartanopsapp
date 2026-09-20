@@ -172,7 +172,7 @@ export const spartanopsSpartacusCapture = createServerFn({ method: "POST" })
         .eq("player_callsign", (checkin as any).callsign)
         .order("captured_at", { ascending: false })
         .limit(1);
-      return { ...(r as any), spartacus: true, anchored: true, diagnostic: logSpartacusDiagnostic({ ...baseDiagnostic(data, "anchor_created_capture_applied"), calculated_distance_meters: 0, allowed_threshold_meters: ANCHOR_RADIUS_M + Math.min(MAX_ACCURACY_BUFFER_M, data.accuracy ?? 0), rpc_response_payload: r }) };
+      return { ...(r as any), spartacus: true, anchored: true, diagnostic: logSpartacusDiagnostic({ ...baseDiagnostic(data, "anchor_created_capture_applied"), calculated_distance_meters: 0, allowed_threshold_meters: dynamicRadiusM + Math.min(MAX_ACCURACY_BUFFER_M, data.accuracy ?? 0), rpc_response_payload: r }) };
     }
 
     const anchorGps = {
