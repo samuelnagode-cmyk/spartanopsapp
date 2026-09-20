@@ -30,7 +30,6 @@ async function verifyMarshalAccess(fieldId: string, password: string): Promise<b
   return false;
 }
 
-const ANCHOR_RADIUS_M = 10;
 // Keep the strict physical radius, but use the browser's raw reported accuracy
 // as tolerance. iOS/Android can hand back approximate fixes hundreds of metres
 // away; clamping that value before validation creates false Spartacus flags.
@@ -171,7 +170,7 @@ export const spartanopsSpartacusCapture = createServerFn({ method: "POST" })
         .eq("player_callsign", (checkin as any).callsign)
         .order("captured_at", { ascending: false })
         .limit(1);
-      return { ...(r as any), spartacus: true, anchored: true, diagnostic: logSpartacusDiagnostic({ ...baseDiagnostic(data, "anchor_created_capture_applied"), calculated_distance_meters: 0, allowed_threshold_meters: ANCHOR_RADIUS_M + Math.min(MAX_ACCURACY_BUFFER_M, data.accuracy ?? 0), rpc_response_payload: r }) };
+      return { ...(r as any), spartacus: true, anchored: true, diagnostic: logSpartacusDiagnostic({ ...baseDiagnostic(data, "anchor_created_capture_applied"), calculated_distance_meters: 0, allowed_threshold_meters: dynamicRadiusM + Math.min(MAX_ACCURACY_BUFFER_M, data.accuracy ?? 0), rpc_response_payload: r }) };
     }
 
     const anchorGps = {
@@ -206,7 +205,7 @@ export const spartanopsSpartacusCapture = createServerFn({ method: "POST" })
     const scanBuffer = Math.min(MAX_ACCURACY_BUFFER_M, data.accuracy ?? 0);
     const anchorAcc = typeof (anchor as any).anchor_accuracy_m === "number" ? (anchor as any).anchor_accuracy_m : 0;
     const anchorBuffer = Math.min(MAX_ACCURACY_BUFFER_M, anchorAcc);
-    const allowedRadius = ANCHOR_RADIUS_M + scanBuffer + anchorBuffer;
+    const allowedRadius = dynamicRadiusM + scanBuffer + anchorBuffer;
     const diagnosticBase = {
       ...baseDiagnostic(data, "distance_evaluated"),
       anchor_gps: anchorGps,
@@ -218,7 +217,7 @@ export const spartanopsSpartacusCapture = createServerFn({ method: "POST" })
     // for the uncertainty of both GPS fixes. The previous raw distance gate
     // ignored accuracy and rejected every legitimate second scan whenever the
     // first phone's anchor drifted outside the bare radius.
-    const HARD_RANGE_M = dynamicRadiusM + scanBuffer + anchorBuffer;
+    const HARD_RANGE_M = dynamicRadiusM * 2 + scanBuffer + anchorBuffer;
     if (dist > HARD_RANGE_M) {
       return { ok: false, spartacus: true, error: "out_of_range", distance_m: dist, radius_m: HARD_RANGE_M, diagnostic: logSpartacusDiagnostic({ ...diagnosticBase, stage: "distance_over_hard_range" }) } as const;
     }
