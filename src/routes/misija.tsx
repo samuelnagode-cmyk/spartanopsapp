@@ -566,7 +566,6 @@ function MisijaPage() {
     const cached = readCachedState(field);
     if (cached) {
       setState((prev) => prev ?? cached.state);
-      if (cached.fresh) setStateFresh(true);
     }
 
     const load = async (attempt = 0): Promise<boolean> => {
