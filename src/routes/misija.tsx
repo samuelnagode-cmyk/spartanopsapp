@@ -1428,28 +1428,60 @@ function SpartacusConsentBlock({ en, onClearedChange }: { en: boolean; onCleared
   // "AGREE + ACTIVATE GPS" call-to-action. Only an explicit user tap flips
   // the state — no silent auto-grant from localStorage or the Permissions API.
   const [status, setStatus] = useState<"idle" | "granted" | "denied">("idle");
+  const [busy, setBusy] = useState(false);
+  const [failReason, setFailReason] = useState<"blocked" | "signal" | null>(null);
+  const attemptRef = useRef(0);
 
-  const activate = () => {
-    if (typeof navigator === "undefined" || !navigator.geolocation) {
-      setStatus("denied");
-      onClearedChange(false);
-      return;
-    }
+  const requestPosition = (timeoutMs: number) => {
     navigator.geolocation.getCurrentPosition(
       (pos) => {
         try {
           localStorage.setItem(GPS_OK_KEY, "1");
           localStorage.setItem(GPS_FIX_KEY, JSON.stringify({ lat: pos.coords.latitude, lng: pos.coords.longitude, accuracy: pos.coords.accuracy, at: Date.now() }));
         } catch { /* ignore */ }
+        attemptRef.current = 0;
+        setBusy(false);
         setStatus("granted");
         onClearedChange(true);
       },
-      () => {
-        setStatus("denied");
-        onClearedChange(false);
+      (err) => {
+        if (err.code === err.PERMISSION_DENIED) {
+          attemptRef.current = 0;
+          setBusy(false);
+          setFailReason("blocked");
+          setStatus("denied");
+          onClearedChange(false);
+          return;
+        }
+        // POSITION_UNAVAILABLE or TIMEOUT: common on iOS right after granting
+        // permission while the GPS chip warms up. Retry automatically instead
+        // of telling the player permission is blocked.
+        if (attemptRef.current < 2) {
+          attemptRef.current += 1;
+          requestPosition(timeoutMs + 8000);
+        } else {
+          attemptRef.current = 0;
+          setBusy(false);
+          setFailReason("signal");
+          setStatus("denied");
+          onClearedChange(false);
+        }
       },
-      { enableHighAccuracy: true, timeout: 12000, maximumAge: 30000 },
+      { enableHighAccuracy: true, timeout: timeoutMs, maximumAge: 30000 },
     );
+  };
+
+  const activate = () => {
+    if (typeof navigator === "undefined" || !navigator.geolocation) {
+      setFailReason("blocked");
+      setStatus("denied");
+      onClearedChange(false);
+      return;
+    }
+    attemptRef.current = 0;
+    setBusy(true);
+    setFailReason(null);
+    requestPosition(12000);
   };
 
   const granted = status === "granted";
@@ -1468,7 +1500,7 @@ function SpartacusConsentBlock({ en, onClearedChange }: { en: boolean; onCleared
       <button
         type="button"
         onClick={activate}
-        disabled={granted}
+        disabled={granted || busy}
         style={{
           width: "100%",
           background: granted ? "rgba(61,220,132,0.16)" : `${ACCENT}18`,
@@ -1479,14 +1511,25 @@ function SpartacusConsentBlock({ en, onClearedChange }: { en: boolean; onCleared
           fontSize: 10,
           letterSpacing: "0.16em",
           textTransform: "uppercase",
-          cursor: granted ? "default" : "pointer",
+          cursor: granted || busy ? "default" : "pointer",
         }}
       >
-        {granted ? (en ? "✓ AGREED / SATELLITE LINK SECURED" : "✓ POTRJENO / SATELITSKA POVEZAVA VARNA") : (en ? "AGREE + ACTIVATE GPS" : "STRINJAM SE + AKTIVIRAJ GPS")}
+        {granted
+          ? (en ? "✓ AGREED / SATELLITE LINK SECURED" : "✓ POTRJENO / SATELITSKA POVEZAVA VARNA")
+          : busy
+            ? (en ? "ACQUIRING GPS SIGNAL…" : "PRIDOBIVANJE GPS SIGNALA…")
+            : (en ? "AGREE + ACTIVATE GPS" : "STRINJAM SE + AKTIVIRAJ GPS")}
       </button>
-      {status === "denied" && (
+      {status === "denied" && failReason === "blocked" && (
         <p style={{ color: "#ff8a8a", fontFamily: "monospace", fontSize: 10.5, lineHeight: 1.5, marginTop: 8 }}>
           {en ? "Location permission is blocked. Enable it in your browser settings to register." : "Dovoljenje za lokacijo je blokirano. Omogočite ga v nastavitvah brskalnika za prijavo."}
+        </p>
+      )}
+      {status === "denied" && failReason === "signal" && (
+        <p style={{ color: "#ff8a8a", fontFamily: "monospace", fontSize: 10.5, lineHeight: 1.5, marginTop: 8 }}>
+          {en
+            ? "Couldn't get a GPS fix — this can happen indoors or right after allowing location for the first time. Tap the button to try again."
+            : "GPS signala ni bilo mogoče pridobiti — to se lahko zgodi v zaprtih prostorih ali takoj po prvi odobritvi lokacije. Za ponovni poskus pritisnite gumb."}
         </p>
       )}
     </div>
