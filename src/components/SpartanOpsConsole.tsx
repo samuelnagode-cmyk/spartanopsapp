@@ -1253,6 +1253,12 @@ const SPARTACUS_RADIUS_DEFAULT = 15;
 const SPARTACUS_RADIUS_MIN = 3;
 const SPARTACUS_RADIUS_MAX = 50;
 
+const SPARTACUS_RADIUS_PRESETS = [
+  { value: 10, labelEn: "Tight", labelSl: "Strogo" },
+  { value: 15, labelEn: "Balanced", labelSl: "Uravnoteženo" },
+  { value: 25, labelEn: "Loose", labelSl: "Ohlapno" },
+] as const;
+
 function SpartacusRadiusControl({ settings, onPatch, en, enabled }: { settings: GameSettings; onPatch: (s: GameSettings) => void; en: boolean; enabled: boolean }) {
   const raw = typeof settings.spartacusRadius === "number" && isFinite(settings.spartacusRadius)
     ? settings.spartacusRadius
@@ -1263,47 +1269,59 @@ function SpartacusRadiusControl({ settings, onPatch, en, enabled }: { settings: 
     onPatch({ ...settings, spartacusRadius: clamped });
   };
   const dim = enabled ? 1 : 0.5;
+  const activePreset = SPARTACUS_RADIUS_PRESETS.find((p) => p.value === value);
   return (
     <div style={{ marginTop: 14, padding: 12, border: "1px solid #ffb02055", background: "rgba(0,0,0,0.35)", opacity: dim }}>
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8 }}>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}>
         <div style={{ fontFamily: "'Michroma', monospace", fontSize: 11, letterSpacing: "0.2em", color: "#ffb020", textTransform: "uppercase" }}>
           {en ? "SPARTACUS RADIUS" : "SPARTACUS RADIJ"}
         </div>
-        <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-          <button type="button" onClick={() => commit(value - 1)} disabled={!enabled || value <= SPARTACUS_RADIUS_MIN}
-            style={{ width: 28, height: 28, background: "transparent", color: "#ffb020", border: "1px solid #ffb02088", fontFamily: "monospace", fontSize: 14, cursor: enabled && value > SPARTACUS_RADIUS_MIN ? "pointer" : "not-allowed" }}>−</button>
-          <input
-            type="number"
-            min={SPARTACUS_RADIUS_MIN}
-            max={SPARTACUS_RADIUS_MAX}
-            value={value}
-            disabled={!enabled}
-            onChange={(e) => commit(Number(e.target.value))}
-            style={{ width: 60, textAlign: "center", background: "rgba(0,0,0,0.5)", color: INK, border: "1px solid #ffb02088", padding: "4px 6px", fontFamily: "monospace", fontSize: 13 }}
-          />
-          <span style={{ fontFamily: "monospace", fontSize: 11, color: MUTED }}>m</span>
-          <button type="button" onClick={() => commit(value + 1)} disabled={!enabled || value >= SPARTACUS_RADIUS_MAX}
-            style={{ width: 28, height: 28, background: "transparent", color: "#ffb020", border: "1px solid #ffb02088", fontFamily: "monospace", fontSize: 14, cursor: enabled && value < SPARTACUS_RADIUS_MAX ? "pointer" : "not-allowed" }}>+</button>
-        </div>
+        <span style={{ fontFamily: "monospace", fontSize: 11, color: MUTED }}>{value}m</span>
       </div>
-      <input
-        type="range"
-        min={SPARTACUS_RADIUS_MIN}
-        max={SPARTACUS_RADIUS_MAX}
-        step={1}
-        value={value}
-        disabled={!enabled}
-        onChange={(e) => commit(Number(e.target.value))}
-        style={{ width: "100%", accentColor: "#ffb020" }}
-      />
-      <div style={{ display: "flex", justifyContent: "space-between", fontFamily: "monospace", fontSize: 9, color: MUTED, marginTop: 2 }}>
-        <span>{SPARTACUS_RADIUS_MIN}m</span>
-        <span>{SPARTACUS_RADIUS_MAX}m</span>
+      <div style={{ display: "flex", gap: 8 }}>
+        {SPARTACUS_RADIUS_PRESETS.map((p) => {
+          const active = p.value === value;
+          return (
+            <button
+              key={p.value}
+              type="button"
+              disabled={!enabled}
+              onClick={() => commit(p.value)}
+              style={{
+                flex: 1,
+                padding: "10px 6px",
+                background: active ? "#ffb02022" : "transparent",
+                color: active ? "#ffb020" : MUTED,
+                border: `1px solid ${active ? "#ffb020" : "#ffb02055"}`,
+                fontFamily: "'Michroma', monospace",
+                fontSize: 10,
+                letterSpacing: "0.08em",
+                textTransform: "uppercase",
+                cursor: enabled ? "pointer" : "not-allowed",
+              }}
+            >
+              {en ? p.labelEn : p.labelSl}
+              <div style={{ fontFamily: "monospace", fontSize: 9, marginTop: 3, opacity: 0.8 }}>{p.value}m</div>
+            </button>
+          );
+        })}
       </div>
       <p style={{ fontSize: 10.5, color: MUTED, fontFamily: "monospace", lineHeight: 1.6, marginTop: 10, marginBottom: 0 }}>
         {en
-          ? "Adjust based on field GPS coverage. The smaller the radius, the higher the anti-cheat protection, but may trigger false flags."
-          : "Prilagodi glede na GPS signal na terenu. Manjši kot je radij, večja je zaščita pred goljufanjem, vendar se poveča tveganje za lažne blokade."}
+          ? (activePreset
+              ? (activePreset.value <= 10
+                  ? "Tight: fewer honest scans need manual approval, but weak GPS spots may flag more legitimate captures for review."
+                  : activePreset.value >= 25
+                    ? "Loose: legitimate scans rarely need manual approval, but leaves slightly more room for scans made from farther away."
+                    : "Balanced: a reasonable default for most fields with normal GPS coverage.")
+              : "Custom value — not one of the standard presets.")
+          : (activePreset
+              ? (activePreset.value <= 10
+                  ? "Strogo: manj poštenih skenov potrebuje ročno potrditev, a na mestih s šibkim GPS signalom je lahko več poštenih zajemov označenih za pregled."
+                  : activePreset.value >= 25
+                    ? "Ohlapno: pošteni skeni redko potrebujejo ročno potrditev, a to pusti nekoliko več prostora za skene iz večje razdalje."
+                    : "Uravnoteženo: smiselna privzeta izbira za večino terenov z običajnim GPS signalom.")
+              : "Nestandardna vrednost — ni ena od privzetih možnosti.")}
       </p>
     </div>
   );
