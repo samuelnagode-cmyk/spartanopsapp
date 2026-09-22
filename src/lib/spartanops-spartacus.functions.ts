@@ -291,36 +291,13 @@ export const spartanopsSpartacusReview = createServerFn({ method: "POST" })
     if (!cap) throw new Error("Capture not found");
 
     if (data.decision === "approve") {
-      const { data: state } = await supabaseAdmin
-        .from("spartanops_game_state")
-        .select("field_id, status, team_scores, node_holders, point_target, winner_team")
-        .eq("field_id", (cap as any).field_id)
-        .maybeSingle();
-      if (state) {
-        const scores = { ...(((state as any).team_scores as Record<string, number>) ?? {}) };
-        const holders = { ...(((state as any).node_holders as Record<string, string | null>) ?? {}) };
-        const team = (cap as any).team as string;
-        const p = String((cap as any).point_number);
-        if (holders[p] !== team) {
-          holders[p] = team;
-          scores[team] = (scores[team] ?? 0) + 1;
-        }
-        const target = (state as any).point_target ?? 50;
-        let winner = (state as any).winner_team ?? null;
-        let status = (state as any).status ?? "active";
-        if ((scores[team] ?? 0) >= target) {
-          winner = team;
-          status = "ended";
-        }
-        await supabaseAdmin
-          .from("spartanops_game_state")
-          .update({ team_scores: scores, node_holders: holders, winner_team: winner, status, updated_at: new Date().toISOString() } as any)
-          .eq("field_id", (cap as any).field_id);
-      }
-      await supabaseAdmin
-        .from("spartanops_captures")
-        .update({ suspicious: false, spartacus_status: "approved" } as any)
-        .eq("id", data.captureId);
+      const { data: result, error } = await supabaseAdmin.rpc("spartanops_approve_suspicious_capture" as any, {
+        p_capture_id: data.captureId,
+        p_field_id: data.fieldId,
+      });
+      if (error) throw new Error(error.message);
+      const r = result as any;
+      if (!r?.ok) throw new Error(r?.error || "approve_failed");
     } else {
       await supabaseAdmin
         .from("spartanops_captures")
