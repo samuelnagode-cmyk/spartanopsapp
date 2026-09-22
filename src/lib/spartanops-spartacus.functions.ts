@@ -298,7 +298,6 @@ export const spartanopsSpartacusReview = createServerFn({ method: "POST" })
       if (error) throw new Error(error.message);
       const r = result as any;
       if (!r?.ok) throw new Error(r?.error || "approve_failed");
-    }
     } else {
       await supabaseAdmin
         .from("spartanops_captures")
