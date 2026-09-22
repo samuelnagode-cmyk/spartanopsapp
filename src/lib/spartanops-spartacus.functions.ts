@@ -291,6 +291,16 @@ export const spartanopsSpartacusReview = createServerFn({ method: "POST" })
     if (!cap) throw new Error("Capture not found");
 
     if (data.decision === "approve") {
+      const { data: result, error } = await supabaseAdmin.rpc("spartanops_approve_suspicious_capture" as any, {
+        p_capture_id: data.captureId,
+        p_field_id: data.fieldId,
+      });
+      if (error) throw new Error(error.message);
+      const r = result as any;
+      if (!r?.ok) throw new Error(r?.error || "approve_failed");
+    }
+    /* eslint-disable no-unreachable */
+    if (false) {
       const { data: state } = await supabaseAdmin
         .from("spartanops_game_state")
         .select("field_id, status, team_scores, node_holders, point_target, winner_team")
