@@ -1,4 +1,3 @@
-import { bumpTelemetryClient } from "@/lib/telemetry-client";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
@@ -247,11 +246,6 @@ function CapturePage() {
   const [acquiringGps, setAcquiringGps] = useState(false);
   const [retryNonce, setRetryNonce] = useState(0);
 
-  // Marketing telemetry: an accepted in-app scan counts as a QR entry.
-  useEffect(() => {
-    if (state !== "success") return;
-    bumpTelemetryClient("qr_entry");
-  }, [state]);
 
   // If the match ends while this screen is open (success popup, error, GPS
   // wait), every player must be pulled to the debriefing screen immediately.
