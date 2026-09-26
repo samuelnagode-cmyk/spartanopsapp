@@ -42,10 +42,11 @@ const countKind = async (admin: any, kind: TelemetryKind): Promise<number> => {
 export const getOperationalTelemetry = createServerFn({ method: "GET" }).handler(async (): Promise<OperationalTelemetry> => {
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
-  const [archivedRes, checkinsRes, capturesRes, qrEntries, respawnEvents, missionEvents] = await Promise.all([
+  const [archivedRes, checkinsRes, capturesRes, qrEntries, respawnEvents] = await Promise.all([
     supabaseAdmin
       .from("spartanops_archived_missions" as any)
-      .select("player_count,capture_count"),
+      .select("player_count,capture_count")
+      .eq("mission_state", "ended"),
     supabaseAdmin
       .from("spartanops_checkins")
       .select("id", { count: "exact", head: true }),
@@ -54,7 +55,6 @@ export const getOperationalTelemetry = createServerFn({ method: "GET" }).handler
       .select("id", { count: "exact", head: true }),
     countKind(supabaseAdmin as any, "qr_entry"),
     countKind(supabaseAdmin as any, "respawn"),
-    countKind(supabaseAdmin as any, "mission_complete"),
   ]);
 
   const archived = (archivedRes.data as Array<{ player_count: number | null; capture_count: number | null }> | null) ?? [];
@@ -65,13 +65,22 @@ export const getOperationalTelemetry = createServerFn({ method: "GET" }).handler
   const liveCaptures = capturesRes.count ?? 0;
 
   return {
-    // Every registered player, live rosters + archived missions.
+    // Every registered player: live rosters + players from missions that
+    // actually reached "ended" before their lobby was deleted (excludes
+    // test/aborted lobbies).
     operators: BASE.operators + archivedPlayers + liveCheckins,
-    // Every accepted QR scan plus every QR-driven entry into the app.
+    // Every accepted sector capture, counted once from the capture rows
+    // themselves (live + archived from ended missions), plus distinct
+    // respawn/lobby-join QR scans. Sector captures no longer also fire a
+    // qr_entry event (see the capture.tsx fix), so this is no longer
+    // double-counted.
     scans: BASE.scans + archivedCaptures + liveCaptures + qrEntries,
     // Respawn QR codes processed during live matches.
     respawns: BASE.respawns + respawnEvents,
-    // Missions that reached the debriefing screen (deduped per mission run).
-    missions: BASE.missions + archived.length + missionEvents,
+    // Missions that actually reached "ended" status, counted once from the
+    // archive (each lobby archives at most once, via an upsert on lobby_id).
+    // Not added to the separate mission_complete event count, which would
+    // double-count the same finished match once its lobby is later deleted.
+    missions: BASE.missions + archived.length,
   };
 });
