@@ -789,6 +789,10 @@ export type Database = {
         Args: { p_field_id: string; p_point: number; p_session_id: string }
         Returns: Json
       }
+      spartanops_approve_suspicious_capture: {
+        Args: { p_capture_id: string; p_field_id: string }
+        Returns: Json
+      }
       spartanops_delete_lobby: {
         Args: { p_lobby_id: string }
         Returns: undefined
