@@ -836,6 +836,7 @@ function CreateFieldForm({ onCreated }: { onCreated: (rec: LobbyRecord, pws: { p
   const [err, setErr] = useState("");
   const [ok, setOk] = useState(false);
   const [showPassword, setShowPassword] = useState(true);
+  const [formTab, setFormTab] = useState<"mission" | "location" | "passwords" | "weapons" | "mode" | "map">("mission");
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const onMapFile = (file: File) => {
@@ -931,8 +932,17 @@ function CreateFieldForm({ onCreated }: { onCreated: (rec: LobbyRecord, pws: { p
     }
   };
 
+  const formTabs: { k: typeof formTab; l: string; done: boolean }[] = [
+    { k: "mission", l: en ? "Mission & Field" : "Misija in poligon", done: !!fieldName.trim() && !!missionName.trim() },
+    { k: "location", l: en ? "Location & Marshals" : "Lokacija in maršali", done: !!city.trim() && !!country.trim() && !!marshalName.trim() },
+    { k: "passwords", l: en ? "Passwords" : "Gesla", done: !!password.trim() && !!marshalPassword.trim() && password.trim() !== marshalPassword.trim() },
+    { k: "weapons", l: en ? "Replica Power & Shooting Rules" : "Moč replik in pravila streljanja", done: hasWeaponRules(weaponRules) },
+    { k: "mode", l: en ? "Game Mode & Parameters" : "Igralni način in parametri", done: true },
+    { k: "map", l: en ? "Tactical Map" : "Taktični zemljevid", done: !!mapUrl.trim() },
+  ];
+
   return (
-    <form onSubmit={submit} style={{ maxWidth: 780, margin: "0 auto" }}>
+    <form onSubmit={submit} style={{ maxWidth: 780, margin: "0 auto", paddingBottom: 170 }}>
       {/* Screen header */}
       <div style={{ textAlign: "center", marginBottom: 22 }}>
         <p style={{ fontFamily: "'Michroma', monospace", fontSize: 18, letterSpacing: "0.24em", color: ACCENT, marginBottom: 10, textTransform: "uppercase", fontWeight: 700 }}>
@@ -943,7 +953,39 @@ function CreateFieldForm({ onCreated }: { onCreated: (rec: LobbyRecord, pws: { p
         </h2>
       </div>
 
-      {/* ── CARD 1: MISSION AND FIELD ───────────────────────── */}
+      {/* ── TAB BAR ─────────────────────────────────────────── */}
+      <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 18 }}>
+        {formTabs.map((t) => {
+          const active = formTab === t.k;
+          return (
+            <button
+              key={t.k}
+              type="button"
+              onClick={() => setFormTab(t.k)}
+              style={{
+                flex: "1 1 150px",
+                background: active ? ACCENT : "transparent",
+                color: active ? BG : INK,
+                border: `1px solid ${active ? ACCENT : "rgba(224,176,78,0.35)"}`,
+                padding: "10px 8px",
+                fontFamily: "'Michroma', monospace",
+                fontSize: 10,
+                letterSpacing: "0.12em",
+                textTransform: "uppercase",
+                cursor: "pointer",
+                fontWeight: active ? 700 : 500,
+                display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 6,
+              }}
+            >
+              <span aria-hidden style={{ width: 7, height: 7, borderRadius: "50%", flexShrink: 0, background: t.done ? (active ? BG : "#6fcf6f") : "transparent", border: `1px solid ${t.done ? (active ? BG : "#6fcf6f") : (active ? BG : "rgba(236,227,196,0.35)")}` }} />
+              {t.l}
+            </button>
+          );
+        })}
+      </div>
+
+      {/* ── TAB 1: MISSION AND FIELD ────────────────────────── */}
+      <div style={{ display: formTab === "mission" ? "block" : "none" }}>
       <Pane title={en ? "MISSION AND FIELD" : "MISIJA IN POLIGON"}>
         <FieldRow label={en ? "Field name" : "Ime poligona"}>
           <input required value={fieldName} onChange={(e) => setFieldName(e.target.value)} style={consoleInputStyle} placeholder="Poligon Ljubljana" />
@@ -970,10 +1012,13 @@ function CreateFieldForm({ onCreated }: { onCreated: (rec: LobbyRecord, pws: { p
             placeholder={en ? "The players will see this text in the debriefing screen (after the mission is finished)." : "Igralci bodo to besedilo videli na zaključnem zaslonu (po koncu misije)."}
           />
         </FieldRow>
-        <div style={{ marginTop: 4, marginBottom: 12, paddingTop: 12, borderTop: `1px solid ${ACCENT}25` }}>
-          <WeaponRulesEditor value={weaponRules} onChange={setWeaponRules} />
-        </div>
-        <div style={{ marginTop: 18, paddingTop: 14, borderTop: `1px solid ${ACCENT}40` }}>
+      </Pane>
+      </div>
+
+      {/* ── TAB 2: LOCATION & MARSHALS ──────────────────────── */}
+      <div style={{ display: formTab === "location" ? "block" : "none" }}>
+      <Pane title={en ? "LOCATION & MARSHALS" : "LOKACIJA IN MARŠALI"}>
+        <div>
           <p
             style={{
               fontFamily: "'Michroma', monospace",
@@ -1008,10 +1053,17 @@ function CreateFieldForm({ onCreated }: { onCreated: (rec: LobbyRecord, pws: { p
           <input value={marshalPhone} onChange={(e) => setMarshalPhone(e.target.value)} style={consoleInputStyle} placeholder="+386 40 123 456" inputMode="tel" />
         </FieldRow>
       </Pane>
+      </div>
 
-      <div style={{ height: 16 }} />
+      {/* ── TAB 4: REPLICA POWER & SHOOTING RULES ───────────── */}
+      <div style={{ display: formTab === "weapons" ? "block" : "none" }}>
+        <Pane title={en ? "REPLICA POWER & SHOOTING RULES" : "MOČ REPLIK IN PRAVILA STRELJANJA"}>
+          <WeaponRulesEditor value={weaponRules} onChange={setWeaponRules} />
+        </Pane>
+      </div>
 
-      {/* ── CARD 2: PASSWORDS ───────────────────────────────── */}
+      {/* ── TAB 3: PASSWORDS ────────────────────────────────── */}
+      <div style={{ display: formTab === "passwords" ? "block" : "none" }}>
       <Pane title={en ? "PASSWORDS" : "GESLA"}>
         <FieldRow label={en ? "Mission password (for players)" : "Geslo misije (za igralce)"}>
           <div style={{ position: "relative" }}>
@@ -1069,10 +1121,10 @@ function CreateFieldForm({ onCreated }: { onCreated: (rec: LobbyRecord, pws: { p
           </p>
         </FieldRow>
       </Pane>
+      </div>
 
-      <div style={{ height: 16 }} />
-
-      {/* ── STANDALONE SECTION TITLE ────────────────────────── */}
+      {/* ── TAB 5: GAME MODE & PARAMETERS ───────────────────── */}
+      <div style={{ display: formTab === "mode" ? "block" : "none" }}>
       <div style={{ margin: "8px 0 14px", textAlign: "center" }}>
         <h3 style={{ fontFamily: "'Michroma', monospace", fontSize: 18, letterSpacing: "0.22em", color: ACCENT, textTransform: "uppercase", fontWeight: 700 }}>
           {en ? "GAMEMODE AND PARAMETERS" : "IGRALNI NAČIN IN PARAMETRI"}
@@ -1159,10 +1211,10 @@ function CreateFieldForm({ onCreated }: { onCreated: (rec: LobbyRecord, pws: { p
 
       {/* ── TEAMS (self-titled card) ────────────────────────── */}
       <TeamConfigSection settings={settings} onPatch={setSettings} en={en} />
+      </div>
 
-      <div style={{ height: 16 }} />
-
-      {/* ── TACTICAL MAP ────────────────────────────────────── */}
+      {/* ── TAB 6: TACTICAL MAP ─────────────────────────────── */}
+      <div style={{ display: formTab === "map" ? "block" : "none" }}>
       <Pane title={en ? "TACTICAL MAP" : "TAKTIČNI ZEMLJEVID"}>
         <p style={{ fontSize: 11, color: MUTED, fontFamily: "monospace", lineHeight: 1.55, marginBottom: 12 }}>
           {en ? "Upload the image of your field or playing area." : "Naloži sliko svojega poligona ali igralne površine."}
@@ -1241,6 +1293,7 @@ function CreateFieldForm({ onCreated }: { onCreated: (rec: LobbyRecord, pws: { p
           en={en}
         />
       </Pane>
+      </div>
 
       <p style={{ fontSize: 11, color: MUTED, fontFamily: "monospace", lineHeight: 1.6, margin: "18px 0 16px", padding: "12px 14px", border: `1px dashed ${ACCENT}33`, background: "rgba(224,176,78,0.03)" }}>
         <strong style={{ color: ACCENT }}>{en ? "NOTE:" : "OPOMBA:"}</strong>{" "}
@@ -1249,20 +1302,21 @@ function CreateFieldForm({ onCreated }: { onCreated: (rec: LobbyRecord, pws: { p
           : "Inicializacija lobbyja doda misijo na seznam misij. Igralec se mora nato pridružiti misiji z geslom, ki ste ga ustvarili, se registrirati in izbrati svojo ekipo. Pred začetkom igre lahko ekipe uravnotežite."}
       </p>
 
-
-      {err && <p style={{ color: "#d97a6c", fontSize: 12, marginBottom: 10 }}>{err}</p>}
-      {ok && <p style={{ color: ACCENT, fontSize: 12, marginBottom: 10, fontFamily: "monospace", letterSpacing: "0.14em" }}>// {en ? "LOBBY INITIALIZED" : "LOBBY INICIALIZIRAN"}</p>}
-
-      <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 10 }}>
-        <button type="submit" disabled={busy}
-          style={{ background: ACCENT, color: BG, border: "none", padding: "14px 28px", fontFamily: "'Michroma', monospace", fontSize: 12, letterSpacing: "0.22em", textTransform: "uppercase", fontWeight: 700, cursor: busy ? "wait" : "pointer", opacity: busy ? 0.6 : 1, minWidth: 280 }}>
-          [ {busy ? (en ? "STARTING…" : "VZPOSTAVLJAM…") : (en ? "START LOBBY" : "VZPOSTAVI MISIJO")} ]
-        </button>
-        <p style={{ color: `${ACCENT}99`, fontSize: 11, fontFamily: "monospace", letterSpacing: "0.06em", lineHeight: 1.55, textAlign: "center", maxWidth: 520, margin: 0 }}>
-          {en
-            ? "Click to show this lobby on the list of missions."
-            : "Klikni, da se ta misija prikaže na seznamu aktivnih misij — igralci se lahko po tem pridružijo misiji z geslom, ki ste ga ustvarili."}
-        </p>
+      {/* ── PINNED DEPLOY BAR ───────────────────────────────── */}
+      <div style={{ position: "fixed", left: 0, right: 0, bottom: 0, zIndex: 50, background: `${BG}f2`, borderTop: `1px solid ${ACCENT}55`, padding: "12px 16px calc(12px + env(safe-area-inset-bottom))", backdropFilter: "blur(6px)" }}>
+        {err && <p style={{ color: "#d97a6c", fontSize: 12, marginBottom: 8, textAlign: "center" }}>{err}</p>}
+        {ok && <p style={{ color: ACCENT, fontSize: 12, marginBottom: 8, fontFamily: "monospace", letterSpacing: "0.14em", textAlign: "center" }}>// {en ? "LOBBY INITIALIZED" : "LOBBY INICIALIZIRAN"}</p>}
+        <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 8 }}>
+          <button type="submit" disabled={busy}
+            style={{ background: ACCENT, color: BG, border: "none", padding: "14px 28px", fontFamily: "'Michroma', monospace", fontSize: 12, letterSpacing: "0.22em", textTransform: "uppercase", fontWeight: 700, cursor: busy ? "wait" : "pointer", opacity: busy ? 0.6 : 1, minWidth: 280 }}>
+            [ {busy ? (en ? "STARTING…" : "VZPOSTAVLJAM…") : (en ? "START LOBBY" : "VZPOSTAVI MISIJO")} ]
+          </button>
+          <p style={{ color: `${ACCENT}99`, fontSize: 11, fontFamily: "monospace", letterSpacing: "0.06em", lineHeight: 1.55, textAlign: "center", maxWidth: 520, margin: 0 }}>
+            {en
+              ? "Click to show this lobby on the list of missions."
+              : "Klikni, da se ta misija prikaže na seznamu aktivnih misij — igralci se lahko po tem pridružijo misiji z geslom, ki ste ga ustvarili."}
+          </p>
+        </div>
       </div>
 
     </form>
