@@ -219,6 +219,7 @@ function LoggedIn({ user, en }: { user: User; en: boolean }) {
       <p style={labelStyle}>{en ? "Business / field" : "Podjetje / poligon"}</p>
       <p style={{ fontFamily: "monospace", fontSize: 14, marginBottom: 20 }}>{business === null ? "…" : business || "—"}</p>
       {err && <p style={{ color: ERR, fontSize: 12, marginBottom: 10, textAlign: "center" }}>{err}</p>}
+      <MissionsBlock user={user} en={en} />
       <button type="button" onClick={() => supabase.auth.signOut()} style={btnStyle}>
         {en ? "Log out" : "Odjava"}
       </button>
@@ -228,6 +229,73 @@ function LoggedIn({ user, en }: { user: User; en: boolean }) {
           ? "This account will soon let you manage all of your fields and missions in one place. That part is coming in the next update."
           : "Ta račun ti bo kmalu omogočil upravljanje vseh tvojih poligonov in misij na enem mestu. Ta del prihaja v naslednji posodobitvi."}
       </p>
+    </div>
+  );
+}
+
+type OwnedLobby = { id: string; field_name: string; event_name: string | null };
+
+function MissionsBlock({ user, en }: { user: User; en: boolean }) {
+  const [missions, setMissions] = useState<OwnedLobby[] | null>(null);
+  const [listErr, setListErr] = useState<string | null>(null);
+  const [claimMsg, setClaimMsg] = useState<string | null>(null);
+  const [claimErr, setClaimErr] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
+
+  const loadMissions = async () => {
+    const { data, error } = await db
+      .from("spartanops_lobbies")
+      .select("id, field_name, event_name")
+      .eq("account_id", user.id)
+      .order("created_at", { ascending: false });
+    if (error) { setListErr(error.message); return; }
+    setListErr(null);
+    setMissions((data ?? []) as OwnedLobby[]);
+  };
+
+  useEffect(() => { void loadMissions(); }, [user.id]);
+
+  const claim = async () => {
+    setClaimMsg(null); setClaimErr(null); setBusy(true);
+    try {
+      const { data, error } = await db
+        .from("spartanops_lobbies")
+        .update({ account_id: user.id })
+        .is("account_id", null)
+        .select("id");
+      if (error) { setClaimErr(error.message); return; }
+      const n = data?.length ?? 0;
+      setClaimMsg(en ? `Imported ${n} mission(s).` : `Uvoženih misij: ${n}.`);
+      await loadMissions();
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <div style={{ marginBottom: 20 }}>
+      <button type="button" onClick={claim} disabled={busy} style={{ ...btnStyle, opacity: busy ? 0.6 : 1, marginBottom: 10 }}>
+        {en ? "Import existing missions" : "Uvozi obstoječe misije"}
+      </button>
+      {claimErr && <p style={{ color: ERR, fontSize: 12, marginBottom: 10, textAlign: "center" }}>{claimErr}</p>}
+      {claimMsg && <p style={{ color: OK, fontSize: 12, marginBottom: 10, textAlign: "center", fontFamily: "monospace" }}>{claimMsg}</p>}
+      <p style={{ ...labelStyle, marginTop: 10 }}>{en ? "Your missions" : "Tvoje misije"}</p>
+      {listErr ? (
+        <p style={{ color: ERR, fontSize: 12, textAlign: "center" }}>{listErr}</p>
+      ) : missions === null ? (
+        <p style={{ fontFamily: "monospace", fontSize: 12, opacity: 0.7 }}>…</p>
+      ) : missions.length === 0 ? (
+        <p style={{ fontFamily: "monospace", fontSize: 12, opacity: 0.7 }}>{en ? "No missions linked yet." : "Še ni povezanih misij."}</p>
+      ) : (
+        <ul style={{ listStyle: "none", padding: 0, margin: 0 }}>
+          {missions.map((m) => (
+            <li key={m.id} style={{ border: `1px solid ${ACCENT}33`, background: "rgba(0,0,0,0.25)", padding: "8px 10px", marginBottom: 6, fontFamily: "monospace", fontSize: 13 }}>
+              <div>{m.field_name}</div>
+              {m.event_name && <div style={{ fontSize: 11.5, opacity: 0.7 }}>{m.event_name}</div>}
+            </li>
+          ))}
+        </ul>
+      )}
     </div>
   );
 }
