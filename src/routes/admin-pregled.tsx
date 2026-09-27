@@ -832,7 +832,7 @@ function GameModeButtons({ active, isPremium, openPremiumModal, en, onPick }: {
         }
         const isActive = active === m.key;
         return (
-          <button key={m.key} type="button" onClick={() => onPick(m.key)}
+          <button key={m.key} type="button" onClick={() => onPick(m.key as GameModeKey)}
             style={{
               background: isActive ? `${ACCENT}22` : "transparent",
               color: isActive ? ACCENT : INK,
