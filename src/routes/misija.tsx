@@ -15,7 +15,7 @@ import { MissionRulesAccordion, MissionDescriptionCard, CollapsibleCard } from "
 
 import { OfflineBanner } from "@/components/OfflineBanner";
 import { TacticalCompass } from "@/components/TacticalCompass";
-import { Crosshair, Shield, Phone } from "lucide-react";
+import { Crosshair, Shield, Phone, QrCode } from "lucide-react";
 import { useLang, useT } from "@/lib/i18n";
 import { HudNotificationStack, useHudNotices, fillTemplate } from "@/components/HudNotificationStack";
 import { HudHistoryLog } from "@/components/HudHistoryLog";
@@ -2799,7 +2799,7 @@ function TacticalMap({ state, captures, en, hasPositions, missionName, timeLabel
 
 
 
-function ScanCodeButton({ paused }: { paused: boolean }) {
+function ScanCodeButton({ paused, en }: { paused: boolean; en: boolean }) {
   const t = useT();
   const navigate = useNavigate();
   const [open, setOpen] = useState(false);
@@ -2856,6 +2856,37 @@ function ScanCodeButton({ paused }: { paused: boolean }) {
           <Crosshair size={16} /> {t("scanner.hudButton")}
         </button>
       </div>
+      <button
+        type="button"
+        onClick={() => setOpen(true)}
+        disabled={paused}
+        aria-label={t("scanner.hudButton")}
+        style={{
+          position: "fixed",
+          bottom: 16,
+          right: 16,
+          zIndex: 55,
+          display: "flex",
+          alignItems: "center",
+          gap: 8,
+          background: paused ? "rgba(11,13,9,0.85)" : "rgba(11,13,9,0.9)",
+          backdropFilter: "blur(8px)",
+          color: paused ? "rgba(224,176,78,0.35)" : ACCENT,
+          border: `1px solid ${paused ? "rgba(224,176,78,0.28)" : ACCENT}`,
+          borderRadius: 999,
+          padding: "12px 18px",
+          fontFamily: "'Michroma', monospace",
+          fontSize: 11,
+          letterSpacing: "0.18em",
+          textTransform: "uppercase",
+          fontWeight: 700,
+          cursor: paused ? "not-allowed" : "pointer",
+          boxShadow: paused ? "none" : `0 4px 20px rgba(0,0,0,0.5), 0 0 16px -4px ${ACCENT}`,
+        }}
+      >
+        <QrCode size={16} />
+        {en ? "SCANNER" : "SKENER"}
+      </button>
       <QRScanner open={open} onClose={() => setOpen(false)} onDecode={handleDecode} />
     </>
   );
@@ -2988,7 +3019,7 @@ function LiveMatch({ state, captures, now, roster, myTeam, meId, meCallsign }: {
       <TacticalMap state={state} captures={visibleCaptures} en={en} hasPositions={hasPositions} missionName={missionTitleFromState(state, en ? "Active Mission" : "Aktivna misija")} timeLabel={`${mm}:${ss}`} />
 
       {/* In-app Scan Code button — the ONLY sanctioned capture path */}
-      <ScanCodeButton paused={state.status === "paused"} />
+      <ScanCodeButton paused={state.status === "paused"} en={en} />
 
 
 
@@ -3050,8 +3081,8 @@ function PlayerScoreboard({ roster, captures, respawn, settings, en = false }: {
             <div style={{ padding: "8px 12px", background: `${TEAM_COLOR[t]}22`, color: TEAM_COLOR[t], fontFamily: "'Michroma', monospace", fontSize: 11, letterSpacing: "0.18em", textTransform: "uppercase" }}>
               {teamLabelFor(t)} SCOREBOARD
             </div>
-            <div className="divide-y" style={{ borderColor: "rgba(236,227,196,0.08)" }}>
-              <div className="grid gap-1.5 px-3 py-1 text-[9px] font-mono uppercase tracking-widest" style={{ color: MUTED, gridTemplateColumns: `24px minmax(0,1fr) 42px${respawn?.publicDeaths ? " 46px" : ""}${respawn?.enabled ? " 62px" : ""}` }}>
+            <div className="divide-y" style={{ borderColor: "rgba(236,227,196,0.08)", maxHeight: 300, overflowY: "auto" }}>
+              <div className="grid gap-1.5 px-3 py-1 text-[9px] font-mono uppercase tracking-widest" style={{ position: "sticky", top: 0, zIndex: 1, background: PANEL, color: MUTED, gridTemplateColumns: `24px minmax(0,1fr) 42px${respawn?.publicDeaths ? " 46px" : ""}${respawn?.enabled ? " 62px" : ""}` }}>
                 <span></span>
                 <span>{en ? "Callsign" : "Callsign"}</span>
                 <span style={{ textAlign: "right", letterSpacing: "0.04em" }}>{en ? "Points" : "Točke"}</span>
