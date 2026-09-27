@@ -201,10 +201,7 @@ function getFreshGpsPosition(): Promise<{ lat: number | null; lng: number | null
         done({ lat: warmLatest.lat, lng: warmLatest.lng, accuracy: warmLatest.accuracy });
       }
     }, 120);
-    window.setTimeout(() => {
-      window.clearInterval(poll);
-      if (settled) return;
-      // One-shot high-accuracy attempt after the warm buffer failed to yield.
+    const attemptOneShot = (timeoutMs: number, retriesLeft: number) => {
       navigator.geolocation.getCurrentPosition(
         (pos) => {
           const fix: WarmFix = {
@@ -220,9 +217,23 @@ function getFreshGpsPosition(): Promise<{ lat: number | null; lng: number | null
           } catch { /* ignore */ }
           done({ lat: fix.lat, lng: fix.lng, accuracy: fix.accuracy });
         },
-        () => done(readCachedGpsFix() ?? { lat: null, lng: null }),
-        { enableHighAccuracy: true, timeout: 6000, maximumAge: 0 },
+        (err) => {
+          if (err.code === err.PERMISSION_DENIED || retriesLeft <= 0) {
+            done(readCachedGpsFix() ?? { lat: null, lng: null });
+            return;
+          }
+          // POSITION_UNAVAILABLE or TIMEOUT: common on iOS right after a
+          // fresh request, especially indoors. Retry once with a longer
+          // timeout instead of immediately giving up.
+          attemptOneShot(timeoutMs + 8000, retriesLeft - 1);
+        },
+        { enableHighAccuracy: true, timeout: timeoutMs, maximumAge: 0 },
       );
+    };
+    window.setTimeout(() => {
+      window.clearInterval(poll);
+      if (settled) return;
+      attemptOneShot(10000, 1);
     }, 2500);
   });
 }
@@ -373,11 +384,13 @@ function CapturePage() {
         return;
       }
 
-      // Preflight: block scans while the marshal has the match paused.
+      // Preflight: block scans while the marshal has the match paused, and
+      // check whether Spartacus is enabled so we know whether GPS is needed.
+      let spartacusOn = true;
       try {
         const { data: gs } = await supabase
           .from("spartanops_game_state")
-          .select("status")
+          .select("status, settings")
           .eq("field_id", effectiveField)
           .maybeSingle();
         if ((gs as any)?.status === "paused") {
@@ -387,7 +400,8 @@ function CapturePage() {
           navigate({ to: "/misija", search: { field: effectiveRouteField }, replace: true });
           return;
         }
-      } catch { /* fall through to server-side validation */ }
+        spartacusOn = !!(gs as any)?.settings?.spartacusEnabled;
+      } catch { /* fall through to server-side validation; assume GPS may be needed */ }
       // Back-button / history-navigation guard: if the browser re-loads this
       // route with the exact same scan payload we just processed, redirect
       // silently to /misija instead of re-submitting the capture. The token
@@ -403,9 +417,11 @@ function CapturePage() {
       } catch { /* ignore */ }
 
       try {
-        const { lat, lng, accuracy } = await getPosition();
+        const { lat, lng, accuracy } = spartacusOn
+          ? await getPosition()
+          : { lat: null, lng: null, accuracy: 0 };
 
-        if ((lat == null || lng == null) && readGpsAuthorized()) {
+        if (spartacusOn && (lat == null || lng == null) && readGpsAuthorized()) {
           const cached = readCachedGpsFix();
           if (cached?.lat != null && cached?.lng != null) {
             const result = await applyCapture({ data: { fieldId: effectiveField, point, sessionId: session, lat: cached.lat, lng: cached.lng, accuracy: cached.accuracy ?? 1200 } });
