@@ -224,6 +224,24 @@ export type Database = {
         }
         Relationships: []
       }
+      spartanops_accounts: {
+        Row: {
+          business_name: string
+          created_at: string
+          id: string
+        }
+        Insert: {
+          business_name: string
+          created_at?: string
+          id: string
+        }
+        Update: {
+          business_name?: string
+          created_at?: string
+          id?: string
+        }
+        Relationships: []
+      }
       spartanops_archived_missions: {
         Row: {
           capture_count: number
