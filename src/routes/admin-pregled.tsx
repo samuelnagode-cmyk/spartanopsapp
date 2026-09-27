@@ -20,6 +20,7 @@ import {
   DEFAULT_RESPAWN,
   inputStyle as consoleInputStyle,
   selectStyle as consoleSelectStyle,
+  unlockSpartacusAudio,
   type GameState,
 } from "@/components/SpartanOpsConsole";
 import { useLang, useT } from "@/lib/i18n";
@@ -1492,6 +1493,7 @@ function FieldPasswordGate({ label, fieldKey, onSuccess }: { label: string; fiel
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (busy) return;
+    unlockSpartacusAudio();
     setBusy(true);
     try {
       const res = await verifyFn({ data: { tab: fieldKey, password } });

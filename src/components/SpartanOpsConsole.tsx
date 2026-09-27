@@ -1469,11 +1469,29 @@ type SuspiciousRow = {
   spartacus_status: string;
 };
 
+// Shared, reused AudioContext for Spartacus alert beeps. Created lazily and
+// only ever resumed from a genuine user gesture (see unlockSpartacusAudio) —
+// browsers silently block audio from a freshly created, un-resumed
+// AudioContext when it's first touched from a background timer or realtime
+// event callback instead of a direct click/tap.
+let spartacusAudioCtx: AudioContext | null = null;
+
+export function unlockSpartacusAudio() {
+  try {
+    const AC = (window as any).AudioContext || (window as any).webkitAudioContext;
+    if (!AC) return;
+    if (!spartacusAudioCtx) spartacusAudioCtx = new AC();
+    if (spartacusAudioCtx!.state === "suspended") spartacusAudioCtx!.resume().catch(() => {});
+  } catch { /* ignore */ }
+}
+
 function playSpartacusBeep() {
   try {
     const AC = (window as any).AudioContext || (window as any).webkitAudioContext;
     if (!AC) return;
-    const ctx = new AC();
+    if (!spartacusAudioCtx) spartacusAudioCtx = new AC();
+    const ctx = spartacusAudioCtx!;
+    if (ctx.state === "suspended") ctx.resume().catch(() => {});
     const now = ctx.currentTime;
     for (let i = 0; i < 3; i++) {
       const o = ctx.createOscillator();
@@ -1489,7 +1507,6 @@ function playSpartacusBeep() {
       o.start(t);
       o.stop(t + 0.24);
     }
-    setTimeout(() => ctx.close?.(), 1200);
   } catch { /* ignore */ }
 }
 
