@@ -3082,7 +3082,7 @@ function PlayerScoreboard({ roster, captures, respawn, settings, en = false }: {
               {teamLabelFor(t)} SCOREBOARD
             </div>
             <div className="divide-y" style={{ borderColor: "rgba(236,227,196,0.08)", maxHeight: 300, overflowY: "auto" }}>
-              <div className="grid gap-1.5 px-3 py-1 text-[9px] font-mono uppercase tracking-widest" style={{ color: MUTED, gridTemplateColumns: `24px minmax(0,1fr) 42px${respawn?.publicDeaths ? " 46px" : ""}${respawn?.enabled ? " 62px" : ""}` }}>
+              <div className="grid gap-1.5 px-3 py-1 text-[9px] font-mono uppercase tracking-widest" style={{ position: "sticky", top: 0, zIndex: 1, background: PANEL, color: MUTED, gridTemplateColumns: `24px minmax(0,1fr) 42px${respawn?.publicDeaths ? " 46px" : ""}${respawn?.enabled ? " 62px" : ""}` }}>
                 <span></span>
                 <span>{en ? "Callsign" : "Callsign"}</span>
                 <span style={{ textAlign: "right", letterSpacing: "0.04em" }}>{en ? "Points" : "Točke"}</span>
