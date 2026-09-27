@@ -796,6 +796,60 @@ function AdminPage() {
   );
 }
 
+type GameModeKey = "domination" | "search_destroy";
+
+const GAME_MODES: { key: string; label: string; subEn?: string; subSl?: string; locked?: boolean }[] = [
+  { key: "domination", label: "Domination", subEn: "Point capture", subSl: "Zavzemanje točk" },
+  { key: "search_destroy", label: "Search & Destroy", locked: true },
+  { key: "infection", label: "Infection", locked: true },
+  { key: "king_of_the_hill", label: "King of the Hill", locked: true },
+];
+
+function GameModeButtons({ active, isPremium, openPremiumModal, en, onPick }: {
+  active: GameModeKey;
+  isPremium: boolean;
+  openPremiumModal: () => void;
+  en: boolean;
+  onPick: (key: GameModeKey) => void;
+}) {
+  return (
+    <div className="grid grid-cols-2 gap-2">
+      {GAME_MODES.map((m) => {
+        if (m.locked) {
+          return (
+            <button key={m.key} type="button" onClick={() => { if (!isPremium) openPremiumModal(); }}
+              style={{
+                background: "rgba(255,255,255,0.03)", color: MUTED,
+                border: "1px dashed rgba(236,227,196,0.18)",
+                padding: "10px 8px", fontFamily: "monospace", fontSize: 11,
+                letterSpacing: "0.08em", textTransform: "uppercase",
+                cursor: "pointer", textAlign: "left", opacity: 0.75,
+              }}>
+              <span style={{ whiteSpace: "nowrap" }}>🔒 {m.label}</span>
+              <br /><span style={{ fontSize: 9 }}>{en ? "Coming soon" : "Prihaja kmalu"}</span>
+            </button>
+          );
+        }
+        const isActive = active === m.key;
+        return (
+          <button key={m.key} type="button" onClick={() => onPick(m.key as GameModeKey)}
+            style={{
+              background: isActive ? `${ACCENT}22` : "transparent",
+              color: isActive ? ACCENT : INK,
+              border: `1px solid ${isActive ? ACCENT : "rgba(236,227,196,0.18)"}`,
+              padding: "10px 8px", fontFamily: "monospace", fontSize: 11,
+              letterSpacing: "0.08em", textTransform: "uppercase",
+              cursor: "pointer", textAlign: "left",
+            }}>
+            <span style={{ whiteSpace: "nowrap" }}>● {m.label}</span>
+            <br /><span style={{ fontSize: 9, color: MUTED }}>{en ? m.subEn : m.subSl}</span>
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
 function CreateFieldForm({ onCreated }: { onCreated: (rec: LobbyRecord, pws: { password: string; marshalPassword: string }) => void }) {
   const { lang } = useLang();
   const en = lang === "en";
@@ -1135,27 +1189,7 @@ function CreateFieldForm({ onCreated }: { onCreated: (rec: LobbyRecord, pws: { p
       {/* ── CARD 3: GAME MODE SELECTION ─────────────────────── */}
       <Pane title={en ? "GAME MODE SELECTION" : "IZBIRA IGRALNEGA NAČINA"}>
         <FieldRow label={en ? "Game mode selection" : "Izbira igralnega načina (Gamemode)"}>
-          <div className="grid grid-cols-2 gap-2">
-            <button type="button" onClick={() => setGamemode("domination")}
-              style={{
-                background: gamemode === "domination" ? `${ACCENT}22` : "transparent",
-                color: gamemode === "domination" ? ACCENT : INK,
-                border: `1px solid ${gamemode === "domination" ? ACCENT : "rgba(236,227,196,0.18)"}`,
-                padding: "10px 8px", fontFamily: "monospace", fontSize: 11, letterSpacing: "0.12em",
-                textTransform: "uppercase", cursor: "pointer", textAlign: "left",
-              }}>
-              ● Domination<br /><span style={{ fontSize: 9, color: MUTED }}>{en ? "Point capture" : "Zavzemanje točk"}</span>
-            </button>
-            <button type="button" onClick={() => { if (!isPremium) openPremiumModal(); }}
-              style={{
-                background: "rgba(255,255,255,0.03)", color: MUTED,
-                border: `1px dashed rgba(236,227,196,0.18)`,
-                padding: "10px 8px", fontFamily: "monospace", fontSize: 11, letterSpacing: "0.12em",
-                textTransform: "uppercase", cursor: "pointer", textAlign: "left", opacity: 0.75,
-              }}>
-              🔒 Search &amp; Destroy<br /><span style={{ fontSize: 9 }}>{en ? "Coming soon" : "Prihaja kmalu"}</span>
-            </button>
-          </div>
+          <GameModeButtons active={gamemode} isPremium={isPremium} openPremiumModal={openPremiumModal} en={en} onPick={(k) => setGamemode(k)} />
         </FieldRow>
 
         <div className="grid grid-cols-2 gap-3">
@@ -2626,27 +2660,7 @@ function MarshalLobbyConsole({ lobby: initialLobby, marshalPassword, lobbyPasswo
       {/* ── CARD 3: GAME MODE SELECTION ─────────────────────── */}
       <Pane title={en ? "GAME MODE SELECTION" : "IZBIRA IGRALNEGA NAČINA"}>
         <FieldRow label={en ? "Game mode selection" : "Izbira igralnega načina (Gamemode)"}>
-          <div className="grid grid-cols-2 gap-2">
-            <button type="button" onClick={() => patch({ gamemode: "domination" })}
-              style={{
-                background: lobby.gamemode === "domination" ? `${ACCENT}22` : "transparent",
-                color: lobby.gamemode === "domination" ? ACCENT : INK,
-                border: `1px solid ${lobby.gamemode === "domination" ? ACCENT : "rgba(236,227,196,0.18)"}`,
-                padding: "10px 8px", fontFamily: "monospace", fontSize: 11, letterSpacing: "0.12em",
-                textTransform: "uppercase", cursor: "pointer", textAlign: "left",
-              }}>
-              ● Domination<br /><span style={{ fontSize: 9, color: MUTED }}>{en ? "Point capture" : "Zavzemanje točk"}</span>
-            </button>
-            <button type="button" onClick={() => { if (!isPremium) openPremiumModal(); }}
-              style={{
-                background: "rgba(255,255,255,0.03)", color: MUTED,
-                border: `1px dashed rgba(236,227,196,0.18)`,
-                padding: "10px 8px", fontFamily: "monospace", fontSize: 11, letterSpacing: "0.12em",
-                textTransform: "uppercase", cursor: "pointer", textAlign: "left", opacity: 0.75,
-              }}>
-              🔒 Search &amp; Destroy<br /><span style={{ fontSize: 9 }}>{en ? "Coming soon" : "Prihaja kmalu"}</span>
-            </button>
-          </div>
+          <GameModeButtons active={lobby.gamemode} isPremium={isPremium} openPremiumModal={openPremiumModal} en={en} onPick={(k) => patch({ gamemode: k })} />
         </FieldRow>
 
         <div className="grid grid-cols-2 gap-3">
