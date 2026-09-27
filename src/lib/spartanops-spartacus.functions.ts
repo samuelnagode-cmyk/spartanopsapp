@@ -113,6 +113,16 @@ export const spartanopsSpartacusCapture = createServerFn({ method: "POST" })
       return { ok: false, error: "pre_start_locked", spartacus: true, diagnostic: logSpartacusDiagnostic(baseDiagnostic(data, "pre_start_locked")) } as const;
     }
 
+    if (!(state as any)?.settings?.spartacusEnabled) {
+      const { data: r, error } = await supabaseAdmin.rpc("spartanops_apply_capture" as any, {
+        p_field_id: data.fieldId,
+        p_point: data.point,
+        p_session_id: data.sessionId,
+      });
+      if (error) throw new Error(error.message);
+      return { ...(r as any), spartacus: false } as const;
+    }
+
     // Marshal-controlled dynamic radius (3–50m), fallback 15m.
     const rawRadius = Number((state as any)?.settings?.spartacusRadius);
     const dynamicRadiusM = Number.isFinite(rawRadius) ? Math.max(3, Math.min(50, Math.round(rawRadius))) : 15;
