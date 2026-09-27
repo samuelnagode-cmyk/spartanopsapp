@@ -219,6 +219,7 @@ function LoggedIn({ user, en }: { user: User; en: boolean }) {
       <p style={labelStyle}>{en ? "Business / field" : "Podjetje / poligon"}</p>
       <p style={{ fontFamily: "monospace", fontSize: 14, marginBottom: 20 }}>{business === null ? "…" : business || "—"}</p>
       {err && <p style={{ color: ERR, fontSize: 12, marginBottom: 10, textAlign: "center" }}>{err}</p>}
+      <MissionsBlock user={user} en={en} />
       <button type="button" onClick={() => supabase.auth.signOut()} style={btnStyle}>
         {en ? "Log out" : "Odjava"}
       </button>
