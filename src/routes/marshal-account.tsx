@@ -67,7 +67,7 @@ function MarshalAccountPage() {
   }, []);
 
   return (
-    <main style={{ minHeight: "100vh", background: BG, color: INK, padding: "48px 16px" }}>
+    <main style={{ minHeight: "100vh", background: BG, color: INK, padding: "110px 16px 48px" }}>
       <div style={{ maxWidth: 420, margin: "0 auto", background: PANEL, border: `1px solid ${ACCENT}44`, padding: "28px 22px" }}>
         <h1 style={{ fontFamily: "'Michroma', monospace", fontSize: 15, letterSpacing: "0.18em", color: INK, textAlign: "center", textTransform: "uppercase", marginBottom: 22 }}>
           {en ? "Marshal Account" : "Račun maršala"}
