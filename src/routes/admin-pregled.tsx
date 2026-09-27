@@ -1538,6 +1538,7 @@ function MasterPasswordModal({ onClose, onSuccess }: { onClose: () => void; onSu
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (busy) return;
+    unlockSpartacusAudio();
     setBusy(true);
     setErr("");
     try {
@@ -1631,6 +1632,7 @@ function MarshalPasswordPrompt({ lobby, onClose, onSuccess }: { lobby: LobbyReco
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!password) return;
+    unlockSpartacusAudio();
     setBusy(true);
     setErr("");
     try {
