@@ -734,28 +734,10 @@ function MisijaPage() {
       reconcile = window.setTimeout(() => { if (alive) load(); }, 600);
     };
     const ch = supabase
-      .channel(`misija_roster_${field}`)
-      .on(
-        "postgres_changes",
-        { event: "*", schema: "public", table: "spartanops_checkins", filter: `field_id=eq.${field}` },
-        (payload: any) => {
-          const next = payload.new as Checkin | undefined;
-          const old = payload.old as Partial<Checkin> | undefined;
-          if (payload.eventType === "DELETE" && old?.id) {
-            setRoster((items) => items.filter((r) => r.id !== old.id));
-          } else if (next?.id) {
-            setRoster((items) => {
-              const exists = items.some((r) => r.id === next.id);
-              return exists ? items.map((r) => (r.id === next.id ? { ...r, ...next } : r)) : [...items, next];
-            });
-            if (next.session_id === sessionId) {
-              setDbMe((prev) => (prev ? { ...prev, ...next } : next));
-            }
-          }
-          scheduleReconcile();
-        },
-      )
-
+      .channel(`checkins:${field}`)
+      // Anonymous table access is revoked; a DB trigger broadcasts a data-free
+      // "roster changed" signal and we reload through the server function.
+      .on("broadcast", { event: "roster_changed" }, () => scheduleReconcile())
       .subscribe();
     return () => {
       alive = false;
