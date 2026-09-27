@@ -232,20 +232,8 @@ export function SpartanOpsConsole({ fieldId, password }: { fieldId: string; pass
       if (alive) setRoster((res?.ok ? res.rows : []) as unknown as Checkin[]);
     };
     load();
-    const ch = supabase.channel(`admin_roster_${fieldId}`)
-      .on("postgres_changes", { event: "*", schema: "public", table: "spartanops_checkins", filter: `field_id=eq.${fieldId}` }, (payload: any) => {
-        const next = payload.new as Checkin | undefined;
-        const old = payload.old as Partial<Checkin> | undefined;
-        if (payload.eventType === "DELETE" && old?.id) {
-          setRoster((items) => items.filter((p) => p.id !== old.id));
-        } else if (next?.id) {
-          setRoster((items) => {
-            const exists = items.some((p) => p.id === next.id);
-            return exists ? items.map((p) => (p.id === next.id ? { ...p, ...next } : p)) : [...items, next];
-          });
-        }
-        window.setTimeout(load, 150);
-      })
+    const ch = supabase.channel(`checkins:${fieldId}`)
+      .on("broadcast", { event: "roster_changed" }, () => { window.setTimeout(load, 150); })
       .subscribe();
     return () => { alive = false; supabase.removeChannel(ch); };
   }, [fieldId, password, getRoster]);

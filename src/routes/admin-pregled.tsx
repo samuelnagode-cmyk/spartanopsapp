@@ -1943,12 +1943,8 @@ function MarshalLobbyConsole({ lobby: initialLobby, marshalPassword, lobbyPasswo
 
     load();
     const channel = supabase
-      .channel(`marshal-roster-${lobby.id}`)
-      .on(
-        "postgres_changes",
-        { event: "*", schema: "public", table: "spartanops_checkins", filter: `field_id=eq.${lobby.id}` },
-        () => load(),
-      )
+      .channel(`checkins:${lobby.id}`)
+      .on("broadcast", { event: "roster_changed" }, () => load())
       .subscribe();
     return () => { alive = false; supabase.removeChannel(channel); };
   }, [lobby.id, marshalPassword, getAdminRoster]);
