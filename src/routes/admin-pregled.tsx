@@ -1319,6 +1319,7 @@ function AccountMissionsSection({ en }: { en: boolean }) {
   const [ready, setReady] = useState(false);
   const [missions, setMissions] = useState<AccountLobby[] | null>(null);
   const [err, setErr] = useState<string | null>(null);
+  const [business, setBusiness] = useState<string | null>(null);
 
   useEffect(() => {
     const { data: sub } = supabase.auth.onAuthStateChange((_e, session) => {
@@ -1348,6 +1349,18 @@ function AccountMissionsSection({ en }: { en: boolean }) {
     return () => { cancelled = true; };
   }, [userId]);
 
+  useEffect(() => {
+    if (!userId) { setBusiness(null); return; }
+    let cancelled = false;
+    supabase
+      .from("spartanops_accounts")
+      .select("business_name")
+      .eq("id", userId)
+      .maybeSingle()
+      .then(({ data }) => { if (!cancelled) setBusiness(data?.business_name ?? null); });
+    return () => { cancelled = true; };
+  }, [userId]);
+
   if (!ready) return null;
 
   if (!userId) {
@@ -1363,6 +1376,21 @@ function AccountMissionsSection({ en }: { en: boolean }) {
 
   return (
     <div style={{ marginBottom: 32 }}>
+      {business && (
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10, fontFamily: "monospace", fontSize: 11, color: MUTED }}>
+          <span>
+            {en ? "Logged in as " : "Prijavljen kot "}
+            <strong style={{ color: ACCENT }}>{business}</strong>
+          </span>
+          <button
+            type="button"
+            onClick={() => supabase.auth.signOut()}
+            style={{ background: "transparent", border: "none", color: ACCENT, textDecoration: "underline", cursor: "pointer", fontFamily: "monospace", fontSize: 11 }}
+          >
+            {en ? "Log out" : "Odjava"}
+          </button>
+        </div>
+      )}
       <p style={{ fontFamily: "monospace", fontSize: 10, letterSpacing: "0.30em", color: ACCENT, marginBottom: 14, textTransform: "uppercase" }}>
         {en ? "// YOUR MISSIONS (ACCOUNT)" : "// TVOJE MISIJE (RAČUN)"}
       </p>
