@@ -1,8 +1,11 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState, type CSSProperties, type FormEvent } from "react";
-import type { User } from "@supabase/supabase-js";
+import type { SupabaseClient, User } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
 import { useLang } from "@/lib/i18n";
+
+// Same shared client; untyped view because the generated types do not yet include spartanops_accounts.
+const db = supabase as unknown as SupabaseClient;
 
 export const Route = createFileRoute("/marshal-account")({
   head: () => ({
@@ -109,7 +112,7 @@ function SignUpForm({ en, onSwitch }: { en: boolean; onSwitch: () => void }) {
       });
       if (error) { setErr(error.message); return; }
       if (data.session && data.user) {
-        const { error: insErr } = await supabase
+        const { error: insErr } = await db
           .from("spartanops_accounts")
           .insert({ id: data.user.id, business_name: business.trim() });
         if (insErr) { setErr(insErr.message); return; }
@@ -188,7 +191,7 @@ function LoggedIn({ user, en }: { user: User; en: boolean }) {
   useEffect(() => {
     let cancelled = false;
     (async () => {
-      const { data, error } = await supabase
+      const { data, error } = await db
         .from("spartanops_accounts")
         .select("business_name")
         .eq("id", user.id)
@@ -199,7 +202,7 @@ function LoggedIn({ user, en }: { user: User; en: boolean }) {
       // First login after email confirmation: create the row from sign-up metadata.
       const pending = (user.user_metadata?.business_name as string | undefined)?.trim();
       if (!pending) { setBusiness(""); return; }
-      const { error: insErr } = await supabase
+      const { error: insErr } = await db
         .from("spartanops_accounts")
         .insert({ id: user.id, business_name: pending });
       if (cancelled) return;
