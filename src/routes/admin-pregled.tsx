@@ -2327,15 +2327,16 @@ function MarshalLobbyConsole({ lobby: initialLobby, marshalPassword, lobbyPasswo
     }
   };
 
-  const [lobbyTab, setLobbyTab] = useState<"mission" | "location" | "passwords" | "weapons" | "mode" | "map" | "match">("match");
+  const [lobbyTab, setLobbyTab] = useState<"mission" | "location" | "passwords" | "weapons" | "mode" | "map" | "match" | "review">("match");
   const lobbyTabs: { k: typeof lobbyTab; l: string }[] = [
     { k: "mission", l: en ? "Mission & Field" : "Misija in poligon" },
     { k: "location", l: en ? "Location & Marshals" : "Lokacija in maršali" },
     { k: "passwords", l: en ? "Passwords" : "Gesla" },
     { k: "weapons", l: en ? "Replica Power & Shooting Rules" : "Moč replik in pravila streljanja" },
-    { k: "mode", l: en ? "Game Mode & Parameters" : "Igralni način in parametri" },
+    { k: "mode", l: en ? "Gamemode & Teams" : "Način igre in ekipe" },
     { k: "map", l: en ? "Tactical Map" : "Taktični zemljevid" },
     { k: "match", l: en ? "Match Controls" : "Nadzor misije" },
+    { k: "review", l: en ? "Game Review" : "Pregled igre" },
   ];
 
   return (
@@ -2510,7 +2511,9 @@ function MarshalLobbyConsole({ lobby: initialLobby, marshalPassword, lobbyPasswo
           {en ? "Registered:" : "Prijavljeni:"} <strong style={{ color: INK }}>{registered.length}</strong>
         </p>
       </Pane>
+      </div>
 
+      <div style={{ display: lobbyTab === "review" ? "block" : "none" }}>
       {/* ROSTER & TEAM BALANCING */}
       <Pane title={en ? "ROSTER & TEAM BALANCING" : "SEZNAM & URAVNOTEŽENJE EKIP"}>
         <LockedAutoBalanceButton en={en} />
@@ -2556,7 +2559,7 @@ function MarshalLobbyConsole({ lobby: initialLobby, marshalPassword, lobbyPasswo
 
 
 
-      <div style={{ display: lobbyTab === "match" ? "none" : "block" }}>
+      <div style={{ display: lobbyTab === "match" || lobbyTab === "review" ? "none" : "block" }}>
       {/* SETTINGS SECTION DIVIDER */}
       <div style={{ margin: "26px 0 14px", textAlign: "center", fontFamily: "'Michroma', monospace", fontSize: 20, letterSpacing: "0.24em", color: ACCENT, textTransform: "uppercase", fontWeight: 700 }}>
         ⚙ {en ? "GAME SETTINGS" : "NASTAVITVE IGRE"}
@@ -2833,7 +2836,7 @@ function MarshalLobbyConsole({ lobby: initialLobby, marshalPassword, lobbyPasswo
                 display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 8,
               }}
             >
-              <Upload size={14} /> [ {en ? "UPLOAD IMAGE FROM DEVICE" : "NALOŽI SLIKO Z NAPRAVE"} ]
+              <Upload size={14} /> [ {lobby.mapUrl ? (en ? "CHANGE IMAGE" : "ZAMENJAJ SLIKO") : (en ? "UPLOAD IMAGE FROM DEVICE" : "NALOŽI SLIKO Z NAPRAVE")} ]
             </button>
             <input
               value={(lobby.mapUrl ?? "").startsWith("data:") ? "" : (lobby.mapUrl ?? "")}
