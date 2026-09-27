@@ -17,6 +17,7 @@ import { Route as ScanRouteImport } from './routes/scan'
 import { Route as QrGeneratorRouteImport } from './routes/qr-generator'
 import { Route as PrintRouteImport } from './routes/print'
 import { Route as MisijaRouteImport } from './routes/misija'
+import { Route as MarshalAccountRouteImport } from './routes/marshal-account'
 import { Route as LokacijaRouteImport } from './routes/lokacija'
 import { Route as JoinRouteImport } from './routes/join'
 import { Route as IntelRouteImport } from './routes/intel'
@@ -69,6 +70,11 @@ const PrintRoute = PrintRouteImport.update({
 const MisijaRoute = MisijaRouteImport.update({
   id: '/misija',
   path: '/misija',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const MarshalAccountRoute = MarshalAccountRouteImport.update({
+  id: '/marshal-account',
+  path: '/marshal-account',
   getParentRoute: () => rootRouteImport,
 } as any)
 const LokacijaRoute = LokacijaRouteImport.update({
@@ -149,6 +155,7 @@ export interface FileRoutesByFullPath {
   '/intel': typeof IntelRoute
   '/join': typeof JoinRoute
   '/lokacija': typeof LokacijaRoute
+  '/marshal-account': typeof MarshalAccountRoute
   '/misija': typeof MisijaRoute
   '/print': typeof PrintRoute
   '/qr-generator': typeof QrGeneratorRoute
@@ -172,6 +179,7 @@ export interface FileRoutesByTo {
   '/intel': typeof IntelRoute
   '/join': typeof JoinRoute
   '/lokacija': typeof LokacijaRoute
+  '/marshal-account': typeof MarshalAccountRoute
   '/misija': typeof MisijaRoute
   '/print': typeof PrintRoute
   '/qr-generator': typeof QrGeneratorRoute
@@ -196,6 +204,7 @@ export interface FileRoutesById {
   '/intel': typeof IntelRoute
   '/join': typeof JoinRoute
   '/lokacija': typeof LokacijaRoute
+  '/marshal-account': typeof MarshalAccountRoute
   '/misija': typeof MisijaRoute
   '/print': typeof PrintRoute
   '/qr-generator': typeof QrGeneratorRoute
@@ -221,6 +230,7 @@ export interface FileRouteTypes {
     | '/intel'
     | '/join'
     | '/lokacija'
+    | '/marshal-account'
     | '/misija'
     | '/print'
     | '/qr-generator'
@@ -244,6 +254,7 @@ export interface FileRouteTypes {
     | '/intel'
     | '/join'
     | '/lokacija'
+    | '/marshal-account'
     | '/misija'
     | '/print'
     | '/qr-generator'
@@ -267,6 +278,7 @@ export interface FileRouteTypes {
     | '/intel'
     | '/join'
     | '/lokacija'
+    | '/marshal-account'
     | '/misija'
     | '/print'
     | '/qr-generator'
@@ -291,6 +303,7 @@ export interface RootRouteChildren {
   IntelRoute: typeof IntelRoute
   JoinRoute: typeof JoinRoute
   LokacijaRoute: typeof LokacijaRoute
+  MarshalAccountRoute: typeof MarshalAccountRoute
   MisijaRoute: typeof MisijaRoute
   PrintRoute: typeof PrintRoute
   QrGeneratorRoute: typeof QrGeneratorRoute
@@ -360,6 +373,13 @@ declare module '@tanstack/react-router' {
       path: '/misija'
       fullPath: '/misija'
       preLoaderRoute: typeof MisijaRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/marshal-account': {
+      id: '/marshal-account'
+      path: '/marshal-account'
+      fullPath: '/marshal-account'
+      preLoaderRoute: typeof MarshalAccountRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/lokacija': {
@@ -467,6 +487,7 @@ const rootRouteChildren: RootRouteChildren = {
   IntelRoute: IntelRoute,
   JoinRoute: JoinRoute,
   LokacijaRoute: LokacijaRoute,
+  MarshalAccountRoute: MarshalAccountRoute,
   MisijaRoute: MisijaRoute,
   PrintRoute: PrintRoute,
   QrGeneratorRoute: QrGeneratorRoute,
