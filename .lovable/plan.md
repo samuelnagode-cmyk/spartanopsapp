@@ -1,64 +1,50 @@
-## Anti-Cheat Scanner System — Implementation Plan
+# Close anonymous access to player check-ins without breaking live updates
 
-Bulletproof capture path: printed URLs stop executing on landing, and captures only flow through an in-app scanner that carries fresh GPS + a server-enforced per-player cooldown.
+## Goal
+Anonymous visitors can no longer read or write `spartanops_checkins` directly. Everything players and marshals see keeps working, including live roster, team and death updates.
 
-### 1. `/scan` — URL Poisoning Defense
+## What currently depends on anonymous access
+1. **Capture safety check** (`capture.tsx`): reads one player's callsign and team straight from the browser.
+2. **Three live-update feeds** listen to changes on this table from the browser:
+   - player mission screen (`misija.tsx`)
+   - marshal live console (`admin-pregled.tsx`)
+   - Spartan console (`SpartanOpsConsole.tsx`)
 
-Rewrite `src/routes/scan.tsx`:
-- On mount, before any render, parse `field_id`, `type`, `point`.
-- Immediately call `window.history.replaceState(null, "", "/misija")` so the executable URL disappears from history/back/reload.
-- Do NOT navigate to `/capture` or call any capture RPC.
-- Redirect to `/misija` (the HUD) and push a localized toast:
-  - EN: "SECURITY ALERT: Point capture is only valid via the In-App Scanner."
-  - SLO: "VARNOSTNO OPOZORILO: Zajem točke je mogoč le preko vgrajenega skenerja v aplikaciji."
-- Legacy internal navigation to `/capture` (via the in-app scanner) is preserved through a new sentinel (see §3), so only external/history entries into `/scan` get blocked.
+   The marshal and Spartan consoles only use the change as a "something changed" signal: they then reload the roster through an existing password-checked server function. The player screen also merges the changed row directly into its list, then reloads shortly after.
 
-### 2. Permissions Gate on Deployment Registration (`/join`)
+All other reads already go through server functions with full access and are unaffected.
 
-In `src/routes/join.tsx` deployment/registration step:
-- Before allowing "Deploy", request BOTH:
-  - `navigator.geolocation.getCurrentPosition(...)`
-  - `navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } })` then immediately stop tracks.
-- Track `gpsGranted` / `cameraGranted` in local state.
-- If either is denied, render a diagnostic card blocking the flow:
-  - EN title "PERMISSIONS DENIED" / SLO "DOVOLJENJA ZAVRNJENA" with the exact copy from the brief and a "Retry" button.
-- Persist a `spartanops.permissions_ok` flag in localStorage so the HUD can trust prior grants but still re-check on scan open.
+## The fix
 
-### 3. In-App Scanner — HUD Button + Modal
+**Step 1: capture safety check goes through the server**
+- New small server function: given the player's session id and mission id, it returns only `callsign` and `assigned_team`.
+- The capture check calls it instead of reading the table. The logic that uses the result stays the same.
+- No public view is needed, so there's no risk of a view exposing every mission's players.
 
-New component `src/components/QRScanner.tsx`:
-- Full-screen `bg-black/90` overlay with:
-  - Centered `<video>` viewport with a glowing gold/cyan crosshair bounding box (pure CSS/SVG, animated).
-  - Top-corner flashlight toggle: `track.applyConstraints({ advanced: [{ torch: boolean }] })` wrapped in strict try/catch; hide toggle if unsupported.
-  - Bottom close button (EN "CLOSE" / SLO "ZAPRI").
-- Decode strategy: use native `BarcodeDetector` when available; otherwise dynamic-import `jsqr` (add via `bun add jsqr`) and decode from a hidden canvas frame loop.
-- On decode, treat result as a raw string. Parse via `new URL(text, window.location.origin)` (tolerant to bare paths), extract `field_id`, `type`, `point`.
-- Cleanse: reject unless `type === "domination"` and `point` matches a whitelist (`alpha|beta|gamma|delta|epsilon`); map point names → 1..5 for existing backend.
-- On accept: stop tracks, close modal, navigate internally to `/capture` with a session-only sentinel `sessionStorage.setItem("spartanops.scan_ticket", <token>)` proving the scan originated in-app. `/capture` consumes and clears the ticket; if missing, it redirects to `/misija` with the same security-alert toast (prevents users from typing `/capture?...` manually or reloading it).
+**Step 2: live feeds switch to a lightweight "roster changed" signal**
+- A database trigger on `spartanops_checkins` broadcasts a message on a per-mission channel whenever a row is added, changed or removed. The message carries only the mission id and change type, no player data.
+- Each of the three screens listens for that signal instead of the table itself, then runs the reload it already has.
+- The player screen stops merging row data from the feed and relies on its existing reload, which already runs 600 ms after each change. Before switching, I'll confirm that reload goes through a server function and not a direct table read. If it's a direct read, I'll move it to a server function too.
+- Live updates may arrive slightly later on the player screen (up to about half a second), because it now waits for the reload.
 
-HUD button (in `src/routes/misija.tsx`, under the map widget):
-- Prominent tactical button, animated pulsing gold/amber border (`animate-pulse` + custom ring).
-- Label EN "SCAN CODE" / SLO "SKENIRAJ TOČKO".
-- Opens `<QRScanner />`.
+**Step 3: revoke**
+- `REVOKE ALL ON public.spartanops_checkins FROM anon;` in the same migration as the trigger, applied only after steps 1–2 are in place.
+- The `authenticated` and `service_role` grants, RLS policies, table structure and existing public views stay unchanged.
 
-### 4. Server-Side Anti-Cheat Core
+## Verification
+- Typecheck.
+- A real anonymous read of `spartanops_checkins` returns nothing or a permission error.
+- In the browser: open a mission as a player and as a marshal, change a player's team through the marshal console, and confirm both screens update live.
+- Capture safety check: I can check it runs without errors, but a full real capture still needs your field test.
+- Report the commit reference; the GitHub push stays unconfirmed.
 
-Extend `src/lib/spartanops-spartacus.functions.ts` (`spartanopsSpartacusCapture`):
-- **Per-player 3-minute cooldown:** before insert/apply, query `spartanops_captures` for the same `player_checkin_id` + `point_number` within the last 3 minutes. If found, return `{ ok: false, error: "cooldown" }` and surface a localized toast on the client.
-- **Hardened 15 m GPS check:** when a valid anchor exists AND fresh GPS is provided, if `dist > 15` (independent of accuracy buffers), reject with `{ ok: false, error: "out_of_range", distance_m }`. Keep the existing Spartacus suspicious flow only for missing/stale GPS edge cases — the hard 15 m rule takes precedence when GPS is present.
-- Keep anchor-on-first-scan behavior unchanged.
+## Files touched
+- One new migration (trigger + revoke), written via the shell
+- `src/lib/spartanops-checkin.functions.ts` (new server function)
+- `src/routes/capture.tsx` (one query swapped)
+- `src/routes/misija.tsx`, `src/routes/admin-pregled.tsx`, `src/components/SpartanOpsConsole.tsx` (subscription only)
 
-Client toasts in `src/routes/capture.tsx`:
-- `cooldown` → EN "Cooldown active — wait before rescanning this point." / SLO equivalent.
-- `out_of_range` → EN "ERROR: Out of range (max 15m)!" / SLO "NAPAKA: Niste v dometu točke (največ 15m)!"
-
-### 5. i18n Cleanliness
-
-All new strings routed through the existing `useI18n()` hook via new keys under a `scanner.*` namespace in `src/lib/i18n.tsx` (EN + SLO). No literal `//` prefix strings baked into JSX — the tactical `//` prefix comes from a shared helper so language switches never leak English.
-
-### Technical Notes
-
-- Add dep: `jsqr` (fallback decoder). `BarcodeDetector` used when available for perf.
-- No DB migrations: cooldown reads from existing `spartanops_captures.captured_at`.
-- Printed QR URLs (`/scan?...`) remain valid physical assets — they now serve only as offline pointers; scanning them via the in-app scanner works because the scanner parses the URL and routes through the protected `/capture` path with a scan ticket. Scanning them with an external camera lands on `/scan`, which sanitizes and redirects without capturing.
-- `/capture` gains a `scan_ticket` guard so it can no longer be triggered by URL sharing, reload, or history.
+## Technical notes
+- The broadcast uses `realtime.send(payload, event, 'checkins:<field_id>', false)` from a trigger function. It's a public channel, since players and marshals have no login session. The payload contains no player data, so a public channel leaks nothing beyond "this mission's roster changed".
+- Nothing is created or altered inside the `realtime` schema; the trigger only calls its send function.
+- If the platform blocks `realtime.send`, the fallback is to have the three screens poll their existing server reload every few seconds while a mission is open.
