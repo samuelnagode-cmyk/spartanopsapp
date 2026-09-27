@@ -545,6 +545,7 @@ export type Database = {
       }
       spartanops_lobbies: {
         Row: {
+          account_id: string | null
           city: string | null
           countdown_seconds: number
           country: string | null
@@ -567,6 +568,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          account_id?: string | null
           city?: string | null
           countdown_seconds?: number
           country?: string | null
@@ -589,6 +591,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          account_id?: string | null
           city?: string | null
           countdown_seconds?: number
           country?: string | null
@@ -610,7 +613,15 @@ export type Database = {
           state?: string
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "spartanops_lobbies_account_id_fkey"
+            columns: ["account_id"]
+            isOneToOne: false
+            referencedRelation: "spartanops_accounts"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       spartanops_qr_anchors: {
         Row: {
