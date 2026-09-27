@@ -2446,6 +2446,18 @@ function MarshalLobbyConsole({ lobby: initialLobby, marshalPassword, lobbyPasswo
           {en ? "Registered:" : "Prijavljeni:"} <strong style={{ color: INK }}>{registered.length}</strong>
         </p>
       </Pane>
+
+      {/* Decommission */}
+      <div style={{ marginTop: 18 }}>
+        <button onClick={decommission}
+          style={{
+            width: "100%", background: "transparent", color: DANGER, border: `1px solid ${DANGER}`,
+            padding: "12px", fontFamily: "'Michroma', monospace", fontSize: 11,
+            letterSpacing: "0.22em", textTransform: "uppercase", fontWeight: 700, cursor: "pointer",
+          }}>
+          [ {en ? "DECOMMISSION FIELD" : "RAZGRADI POLIGON"} ]
+        </button>
+      </div>
       </div>
 
       <div style={{ display: lobbyTab === "review" ? "block" : "none" }}>
@@ -2844,18 +2856,6 @@ function MarshalLobbyConsole({ lobby: initialLobby, marshalPassword, lobbyPasswo
 
 
 
-
-      {/* Decommission */}
-      <div style={{ marginTop: 18 }}>
-        <button onClick={decommission}
-          style={{
-            width: "100%", background: "transparent", color: DANGER, border: `1px solid ${DANGER}`,
-            padding: "12px", fontFamily: "'Michroma', monospace", fontSize: 11,
-            letterSpacing: "0.22em", textTransform: "uppercase", fontWeight: 700, cursor: "pointer",
-          }}>
-          [ {en ? "DECOMMISSION FIELD" : "RAZGRADI POLIGON"} ]
-        </button>
-      </div>
 
       <div style={{ marginTop: 18, textAlign: "center" }}>
         <Link to="/join"
