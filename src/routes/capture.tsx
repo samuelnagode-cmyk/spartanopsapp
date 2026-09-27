@@ -3,7 +3,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { CheckCircle2, AlertTriangle } from "lucide-react";
 import { spartanopsSpartacusCapture } from "@/lib/spartanops-spartacus.functions";
-import { spartanopsResolveSessionField } from "@/lib/spartanops-checkin.functions";
+import { spartanopsResolveSessionField, spartanopsGetOwnCheckinTeam } from "@/lib/spartanops-checkin.functions";
 import { supabase } from "@/integrations/supabase/client";
 import { useLang, useT } from "@/lib/i18n";
 
@@ -249,6 +249,7 @@ function CapturePage() {
   const navigate = useNavigate();
   const applyCapture = useServerFn(spartanopsSpartacusCapture);
   const resolveSessionField = useServerFn(spartanopsResolveSessionField);
+  const getOwnCheckinTeam = useServerFn(spartanopsGetOwnCheckinTeam);
   const [state, setState] = useState<"loading" | "success" | "error" | "already_held">("loading");
   const [errMsg, setErrMsg] = useState("");
   const [isGpsError, setIsGpsError] = useState(false);
@@ -457,12 +458,7 @@ function CapturePage() {
           // capture. Verify against the DB — if the latest non-suspicious
           // capture for this point matches this player, show POINT CAPTURED.
           try {
-            const { data: me } = await supabase
-              .from("spartanops_checkins")
-              .select("callsign, assigned_team")
-              .eq("id", session)
-              .eq("field_id", effectiveField)
-              .maybeSingle();
+            const me = await getOwnCheckinTeam({ data: { fieldId: effectiveField, sessionId: String(session) } });
             const callsign = (me as any)?.callsign;
             const team = (me as any)?.assigned_team;
             if (callsign && team && team !== "none") {

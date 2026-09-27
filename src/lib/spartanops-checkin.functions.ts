@@ -443,3 +443,30 @@ export const spartanopsGetServerTime = createServerFn({ method: "POST" }).handle
   setResponseHeader("Cache-Control", "no-store, max-age=0");
   return { serverTime: new Date().toISOString(), serverNow: Date.now() };
 });
+
+/** Capture safety net: returns only callsign + team for the caller's own check-in. */
+export const spartanopsGetOwnCheckinTeam = createServerFn({ method: "POST" })
+  .inputValidator((d: { fieldId: string; sessionId: string }) => ({
+    fieldId: String(d?.fieldId ?? "").slice(0, 200),
+    sessionId: String(d?.sessionId ?? "").slice(0, 200),
+  }))
+  .handler(async ({ data }) => {
+    if (!isField(data.fieldId) || data.sessionId.length < 8) return { callsign: null, assigned_team: null };
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    let checkinId: string | null = null;
+    const { data: sec } = await supabaseAdmin
+      .from("spartanops_checkin_secrets")
+      .select("checkin_id")
+      .eq("session_id", data.sessionId)
+      .maybeSingle();
+    if (sec?.checkin_id) checkinId = sec.checkin_id;
+    else if (UUID_RE.test(data.sessionId)) checkinId = data.sessionId;
+    if (!checkinId) return { callsign: null, assigned_team: null };
+    const { data: row } = await supabaseAdmin
+      .from("spartanops_checkins")
+      .select("callsign, assigned_team")
+      .eq("id", checkinId)
+      .eq("field_id", data.fieldId)
+      .maybeSingle();
+    return { callsign: row?.callsign ?? null, assigned_team: row?.assigned_team ?? null };
+  });
