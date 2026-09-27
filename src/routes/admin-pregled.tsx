@@ -677,6 +677,7 @@ function AdminPage() {
 
 
         {/* Tabs */}
+        {!creating && !activeField && !marshalActiveLobby && (
         <div style={{ display: "grid", gridTemplateColumns: "repeat(2, minmax(0,1fr))", gap: 6, marginBottom: 30 }}>
           {([
             { k: "fields", l: en ? "MISSIONS" : "MISIJE" },
@@ -705,6 +706,7 @@ function AdminPage() {
             );
           })}
         </div>
+        )}
 
         {section === "fields" && creating && (
           <CreateFieldForm
@@ -2325,6 +2327,17 @@ function MarshalLobbyConsole({ lobby: initialLobby, marshalPassword, lobbyPasswo
     }
   };
 
+  const [lobbyTab, setLobbyTab] = useState<"mission" | "location" | "passwords" | "weapons" | "mode" | "map" | "match">("match");
+  const lobbyTabs: { k: typeof lobbyTab; l: string }[] = [
+    { k: "mission", l: en ? "Mission & Field" : "Misija in poligon" },
+    { k: "location", l: en ? "Location & Marshals" : "Lokacija in maršali" },
+    { k: "passwords", l: en ? "Passwords" : "Gesla" },
+    { k: "weapons", l: en ? "Replica Power & Shooting Rules" : "Moč replik in pravila streljanja" },
+    { k: "mode", l: en ? "Game Mode & Parameters" : "Igralni način in parametri" },
+    { k: "map", l: en ? "Tactical Map" : "Taktični zemljevid" },
+    { k: "match", l: en ? "Match Controls" : "Nadzor misije" },
+  ];
+
   return (
     <div>
       <div style={{ marginBottom: 18 }}>
@@ -2347,6 +2360,42 @@ function MarshalLobbyConsole({ lobby: initialLobby, marshalPassword, lobbyPasswo
         </div>
       </div>
 
+      {/* ── TAB BAR (same style as CreateFieldForm) ─────────── */}
+      <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 18 }}>
+        {lobbyTabs.map((t) => {
+          const active = lobbyTab === t.k;
+          const dotColor = state === "active" ? "#3ddc84" : state === "paused" ? "#f5b041" : state === "pending" ? DANGER : MUTED;
+          const pulse = state === "active" || state === "paused";
+          return (
+            <button
+              key={t.k}
+              type="button"
+              onClick={() => setLobbyTab(t.k)}
+              style={{
+                flex: "1 1 150px",
+                background: active ? ACCENT : "transparent",
+                color: active ? BG : INK,
+                border: `1px solid ${active ? ACCENT : "rgba(224,176,78,0.35)"}`,
+                padding: "10px 8px",
+                fontFamily: "'Michroma', monospace",
+                fontSize: 10,
+                letterSpacing: "0.12em",
+                textTransform: "uppercase",
+                cursor: "pointer",
+                fontWeight: active ? 700 : 500,
+                display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 6,
+              }}
+            >
+              {t.k === "match" && (
+                <span aria-hidden style={{ width: 7, height: 7, borderRadius: "50%", flexShrink: 0, background: dotColor, boxShadow: pulse ? `0 0 8px ${dotColor}` : "none", animation: pulse ? "cmdStatusPulse 1.6s ease-in-out infinite" : "none" }} />
+              )}
+              {t.l}
+            </button>
+          );
+        })}
+      </div>
+
+      <div style={{ display: lobbyTab === "match" ? "block" : "none" }}>
       {/* MATCH CONTROLS */}
       <Pane title={en ? "MATCH CONTROLS" : "NADZOR MISIJE"}>
         {(() => {
@@ -2503,15 +2552,19 @@ function MarshalLobbyConsole({ lobby: initialLobby, marshalPassword, lobbyPasswo
           mapUrl={lobby.mapUrl || undefined}
         />
       )}
+      </div>
 
 
 
+      <div style={{ display: lobbyTab === "match" ? "none" : "block" }}>
       {/* SETTINGS SECTION DIVIDER */}
       <div style={{ margin: "26px 0 14px", textAlign: "center", fontFamily: "'Michroma', monospace", fontSize: 20, letterSpacing: "0.24em", color: ACCENT, textTransform: "uppercase", fontWeight: 700 }}>
         ⚙ {en ? "GAME SETTINGS" : "NASTAVITVE IGRE"}
       </div>
       <div style={{ height: 1, background: `${ACCENT}30`, marginBottom: 18 }} />
+      </div>
 
+      <div style={{ display: lobbyTab === "mission" ? "block" : "none" }}>
       {/* ── CARD 1: MISSION AND FIELD ───────────────────────── */}
       <Pane title={en ? "MISSION AND FIELD" : "MISIJA IN POLIGON"}>
         <FieldRow label={en ? "Field name (locked)" : "Ime poligona (zaklenjeno)"}>
@@ -2541,12 +2594,11 @@ function MarshalLobbyConsole({ lobby: initialLobby, marshalPassword, lobbyPasswo
             placeholder={en ? "The players will see this text in the debriefing screen (after the mission is finished)." : "Igralci bodo to besedilo videli na zaključnem zaslonu (po koncu misije)."}
           />
         </FieldRow>
-        <div style={{ marginTop: 12, paddingTop: 12, borderTop: `1px solid ${ACCENT}25` }}>
-          <WeaponRulesEditor
-            value={(lobby.settings as any)?.weaponRules}
-            onChange={(next) => patch({ settings: { ...(lobby.settings ?? {}), weaponRules: next } as any })}
-          />
-        </div>
+      </Pane>
+      </div>
+
+      <div style={{ display: lobbyTab === "location" ? "block" : "none" }}>
+      <Pane title={en ? "LOCATION & MARSHALS" : "LOKACIJA IN MARŠALI"}>
         <div style={{ marginTop: 18, paddingTop: 14, borderTop: `1px solid ${ACCENT}40` }}>
           <p
             style={{
@@ -2572,9 +2624,22 @@ function MarshalLobbyConsole({ lobby: initialLobby, marshalPassword, lobbyPasswo
           </FieldRow>
         </div>
       </Pane>
+      </div>
+
+      <div style={{ display: lobbyTab === "weapons" ? "block" : "none" }}>
+      <Pane title={en ? "REPLICA POWER & SHOOTING RULES" : "MOČ REPLIK IN PRAVILA STRELJANJA"}>
+        <div style={{ marginTop: 12, paddingTop: 12, borderTop: `1px solid ${ACCENT}25` }}>
+          <WeaponRulesEditor
+            value={(lobby.settings as any)?.weaponRules}
+            onChange={(next) => patch({ settings: { ...(lobby.settings ?? {}), weaponRules: next } as any })}
+          />
+        </div>
+      </Pane>
+      </div>
 
       <div style={{ height: 16 }} />
 
+      <div style={{ display: lobbyTab === "passwords" ? "block" : "none" }}>
       {/* ── CARD 2: PASSWORDS ───────────────────────────────── */}
       <Pane title={en ? "PASSWORDS" : "GESLA"}>
         <FieldRow label={en ? "Mission password (for players)" : "Geslo misije (za igralce)"}>
@@ -2646,9 +2711,11 @@ function MarshalLobbyConsole({ lobby: initialLobby, marshalPassword, lobbyPasswo
           )}
         </FieldRow>
       </Pane>
+      </div>
 
       <div style={{ height: 16 }} />
 
+      <div style={{ display: lobbyTab === "mode" ? "block" : "none" }}>
       {/* ── STANDALONE SECTION TITLE ────────────────────────── */}
       <div style={{ margin: "8px 0 14px", textAlign: "center" }}>
         <h3 style={{ fontFamily: "'Michroma', monospace", fontSize: 18, letterSpacing: "0.22em", color: ACCENT, textTransform: "uppercase", fontWeight: 700 }}>
@@ -2733,8 +2800,10 @@ function MarshalLobbyConsole({ lobby: initialLobby, marshalPassword, lobbyPasswo
         en={en}
       />
 
+      </div>
       <div style={{ height: 16 }} />
 
+      <div style={{ display: lobbyTab === "map" ? "block" : "none" }}>
       {/* ── TACTICAL MAP ────────────────────────────────────── */}
       <Pane title={en ? "TACTICAL MAP" : "TAKTIČNI ZEMLJEVID"}>
         <p style={{ fontSize: 11, color: MUTED, fontFamily: "monospace", lineHeight: 1.55, marginBottom: 12 }}>
@@ -2809,6 +2878,7 @@ function MarshalLobbyConsole({ lobby: initialLobby, marshalPassword, lobbyPasswo
           en={en}
         />
       </Pane>
+      </div>
 
       {lobby.startedAt && (
         <p style={{ marginTop: 12, fontFamily: "monospace", fontSize: 10, color: MUTED, letterSpacing: "0.2em", textTransform: "uppercase", textAlign: "center" }}>
