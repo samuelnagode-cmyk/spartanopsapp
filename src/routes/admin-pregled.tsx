@@ -1189,27 +1189,7 @@ function CreateFieldForm({ onCreated }: { onCreated: (rec: LobbyRecord, pws: { p
       {/* ── CARD 3: GAME MODE SELECTION ─────────────────────── */}
       <Pane title={en ? "GAME MODE SELECTION" : "IZBIRA IGRALNEGA NAČINA"}>
         <FieldRow label={en ? "Game mode selection" : "Izbira igralnega načina (Gamemode)"}>
-          <div className="grid grid-cols-2 gap-2">
-            <button type="button" onClick={() => setGamemode("domination")}
-              style={{
-                background: gamemode === "domination" ? `${ACCENT}22` : "transparent",
-                color: gamemode === "domination" ? ACCENT : INK,
-                border: `1px solid ${gamemode === "domination" ? ACCENT : "rgba(236,227,196,0.18)"}`,
-                padding: "10px 8px", fontFamily: "monospace", fontSize: 11, letterSpacing: "0.12em",
-                textTransform: "uppercase", cursor: "pointer", textAlign: "left",
-              }}>
-              ● Domination<br /><span style={{ fontSize: 9, color: MUTED }}>{en ? "Point capture" : "Zavzemanje točk"}</span>
-            </button>
-            <button type="button" onClick={() => { if (!isPremium) openPremiumModal(); }}
-              style={{
-                background: "rgba(255,255,255,0.03)", color: MUTED,
-                border: `1px dashed rgba(236,227,196,0.18)`,
-                padding: "10px 8px", fontFamily: "monospace", fontSize: 11, letterSpacing: "0.12em",
-                textTransform: "uppercase", cursor: "pointer", textAlign: "left", opacity: 0.75,
-              }}>
-              🔒 Search &amp; Destroy<br /><span style={{ fontSize: 9 }}>{en ? "Coming soon" : "Prihaja kmalu"}</span>
-            </button>
-          </div>
+          <GameModeButtons active={gamemode} isPremium={isPremium} openPremiumModal={openPremiumModal} en={en} onPick={(k) => setGamemode(k)} />
         </FieldRow>
 
         <div className="grid grid-cols-2 gap-3">
