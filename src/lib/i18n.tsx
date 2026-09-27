@@ -487,12 +487,12 @@ export const dict: Dict = {
 
   // Premium access framework
   "premium.enterKeyPlaceholder": { sl: "VNESI PREMIUM DOSTOPNI KLJUČ", en: "ENTER PREMIUM ACCESS KEY" },
-  "premium.modalTitle": { sl: "// PREMIUM DOSTOP", en: "// TRANSMISSION: ENCRYPTED MODULE" },
+  "premium.modalTitle": { sl: "// PREMIUM FUNKCIJE", en: "// PREMIUM FEATURES" },
   "premium.modalDesc": {
-    sl: "Ta modul je zaklenjen. Nadgradi na Premium za odklep naprednih taktičnih operacij, poligonov po meri in scenarijev z več ekipami.",
-    en: "This module is restricted. Upgrade to Premium to unlock advanced tactical gamemodes, custom functions, and multi-team scenarios.",
+    sl: "Hvala za zanimanje! Trenutno pripravljamo plačilni sistem (Stripe) za premium funkcije. Ko bo na voljo, te bomo obvestili.",
+    en: "Thank you for your inquiry — we're currently working on a Stripe payment method for premium features. We'll notify you as soon as it's ready.",
   },
-  "premium.modalBtn": { sl: "Zahtevaj dostop", en: "Request Access via Command Network" },
+  "premium.modalBtn": { sl: "Obvesti me, ko bo na voljo", en: "Notify me when it's ready" },
   "premium.statusFree": { sl: "[ STATUS: OSNOVNI NIVO ]", en: "[ STATUS: CORE TIER ]" },
   "premium.statusPremium": { sl: "[ STATUS: OPERATIVNI PREMIUM ]", en: "[ STATUS: OPERATIONAL PREMIUM ]" },
 
