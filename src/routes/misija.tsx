@@ -2705,7 +2705,7 @@ function TacticalMap({ state, captures, en, hasPositions, missionName, timeLabel
 
       {open && (
         <div
-          className="fixed inset-0 z-[200] flex flex-col"
+          className="fixed inset-0 z-[1001] flex flex-col"
           style={{ background: "rgba(4,6,3,0.98)" }}
           role="dialog"
           aria-modal="true"
