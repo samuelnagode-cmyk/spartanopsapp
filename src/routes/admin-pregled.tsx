@@ -1017,7 +1017,7 @@ function CreateFieldForm({ onCreated }: { onCreated: (rec: LobbyRecord, pws: { p
 
       {/* ── TAB 2: LOCATION & MARSHALS ──────────────────────── */}
       <div style={{ display: formTab === "location" ? "block" : "none" }}>
-      <Pane title={en ? "MISSION AND FIELD" : "MISIJA IN POLIGON"}>
+      <Pane title={en ? "LOCATION & MARSHALS" : "LOKACIJA IN MARŠALI"}>
         <div>
           <p
             style={{
