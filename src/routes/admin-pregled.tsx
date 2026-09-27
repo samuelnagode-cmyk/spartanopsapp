@@ -915,6 +915,16 @@ function CreateFieldForm({ onCreated }: { onCreated: (rec: LobbyRecord, pws: { p
         country: rec.country ?? "",
         createdAt: rec.createdAt,
       });
+      // Step 0.3: if the creator is logged in to a marshal account, link the new
+      // mission to it. Failure here never blocks creation.
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user) {
+          await supabase.from("spartanops_lobbies").update({ account_id: user.id }).eq("id", rec.id);
+        }
+      } catch (linkErr) {
+        console.warn("[admin] account link skipped", linkErr);
+      }
       setOk(true);
       // Go straight into the command center for the new mission — the lobby URL
       // and all controls live there.
@@ -1301,6 +1311,81 @@ function CreateFieldForm({ onCreated }: { onCreated: (rec: LobbyRecord, pws: { p
 
 
 
+type AccountLobby = { id: string; field_name: string; event_name: string | null };
+
+// Step 0.3: account-scoped mission list, shown alongside the local-cache list.
+function AccountMissionsSection({ en }: { en: boolean }) {
+  const [userId, setUserId] = useState<string | null>(null);
+  const [ready, setReady] = useState(false);
+  const [missions, setMissions] = useState<AccountLobby[] | null>(null);
+  const [err, setErr] = useState<string | null>(null);
+
+  useEffect(() => {
+    const { data: sub } = supabase.auth.onAuthStateChange((_e, session) => {
+      setUserId(session?.user?.id ?? null);
+    });
+    supabase.auth.getUser().then(({ data }) => {
+      setUserId(data.user?.id ?? null);
+      setReady(true);
+    });
+    return () => sub.subscription.unsubscribe();
+  }, []);
+
+  useEffect(() => {
+    if (!userId) { setMissions(null); return; }
+    let cancelled = false;
+    (async () => {
+      const { data, error } = await supabase
+        .from("spartanops_lobbies")
+        .select("id, field_name, event_name")
+        .eq("account_id", userId)
+        .order("created_at", { ascending: false });
+      if (cancelled) return;
+      if (error) { setErr(error.message); return; }
+      setErr(null);
+      setMissions((data ?? []) as AccountLobby[]);
+    })();
+    return () => { cancelled = true; };
+  }, [userId]);
+
+  if (!ready) return null;
+
+  if (!userId) {
+    return (
+      <div style={{ maxWidth: 480, margin: "0 auto 28px", padding: "10px 12px", border: `1px dashed ${ACCENT}55`, fontFamily: "monospace", fontSize: 12, color: MUTED, textAlign: "center" }}>
+        {en ? "Log in to see your missions from any device — " : "Prijavi se in svoje misije vidi na vsaki napravi — "}
+        <Link to="/marshal-account" style={{ color: ACCENT, textDecoration: "underline" }}>
+          {en ? "Marshal account" : "Račun maršala"}
+        </Link>
+      </div>
+    );
+  }
+
+  return (
+    <div style={{ marginBottom: 32 }}>
+      <p style={{ fontFamily: "monospace", fontSize: 10, letterSpacing: "0.30em", color: ACCENT, marginBottom: 14, textTransform: "uppercase" }}>
+        {en ? "// YOUR MISSIONS (ACCOUNT)" : "// TVOJE MISIJE (RAČUN)"}
+      </p>
+      {err ? (
+        <p style={{ color: "#d97a6c", fontSize: 12 }}>{err}</p>
+      ) : missions === null ? (
+        <p style={{ fontFamily: "monospace", fontSize: 12, color: MUTED }}>…</p>
+      ) : missions.length === 0 ? (
+        <p style={{ fontFamily: "monospace", fontSize: 12, color: MUTED }}>{en ? "No missions linked yet." : "Še ni povezanih misij."}</p>
+      ) : (
+        <ul style={{ listStyle: "none", padding: 0, margin: 0 }}>
+          {missions.map((m) => (
+            <li key={m.id} style={{ border: `1px solid ${ACCENT}33`, background: "rgba(0,0,0,0.25)", padding: "8px 10px", marginBottom: 6, fontFamily: "monospace", fontSize: 13 }}>
+              <div>{m.field_name}</div>
+              {m.event_name && <div style={{ fontSize: 11.5, color: MUTED }}>{m.event_name}</div>}
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  );
+}
+
 function FieldsWelcome({
   customLobbies, lobbiesLoaded, isEditMode, onCreate, onUseExisting, onOpenLobby, onDecommissionLobby,
 }: {
@@ -1356,6 +1441,8 @@ function FieldsWelcome({
         </button>
       </div>
 
+
+      <AccountMissionsSection en={en} />
 
       {/* Existing missions list */}
       <div id="fields-list" style={{ marginBottom: 40 }}>
