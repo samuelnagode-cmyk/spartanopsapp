@@ -2536,6 +2536,24 @@ function MarshalLobbyConsole({ lobby: initialLobby, marshalPassword, lobbyPasswo
             return `${String(Math.floor(remaining / 60)).padStart(2, "0")}:${String(remaining % 60).padStart(2, "0")}`;
           })()}</span>
         </div>
+        {(() => {
+          // Pre-start countdown: shown only while the match is active but the
+          // start timestamp is still in the future (the pre-match window).
+          if (!gameState || state !== "active" || !gameState.match_started_at) return null;
+          const startMs = new Date(gameState.match_started_at).getTime();
+          if (now >= startMs) return null;
+          const preLeft = Math.max(0, Math.ceil((startMs - now) / 1000));
+          return (
+            <div style={{ marginBottom: 14, padding: "10px 12px", border: `1px solid ${ACCENT}55`, background: `${ACCENT}12`, textAlign: "center", fontFamily: "monospace", letterSpacing: "0.18em", textTransform: "uppercase" }}>
+              <span style={{ fontSize: 10, color: MUTED, display: "block", marginBottom: 4 }}>
+                {en ? "⏳ GAME STARTS IN" : "⏳ IGRA SE ZAČNE ČEZ"}
+              </span>
+              <span style={{ fontSize: 22, fontWeight: 700, color: ACCENT }}>
+                {`${String(Math.floor(preLeft / 60)).padStart(2, "0")}:${String(preLeft % 60).padStart(2, "0")}`}
+              </span>
+            </div>
+          );
+        })()}
         <LeaderRow label="BLUE" color="#3b82f6" score={gameState?.team_scores?.modra ?? 0} target={target} />
         <LeaderRow label="RED"  color="#ef4444" score={gameState?.team_scores?.rdeca ?? 0} target={target} />
       </Pane>
