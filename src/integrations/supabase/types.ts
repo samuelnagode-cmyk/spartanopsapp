@@ -208,6 +208,7 @@ export type Database = {
           active_lobby_id: string | null
           business_name: string
           created_at: string
+          field_password_hash: string | null
           id: string
           is_platform_showcase: boolean
         }
@@ -215,6 +216,7 @@ export type Database = {
           active_lobby_id?: string | null
           business_name: string
           created_at?: string
+          field_password_hash?: string | null
           id: string
           is_platform_showcase?: boolean
         }
@@ -222,6 +224,7 @@ export type Database = {
           active_lobby_id?: string | null
           business_name?: string
           created_at?: string
+          field_password_hash?: string | null
           id?: string
           is_platform_showcase?: boolean
         }
@@ -871,7 +874,15 @@ export type Database = {
         Args: { p_field_id: string }
         Returns: undefined
       }
+      spartanops_set_field_password: {
+        Args: { p_password: string }
+        Returns: undefined
+      }
       spartanops_tick_scores: { Args: { p_field_id: string }; Returns: Json }
+      spartanops_verify_field_password: {
+        Args: { p_account_id: string; p_password: string }
+        Returns: boolean
+      }
       spartanops_verify_lobby_password: {
         Args: { p_kind: string; p_lobby_id: string; p_password: string }
         Returns: boolean
