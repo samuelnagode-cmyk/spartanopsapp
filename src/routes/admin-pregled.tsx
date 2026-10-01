@@ -372,6 +372,7 @@ function AdminPage() {
   const [creating, setCreating] = useState(false);
   const [marshalPromptLobby, setMarshalPromptLobby] = useState<LobbyRecord | null>(null);
   const [marshalActiveLobby, setMarshalActiveLobby] = useState<LobbyRecord | null>(null);
+  const [ownerAccessToken, setOwnerAccessToken] = useState<string | undefined>(undefined);
   const [marshalPasswordVerified, setMarshalPasswordVerified] = useState<string>("");
   // Ephemeral plaintext password cache keyed by lobby id — passwords are bcrypt-hashed
   // in the DB and never returned, so we retain them only when the marshal enters them
@@ -663,7 +664,24 @@ function AdminPage() {
         {section === "fields" && !creating && !activeField && !marshalActiveLobby && (
           <FieldsWelcome
             onCreate={() => setCreating(true)}
-            onOpenAccountMission={(m) =>
+            onOpenAccountMission={async (m) => {
+              // Silent owner open: a signed-in account owner skips the password prompt.
+              try {
+                const { data: sess } = await supabase.auth.getSession();
+                const token = sess.session?.access_token;
+                if (token) {
+                  const dto = await getLobby({ data: { id: m.id, authPassword: "", accessToken: token } });
+                  if (dto) {
+                    setOwnerAccessToken(token);
+                    setMarshalPasswordVerified("");
+                    setMarshalActiveLobby(dtoToRecord(dto));
+                    return;
+                  }
+                }
+              } catch (e) {
+                console.warn("[marshal] silent owner open failed, falling back to password", e);
+              }
+              setOwnerAccessToken(undefined);
               setMarshalPromptLobby({
                 id: m.id,
                 fieldName: m.field_name,
@@ -674,8 +692,8 @@ function AdminPage() {
                 countdownSeconds: 60,
                 createdAt: 0,
                 published: false,
-              })
-            }
+              });
+            }}
           />
         )}
 
@@ -694,7 +712,8 @@ function AdminPage() {
             marshalPassword={marshalPasswordVerified}
             lobbyPasswordCached={lobbyPwCache[marshalActiveLobby.id]?.player ?? ""}
             marshalPasswordCached={lobbyPwCache[marshalActiveLobby.id]?.marshal ?? marshalPasswordVerified}
-            onBack={() => { setMarshalActiveLobby(null); setMarshalPasswordVerified(""); }}
+            ownerAccessToken={ownerAccessToken}
+            onBack={() => { setMarshalActiveLobby(null); setMarshalPasswordVerified(""); setOwnerAccessToken(undefined); }}
           />
         )}
 
@@ -1824,7 +1843,7 @@ function MarshalPasswordPrompt({ lobby, onClose, onSuccess }: { lobby: LobbyReco
   );
 }
 
-function MarshalLobbyConsole({ lobby: initialLobby, marshalPassword, lobbyPasswordCached = "", marshalPasswordCached = "", onBack }: { lobby: LobbyRecord; marshalPassword: string; lobbyPasswordCached?: string; marshalPasswordCached?: string; onBack: () => void }) {
+function MarshalLobbyConsole({ lobby: initialLobby, marshalPassword, lobbyPasswordCached = "", marshalPasswordCached = "", ownerAccessToken, onBack }: { lobby: LobbyRecord; marshalPassword: string; lobbyPasswordCached?: string; marshalPasswordCached?: string; ownerAccessToken?: string; onBack: () => void }) {
   const { lang } = useLang();
   const en = lang === "en";
   const { isPremium, openPremiumModal } = usePremium();
@@ -1918,7 +1937,7 @@ function MarshalLobbyConsole({ lobby: initialLobby, marshalPassword, lobbyPasswo
     }
     if (p.password) dbPatch.password = p.password;
     if (p.marshalPassword) dbPatch.marshalPassword = p.marshalPassword;
-    updateFn({ data: { id: lobby.id, patch: dbPatch, authPassword: marshalPassword || getMasterPw() } }).catch((e) => console.error("[marshal] update failed", e));
+    updateFn({ data: { id: lobby.id, patch: dbPatch, authPassword: marshalPassword || getMasterPw(), accessToken: ownerAccessToken } }).catch((e) => console.error("[marshal] update failed", e));
   };
 
   const startMission = async () => {
@@ -1953,7 +1972,7 @@ function MarshalLobbyConsole({ lobby: initialLobby, marshalPassword, lobbyPasswo
     setLobby((prev) => ({ ...prev, state: "paused" }));
     updateLobby(lobby.id, { state: "paused" });
     setGameState((prev) => prev ? { ...prev, status: "paused", updated_at: pausedIso } : prev);
-    updateFn({ data: { id: lobby.id, patch: { state: "paused" }, authPassword: marshalPassword || getMasterPw() } })
+    updateFn({ data: { id: lobby.id, patch: { state: "paused" }, authPassword: marshalPassword || getMasterPw(), accessToken: ownerAccessToken } })
       .catch((e) => console.error("[marshal] pause failed", e));
   };
   const resumeMission = () => {
@@ -1967,7 +1986,7 @@ function MarshalLobbyConsole({ lobby: initialLobby, marshalPassword, lobbyPasswo
     setLobby((prev) => ({ ...prev, state: "active", startedAt: nextStartedAt }));
     updateLobby(lobby.id, { state: "active", startedAt: nextStartedAt });
     setGameState((prev) => prev ? { ...prev, status: "active", match_started_at: nextStartedAtIso, updated_at: new Date(serverNow).toISOString() } : prev);
-    updateFn({ data: { id: lobby.id, patch: { state: "active", startedAt: nextStartedAtIso }, authPassword: marshalPassword || getMasterPw() } })
+    updateFn({ data: { id: lobby.id, patch: { state: "active", startedAt: nextStartedAtIso }, authPassword: marshalPassword || getMasterPw(), accessToken: ownerAccessToken } })
       .catch((e) => console.error("[marshal] resume failed", e));
   };
   const handleMatchPrimaryAction = () => {
@@ -2001,7 +2020,7 @@ function MarshalLobbyConsole({ lobby: initialLobby, marshalPassword, lobbyPasswo
       : `Izbriši vse prijavljene igralce iz "${lobby.fieldName}"? Drugi poligoni ostanejo nedotaknjeni.`
     )) return;
     try {
-      await deletePlayersFn({ data: { id: lobby.id, marshalPassword } });
+      await deletePlayersFn({ data: { id: lobby.id, marshalPassword, accessToken: ownerAccessToken } });
       setRegistered([]);
     } catch (e) {
       console.error("[marshal] deleteAllPlayers failed", e);
@@ -2014,7 +2033,7 @@ function MarshalLobbyConsole({ lobby: initialLobby, marshalPassword, lobbyPasswo
       : "Odstrani misijo? Izginila bo iz aktivnega seznama in javne strani za pridružitev."
     )) return;
     try {
-      await deleteLobbyServerFn({ data: { id: lobby.id, marshalPassword } });
+      await deleteLobbyServerFn({ data: { id: lobby.id, marshalPassword, accessToken: ownerAccessToken } });
       saveLobbies(loadLobbies().filter((l) => l.id !== lobby.id));
       onBack();
     } catch (e) {
@@ -2033,9 +2052,9 @@ function MarshalLobbyConsole({ lobby: initialLobby, marshalPassword, lobbyPasswo
       r?.assigned_team === "modra" || r?.assigned_team === "rdeca" || r?.assigned_team === "rumena"
         ? r.assigned_team : "lobby";
     const load = async () => {
-      if (!marshalPassword) return;
+      if (!marshalPassword && !ownerAccessToken) return;
       try {
-        const res = await getAdminRoster({ data: { fieldId: lobby.id, password: marshalPassword } });
+        const res = await getAdminRoster({ data: { fieldId: lobby.id, password: marshalPassword, accessToken: ownerAccessToken } });
         if (!alive || !res?.ok) return;
         setRegistered((res.rows ?? []).map((r: any) => ({
           id: r.id,
@@ -2059,7 +2078,7 @@ function MarshalLobbyConsole({ lobby: initialLobby, marshalPassword, lobbyPasswo
       .on("broadcast", { event: "roster_changed" }, () => load())
       .subscribe();
     return () => { alive = false; supabase.removeChannel(channel); };
-  }, [lobby.id, marshalPassword, getAdminRoster]);
+  }, [lobby.id, marshalPassword, ownerAccessToken, getAdminRoster]);
 
 
   // Live game state (for the tactical map + countdown + node holders)
@@ -2361,14 +2380,14 @@ function MarshalLobbyConsole({ lobby: initialLobby, marshalPassword, lobbyPasswo
 
   const reassignFn = useServerFn(spartanopsAdminReassignTeam);
   const handleSwap = async (playerId: string, currentTeam: RegisteredPlayer["team"]) => {
-    if (!marshalPassword) return;
+    if (!marshalPassword && !ownerAccessToken) return;
     // Enforce 2-faction swap. Lobby players default to modra.
     const target: "modra" | "rdeca" =
       currentTeam === "modra" ? "rdeca" : currentTeam === "rdeca" ? "modra" : "modra";
     // Optimistic UI — realtime will reconcile.
     setRegistered((prev) => prev.map((p) => p.id === playerId ? { ...p, team: target } : p));
     try {
-      await reassignFn({ data: { fieldId: lobby.id, password: marshalPassword, checkinId: playerId, team: target } });
+      await reassignFn({ data: { fieldId: lobby.id, password: marshalPassword, checkinId: playerId, team: target, accessToken: ownerAccessToken } });
     } catch (e) {
       console.error("[marshal] swap failed", e);
     }

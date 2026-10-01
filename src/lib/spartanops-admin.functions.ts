@@ -31,7 +31,11 @@ function isField(x: string): x is FieldId {
  * public.spartanops_field_secrets via a security-definer DB function.
  * Throws on failure so handlers can rely on a boolean ok-path.
  */
-async function verifyFieldPassword(tab: string, password: string): Promise<boolean> {
+async function verifyFieldPassword(tab: string, password: string, accessToken?: string): Promise<boolean> {
+  if (UUID_RE.test(tab)) {
+    const { isVerifiedLobbyOwner } = await import("./spartanops-owner-auth");
+    if (await isVerifiedLobbyOwner(tab, accessToken)) return true;
+  }
   if (typeof password !== "string" || password.length === 0 || password.length > 200) return false;
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
@@ -58,8 +62,8 @@ async function verifyFieldPassword(tab: string, password: string): Promise<boole
   return false;
 }
 
-async function requireFieldPassword(tab: string, password: string) {
-  const ok = await verifyFieldPassword(tab, password);
+async function requireFieldPassword(tab: string, password: string, accessToken?: string) {
+  const ok = await verifyFieldPassword(tab, password, accessToken);
   if (!ok) throw new Error("Unauthorized");
 }
 
@@ -113,24 +117,26 @@ async function clearMissionRuntimeForStart(supabaseAdmin: any, fieldId: string) 
 }
 
 export const spartanopsAdminVerify = createServerFn({ method: "POST" })
-  .inputValidator((d: { tab: string; password: string }) => ({
+  .inputValidator((d: { tab: string; password: string; accessToken?: string }) => ({
     tab: String(d?.tab ?? ""),
     password: String(d?.password ?? ""),
+    accessToken: d?.accessToken ? String(d.accessToken) : undefined,
   }))
   .handler(async ({ data }) => {
-    const ok = await verifyFieldPassword(data.tab, data.password);
+    const ok = await verifyFieldPassword(data.tab, data.password, data.accessToken);
     return { ok };
   });
 
 export const spartanopsAdminPatchState = createServerFn({ method: "POST" })
-  .inputValidator((d: { fieldId: string; password: string; patch: Patch }) => ({
+  .inputValidator((d: { fieldId: string; password: string; patch: Patch; accessToken?: string }) => ({
     fieldId: String(d?.fieldId ?? ""),
     password: String(d?.password ?? ""),
+    accessToken: d?.accessToken ? String(d.accessToken) : undefined,
     patch: d?.patch ?? {},
   }))
   .handler(async ({ data }) => {
     if (!isField(data.fieldId)) throw new Error("Invalid field");
-    await requireFieldPassword(data.fieldId, data.password);
+    await requireFieldPassword(data.fieldId, data.password, data.accessToken);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const serverNowMs = Date.now();
     const serverNowIso = new Date(serverNowMs).toISOString();
@@ -185,15 +191,16 @@ export const spartanopsAdminPatchState = createServerFn({ method: "POST" })
   });
 
 export const spartanopsAdminReassignTeam = createServerFn({ method: "POST" })
-  .inputValidator((d: { fieldId: string; password: string; checkinId: string; team: "modra" | "rdeca" | "rumena" | "none" }) => ({
+  .inputValidator((d: { fieldId: string; password: string; checkinId: string; team: "modra" | "rdeca" | "rumena" | "none"; accessToken?: string }) => ({
     fieldId: String(d?.fieldId ?? ""),
     password: String(d?.password ?? ""),
+    accessToken: d?.accessToken ? String(d.accessToken) : undefined,
     checkinId: String(d?.checkinId ?? ""),
     team: d?.team,
   }))
   .handler(async ({ data }) => {
     if (!isField(data.fieldId)) throw new Error("Invalid field");
-    await requireFieldPassword(data.fieldId, data.password);
+    await requireFieldPassword(data.fieldId, data.password, data.accessToken);
     if (!["modra", "rdeca", "rumena", "none"].includes(data.team)) throw new Error("Invalid team");
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { error } = await supabaseAdmin
@@ -206,14 +213,15 @@ export const spartanopsAdminReassignTeam = createServerFn({ method: "POST" })
   });
 
 export const spartanopsAdminRemovePlayer = createServerFn({ method: "POST" })
-  .inputValidator((d: { fieldId: string; password: string; checkinId: string }) => ({
+  .inputValidator((d: { fieldId: string; password: string; checkinId: string; accessToken?: string }) => ({
     fieldId: String(d?.fieldId ?? ""),
     password: String(d?.password ?? ""),
+    accessToken: d?.accessToken ? String(d.accessToken) : undefined,
     checkinId: String(d?.checkinId ?? ""),
   }))
   .handler(async ({ data }) => {
     if (!isField(data.fieldId)) throw new Error("Invalid field");
-    await requireFieldPassword(data.fieldId, data.password);
+    await requireFieldPassword(data.fieldId, data.password, data.accessToken);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { error } = await supabaseAdmin
       .from("spartanops_checkins")
@@ -225,13 +233,14 @@ export const spartanopsAdminRemovePlayer = createServerFn({ method: "POST" })
   });
 
 export const spartanopsAdminReset = createServerFn({ method: "POST" })
-  .inputValidator((d: { fieldId: string; password: string }) => ({
+  .inputValidator((d: { fieldId: string; password: string; accessToken?: string }) => ({
     fieldId: String(d?.fieldId ?? ""),
     password: String(d?.password ?? ""),
+    accessToken: d?.accessToken ? String(d.accessToken) : undefined,
   }))
   .handler(async ({ data }) => {
     if (!isField(data.fieldId)) throw new Error("Invalid field");
-    await requireFieldPassword(data.fieldId, data.password);
+    await requireFieldPassword(data.fieldId, data.password, data.accessToken);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     await resetMissionRuntime(supabaseAdmin, data.fieldId);
     await supabaseAdmin.from("spartanops_checkins").delete().eq("field_id", data.fieldId);
@@ -251,13 +260,14 @@ export const spartanopsAdminReset = createServerFn({ method: "POST" })
   });
 
 export const spartanopsAdminRemoveAllPlayers = createServerFn({ method: "POST" })
-  .inputValidator((d: { fieldId: string; password: string }) => ({
+  .inputValidator((d: { fieldId: string; password: string; accessToken?: string }) => ({
     fieldId: String(d?.fieldId ?? ""),
     password: String(d?.password ?? ""),
+    accessToken: d?.accessToken ? String(d.accessToken) : undefined,
   }))
   .handler(async ({ data }) => {
     if (!isField(data.fieldId)) throw new Error("Invalid field");
-    await requireFieldPassword(data.fieldId, data.password);
+    await requireFieldPassword(data.fieldId, data.password, data.accessToken);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     // Scoped strictly to this field/lobby — other fields are unaffected.
     await resetMissionRuntime(supabaseAdmin, data.fieldId);
@@ -270,16 +280,17 @@ export const spartanopsAdminRemoveAllPlayers = createServerFn({ method: "POST" }
   });
 
 export const spartanopsAdminUploadMap = createServerFn({ method: "POST" })
-  .inputValidator((d: { fieldId: string; password: string; filename: string; contentType: string; base64: string }) => ({
+  .inputValidator((d: { fieldId: string; password: string; filename: string; contentType: string; base64: string; accessToken?: string }) => ({
     fieldId: String(d?.fieldId ?? ""),
     password: String(d?.password ?? ""),
+    accessToken: d?.accessToken ? String(d.accessToken) : undefined,
     filename: String(d?.filename ?? "map.webp"),
     contentType: String(d?.contentType ?? "image/webp"),
     base64: String(d?.base64 ?? ""),
   }))
   .handler(async ({ data }) => {
     if (!isField(data.fieldId)) throw new Error("Invalid field");
-    await requireFieldPassword(data.fieldId, data.password);
+    await requireFieldPassword(data.fieldId, data.password, data.accessToken);
     if (!/^image\/(webp|png|jpeg|jpg)$/i.test(data.contentType)) {
       throw new Error("Only WebP, PNG, or JPEG allowed");
     }

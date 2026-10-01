@@ -6,7 +6,11 @@ function isField(x: string): boolean {
   return LEGACY_FIELDS.has(x) || UUID_RE.test(x);
 }
 
-async function verifyMarshalAccess(fieldId: string, password: string): Promise<boolean> {
+async function verifyMarshalAccess(fieldId: string, password: string, accessToken?: string): Promise<boolean> {
+  if (UUID_RE.test(fieldId)) {
+    const { isVerifiedLobbyOwner } = await import("./spartanops-owner-auth");
+    if (await isVerifiedLobbyOwner(fieldId, accessToken)) return true;
+  }
   if (!password || password.length > 200) return false;
   const master = process.env.SPARTANOPS_MASTER_PASSWORD;
   if (master && password === master) return true;
@@ -275,21 +279,22 @@ export const spartanopsSpartacusCapture = createServerFn({ method: "POST" })
  *  - decision='ban': rejects the row AND removes the player from the checkin table.
  */
 export const spartanopsSpartacusReview = createServerFn({ method: "POST" })
-  .inputValidator((d: { captureId: string; decision: "approve" | "reject" | "ban" | "suspend" | "warning"; fieldId: string; password: string; suspendMinutes?: number; warningMessage?: string }) => ({
+  .inputValidator((d: { captureId: string; decision: "approve" | "reject" | "ban" | "suspend" | "warning"; fieldId: string; password: string; suspendMinutes?: number; warningMessage?: string; accessToken?: string }) => ({
     captureId: String(d?.captureId ?? ""),
     decision: d?.decision,
     fieldId: String(d?.fieldId ?? ""),
     password: String(d?.password ?? ""),
+    accessToken: d?.accessToken ? String(d.accessToken) : undefined,
     suspendMinutes: Math.max(1, Math.min(60, Number(d?.suspendMinutes ?? 5))),
     warningMessage: typeof d?.warningMessage === "string" ? d.warningMessage.slice(0, 500) : "",
   }))
   .handler(async ({ data }) => {
     if (!isField(data.fieldId)) throw new Error("Invalid field");
     if (!["approve", "reject", "ban", "suspend", "warning"].includes(data.decision)) throw new Error("Invalid decision");
-    if (!data.password || data.password.length > 200) throw new Error("Invalid password");
+    if (!data.accessToken && (!data.password || data.password.length > 200)) throw new Error("Invalid password");
 
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const ok = await verifyMarshalAccess(data.fieldId, data.password);
+    const ok = await verifyMarshalAccess(data.fieldId, data.password, data.accessToken);
     if (!ok) throw new Error("Unauthorized");
 
     const { data: cap } = await supabaseAdmin
@@ -371,14 +376,15 @@ export const spartanopsAcknowledgeWarning = createServerFn({ method: "POST" })
  * is verified server-side; the RPC is no longer callable from anon/authenticated.
  */
 export const spartanopsListSuspiciousCaptures = createServerFn({ method: "POST" })
-  .inputValidator((d: { fieldId: string; password: string }) => ({
+  .inputValidator((d: { fieldId: string; password: string; accessToken?: string }) => ({
     fieldId: String(d?.fieldId ?? ""),
     password: String(d?.password ?? ""),
+    accessToken: d?.accessToken ? String(d.accessToken) : undefined,
   }))
   .handler(async ({ data }) => {
     if (!isField(data.fieldId)) throw new Error("Invalid field");
-    if (!data.password || data.password.length > 200) throw new Error("Invalid password");
-    const ok = await verifyMarshalAccess(data.fieldId, data.password);
+    if (!data.accessToken && (!data.password || data.password.length > 200)) throw new Error("Invalid password");
+    const ok = await verifyMarshalAccess(data.fieldId, data.password, data.accessToken);
     if (!ok) throw new Error("Unauthorized");
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { data: rows, error } = await supabaseAdmin
