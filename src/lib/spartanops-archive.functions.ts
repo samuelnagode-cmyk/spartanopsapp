@@ -32,9 +32,16 @@ export type SpartanOpsArchiveRow = {
 
 export const listArchivedMissions = createServerFn({ method: "GET" }).handler(async () => {
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+  const { data: account } = await supabaseAdmin
+    .from("spartanops_accounts" as any)
+    .select("id")
+    .eq("is_platform_showcase", true)
+    .maybeSingle();
+  if (!account) return [];
   const { data, error } = await supabaseAdmin
     .from("spartanops_archived_missions" as any)
-    .select("id,lobby_id,field_name,event_name,location,city,country,gamemode,final_scores,winner_team,mission_state,player_count,capture_count,started_at,decommissioned_at")
+    .select("id,lobby_id,field_name,event_name,location,city,country,gamemode,final_scores,winner_team,mission_state,player_count,capture_count,started_at,decommissioned_at,account_id")
+    .eq("account_id", (account as any).id)
     .order("decommissioned_at", { ascending: false });
   if (error) throw new Error(error.message);
   return ((data ?? []) as any[]).map((r): SpartanOpsArchiveRow => ({
