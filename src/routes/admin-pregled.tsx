@@ -662,6 +662,7 @@ function AdminPage() {
 
         {section === "fields" && !creating && !activeField && !marshalActiveLobby && (
           <FieldsWelcome
+            onCreate={() => setCreating(true)}
             onOpenAccountMission={(m) =>
               setMarshalPromptLobby({
                 id: m.id,
