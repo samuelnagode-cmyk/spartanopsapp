@@ -338,9 +338,10 @@ export const listEventCancellations = createServerFn({ method: "GET" }).handler(
  * Marshal-authenticated roster fetch including PII.
  */
 export const spartanopsAdminGetRoster = createServerFn({ method: "POST" })
-  .inputValidator((d: { fieldId: string; password: string }) => ({
+  .inputValidator((d: { fieldId: string; password: string; accessToken?: string }) => ({
     fieldId: String(d?.fieldId ?? ""),
     password: String(d?.password ?? ""),
+    accessToken: d?.accessToken ? String(d.accessToken) : undefined,
   }))
   .handler(async ({ data }) => {
     if (!isField(data.fieldId)) throw new Error("Invalid field");

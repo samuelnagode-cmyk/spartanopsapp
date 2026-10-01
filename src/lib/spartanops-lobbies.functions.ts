@@ -177,14 +177,19 @@ export const listAllLobbies = createServerFn({ method: "POST" })
 
 /** Fetch a single lobby (admin/marshal view). Requires master or the lobby's marshal password. */
 export const getLobby = createServerFn({ method: "POST" })
-  .inputValidator((d: { id: string; authPassword: string }) => ({
+  .inputValidator((d: { id: string; authPassword: string; accessToken?: string }) => ({
     id: String(d?.id ?? ""),
     authPassword: String(d?.authPassword ?? ""),
+    accessToken: d?.accessToken ? String(d.accessToken) : undefined,
   }))
   .handler(async ({ data }) => {
     if (!data.id) return null;
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     let authorized = checkMaster(data.authPassword);
+    if (!authorized) {
+      const { isVerifiedLobbyOwner } = await import("./spartanops-owner-auth");
+      authorized = await isVerifiedLobbyOwner(data.id, data.accessToken);
+    }
     if (!authorized) {
       const { data: ok } = await supabaseAdmin.rpc("spartanops_verify_lobby_password" as any, {
         p_lobby_id: data.id,
@@ -275,15 +280,20 @@ type UpdatePatch = Partial<
 };
 
 export const updateLobbyServer = createServerFn({ method: "POST" })
-  .inputValidator((d: { id: string; patch: UpdatePatch; authPassword: string }) => ({
+  .inputValidator((d: { id: string; patch: UpdatePatch; authPassword: string; accessToken?: string }) => ({
     id: String(d?.id ?? ""),
     patch: d?.patch ?? {},
     authPassword: String(d?.authPassword ?? ""),
+    accessToken: d?.accessToken ? String(d.accessToken) : undefined,
   }))
   .handler(async ({ data }) => {
     if (!data.id) throw new Error("id required");
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     let authorized = checkMaster(data.authPassword);
+    if (!authorized) {
+      const { isVerifiedLobbyOwner } = await import("./spartanops-owner-auth");
+      authorized = await isVerifiedLobbyOwner(data.id, data.accessToken);
+    }
     if (!authorized) {
       const { data: ok } = await supabaseAdmin.rpc("spartanops_verify_lobby_password" as any, {
         p_lobby_id: data.id,
@@ -402,12 +412,17 @@ export const updateLobbyServer = createServerFn({ method: "POST" })
 
 /** Verify a player's or marshal's password. */
 export const verifyLobbyPassword = createServerFn({ method: "POST" })
-  .inputValidator((d: { id: string; password: string; kind: "player" | "marshal" }) => ({
+  .inputValidator((d: { id: string; password: string; kind: "player" | "marshal"; accessToken?: string }) => ({
     id: String(d?.id ?? ""),
     password: String(d?.password ?? ""),
     kind: d?.kind === "marshal" ? "marshal" : "player",
+    accessToken: d?.accessToken ? String(d.accessToken) : undefined,
   }))
   .handler(async ({ data }) => {
+    if (data.kind === "marshal" && data.id) {
+      const { isVerifiedLobbyOwner } = await import("./spartanops-owner-auth");
+      if (await isVerifiedLobbyOwner(data.id, data.accessToken)) return { ok: true };
+    }
     if (!data.id || !data.password) return { ok: false };
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { data: ok } = await supabaseAdmin.rpc("spartanops_verify_lobby_password" as any, {
@@ -420,18 +435,22 @@ export const verifyLobbyPassword = createServerFn({ method: "POST" })
 
 /** Delete every player registered in this lobby (used by "delete all players" button). */
 export const deleteLobbyPlayers = createServerFn({ method: "POST" })
-  .inputValidator((d: { id: string; marshalPassword: string }) => ({
+  .inputValidator((d: { id: string; marshalPassword: string; accessToken?: string }) => ({
     id: String(d?.id ?? ""),
     marshalPassword: String(d?.marshalPassword ?? ""),
+    accessToken: d?.accessToken ? String(d.accessToken) : undefined,
   }))
   .handler(async ({ data }) => {
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const { data: ok } = await supabaseAdmin.rpc("spartanops_verify_lobby_password" as any, {
-      p_lobby_id: data.id,
-      p_password: data.marshalPassword,
-      p_kind: "marshal",
-    });
-    if (ok !== true) throw new Error("Unauthorized");
+    const { isVerifiedLobbyOwner } = await import("./spartanops-owner-auth");
+    if (!(await isVerifiedLobbyOwner(data.id, data.accessToken))) {
+      const { data: ok } = await supabaseAdmin.rpc("spartanops_verify_lobby_password" as any, {
+        p_lobby_id: data.id,
+        p_password: data.marshalPassword,
+        p_kind: "marshal",
+      });
+      if (ok !== true) throw new Error("Unauthorized");
+    }
     const { error } = await supabaseAdmin.rpc("spartanops_delete_lobby_players" as any, { p_lobby_id: data.id });
     if (error) throw new Error(error.message);
     return { ok: true };
@@ -439,18 +458,22 @@ export const deleteLobbyPlayers = createServerFn({ method: "POST" })
 
 /** Full decommission — deletes lobby + checkins + captures + game state. */
 export const deleteLobbyServer = createServerFn({ method: "POST" })
-  .inputValidator((d: { id: string; marshalPassword: string }) => ({
+  .inputValidator((d: { id: string; marshalPassword: string; accessToken?: string }) => ({
     id: String(d?.id ?? ""),
     marshalPassword: String(d?.marshalPassword ?? ""),
+    accessToken: d?.accessToken ? String(d.accessToken) : undefined,
   }))
   .handler(async ({ data }) => {
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const { data: ok } = await supabaseAdmin.rpc("spartanops_verify_lobby_password" as any, {
-      p_lobby_id: data.id,
-      p_password: data.marshalPassword,
-      p_kind: "marshal",
-    });
-    if (ok !== true) throw new Error("Unauthorized");
+    const { isVerifiedLobbyOwner } = await import("./spartanops-owner-auth");
+    if (!(await isVerifiedLobbyOwner(data.id, data.accessToken))) {
+      const { data: ok } = await supabaseAdmin.rpc("spartanops_verify_lobby_password" as any, {
+        p_lobby_id: data.id,
+        p_password: data.marshalPassword,
+        p_kind: "marshal",
+      });
+      if (ok !== true) throw new Error("Unauthorized");
+    }
     await hardDeleteLobbyById(supabaseAdmin, data.id);
     return { ok: true };
   });
