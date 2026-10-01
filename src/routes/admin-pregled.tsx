@@ -1843,7 +1843,7 @@ function MarshalPasswordPrompt({ lobby, onClose, onSuccess }: { lobby: LobbyReco
   );
 }
 
-export async function getFreshOwnerAccessToken(): Promise<string | undefined> {
+async function getFreshOwnerAccessToken(): Promise<string | undefined> {
   const { data } = await supabase.auth.getSession();
   return data.session?.access_token;
 }
