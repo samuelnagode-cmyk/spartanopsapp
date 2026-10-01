@@ -381,23 +381,112 @@ function ActiveMissionChangeBanner() {
     };
   }, [field, preview, getAccountIdFn]);
 
+  const upsertCheckinFn = useServerFn(spartanopsUpsertCheckin);
+  const [collapsed, setCollapsed] = useState(false);
+  const [joining, setJoining] = useState(false);
+  const [headerOffset, setHeaderOffset] = useState(0);
+
+  // Expand again whenever a new switch signal arrives.
+  useEffect(() => { if (newLobbyId) setCollapsed(false); }, [newLobbyId]);
+
+  // Measure the real site header so the expanded banner sits below it.
+  useEffect(() => {
+    if (!newLobbyId) return;
+    const measure = () => {
+      const h = document.querySelector("header") as HTMLElement | null;
+      setHeaderOffset(h ? Math.max(0, h.getBoundingClientRect().bottom) : 0);
+    };
+    measure();
+    window.addEventListener("resize", measure);
+    return () => window.removeEventListener("resize", measure);
+  }, [newLobbyId]);
+
+  const goToNewMission = async () => {
+    if (!newLobbyId || joining) return;
+    setJoining(true);
+    try {
+      const raw = localStorage.getItem("spartanops:player-profile");
+      if (raw) {
+        const saved = JSON.parse(raw);
+        const newSessionId = getOrMakeSession();
+        if (saved?.callsign && newSessionId) {
+          await upsertCheckinFn({
+            data: {
+              fieldId: newLobbyId,
+              sessionId: newSessionId,
+              callsign: saved.callsign,
+              firstName: saved.firstName || null,
+              lastInitial: saved.lastInitial || null,
+              club: saved.club || null,
+              phoneNumber: saved.phone || null,
+              experienceLevel: saved.experience || "dobro",
+              operatorType: saved.operatorType || "AEG",
+              assignedTeam: "none",
+            },
+          });
+        }
+      }
+    } catch { /* fall through to normal registration on the new mission */ }
+    window.location.href = `/misija?field=${encodeURIComponent(newLobbyId)}`;
+  };
+
   if (!newLobbyId) return null;
+  const joinLabel = joining ? "..." : `[ ${en ? "JOIN NEW MISSION" : "PRIDRUŽI SE NOVI MISIJI"} ]`;
+
+  if (collapsed) {
+    return (
+      <div
+        className="fixed z-[2000] flex items-center gap-1"
+        style={{ bottom: 16, left: "50%", transform: "translateX(-50%)", background: "#141008", border: `2px solid ${ACCENT}`, boxShadow: "0 4px 24px rgba(0,0,0,0.6)" }}
+      >
+        <button
+          type="button"
+          onClick={() => setCollapsed(false)}
+          aria-label={en ? "Show new mission message" : "Prikaži sporočilo o novi misiji"}
+          className="font-mono text-[11px] font-bold uppercase tracking-widest"
+          style={{ color: ACCENT, padding: "10px 12px" }}
+        >
+          ● {en ? "NEW MISSION" : "NOVA MISIJA"}
+        </button>
+        <button
+          type="button"
+          onClick={goToNewMission}
+          disabled={joining}
+          className="font-mono text-[11px] font-bold uppercase tracking-widest"
+          style={{ background: ACCENT, color: "#0a0a0a", padding: "10px 12px" }}
+        >
+          {joining ? "..." : en ? "JOIN" : "PRIDRUŽI"}
+        </button>
+      </div>
+    );
+  }
+
   return (
     <div
       role="alert"
-      className="fixed left-0 right-0 top-0 z-[2000] flex flex-col items-center gap-2 p-3 text-center"
-      style={{ background: "#141008", borderBottom: `2px solid ${ACCENT}`, boxShadow: "0 4px 24px rgba(0,0,0,0.6)" }}
+      className="fixed left-0 right-0 z-[2000] flex flex-col items-center gap-2 p-3 text-center"
+      style={{ top: headerOffset, background: "#141008", borderBottom: `2px solid ${ACCENT}`, boxShadow: "0 4px 24px rgba(0,0,0,0.6)" }}
     >
-      <p style={{ fontFamily: "'Michroma', monospace", fontSize: 13, color: ACCENT, letterSpacing: "0.12em", textTransform: "uppercase", fontWeight: 700 }}>
+      <button
+        type="button"
+        onClick={() => setCollapsed(true)}
+        aria-label={en ? "Collapse" : "Skrči"}
+        className="absolute font-mono text-xs"
+        style={{ top: 6, right: 10, color: ACCENT, padding: 6 }}
+      >
+        ▲
+      </button>
+      <p style={{ fontFamily: "'Michroma', monospace", fontSize: 13, color: ACCENT, letterSpacing: "0.12em", textTransform: "uppercase", fontWeight: 700, paddingRight: 24 }}>
         {en ? "The marshal has started a new mission" : "Maršal je zagnal novo misijo"}
       </p>
       <button
         type="button"
-        onClick={() => { window.location.href = `/misija?field=${encodeURIComponent(newLobbyId)}`; }}
+        onClick={goToNewMission}
+        disabled={joining}
         className="font-mono text-xs font-bold uppercase tracking-widest"
         style={{ background: ACCENT, color: "#0a0a0a", padding: "8px 16px" }}
       >
-        [ {en ? "JOIN NEW MISSION" : "PRIDRUŽI SE NOVI MISIJI"} ]
+        {joinLabel}
       </button>
     </div>
   );
@@ -1675,6 +1764,22 @@ function CheckinForm({ sessionId, fieldId, preview, onGhost, fieldLabel }: { ses
   const [submitting, setSubmitting] = useState(false);
   const [spartacusCleared, setSpartacusCleared] = useState(false);
 
+  // Global "remember me": pre-fill from the last successful registration.
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem("spartanops:player-profile");
+      if (!raw) return;
+      const saved = JSON.parse(raw);
+      if (saved.callsign) setCallsign((v) => v || saved.callsign);
+      if (saved.firstName) setFirstName((v) => v || saved.firstName);
+      if (saved.lastInitial) setLastInitial((v) => v || saved.lastInitial);
+      if (saved.club) setClub((v) => v || saved.club);
+      if (saved.phone) setPhone((v) => v || saved.phone);
+      if (saved.experience) setExp(saved.experience);
+      if (saved.operatorType) setOperatorType(saved.operatorType);
+    } catch { /* ignore */ }
+  }, []);
+
   const activeField = (fieldLabel ?? fieldId ?? "").toString().toUpperCase();
   const t = {
     title: en ? "MISSION DEPLOYMENT REGISTRATION" : "PRIJAVA NA MISIJO",
@@ -1739,6 +1844,20 @@ function CheckinForm({ sessionId, fieldId, preview, onGhost, fieldLabel }: { ses
           lastInitial: li || null,
         },
       });
+      try {
+        localStorage.setItem(
+          "spartanops:player-profile",
+          JSON.stringify({
+            callsign: cs,
+            firstName: firstName.trim(),
+            lastInitial: li,
+            club: club.trim(),
+            phone: phone.trim(),
+            experience: exp,
+            operatorType,
+          }),
+        );
+      } catch { /* ignore */ }
       // Force a full reload so iOS Safari (where the realtime channel can lag
       // right after the POST) reliably hydrates the check-in and drops the
       // player straight into the team-selection view.
