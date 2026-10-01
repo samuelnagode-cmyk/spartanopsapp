@@ -10,6 +10,7 @@ import { isStaleState } from "@/lib/game-state-sync";
 import { spartanopsAckTeamChange, spartanopsSelectTeam, spartanopsTickScores } from "@/lib/spartanops-game.functions";
 import { spartanopsUpsertCheckin, spartanopsGetMyCheckin, spartanopsDeleteMyCheckin, spartanopsGetParticipantRoster, spartanopsGetServerTime, spartanopsGetRespawnLock } from "@/lib/spartanops-checkin.functions";
 import { spartanopsAcknowledgeWarning } from "@/lib/spartanops-spartacus.functions";
+import { spartanopsGetLobbyAccountId } from "@/lib/spartanops-lobbies.functions";
 import { SpartacusAlerts } from "@/components/SpartanOpsConsole";
 import { MissionRulesAccordion, MissionDescriptionCard, CollapsibleCard } from "@/components/MissionRulesAccordion";
 
@@ -338,6 +339,71 @@ function makePreviewCaptures(): Capture[] {
 }
 
 function MisijaPage() {
+  return (
+    <>
+      <MisijaPageInner />
+      <ActiveMissionChangeBanner />
+    </>
+  );
+}
+
+// Listens for the account's active-mission pointer changing and offers (never
+// forces) a jump to the new mission. Independent of every other subscription.
+function ActiveMissionChangeBanner() {
+  const { lang } = useLang();
+  const en = lang === "en";
+  const { field: rawField, preview } = Route.useSearch();
+  const field = useMemo(() => toDbField(rawField), [rawField]);
+  const getAccountIdFn = useServerFn(spartanopsGetLobbyAccountId);
+  const [newLobbyId, setNewLobbyId] = useState<string | null>(null);
+
+  useEffect(() => {
+    setNewLobbyId(null);
+    if (preview || !field) return;
+    let alive = true;
+    let ch: ReturnType<typeof supabase.channel> | null = null;
+    getAccountIdFn({ data: { fieldId: field } })
+      .then((res) => {
+        if (!alive || !res?.accountId) return;
+        ch = supabase
+          .channel(`field:${res.accountId}`)
+          .on("broadcast", { event: "active_mission_changed" }, (msg: any) => {
+            const next = msg?.payload?.active_lobby_id;
+            if (typeof next === "string" && next && next !== field) setNewLobbyId(next);
+            else if (next === field) setNewLobbyId(null);
+          })
+          .subscribe();
+      })
+      .catch(() => { /* lookup failure: no banner, mission unaffected */ });
+    return () => {
+      alive = false;
+      if (ch) supabase.removeChannel(ch);
+    };
+  }, [field, preview, getAccountIdFn]);
+
+  if (!newLobbyId) return null;
+  return (
+    <div
+      role="alert"
+      className="fixed left-0 right-0 top-0 z-[2000] flex flex-col items-center gap-2 p-3 text-center"
+      style={{ background: "#141008", borderBottom: `2px solid ${ACCENT}`, boxShadow: "0 4px 24px rgba(0,0,0,0.6)" }}
+    >
+      <p style={{ fontFamily: "'Michroma', monospace", fontSize: 13, color: ACCENT, letterSpacing: "0.12em", textTransform: "uppercase", fontWeight: 700 }}>
+        {en ? "The marshal has started a new mission" : "Maršal je zagnal novo misijo"}
+      </p>
+      <button
+        type="button"
+        onClick={() => { window.location.href = `/misija?field=${encodeURIComponent(newLobbyId)}`; }}
+        className="font-mono text-xs font-bold uppercase tracking-widest"
+        style={{ background: ACCENT, color: "#0a0a0a", padding: "8px 16px" }}
+      >
+        [ {en ? "JOIN NEW MISSION" : "PRIDRUŽI SE NOVI MISIJI"} ]
+      </button>
+    </div>
+  );
+}
+
+function MisijaPageInner() {
   const { lang } = useLang();
   const t = useT();
   const en = lang === "en";

@@ -491,3 +491,17 @@ export const masterDeleteLobby = createServerFn({ method: "POST" })
     await hardDeleteLobbyById(supabaseAdmin, data.id);
     return { ok: true };
   });
+
+/** Resolve which account owns a mission (players are not Supabase-authenticated). */
+export const spartanopsGetLobbyAccountId = createServerFn({ method: "GET" })
+  .inputValidator((d: { fieldId: string }) => ({ fieldId: String(d?.fieldId ?? "") }))
+  .handler(async ({ data }) => {
+    if (!data.fieldId) return { accountId: null };
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data: row } = await supabaseAdmin
+      .from("spartanops_lobbies")
+      .select("account_id")
+      .eq("id", data.fieldId)
+      .maybeSingle();
+    return { accountId: (row as any)?.account_id ?? null };
+  });
