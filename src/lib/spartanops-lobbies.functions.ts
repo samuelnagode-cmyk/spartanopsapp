@@ -134,6 +134,33 @@ export const listPublishedLobbies = createServerFn({ method: "GET" }).handler(as
   return (data ?? []).map(mapRow);
 });
 
+/** Published lobbies owned by the platform-showcase account only (public /spartanops). */
+export const listShowcaseLobbies = createServerFn({ method: "GET" }).handler(async () => {
+  const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+  const { data: account } = await supabaseAdmin
+    .from("spartanops_accounts" as any)
+    .select("id")
+    .eq("is_platform_showcase", true)
+    .maybeSingle();
+  if (!account) return [];
+  // The public view has no owner column, so resolve the account's lobby ids first.
+  const { data: owned, error: ownErr } = await supabaseAdmin
+    .from("spartanops_lobbies")
+    .select("id")
+    .eq("account_id", (account as any).id);
+  if (ownErr) throw new Error(ownErr.message);
+  const ids = (owned ?? []).map((r: any) => r.id);
+  if (ids.length === 0) return [];
+  const { data, error } = await supabaseAdmin
+    .from("spartanops_lobbies_public" as any)
+    .select(LOBBY_LIST_COLUMNS)
+    .in("id", ids)
+    .order("created_at", { ascending: false })
+    .limit(60);
+  if (error) throw new Error(error.message);
+  return (data ?? []).map(mapRow);
+});
+
 /** Full listing including unpublished — used by the admin panel. Requires the master password. */
 export const listAllLobbies = createServerFn({ method: "POST" })
   .inputValidator((d: { masterPassword: string }) => ({ masterPassword: String(d?.masterPassword ?? "") }))

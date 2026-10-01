@@ -4,7 +4,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { Crosshair, QrCode, Users, MapPin, ArrowRight, Printer, CheckCircle2, Flag, Skull, Target } from "lucide-react";
 import { SYSTEM_FIELD, dtoToRecord } from "./admin-pregled";
 import { getOperationalTelemetry, type OperationalTelemetry } from "@/lib/spartanops-telemetry.functions";
-import { listPublishedLobbies } from "@/lib/spartanops-lobbies.functions";
+import { listShowcaseLobbies } from "@/lib/spartanops-lobbies.functions";
 import { flagFor } from "@/lib/countries";
 import { missionTitle } from "@/lib/mission-title";
 import { spartanDevlogEntries, useT } from "@/lib/i18n";
@@ -422,7 +422,7 @@ function regionWithFlag(r: { city?: string; country?: string; location?: string 
 
 function Locations() {
   const navigate = useNavigate();
-  const listFn = useServerFn(listPublishedLobbies);
+  const listFn = useServerFn(listShowcaseLobbies);
   // Hydrate from cache after mount (never in the initializer — that would
   // desync the SSR markup) so the section never flashes "no operations".
   const [rows, setRows] = useState<OpRow[]>([]);
