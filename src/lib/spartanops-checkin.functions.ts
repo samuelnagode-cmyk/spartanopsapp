@@ -470,3 +470,18 @@ export const spartanopsGetOwnCheckinTeam = createServerFn({ method: "POST" })
       .maybeSingle();
     return { callsign: row?.callsign ?? null, assigned_team: row?.assigned_team ?? null };
   });
+
+export const spartanopsVerifyFieldPassword = createServerFn({ method: "POST" })
+  .inputValidator((d: { accountId: string; password: string }) => ({
+    accountId: String(d?.accountId ?? ""),
+    password: String(d?.password ?? ""),
+  }))
+  .handler(async ({ data }) => {
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data: ok, error } = await supabaseAdmin.rpc("spartanops_verify_field_password" as any, {
+      p_account_id: data.accountId,
+      p_password: data.password,
+    });
+    if (error) throw new Error(error.message);
+    return { ok: ok === true };
+  });
