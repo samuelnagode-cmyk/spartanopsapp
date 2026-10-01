@@ -662,16 +662,6 @@ function AdminPage() {
 
         {section === "fields" && !creating && !activeField && !marshalActiveLobby && (
           <FieldsWelcome
-            customLobbies={customLobbies}
-            lobbiesLoaded={lobbiesLoaded}
-            isEditMode={isEditMode}
-            onCreate={() => setCreating(true)}
-            onUseExisting={scrollToList}
-            onOpenLobby={(id) => {
-              const l = customLobbies.find((x) => x.id === id);
-              if (l) setMarshalPromptLobby(l);
-            }}
-            onDecommissionLobby={handleDecommissionLobby}
             onOpenAccountMission={(m) =>
               setMarshalPromptLobby({
                 id: m.id,
@@ -1416,7 +1406,7 @@ function AccountMissionsSection({ en, onOpenMission }: { en: boolean; onOpenMiss
         </div>
       )}
       <p style={{ fontFamily: "monospace", fontSize: 10, letterSpacing: "0.30em", color: ACCENT, marginBottom: 14, textTransform: "uppercase" }}>
-        {en ? "// YOUR MISSIONS (ACCOUNT)" : "// TVOJE MISIJE (RAČUN)"}
+        {en ? "// YOUR MISSIONS" : "// TVOJE MISIJE"}
       </p>
       {err ? (
         <p style={{ color: "#d97a6c", fontSize: 12 }}>{err}</p>
@@ -1446,19 +1436,52 @@ function AccountMissionsSection({ en, onOpenMission }: { en: boolean; onOpenMiss
 }
 
 function FieldsWelcome({
-  customLobbies, lobbiesLoaded, isEditMode, onCreate, onUseExisting, onOpenLobby, onDecommissionLobby, onOpenAccountMission,
+  onCreate, onOpenAccountMission,
 }: {
-  customLobbies: LobbyRecord[];
-  lobbiesLoaded: boolean;
-  isEditMode: boolean;
   onCreate: () => void;
-  onUseExisting: () => void;
-  onOpenLobby: (id: string) => void;
-  onDecommissionLobby: (id: string) => void;
   onOpenAccountMission: (m: AccountLobby) => void;
 }) {
   const { lang } = useLang();
   const en = lang === "en";
+  const [authed, setAuthed] = useState<boolean | null>(null);
+
+  useEffect(() => {
+    const { data: sub } = supabase.auth.onAuthStateChange((_e, session) => {
+      setAuthed(!!session?.user);
+    });
+    supabase.auth.getUser().then(({ data }) => setAuthed(!!data.user));
+    return () => sub.subscription.unsubscribe();
+  }, []);
+
+  if (authed === null) return null;
+
+  if (!authed) {
+    return (
+      <div style={{ textAlign: "center", maxWidth: 480, margin: "60px auto" }}>
+        <p style={{ fontFamily: "monospace", fontSize: 11, letterSpacing: "0.30em", color: ACCENT, marginBottom: 14, textTransform: "uppercase" }}>
+          {en ? "// MARSHAL LOGIN REQUIRED" : "// ZAHTEVANA PRIJAVA MARŠALA"}
+        </p>
+        <p style={{ fontSize: 13, color: MUTED, lineHeight: 1.7, marginBottom: 20 }}>
+          {en
+            ? "Log in or create a marshal account to create and manage your missions."
+            : "Prijavi se ali ustvari račun maršala za ustvarjanje in upravljanje svojih misij."}
+        </p>
+        <Link
+          to="/marshal-account"
+          style={{
+            display: "inline-block",
+            background: ACCENT, color: BG, border: "none",
+            padding: "14px 24px", fontFamily: "'Michroma', monospace",
+            fontSize: 12, letterSpacing: "0.20em", textTransform: "uppercase",
+            fontWeight: 700, textDecoration: "none",
+          }}
+        >
+          {en ? "[ LOG IN / SIGN UP ]" : "[ PRIJAVA / REGISTRACIJA ]"}
+        </Link>
+      </div>
+    );
+  }
+
   return (
     <>
       {/* Deployment onboarding */}
@@ -1484,109 +1507,9 @@ function FieldsWelcome({
         >
           {en ? "[ + CREATE NEW MISSION ]" : "[ + USTVARI NOVO MISIJO ]"}
         </button>
-        <button
-          onClick={onUseExisting}
-          style={{
-            background: "transparent", color: ACCENT,
-            border: `1px solid ${ACCENT}`, padding: "15px 18px",
-            fontFamily: "'Michroma', monospace",
-            fontSize: 12, letterSpacing: "0.20em", textTransform: "uppercase",
-            fontWeight: 600, cursor: "pointer",
-            display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 8,
-          }}
-        >
-          <span>[</span>
-          <ShieldCheck size={14} strokeWidth={1.8} />
-          <span>{en ? "USE EXISTING MISSION ]" : "UPORABI OBSTOJEČO MISIJO ]"}</span>
-        </button>
       </div>
-
 
       <AccountMissionsSection en={en} onOpenMission={onOpenAccountMission} />
-
-      {/* Existing missions list */}
-      <div id="fields-list" style={{ marginBottom: 40 }}>
-        <p style={{ fontFamily: "monospace", fontSize: 10, letterSpacing: "0.30em", color: MUTED, marginBottom: 14, textTransform: "uppercase" }}>
-          {en ? "// ACTIVE MISSIONS" : "// AKTIVNE MISIJE"}
-        </p>
-
-        {!lobbiesLoaded ? (
-          <MissionCardSkeletonGrid count={3} />
-        ) : customLobbies.length === 0 ? (
-          <div style={{ padding: "40px 20px", textAlign: "center", border: `1px dashed rgba(236,227,196,0.15)`, color: MUTED, fontSize: 13, fontStyle: "italic" }}>
-            No active fields on the network. Deploy a new one to get started.
-          </div>
-        ) : (
-          <div style={{ display: "grid", gap: 14, gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))" }}>
-            {customLobbies.map((l) => {
-              const city = l.city || (l.location?.split(",")[0]?.trim() ?? "");
-              const country = l.country || (l.location?.split(",")[1]?.trim() ?? "");
-              const status = l.published ? "ACTIVE" : "STANDBY";
-              const flag = flagFor(country);
-              const locationText = [city, country ? `${country}${flag ? `\u00A0${flag}` : ""}` : ""].filter(Boolean).join(", ") || l.location || "—";
-              const statusColor = l.published ? "#3ddc84" : ACCENT;
-              return (
-                <div key={l.id}
-                  style={{
-                    position: "relative",
-                    background: "linear-gradient(180deg, rgba(224,176,78,0.04) 0%, rgba(0,0,0,0) 60%), " + PANEL,
-                    border: `1px solid ${ACCENT}40`,
-                    padding: "20px 20px 18px",
-                    color: INK,
-                  }}>
-                  {isEditMode && (
-                    <button
-                      onClick={() => onDecommissionLobby(l.id)}
-                      aria-label="Decommission lobby"
-                      title="Decommission lobby"
-                      style={{
-                        position: "absolute", top: 8, right: 8,
-                        width: 30, height: 30, display: "grid", placeItems: "center",
-                        background: "transparent", color: DANGER,
-                        border: `1px solid ${DANGER}80`, cursor: "pointer",
-                      }}>
-                      <X size={14} strokeWidth={2.2} />
-                    </button>
-                  )}
-                  <button
-                    onClick={() => onOpenLobby(l.id)}
-                    style={{ background: "transparent", border: "none", color: INK, cursor: "pointer", textAlign: "left", padding: 0, width: "100%" }}
-                  >
-                    <div className="flex items-start justify-between gap-3 mb-4">
-                      <div className="shrink-0 grid place-items-center"
-                        style={{ width: 44, height: 44, background: `${ACCENT}14`, border: `1px solid ${ACCENT}`, color: ACCENT }}>
-                        <Crosshair size={20} strokeWidth={1.6} />
-                      </div>
-                      <span style={{
-                        fontFamily: "monospace", fontSize: 10, letterSpacing: "0.18em",
-                        color: statusColor, textTransform: "uppercase",
-                        border: `1px solid ${statusColor}55`, padding: "3px 8px",
-                      }}>
-                        {status}
-                      </span>
-                    </div>
-                    <p style={{ fontFamily: "'Michroma', monospace", fontSize: 12, letterSpacing: "0.14em", color: ACCENT, marginBottom: 8, textTransform: "uppercase", lineHeight: 1.55 }}>
-                      MISSION: {missionTitle(l)}
-                    </p>
-                    {l.fieldName && (
-                      <p style={{ fontFamily: "monospace", fontSize: 10.5, color: MUTED, letterSpacing: "0.14em", marginTop: 6, textTransform: "uppercase" }}>
-                        Field {l.fieldName}
-                      </p>
-                    )}
-                    <p style={{ fontSize: 12.5, color: "rgba(236,227,196,0.85)", lineHeight: 1.6, marginTop: 8 }}>
-                      Location: {locationText}
-                    </p>
-                  </button>
-                  
-                </div>
-
-              );
-            })}
-          </div>
-        )}
-      </div>
-
-
     </>
   );
 }
