@@ -1403,11 +1403,11 @@ function AccountMissionsSection({ en, onOpenMission }: { en: boolean; onOpenMiss
     // End-and-reset the previously active mission (same as "END AND RESET"):
     // clears captures and scores, returns it to lobby, keeps its players.
     if (activeLobbyId && activeLobbyId !== lobbyId) {
-      await updateFn({ data: { id: activeLobbyId, patch: { state: "pending" }, authPassword: "", accessToken: token } })
+      await updateLobbyServer({ data: { id: activeLobbyId, patch: { state: "pending" }, authPassword: "", accessToken: token } })
         .catch(() => undefined);
     }
     // Make sure the newly activated mission is open in the lobby so players can join.
-    await updateFn({ data: { id: lobbyId, patch: { state: "pending" }, authPassword: "", accessToken: token } })
+    await updateLobbyServer({ data: { id: lobbyId, patch: { state: "pending" }, authPassword: "", accessToken: token } })
       .catch(() => undefined);
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { error } = await (supabase.from("spartanops_accounts") as any)
