@@ -1764,6 +1764,22 @@ function CheckinForm({ sessionId, fieldId, preview, onGhost, fieldLabel }: { ses
   const [submitting, setSubmitting] = useState(false);
   const [spartacusCleared, setSpartacusCleared] = useState(false);
 
+  // Global "remember me": pre-fill from the last successful registration.
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem("spartanops:player-profile");
+      if (!raw) return;
+      const saved = JSON.parse(raw);
+      if (saved.callsign) setCallsign((v) => v || saved.callsign);
+      if (saved.firstName) setFirstName((v) => v || saved.firstName);
+      if (saved.lastInitial) setLastInitial((v) => v || saved.lastInitial);
+      if (saved.club) setClub((v) => v || saved.club);
+      if (saved.phone) setPhone((v) => v || saved.phone);
+      if (saved.experience) setExp(saved.experience);
+      if (saved.operatorType) setOperatorType(saved.operatorType);
+    } catch { /* ignore */ }
+  }, []);
+
   const activeField = (fieldLabel ?? fieldId ?? "").toString().toUpperCase();
   const t = {
     title: en ? "MISSION DEPLOYMENT REGISTRATION" : "PRIJAVA NA MISIJO",
@@ -1828,6 +1844,20 @@ function CheckinForm({ sessionId, fieldId, preview, onGhost, fieldLabel }: { ses
           lastInitial: li || null,
         },
       });
+      try {
+        localStorage.setItem(
+          "spartanops:player-profile",
+          JSON.stringify({
+            callsign: cs,
+            firstName: firstName.trim(),
+            lastInitial: li,
+            club: club.trim(),
+            phone: phone.trim(),
+            experience: exp,
+            operatorType,
+          }),
+        );
+      } catch { /* ignore */ }
       // Force a full reload so iOS Safari (where the realtime channel can lag
       // right after the POST) reliably hydrates the check-in and drops the
       // player straight into the team-selection view.
