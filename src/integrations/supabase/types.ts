@@ -208,21 +208,25 @@ export type Database = {
           business_name: string
           created_at: string
           id: string
+          is_platform_showcase: boolean
         }
         Insert: {
           business_name: string
           created_at?: string
           id: string
+          is_platform_showcase?: boolean
         }
         Update: {
           business_name?: string
           created_at?: string
           id?: string
+          is_platform_showcase?: boolean
         }
         Relationships: []
       }
       spartanops_archived_missions: {
         Row: {
+          account_id: string | null
           capture_count: number
           city: string | null
           countdown_seconds: number | null
@@ -248,6 +252,7 @@ export type Database = {
           winner_team: string | null
         }
         Insert: {
+          account_id?: string | null
           capture_count?: number
           city?: string | null
           countdown_seconds?: number | null
@@ -273,6 +278,7 @@ export type Database = {
           winner_team?: string | null
         }
         Update: {
+          account_id?: string | null
           capture_count?: number
           city?: string | null
           countdown_seconds?: number | null
@@ -297,7 +303,15 @@ export type Database = {
           updated_at?: string
           winner_team?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "spartanops_archived_missions_account_id_fkey"
+            columns: ["account_id"]
+            isOneToOne: false
+            referencedRelation: "spartanops_accounts"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       spartanops_captures: {
         Row: {

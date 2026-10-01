@@ -1347,22 +1347,46 @@ function AccountMissionsSection({ en, onOpenMission }: { en: boolean; onOpenMiss
     return () => sub.subscription.unsubscribe();
   }, []);
 
+  const [activeLobbyId, setActiveLobbyId] = useState<string | null>(null);
+  const [settingActive, setSettingActive] = useState(false);
+  const [refreshKey, setRefreshKey] = useState(0);
+
   useEffect(() => {
-    if (!userId) { setMissions(null); return; }
+    if (!userId) { setMissions(null); setActiveLobbyId(null); return; }
     let cancelled = false;
     (async () => {
-      const { data, error } = await supabase
-        .from("spartanops_lobbies")
-        .select("id, field_name, event_name")
-        .eq("account_id", userId)
-        .order("created_at", { ascending: false });
+      const [{ data, error }, acc] = await Promise.all([
+        supabase
+          .from("spartanops_lobbies")
+          .select("id, field_name, event_name")
+          .eq("account_id", userId)
+          .order("created_at", { ascending: false }),
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        (supabase.from("spartanops_accounts") as any)
+          .select("active_lobby_id")
+          .eq("id", userId)
+          .maybeSingle(),
+      ]);
       if (cancelled) return;
       if (error) { setErr(error.message); return; }
       setErr(null);
       setMissions((data ?? []) as AccountLobby[]);
+      setActiveLobbyId((acc?.data?.active_lobby_id as string | null) ?? null);
     })();
     return () => { cancelled = true; };
-  }, [userId]);
+  }, [userId, refreshKey]);
+
+  const setActiveMission = async (lobbyId: string) => {
+    if (!userId) return;
+    setSettingActive(true);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { error } = await (supabase.from("spartanops_accounts") as any)
+      .update({ active_lobby_id: lobbyId })
+      .eq("id", userId);
+    setSettingActive(false);
+    if (error) { setErr(error.message); return; }
+    setRefreshKey((k) => k + 1);
+  };
 
   useEffect(() => {
     if (!userId) { setBusiness(null); return; }
@@ -1426,7 +1450,24 @@ function AccountMissionsSection({ en, onOpenMission }: { en: boolean; onOpenMiss
               onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onOpenMission(m); } }}
               style={{ border: `1px solid ${ACCENT}33`, background: "rgba(0,0,0,0.25)", padding: "8px 10px", marginBottom: 6, fontFamily: "monospace", fontSize: 13, cursor: "pointer" }}
             >
-              <div>{m.field_name}</div>
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8 }}>
+                <span>{m.field_name}</span>
+                {activeLobbyId === m.id ? (
+                  <span style={{ fontSize: 9.5, letterSpacing: "0.15em", color: "#0b0b0b", background: ACCENT, padding: "2px 6px", whiteSpace: "nowrap" }}>
+                    {en ? "ACTIVE MISSION" : "AKTIVNA MISIJA"}
+                  </span>
+                ) : (
+                  <button
+                    type="button"
+                    disabled={settingActive}
+                    onClick={(e) => { e.stopPropagation(); setActiveMission(m.id); }}
+                    onKeyDown={(e) => e.stopPropagation()}
+                    style={{ background: "transparent", border: "none", color: ACCENT, textDecoration: "underline", cursor: "pointer", fontFamily: "monospace", fontSize: 11, whiteSpace: "nowrap", opacity: settingActive ? 0.5 : 1 }}
+                  >
+                    {en ? "Set as Active Mission" : "Nastavi kot aktivno"}
+                  </button>
+                )}
+              </div>
               {m.event_name && <div style={{ fontSize: 11.5, color: MUTED }}>{m.event_name}</div>}
             </li>
           ))}
