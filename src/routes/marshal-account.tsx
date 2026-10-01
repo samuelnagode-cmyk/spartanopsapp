@@ -225,6 +225,7 @@ function LoggedIn({ user, en }: { user: User; en: boolean }) {
       <button type="button" onClick={() => supabase.auth.signOut()} style={btnStyle}>
         {en ? "Log out" : "Odjava"}
       </button>
+      <FieldPasswordSection en={en} />
       <p style={{ marginTop: 18, padding: "10px 12px", border: `1px dashed ${ACCENT}55`, fontFamily: "monospace", fontSize: 11.5, lineHeight: 1.6, color: INK, opacity: 0.85 }}>
         <span style={{ color: ACCENT }}>ⓘ </span>
         {en
@@ -232,6 +233,41 @@ function LoggedIn({ user, en }: { user: User; en: boolean }) {
           : "Ta račun ti bo kmalu omogočil upravljanje vseh tvojih poligonov in misij na enem mestu. Ta del prihaja v naslednji posodobitvi."}
       </p>
     </div>
+  );
+}
+
+function FieldPasswordSection({ en }: { en: boolean }) {
+  const [value, setValue] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [msg, setMsg] = useState<string | null>(null);
+  const [err, setErr] = useState<string | null>(null);
+
+  const save = async (e: FormEvent) => {
+    e.preventDefault();
+    setMsg(null); setErr(null);
+    if (value.length < 3 || value.length > 200) {
+      setErr(en ? "Password must be 3–200 characters." : "Geslo mora imeti 3–200 znakov.");
+      return;
+    }
+    setBusy(true);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { error } = await (supabase.rpc as any)("spartanops_set_field_password", { p_password: value });
+    setBusy(false);
+    if (error) { setErr(error.message); return; }
+    setValue("");
+    setMsg(en ? "Field password saved." : "Geslo poligona shranjeno.");
+  };
+
+  return (
+    <form onSubmit={save} style={{ marginTop: 20 }}>
+      <label style={labelStyle}>{en ? "Field password (for players)" : "Geslo poligona (za igralce)"}</label>
+      <input style={inputStyle} type="password" autoComplete="new-password" maxLength={200} value={value} onChange={(e) => setValue(e.target.value)} />
+      {err && <p style={{ color: ERR, fontSize: 12, marginBottom: 10, textAlign: "center" }}>{err}</p>}
+      {msg && <p style={{ color: ACCENT, fontSize: 12, marginBottom: 10, textAlign: "center" }}>{msg}</p>}
+      <button type="submit" disabled={busy} style={{ ...btnStyle, opacity: busy ? 0.6 : 1 }}>
+        {en ? "Save" : "Shrani"}
+      </button>
+    </form>
   );
 }
 

@@ -205,24 +205,42 @@ export type Database = {
       }
       spartanops_accounts: {
         Row: {
+          active_lobby_id: string | null
           business_name: string
           created_at: string
           id: string
           is_platform_showcase: boolean
         }
         Insert: {
+          active_lobby_id?: string | null
           business_name: string
           created_at?: string
           id: string
           is_platform_showcase?: boolean
         }
         Update: {
+          active_lobby_id?: string | null
           business_name?: string
           created_at?: string
           id?: string
           is_platform_showcase?: boolean
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "spartanops_accounts_active_lobby_id_fkey"
+            columns: ["active_lobby_id"]
+            isOneToOne: false
+            referencedRelation: "spartanops_lobbies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "spartanops_accounts_active_lobby_id_fkey"
+            columns: ["active_lobby_id"]
+            isOneToOne: false
+            referencedRelation: "spartanops_lobbies_public"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       spartanops_archived_missions: {
         Row: {
