@@ -1843,6 +1843,11 @@ function MarshalPasswordPrompt({ lobby, onClose, onSuccess }: { lobby: LobbyReco
   );
 }
 
+export async function getFreshOwnerAccessToken(): Promise<string | undefined> {
+  const { data } = await supabase.auth.getSession();
+  return data.session?.access_token;
+}
+
 function MarshalLobbyConsole({ lobby: initialLobby, marshalPassword, lobbyPasswordCached = "", marshalPasswordCached = "", ownerAccessToken, onBack }: { lobby: LobbyRecord; marshalPassword: string; lobbyPasswordCached?: string; marshalPasswordCached?: string; ownerAccessToken?: string; onBack: () => void }) {
   const { lang } = useLang();
   const en = lang === "en";
@@ -1937,7 +1942,9 @@ function MarshalLobbyConsole({ lobby: initialLobby, marshalPassword, lobbyPasswo
     }
     if (p.password) dbPatch.password = p.password;
     if (p.marshalPassword) dbPatch.marshalPassword = p.marshalPassword;
-    updateFn({ data: { id: lobby.id, patch: dbPatch, authPassword: marshalPassword || getMasterPw(), accessToken: ownerAccessToken } }).catch((e) => console.error("[marshal] update failed", e));
+    (ownerAccessToken ? getFreshOwnerAccessToken() : Promise.resolve(undefined))
+      .then((accessToken) => updateFn({ data: { id: lobby.id, patch: dbPatch, authPassword: marshalPassword || getMasterPw(), accessToken } }))
+      .catch((e) => console.error("[marshal] update failed", e));
   };
 
   const startMission = async () => {
@@ -1972,7 +1979,8 @@ function MarshalLobbyConsole({ lobby: initialLobby, marshalPassword, lobbyPasswo
     setLobby((prev) => ({ ...prev, state: "paused" }));
     updateLobby(lobby.id, { state: "paused" });
     setGameState((prev) => prev ? { ...prev, status: "paused", updated_at: pausedIso } : prev);
-    updateFn({ data: { id: lobby.id, patch: { state: "paused" }, authPassword: marshalPassword || getMasterPw(), accessToken: ownerAccessToken } })
+    (ownerAccessToken ? getFreshOwnerAccessToken() : Promise.resolve(undefined))
+      .then((accessToken) => updateFn({ data: { id: lobby.id, patch: { state: "paused" }, authPassword: marshalPassword || getMasterPw(), accessToken } }))
       .catch((e) => console.error("[marshal] pause failed", e));
   };
   const resumeMission = () => {
@@ -1986,7 +1994,8 @@ function MarshalLobbyConsole({ lobby: initialLobby, marshalPassword, lobbyPasswo
     setLobby((prev) => ({ ...prev, state: "active", startedAt: nextStartedAt }));
     updateLobby(lobby.id, { state: "active", startedAt: nextStartedAt });
     setGameState((prev) => prev ? { ...prev, status: "active", match_started_at: nextStartedAtIso, updated_at: new Date(serverNow).toISOString() } : prev);
-    updateFn({ data: { id: lobby.id, patch: { state: "active", startedAt: nextStartedAtIso }, authPassword: marshalPassword || getMasterPw(), accessToken: ownerAccessToken } })
+    (ownerAccessToken ? getFreshOwnerAccessToken() : Promise.resolve(undefined))
+      .then((accessToken) => updateFn({ data: { id: lobby.id, patch: { state: "active", startedAt: nextStartedAtIso }, authPassword: marshalPassword || getMasterPw(), accessToken } }))
       .catch((e) => console.error("[marshal] resume failed", e));
   };
   const handleMatchPrimaryAction = () => {
@@ -2020,7 +2029,8 @@ function MarshalLobbyConsole({ lobby: initialLobby, marshalPassword, lobbyPasswo
       : `Izbriši vse prijavljene igralce iz "${lobby.fieldName}"? Drugi poligoni ostanejo nedotaknjeni.`
     )) return;
     try {
-      await deletePlayersFn({ data: { id: lobby.id, marshalPassword, accessToken: ownerAccessToken } });
+      const accessToken = ownerAccessToken ? await getFreshOwnerAccessToken() : undefined;
+      await deletePlayersFn({ data: { id: lobby.id, marshalPassword, accessToken } });
       setRegistered([]);
     } catch (e) {
       console.error("[marshal] deleteAllPlayers failed", e);
@@ -2033,7 +2043,8 @@ function MarshalLobbyConsole({ lobby: initialLobby, marshalPassword, lobbyPasswo
       : "Odstrani misijo? Izginila bo iz aktivnega seznama in javne strani za pridružitev."
     )) return;
     try {
-      await deleteLobbyServerFn({ data: { id: lobby.id, marshalPassword, accessToken: ownerAccessToken } });
+      const accessToken = ownerAccessToken ? await getFreshOwnerAccessToken() : undefined;
+      await deleteLobbyServerFn({ data: { id: lobby.id, marshalPassword, accessToken } });
       saveLobbies(loadLobbies().filter((l) => l.id !== lobby.id));
       onBack();
     } catch (e) {
@@ -2054,7 +2065,8 @@ function MarshalLobbyConsole({ lobby: initialLobby, marshalPassword, lobbyPasswo
     const load = async () => {
       if (!marshalPassword && !ownerAccessToken) return;
       try {
-        const res = await getAdminRoster({ data: { fieldId: lobby.id, password: marshalPassword, accessToken: ownerAccessToken } });
+        const accessToken = ownerAccessToken ? await getFreshOwnerAccessToken() : undefined;
+        const res = await getAdminRoster({ data: { fieldId: lobby.id, password: marshalPassword, accessToken } });
         if (!alive || !res?.ok) return;
         setRegistered((res.rows ?? []).map((r: any) => ({
           id: r.id,
@@ -2387,7 +2399,8 @@ function MarshalLobbyConsole({ lobby: initialLobby, marshalPassword, lobbyPasswo
     // Optimistic UI — realtime will reconcile.
     setRegistered((prev) => prev.map((p) => p.id === playerId ? { ...p, team: target } : p));
     try {
-      await reassignFn({ data: { fieldId: lobby.id, password: marshalPassword, checkinId: playerId, team: target, accessToken: ownerAccessToken } });
+      const accessToken = ownerAccessToken ? await getFreshOwnerAccessToken() : undefined;
+      await reassignFn({ data: { fieldId: lobby.id, password: marshalPassword, checkinId: playerId, team: target, accessToken } });
     } catch (e) {
       console.error("[marshal] swap failed", e);
     }
