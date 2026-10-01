@@ -242,7 +242,7 @@ function FieldPasswordSection({ en }: { en: boolean }) {
   const [msg, setMsg] = useState<string | null>(null);
   const [err, setErr] = useState<string | null>(null);
 
-  const save = async (e: React.FormEvent) => {
+  const save = async (e: FormEvent) => {
     e.preventDefault();
     setMsg(null); setErr(null);
     if (value.length < 3 || value.length > 200) {
