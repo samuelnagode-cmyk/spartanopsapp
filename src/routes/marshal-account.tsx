@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useState, type CSSProperties, type FormEvent } from "react";
 import type { SupabaseClient, User } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
@@ -219,7 +219,9 @@ function LoggedIn({ user, en }: { user: User; en: boolean }) {
       <p style={labelStyle}>{en ? "Business / field" : "Podjetje / poligon"}</p>
       <p style={{ fontFamily: "monospace", fontSize: 14, marginBottom: 20 }}>{business === null ? "…" : business || "—"}</p>
       {err && <p style={{ color: ERR, fontSize: 12, marginBottom: 10, textAlign: "center" }}>{err}</p>}
-      <MissionsBlock user={user} en={en} />
+      <Link to="/admin-pregled" style={{ ...btnStyle, display: "block", textAlign: "center", textDecoration: "none", marginBottom: 12 }}>
+        {en ? "Go to your missions" : "Pojdi na svoje misije"}
+      </Link>
       <button type="button" onClick={() => supabase.auth.signOut()} style={btnStyle}>
         {en ? "Log out" : "Odjava"}
       </button>

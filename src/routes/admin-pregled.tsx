@@ -38,6 +38,7 @@ import {
   masterDeleteLobby,
   verifyLobbyPassword,
   verifyMasterPassword,
+  getLobby,
   type LobbyDto,
 } from "@/lib/spartanops-lobbies.functions";
 import { spartanopsUpsertCheckin, spartanopsAdminGetRoster, spartanopsGetServerTime } from "@/lib/spartanops-checkin.functions";
@@ -671,6 +672,19 @@ function AdminPage() {
               if (l) setMarshalPromptLobby(l);
             }}
             onDecommissionLobby={handleDecommissionLobby}
+            onOpenAccountMission={(m) =>
+              setMarshalPromptLobby({
+                id: m.id,
+                fieldName: m.field_name,
+                eventName: m.event_name ?? undefined,
+                location: "",
+                gamemode: "domination",
+                matchDurationMinutes: 30,
+                countdownSeconds: 60,
+                createdAt: 0,
+                published: false,
+              })
+            }
           />
         )}
 
@@ -714,10 +728,20 @@ function AdminPage() {
         <MarshalPasswordPrompt
           lobby={marshalPromptLobby}
           onClose={() => setMarshalPromptLobby(null)}
-          onSuccess={(pw) => {
+          onSuccess={async (pw) => {
+            const prompt = marshalPromptLobby;
+            // Always load a fresh, complete record by id so the console works even
+            // for missions never cached on this device (account list → cross-device).
+            let full: LobbyRecord = prompt;
+            try {
+              const dto = await getLobby({ data: { id: prompt.id, authPassword: pw } });
+              if (dto) full = dtoToRecord(dto);
+            } catch (e) {
+              console.warn("[marshal] fresh lobby fetch failed, using cached record", e);
+            }
             setMarshalPasswordVerified(pw);
-            setLobbyPwCache((s) => ({ ...s, [marshalPromptLobby.id]: { ...s[marshalPromptLobby.id], marshal: pw } }));
-            setMarshalActiveLobby(marshalPromptLobby);
+            setLobbyPwCache((s) => ({ ...s, [prompt.id]: { ...s[prompt.id], marshal: pw } }));
+            setMarshalActiveLobby(full);
             setMarshalPromptLobby(null);
           }}
         />
@@ -1314,7 +1338,7 @@ function CreateFieldForm({ onCreated }: { onCreated: (rec: LobbyRecord, pws: { p
 type AccountLobby = { id: string; field_name: string; event_name: string | null };
 
 // Step 0.3: account-scoped mission list, shown alongside the local-cache list.
-function AccountMissionsSection({ en }: { en: boolean }) {
+function AccountMissionsSection({ en, onOpenMission }: { en: boolean; onOpenMission: (m: AccountLobby) => void }) {
   const [userId, setUserId] = useState<string | null>(null);
   const [ready, setReady] = useState(false);
   const [missions, setMissions] = useState<AccountLobby[] | null>(null);
@@ -1403,7 +1427,14 @@ function AccountMissionsSection({ en }: { en: boolean }) {
       ) : (
         <ul style={{ listStyle: "none", padding: 0, margin: 0 }}>
           {missions.map((m) => (
-            <li key={m.id} style={{ border: `1px solid ${ACCENT}33`, background: "rgba(0,0,0,0.25)", padding: "8px 10px", marginBottom: 6, fontFamily: "monospace", fontSize: 13 }}>
+            <li
+              key={m.id}
+              role="button"
+              tabIndex={0}
+              onClick={() => onOpenMission(m)}
+              onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onOpenMission(m); } }}
+              style={{ border: `1px solid ${ACCENT}33`, background: "rgba(0,0,0,0.25)", padding: "8px 10px", marginBottom: 6, fontFamily: "monospace", fontSize: 13, cursor: "pointer" }}
+            >
               <div>{m.field_name}</div>
               {m.event_name && <div style={{ fontSize: 11.5, color: MUTED }}>{m.event_name}</div>}
             </li>
@@ -1415,7 +1446,7 @@ function AccountMissionsSection({ en }: { en: boolean }) {
 }
 
 function FieldsWelcome({
-  customLobbies, lobbiesLoaded, isEditMode, onCreate, onUseExisting, onOpenLobby, onDecommissionLobby,
+  customLobbies, lobbiesLoaded, isEditMode, onCreate, onUseExisting, onOpenLobby, onDecommissionLobby, onOpenAccountMission,
 }: {
   customLobbies: LobbyRecord[];
   lobbiesLoaded: boolean;
@@ -1424,6 +1455,7 @@ function FieldsWelcome({
   onUseExisting: () => void;
   onOpenLobby: (id: string) => void;
   onDecommissionLobby: (id: string) => void;
+  onOpenAccountMission: (m: AccountLobby) => void;
 }) {
   const { lang } = useLang();
   const en = lang === "en";
@@ -1470,7 +1502,7 @@ function FieldsWelcome({
       </div>
 
 
-      <AccountMissionsSection en={en} />
+      <AccountMissionsSection en={en} onOpenMission={onOpenAccountMission} />
 
       {/* Existing missions list */}
       <div id="fields-list" style={{ marginBottom: 40 }}>
