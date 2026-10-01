@@ -2639,16 +2639,23 @@ function MarshalLobbyConsole({ lobby: initialLobby, marshalPassword, lobbyPasswo
           })()}</span>
         </div>
         {(() => {
-          // Pre-start countdown: shown only while the match is active but the
-          // start timestamp is still in the future (the pre-match window).
-          if (!gameState || state !== "active" || !gameState.match_started_at) return null;
+          // Pre-start countdown: shown while the match is active or paused, as long
+          // as the start timestamp is still in the future (the pre-match window).
+          // Freezes at the remaining time during a pause instead of disappearing.
+          if (!gameState || (state !== "active" && state !== "paused") || !gameState.match_started_at) return null;
           const startMs = new Date(gameState.match_started_at).getTime();
-          if (now >= startMs) return null;
-          const preLeft = Math.max(0, Math.ceil((startMs - now) / 1000));
+          const pausedAtMs = state === "paused" && gameState.updated_at
+            ? new Date(gameState.updated_at).getTime()
+            : null;
+          const effectiveNow = pausedAtMs ?? now;
+          if (effectiveNow >= startMs) return null;
+          const preLeft = Math.max(0, Math.ceil((startMs - effectiveNow) / 1000));
           return (
             <div style={{ marginBottom: 14, padding: "10px 12px", border: `1px solid ${ACCENT}55`, background: `${ACCENT}12`, textAlign: "center", fontFamily: "monospace", letterSpacing: "0.18em", textTransform: "uppercase" }}>
               <span style={{ fontSize: 10, color: MUTED, display: "block", marginBottom: 4 }}>
-                {en ? "⏳ GAME STARTS IN" : "⏳ IGRA SE ZAČNE ČEZ"}
+                {state === "paused"
+                  ? (en ? "⏸ GAME STARTS IN (PAUSED)" : "⏸ IGRA SE ZAČNE ČEZ (PREKINJENO)")
+                  : (en ? "⏳ GAME STARTS IN" : "⏳ IGRA SE ZAČNE ČEZ")}
               </span>
               <span style={{ fontSize: 22, fontWeight: 700, color: ACCENT }}>
                 {`${String(Math.floor(preLeft / 60)).padStart(2, "0")}:${String(preLeft % 60).padStart(2, "0")}`}
