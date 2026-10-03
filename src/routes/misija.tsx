@@ -423,6 +423,7 @@ function ActiveMissionChangeBanner() {
               experienceLevel: saved.experience || "dobro",
               operatorType: saved.operatorType || "AEG",
               assignedTeam: "none",
+              entryToken: readFieldEntryToken(),
             },
           });
         }
@@ -1750,10 +1751,19 @@ function AudioSettingsBlock({ en }: { en: boolean }) {
 
 
 
+function readFieldEntryToken(): string | undefined {
+  try {
+    const raw = localStorage.getItem("spartanops:field-entry");
+    const v = raw ? JSON.parse(raw) : null;
+    return typeof v?.token === "string" ? v.token : undefined;
+  } catch { return undefined; }
+}
+
 function CheckinForm({ sessionId, fieldId, preview, onGhost, fieldLabel }: { sessionId: string; fieldId: string; preview?: boolean; onGhost?: (m: Checkin) => void; fieldLabel?: string | null }) {
   const { lang } = useLang();
   const en = lang === "en";
   const upsertCheckinFn = useServerFn(spartanopsUpsertCheckin);
+  const getLobbyAccountIdFn = useServerFn(spartanopsGetLobbyAccountId);
   const deleteMyCheckinFn = useServerFn(spartanopsDeleteMyCheckin);
   const [callsign, setCallsign] = useState("");
   const [firstName, setFirstName] = useState("");
@@ -1844,6 +1854,7 @@ function CheckinForm({ sessionId, fieldId, preview, onGhost, fieldLabel }: { ses
           operatorType,
           firstName: firstName.trim() || null,
           lastInitial: li || null,
+          entryToken: readFieldEntryToken(),
         },
       });
       try {
@@ -1869,6 +1880,18 @@ function CheckinForm({ sessionId, fieldId, preview, onGhost, fieldLabel }: { ses
       }
       setSubmitting(false);
     } catch (e: any) {
+      if (String(e?.message ?? "").includes("field_entry_required")) {
+        try {
+          const r = await getLobbyAccountIdFn({ data: { fieldId } });
+          if (r?.accountId) {
+            window.location.assign(`/field?id=${encodeURIComponent(r.accountId)}&notice=entry`);
+            return;
+          }
+        } catch { /* fall through to the error message */ }
+        setSubmitting(false);
+        setErr(en ? "Enter the field password to join." : "Za vstop vnesi geslo poligona.");
+        return;
+      }
       setSubmitting(false);
       setErr(e?.message ?? "Napaka pri prijavi.");
     }
