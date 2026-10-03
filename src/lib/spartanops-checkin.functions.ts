@@ -510,7 +510,7 @@ export const spartanopsGetFieldPublicInfo = createServerFn({ method: "POST" })
 export const spartanopsEnterField = createServerFn({ method: "POST" })
   .inputValidator((d: { accountId: string; password: string }) => ({
     accountId: String(d?.accountId ?? ""),
-    password: String(d?.password ?? ""),
+    password: String(d?.password ?? "").trim().toLowerCase(),
   }))
   .handler(async ({ data }) => {
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
