@@ -1460,9 +1460,14 @@ function AccountMissionsSection({ en, onOpenMission }: { en: boolean; onOpenMiss
           </button>
         </div>
       )}
-      <p style={{ fontFamily: "monospace", fontSize: 10, letterSpacing: "0.30em", color: ACCENT, marginBottom: 14, textTransform: "uppercase" }}>
-        {en ? "// YOUR MISSIONS" : "// TVOJE MISIJE"}
-      </p>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 10, marginBottom: 14 }}>
+        <p style={{ fontFamily: "monospace", fontSize: 10, letterSpacing: "0.30em", color: ACCENT, margin: 0, textTransform: "uppercase" }}>
+          {en ? "// YOUR MISSIONS" : "// TVOJE MISIJE"}
+        </p>
+        <Link to="/field-qr" style={{ fontFamily: "monospace", fontSize: 10, letterSpacing: "0.16em", color: ACCENT, border: `1px solid ${ACCENT}66`, padding: "4px 8px", textDecoration: "none", textTransform: "uppercase" }}>
+          {en ? "Player QR" : "QR za igralce"}
+        </Link>
+      </div>
       {err ? (
         <p style={{ color: "#d97a6c", fontSize: 12 }}>{err}</p>
       ) : missions === null ? (

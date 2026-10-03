@@ -490,3 +490,35 @@ export const spartanopsVerifyFieldPassword = createServerFn({ method: "POST" })
     if (error) throw new Error(error.message);
     return { ok: ok === true };
   });
+
+export const spartanopsGetFieldPublicInfo = createServerFn({ method: "POST" })
+  .inputValidator((d: { code?: string; id?: string }) => ({
+    code: String(d?.code ?? "").trim().toUpperCase(),
+    id: String(d?.id ?? "").trim(),
+  }))
+  .handler(async ({ data }) => {
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    let q = supabaseAdmin.from("spartanops_accounts").select("id, business_name, field_password_hash");
+    if (/^[A-Z2-9]{6}$/.test(data.code)) q = q.eq("field_code" as any, data.code);
+    else if (/^[0-9a-f-]{36}$/i.test(data.id)) q = q.eq("id", data.id);
+    else return { found: false as const };
+    const { data: row } = await q.maybeSingle();
+    if (!row) return { found: false as const };
+    return { found: true as const, accountId: (row as any).id as string, name: (row as any).business_name as string, hasPassword: !!(row as any).field_password_hash };
+  });
+
+export const spartanopsEnterField = createServerFn({ method: "POST" })
+  .inputValidator((d: { accountId: string; password: string }) => ({
+    accountId: String(d?.accountId ?? ""),
+    password: String(d?.password ?? ""),
+  }))
+  .handler(async ({ data }) => {
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data: ok } = await supabaseAdmin.rpc("spartanops_verify_field_password" as any, {
+      p_account_id: data.accountId, p_password: data.password,
+    });
+    if (ok !== true) return { ok: false as const };
+    const { data: row } = await supabaseAdmin
+      .from("spartanops_accounts").select("business_name, active_lobby_id").eq("id", data.accountId).maybeSingle();
+    return { ok: true as const, name: ((row as any)?.business_name ?? "") as string, activeLobbyId: ((row as any)?.active_lobby_id ?? null) as string | null };
+  });

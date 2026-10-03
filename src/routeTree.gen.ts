@@ -21,6 +21,8 @@ import { Route as MarshalAccountRouteImport } from './routes/marshal-account'
 import { Route as LokacijaRouteImport } from './routes/lokacija'
 import { Route as JoinRouteImport } from './routes/join'
 import { Route as IntelRouteImport } from './routes/intel'
+import { Route as FieldQrRouteImport } from './routes/field-qr'
+import { Route as FieldRouteImport } from './routes/field'
 import { Route as DogodkiRouteImport } from './routes/dogodki'
 import { Route as DevPreviewRouteImport } from './routes/dev-preview'
 import { Route as CaptureRouteImport } from './routes/capture'
@@ -92,6 +94,16 @@ const IntelRoute = IntelRouteImport.update({
   path: '/intel',
   getParentRoute: () => rootRouteImport,
 } as any)
+const FieldQrRoute = FieldQrRouteImport.update({
+  id: '/field-qr',
+  path: '/field-qr',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const FieldRoute = FieldRouteImport.update({
+  id: '/field',
+  path: '/field',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const DogodkiRoute = DogodkiRouteImport.update({
   id: '/dogodki',
   path: '/dogodki',
@@ -152,6 +164,8 @@ export interface FileRoutesByFullPath {
   '/capture': typeof CaptureRoute
   '/dev-preview': typeof DevPreviewRoute
   '/dogodki': typeof DogodkiRoute
+  '/field': typeof FieldRoute
+  '/field-qr': typeof FieldQrRoute
   '/intel': typeof IntelRoute
   '/join': typeof JoinRoute
   '/lokacija': typeof LokacijaRoute
@@ -176,6 +190,8 @@ export interface FileRoutesByTo {
   '/capture': typeof CaptureRoute
   '/dev-preview': typeof DevPreviewRoute
   '/dogodki': typeof DogodkiRoute
+  '/field': typeof FieldRoute
+  '/field-qr': typeof FieldQrRoute
   '/intel': typeof IntelRoute
   '/join': typeof JoinRoute
   '/lokacija': typeof LokacijaRoute
@@ -201,6 +217,8 @@ export interface FileRoutesById {
   '/capture': typeof CaptureRoute
   '/dev-preview': typeof DevPreviewRoute
   '/dogodki': typeof DogodkiRoute
+  '/field': typeof FieldRoute
+  '/field-qr': typeof FieldQrRoute
   '/intel': typeof IntelRoute
   '/join': typeof JoinRoute
   '/lokacija': typeof LokacijaRoute
@@ -227,6 +245,8 @@ export interface FileRouteTypes {
     | '/capture'
     | '/dev-preview'
     | '/dogodki'
+    | '/field'
+    | '/field-qr'
     | '/intel'
     | '/join'
     | '/lokacija'
@@ -251,6 +271,8 @@ export interface FileRouteTypes {
     | '/capture'
     | '/dev-preview'
     | '/dogodki'
+    | '/field'
+    | '/field-qr'
     | '/intel'
     | '/join'
     | '/lokacija'
@@ -275,6 +297,8 @@ export interface FileRouteTypes {
     | '/capture'
     | '/dev-preview'
     | '/dogodki'
+    | '/field'
+    | '/field-qr'
     | '/intel'
     | '/join'
     | '/lokacija'
@@ -300,6 +324,8 @@ export interface RootRouteChildren {
   CaptureRoute: typeof CaptureRoute
   DevPreviewRoute: typeof DevPreviewRoute
   DogodkiRoute: typeof DogodkiRoute
+  FieldRoute: typeof FieldRoute
+  FieldQrRoute: typeof FieldQrRoute
   IntelRoute: typeof IntelRoute
   JoinRoute: typeof JoinRoute
   LokacijaRoute: typeof LokacijaRoute
@@ -403,6 +429,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IntelRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/field-qr': {
+      id: '/field-qr'
+      path: '/field-qr'
+      fullPath: '/field-qr'
+      preLoaderRoute: typeof FieldQrRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/field': {
+      id: '/field'
+      path: '/field'
+      fullPath: '/field'
+      preLoaderRoute: typeof FieldRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/dogodki': {
       id: '/dogodki'
       path: '/dogodki'
@@ -484,6 +524,8 @@ const rootRouteChildren: RootRouteChildren = {
   CaptureRoute: CaptureRoute,
   DevPreviewRoute: DevPreviewRoute,
   DogodkiRoute: DogodkiRoute,
+  FieldRoute: FieldRoute,
+  FieldQrRoute: FieldQrRoute,
   IntelRoute: IntelRoute,
   JoinRoute: JoinRoute,
   LokacijaRoute: LokacijaRoute,
