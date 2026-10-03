@@ -595,8 +595,3 @@ export const spartanopsEnterField = createServerFn({ method: "POST" })
     const token = await signFieldToken(data.accountId, Number((row as any)?.field_password_version ?? 1));
     return { ok: true as const, token, name: ((row as any)?.business_name ?? "") as string, activeLobbyId: ((row as any)?.active_lobby_id ?? null) as string | null };
   });
-    if (ok !== true) return { ok: false as const };
-    const { data: row } = await supabaseAdmin
-      .from("spartanops_accounts").select("business_name, active_lobby_id").eq("id", data.accountId).maybeSingle();
-    return { ok: true as const, name: ((row as any)?.business_name ?? "") as string, activeLobbyId: ((row as any)?.active_lobby_id ?? null) as string | null };
-  });
