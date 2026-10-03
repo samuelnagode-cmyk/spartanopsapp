@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { signFieldToken, verifyFieldToken } from "./spartanops-field-token";
+import { signFieldToken, verifyFieldToken } from "../src/lib/spartanops-field-token";
 
 const SECRET = "test-secret-0123456789abcdef";
 const FIELD = "486ee790-12b0-4954-805f-a70b07935c86";

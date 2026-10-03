@@ -38,7 +38,7 @@ export async function verifyFieldToken(token: string | undefined, fieldKey: stri
     const parts = token.split(".");
     if (parts.length !== 2 || !parts[0] || !parts[1]) return false;
     const [body, sigStr] = parts;
-    const ok = await crypto.subtle.verify("HMAC", await getKey(secret), b64urlDecode(sigStr), enc.encode(body));
+    const ok = await crypto.subtle.verify("HMAC", await getKey(secret), b64urlDecode(sigStr) as Uint8Array<ArrayBuffer>, enc.encode(body));
     if (!ok) return false;
     const payload = JSON.parse(new TextDecoder().decode(b64urlDecode(body)));
     if (!payload || payload.f !== fieldKey) return false;
