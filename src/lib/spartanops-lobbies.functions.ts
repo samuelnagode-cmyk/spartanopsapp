@@ -226,8 +226,20 @@ type CreateInput = {
 };
 
 export const createLobby = createServerFn({ method: "POST" })
-  .inputValidator((d: CreateInput & { masterPassword?: string }) => d)
+  .inputValidator((d: CreateInput & { masterPassword?: string; accessToken: string }) => d)
   .handler(async ({ data }) => {
+    const accessToken = typeof data.accessToken === "string" ? data.accessToken : "";
+    if (!accessToken) throw new Error("login_required");
+    const { supabaseAdmin: authAdmin } = await import("@/integrations/supabase/client.server");
+    const { data: userData } = await authAdmin.auth.getUser(accessToken);
+    const user = userData?.user;
+    if (!user) throw new Error("login_required");
+    const { data: account } = await authAdmin
+      .from("spartanops_accounts" as any)
+      .select("id")
+      .eq("id", user.id)
+      .maybeSingle();
+    if (!account) throw new Error("account_required");
     // Any marshal can create their own lobby (they set their own passwords).
     // Master password is not required for lobby creation — only for admin edit/delete.
     if (!data.fieldName?.trim()) throw new Error("Field name required");
@@ -270,6 +282,7 @@ export const createLobby = createServerFn({ method: "POST" })
       marshal_password_hash: mHash as unknown as string,
       published: data.published,
       state: "pending",
+      account_id: user.id,
     };
     const { data: created, error } = await supabaseAdmin
       .from("spartanops_lobbies" as any)

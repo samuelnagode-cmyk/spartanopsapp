@@ -917,11 +917,17 @@ function CreateFieldForm({ onCreated }: { onCreated: (rec: LobbyRecord, pws: { p
       afterGameInstructions: afterGameInstructions.trim() || undefined,
       weaponRules: hasWeaponRules(weaponRules) ? weaponRules : undefined,
     } as any;
+    const createToken = await getFreshOwnerAccessToken();
+    if (!createToken) {
+      setErr(en ? "Log in to create a mission" : "Za ustvarjanje misije se prijavi");
+      return;
+    }
     setBusy(true);
     setErr("");
     try {
       const dto = await createFn({
         data: {
+          accessToken: createToken,
           fieldName: effectiveFieldName,
           eventName: eventName.trim() || undefined,
           location,
@@ -956,16 +962,6 @@ function CreateFieldForm({ onCreated }: { onCreated: (rec: LobbyRecord, pws: { p
         country: rec.country ?? "",
         createdAt: rec.createdAt,
       });
-      // Step 0.3: if the creator is logged in to a marshal account, link the new
-      // mission to it. Failure here never blocks creation.
-      try {
-        const { data: { user } } = await supabase.auth.getUser();
-        if (user) {
-          await supabase.from("spartanops_lobbies").update({ account_id: user.id }).eq("id", rec.id);
-        }
-      } catch (linkErr) {
-        console.warn("[admin] account link skipped", linkErr);
-      }
       setOk(true);
       // Go straight into the command center for the new mission — the lobby URL
       // and all controls live there.
