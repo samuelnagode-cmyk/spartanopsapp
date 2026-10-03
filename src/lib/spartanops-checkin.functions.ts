@@ -50,7 +50,47 @@ type CheckinInput = {
   experienceLevel: string;
   operatorType: string;
   assignedTeam?: string;
+  entryToken?: string;
+  accessToken?: string;
 };
+
+// Field-entry guessing limits (per account + caller IP).
+const FIELD_ATTEMPT_MAX_FAILURES = 10;
+const FIELD_ATTEMPT_WINDOW_SEC = 10 * 60;
+const FIELD_ATTEMPT_RETENTION_SEC = 24 * 3600;
+
+/**
+ * Registration gate: allowed if the lobby has no owning account, the caller is
+ * the verified owner, the entry token is valid for the lobby's account at the
+ * current password version, or this session already has a check-in in this field.
+ */
+async function canRegister(supabaseAdmin: any, fieldId: string, sessionId: string, entryToken?: string, accessToken?: string): Promise<boolean> {
+  if (!UUID_RE.test(fieldId)) return true; // legacy/system fields
+  const { data: lobby } = await supabaseAdmin
+    .from("spartanops_lobbies").select("account_id").eq("id", fieldId).maybeSingle();
+  const accountId = (lobby as any)?.account_id as string | null | undefined;
+  if (!accountId) return true;
+  const { isVerifiedLobbyOwner } = await import("./spartanops-owner-auth");
+  if (await isVerifiedLobbyOwner(fieldId, accessToken)) return true;
+  if (entryToken) {
+    const { data: acc } = await supabaseAdmin
+      .from("spartanops_accounts").select("field_password_version").eq("id", accountId).maybeSingle();
+    const version = (acc as any)?.field_password_version;
+    if (typeof version === "number") {
+      const { verifyFieldToken } = await import("./spartanops-field-token");
+      if (await verifyFieldToken(entryToken, accountId, version)) return true;
+    }
+  }
+  const { data: sec } = await supabaseAdmin
+    .from("spartanops_checkin_secrets").select("checkin_id").eq("session_id", sessionId).maybeSingle();
+  const existingId = (sec as any)?.checkin_id as string | undefined;
+  if (existingId) {
+    const { data: ci } = await supabaseAdmin
+      .from("spartanops_checkins").select("field_id").eq("id", existingId).maybeSingle();
+    if ((ci as any)?.field_id === fieldId) return true;
+  }
+  return false;
+}
 
 /**
  * Upsert a player/marshal check-in. Session token + PII live in the private
@@ -87,10 +127,15 @@ export const spartanopsUpsertCheckin = createServerFn({ method: "POST" })
       experienceLevel: exp,
       operatorType,
       assignedTeam: team,
+      entryToken: typeof d.entryToken === "string" ? d.entryToken.slice(0, 1000) : undefined,
+      accessToken: typeof d.accessToken === "string" ? d.accessToken.slice(0, 4000) : undefined,
     };
   })
   .handler(async ({ data }) => {
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    if (!(await canRegister(supabaseAdmin, data.fieldId, data.sessionId, data.entryToken, data.accessToken))) {
+      throw new Error("field_entry_required");
+    }
 
     // 1. Look up existing checkin via secrets.session_id.
     const { data: existing } = await supabaseAdmin
@@ -514,9 +559,42 @@ export const spartanopsEnterField = createServerFn({ method: "POST" })
   }))
   .handler(async ({ data }) => {
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    if (!UUID_RE.test(data.accountId)) return { ok: false as const };
+    const { getRequestHeader } = await import("@tanstack/react-start/server");
+    const ip = (getRequestHeader("cf-connecting-ip") || (getRequestHeader("x-forwarded-for") ?? "").split(",")[0] || "unknown").trim();
+    const secret = process.env.FIELD_ENTRY_SECRET ?? "";
+    const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(ip + secret));
+    const ipHash = Array.from(new Uint8Array(digest), (b) => b.toString(16).padStart(2, "0")).join("");
+
+    const since = new Date(Date.now() - FIELD_ATTEMPT_WINDOW_SEC * 1000).toISOString();
+    const { data: recent } = await supabaseAdmin
+      .from("spartanops_field_attempts" as any)
+      .select("at")
+      .eq("account_id", data.accountId).eq("ip_hash", ipHash).gte("at", since)
+      .order("at", { ascending: true })
+      .limit(FIELD_ATTEMPT_MAX_FAILURES);
+    if ((recent?.length ?? 0) >= FIELD_ATTEMPT_MAX_FAILURES) {
+      const oldest = new Date((recent as any)[0].at).getTime();
+      const retryAfterSec = Math.max(1, Math.ceil((oldest + FIELD_ATTEMPT_WINDOW_SEC * 1000 - Date.now()) / 1000));
+      return { ok: false as const, throttled: true as const, retryAfterSec };
+    }
+
     const { data: ok } = await supabaseAdmin.rpc("spartanops_verify_field_password" as any, {
       p_account_id: data.accountId, p_password: data.password,
     });
+    if (ok !== true) {
+      await supabaseAdmin.from("spartanops_field_attempts" as any).insert({ account_id: data.accountId, ip_hash: ipHash } as any);
+      await supabaseAdmin.from("spartanops_field_attempts" as any).delete()
+        .eq("account_id", data.accountId)
+        .lt("at", new Date(Date.now() - FIELD_ATTEMPT_RETENTION_SEC * 1000).toISOString());
+      return { ok: false as const };
+    }
+    const { data: row } = await supabaseAdmin
+      .from("spartanops_accounts").select("business_name, active_lobby_id, field_password_version" as any).eq("id", data.accountId).maybeSingle();
+    const { signFieldToken } = await import("./spartanops-field-token");
+    const token = await signFieldToken(data.accountId, Number((row as any)?.field_password_version ?? 1));
+    return { ok: true as const, token, name: ((row as any)?.business_name ?? "") as string, activeLobbyId: ((row as any)?.active_lobby_id ?? null) as string | null };
+  });
     if (ok !== true) return { ok: false as const };
     const { data: row } = await supabaseAdmin
       .from("spartanops_accounts").select("business_name, active_lobby_id").eq("id", data.accountId).maybeSingle();
