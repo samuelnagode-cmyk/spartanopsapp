@@ -220,8 +220,8 @@ type CreateInput = {
   pointTarget: number;
   nodePositions?: Record<string, { x: number; y: number } | null>;
   settings?: Record<string, any>;
-  password: string;
-  marshalPassword: string;
+  password?: string;
+  marshalPassword?: string;
   published: boolean;
 };
 
@@ -231,15 +231,25 @@ export const createLobby = createServerFn({ method: "POST" })
     // Any marshal can create their own lobby (they set their own passwords).
     // Master password is not required for lobby creation — only for admin edit/delete.
     if (!data.fieldName?.trim()) throw new Error("Field name required");
-    if (!data.password || data.password.length < 3) throw new Error("Password required");
-    if (!data.marshalPassword || data.marshalPassword.length < 3) throw new Error("Marshal password required");
-    if (data.password === data.marshalPassword) throw new Error("Passwords must differ");
+    // Per-mission passwords are optional: players join with the account's field
+    // password. Missing values get a random 20-char secret so DB constraints and
+    // the "must differ" rule still hold.
+    const randomSecret = () => {
+      const alphabet = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789";
+      const bytes = crypto.getRandomValues(new Uint8Array(20));
+      return Array.from(bytes, (b) => alphabet[b % alphabet.length]).join("");
+    };
+    const playerPw = data.password ? data.password : randomSecret();
+    const marshalPw = data.marshalPassword ? data.marshalPassword : randomSecret();
+    if (playerPw.length < 3) throw new Error("Password required");
+    if (marshalPw.length < 3) throw new Error("Marshal password required");
+    if (playerPw === marshalPw) throw new Error("Passwords must differ");
 
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
     const [{ data: pHash, error: e1 }, { data: mHash, error: e2 }] = await Promise.all([
-      supabaseAdmin.rpc("spartanops_hash_password" as any, { p_password: data.password }),
-      supabaseAdmin.rpc("spartanops_hash_password" as any, { p_password: data.marshalPassword }),
+      supabaseAdmin.rpc("spartanops_hash_password" as any, { p_password: playerPw }),
+      supabaseAdmin.rpc("spartanops_hash_password" as any, { p_password: marshalPw }),
     ]);
     if (e1 || e2 || !pHash || !mHash) throw new Error("Failed to hash password");
 

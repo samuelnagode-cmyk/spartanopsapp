@@ -28,6 +28,7 @@ import { CountrySearchInput } from "@/components/CountrySearchInput";
 import { flagFor } from "@/lib/countries";
 import { usePremium } from "@/lib/premium";
 import { supabase } from "@/integrations/supabase/client";
+import { FieldPasswordPanel, FieldPasswordInfo } from "@/components/FieldPasswordPanel";
 import {
   listAllLobbies,
   listPublishedLobbies,
@@ -651,11 +652,17 @@ function AdminPage() {
 
         {section === "fields" && creating && (
           <CreateFieldForm
-            onCreated={(rec, pws) => {
+            onCreated={async (rec, pws) => {
               setCreating(false);
               setCustomLobbies(loadLobbies());
               setLobbyPwCache((s) => ({ ...s, [rec.id]: { player: pws.password, marshal: pws.marshalPassword } }));
               setMarshalPasswordVerified(pws.marshalPassword);
+              // Signed-in creator owns the mission: use the owner path so an empty
+              // helper password still works.
+              try {
+                const { data: sess } = await supabase.auth.getSession();
+                setOwnerAccessToken(sess.session?.access_token ?? undefined);
+              } catch { setOwnerAccessToken(undefined); }
               setMarshalActiveLobby(rec);
             }}
           />
@@ -886,16 +893,16 @@ function CreateFieldForm({ onCreated }: { onCreated: (rec: LobbyRecord, pws: { p
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (busy) return;
-    if (!missionName.trim() || !fieldName.trim() || !password.trim() || !country.trim() || !city.trim() || !marshalPassword.trim() || !marshalName.trim()) {
+    if (!missionName.trim() || !fieldName.trim() || !country.trim() || !city.trim() || !marshalName.trim()) {
       setErr(en
-        ? "Mission name, field name, city, country, marshal name, mission password, and marshal password are required."
-        : "Ime misije, ime poligona, mesto, država, ime maršala, geslo misije in geslo maršala so obvezni.");
+        ? "Mission name, field name, city, country and marshal name are required."
+        : "Ime misije, ime poligona, mesto, država in ime maršala so obvezni.");
       return;
     }
-    if (marshalPassword.trim() === password.trim()) {
+    if (marshalPassword.trim() && marshalPassword.trim().length < 3) {
       setErr(en
-        ? "Marshal password must differ from the player lobby password."
-        : "Geslo maršala mora biti različno od igralskega gesla.");
+        ? "Helper marshal password must be at least 3 characters (or leave it empty)."
+        : "Geslo pomočnika maršala mora imeti vsaj 3 znake (ali ga pusti prazno).");
       return;
     }
     const location = `${city.trim()}, ${country.trim()}`;
@@ -974,7 +981,7 @@ function CreateFieldForm({ onCreated }: { onCreated: (rec: LobbyRecord, pws: { p
   const formTabs: { k: typeof formTab; l: string; done: boolean }[] = [
     { k: "mission", l: en ? "Mission & Field" : "Misija in poligon", done: !!fieldName.trim() && !!missionName.trim() },
     { k: "location", l: en ? "Location & Marshals" : "Lokacija in maršali", done: !!city.trim() && !!country.trim() && !!marshalName.trim() },
-    { k: "passwords", l: en ? "Passwords" : "Gesla", done: !!password.trim() && !!marshalPassword.trim() && password.trim() !== marshalPassword.trim() },
+    { k: "passwords", l: en ? "Passwords" : "Gesla", done: true },
     { k: "weapons", l: en ? "Replica Power & Shooting Rules" : "Moč replik in pravila streljanja", done: hasWeaponRules(weaponRules) },
     { k: "mode", l: en ? "Game Mode & Parameters" : "Igralni način in parametri", done: true },
     { k: "map", l: en ? "Tactical Map" : "Taktični zemljevid", done: !!mapUrl.trim() },
@@ -1104,32 +1111,8 @@ function CreateFieldForm({ onCreated }: { onCreated: (rec: LobbyRecord, pws: { p
       {/* ── TAB 3: PASSWORDS ────────────────────────────────── */}
       <div style={{ display: formTab === "passwords" ? "block" : "none" }}>
       <Pane title={en ? "PASSWORDS" : "GESLA"}>
-        <FieldRow label={en ? "Mission password (for players)" : "Geslo misije (za igralce)"}>
-          <div style={{ position: "relative" }}>
-            <input
-              type={showPassword ? "text" : "password"}
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              style={{ ...consoleInputStyle, paddingRight: 40 }}
-              placeholder={en ? "e.g. spartan-alpha-2025" : "npr. spartan-alpha-2025"}
-              autoComplete="off"
-              spellCheck={false}
-            />
-            <button
-              type="button"
-              onClick={() => setShowPassword((v) => !v)}
-              aria-label={showPassword ? (en ? "Hide password" : "Skrij geslo") : (en ? "Show password" : "Prikaži geslo")}
-              style={{
-                position: "absolute", top: "50%", right: 8, transform: "translateY(-50%)",
-                background: "transparent", border: "none", color: MUTED, cursor: "pointer",
-                padding: 4, display: "grid", placeItems: "center",
-              }}
-            >
-              {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
-            </button>
-          </div>
-        </FieldRow>
-        <FieldRow label={en ? "Marshal password (for organizers to access this mission control center)" : "Geslo maršala (za organizatorje – dostop do komandnega centra misije)"}>
+        <FieldPasswordInfo en={en} />
+        <FieldRow label={en ? "Helper marshal password (optional)" : "Geslo pomočnika maršala (neobvezno)"}>
           <div style={{ position: "relative" }}>
             <input
               type={showMarshalPassword ? "text" : "password"}
@@ -1155,8 +1138,8 @@ function CreateFieldForm({ onCreated }: { onCreated: (rec: LobbyRecord, pws: { p
           </div>
           <p style={{ fontSize: 10, color: MUTED, fontFamily: "monospace", marginTop: 6, lineHeight: 1.5 }}>
             {en
-              ? "Must differ from the mission password."
-              : "Mora biti različno od igralskega gesla."}
+              ? "Lets a helper open this mission's control center without your account. At least 3 characters if used."
+              : "Pomočniku omogoči odpiranje komandnega centra te misije brez tvojega računa. Vsaj 3 znaki, če ga uporabiš."}
           </p>
         </FieldRow>
       </Pane>
@@ -1354,6 +1337,7 @@ function AccountMissionsSection({ en, onOpenMission }: { en: boolean; onOpenMiss
   const [missions, setMissions] = useState<AccountLobby[] | null>(null);
   const [err, setErr] = useState<string | null>(null);
   const [business, setBusiness] = useState<string | null>(null);
+  const [showFieldPw, setShowFieldPw] = useState(false);
 
   useEffect(() => {
     const { data: sub } = supabase.auth.onAuthStateChange((_e, session) => {
@@ -1451,23 +1435,43 @@ function AccountMissionsSection({ en, onOpenMission }: { en: boolean; onOpenMiss
             {en ? "Logged in as " : "Prijavljen kot "}
             <strong style={{ color: ACCENT }}>{business}</strong>
           </span>
-          <button
-            type="button"
-            onClick={() => supabase.auth.signOut()}
-            style={{ background: "transparent", border: "none", color: ACCENT, textDecoration: "underline", cursor: "pointer", fontFamily: "monospace", fontSize: 11 }}
-          >
-            {en ? "Log out" : "Odjava"}
-          </button>
+          <span style={{ display: "flex", gap: 12 }}>
+            <Link to="/marshal-account" style={{ color: ACCENT, textDecoration: "underline", fontFamily: "monospace", fontSize: 11 }}>
+              {en ? "Account" : "Račun"}
+            </Link>
+            <button
+              type="button"
+              onClick={() => supabase.auth.signOut()}
+              style={{ background: "transparent", border: "none", color: ACCENT, textDecoration: "underline", cursor: "pointer", fontFamily: "monospace", fontSize: 11, padding: 0 }}
+            >
+              {en ? "Log out" : "Odjava"}
+            </button>
+          </span>
         </div>
       )}
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 10, marginBottom: 14 }}>
         <p style={{ fontFamily: "monospace", fontSize: 10, letterSpacing: "0.30em", color: ACCENT, margin: 0, textTransform: "uppercase" }}>
           {en ? "// YOUR MISSIONS" : "// TVOJE MISIJE"}
         </p>
-        <Link to="/field-qr" style={{ fontFamily: "monospace", fontSize: 10, letterSpacing: "0.16em", color: ACCENT, border: `1px solid ${ACCENT}66`, padding: "4px 8px", textDecoration: "none", textTransform: "uppercase" }}>
-          {en ? "Player QR" : "QR za igralce"}
-        </Link>
+        <span style={{ display: "flex", gap: 8 }}>
+          <button
+            type="button"
+            onClick={() => setShowFieldPw((v) => !v)}
+            aria-expanded={showFieldPw}
+            style={{ fontFamily: "monospace", fontSize: 10, letterSpacing: "0.16em", color: ACCENT, background: showFieldPw ? `${ACCENT}22` : "transparent", border: `1px solid ${ACCENT}66`, padding: "4px 8px", textTransform: "uppercase", cursor: "pointer" }}
+          >
+            {en ? "Field password" : "Geslo poligona"}
+          </button>
+          <Link to="/field-qr" style={{ fontFamily: "monospace", fontSize: 10, letterSpacing: "0.16em", color: ACCENT, border: `1px solid ${ACCENT}66`, padding: "4px 8px", textDecoration: "none", textTransform: "uppercase" }}>
+            {en ? "Player QR" : "QR za igralce"}
+          </Link>
+        </span>
       </div>
+      {showFieldPw && (
+        <div style={{ marginBottom: 18 }}>
+          <FieldPasswordPanel en={en} />
+        </div>
+      )}
       {err ? (
         <p style={{ color: "#d97a6c", fontSize: 12 }}>{err}</p>
       ) : missions === null ? (
@@ -2799,41 +2803,13 @@ function MarshalLobbyConsole({ lobby: initialLobby, marshalPassword, lobbyPasswo
       <div style={{ display: lobbyTab === "passwords" ? "block" : "none" }}>
       {/* ── CARD 2: PASSWORDS ───────────────────────────────── */}
       <Pane title={en ? "PASSWORDS" : "GESLA"}>
-        <FieldRow label={en ? "Mission password (for players)" : "Geslo misije (za igralce)"}>
-          <div style={{ position: "relative" }}>
-            <input
-              type={showLobbyPw ? "text" : "password"}
-              value={lobbyPwInput}
-              placeholder={lobbyPwInput ? "" : "••••••••"}
-              onChange={(e) => {
-                const v = e.target.value;
-                setLobbyPwInput(v);
-                if (v.trim()) patch({ password: v });
-              }}
-              style={{ ...consoleInputStyle, paddingRight: 40 }}
-              autoComplete="off"
-              spellCheck={false}
-            />
-            <button
-              type="button"
-              onClick={() => setShowLobbyPw((v) => !v)}
-              aria-label={showLobbyPw ? (en ? "Hide password" : "Skrij geslo") : (en ? "Show password" : "Prikaži geslo")}
-              style={{
-                position: "absolute", top: "50%", right: 8, transform: "translateY(-50%)",
-                background: "transparent", border: "none", color: MUTED, cursor: "pointer",
-                padding: 4, display: "grid", placeItems: "center",
-              }}
-            >
-              {showLobbyPw ? <EyeOff size={16} /> : <Eye size={16} />}
-            </button>
-          </div>
-          {!lobbyPwInput && (
-            <p style={{ fontSize: 10, color: MUTED, marginTop: 4, fontFamily: "monospace", letterSpacing: "0.08em" }}>
-              // {en ? "Password stored securely — type a new value to change it." : "Geslo je varno shranjeno — vpiši novo vrednost za spremembo."}
-            </p>
-          )}
-        </FieldRow>
-        <FieldRow label={en ? "Marshal password (for organizers to access this mission control center)" : "Geslo maršala (za organizatorje – dostop do komandnega centra misije)"}>
+        <FieldPasswordInfo en={en} withPanelButton />
+        <FieldRow label={en ? "Helper marshal password (optional)" : "Geslo pomočnika maršala (neobvezno)"}>
+          <p style={{ fontSize: 10, color: MUTED, fontFamily: "monospace", marginBottom: 6, lineHeight: 1.5 }}>
+            {en
+              ? "Lets a helper open this mission's control center without your account. You don't need it."
+              : "Pomočniku omogoči odpiranje komandnega centra te misije brez tvojega računa. Sam ga ne potrebuješ."}
+          </p>
           <div style={{ position: "relative" }}>
             <input
               type={showMarshalPw ? "text" : "password"}
