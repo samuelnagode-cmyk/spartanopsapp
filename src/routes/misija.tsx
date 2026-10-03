@@ -427,6 +427,7 @@ function ActiveMissionChangeBanner() {
         }
       }
     } catch { /* fall through to normal registration on the new mission */ }
+    saveActiveSession(newLobbyId);
     window.location.href = `/misija?field=${encodeURIComponent(newLobbyId)}`;
   };
 

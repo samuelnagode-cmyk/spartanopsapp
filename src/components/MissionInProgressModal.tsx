@@ -38,7 +38,9 @@ export default function MissionInProgressModal() {
     pathname.startsWith("/capture") ||
     pathname.startsWith("/scan") ||
     pathname.startsWith("/spawn") ||
-    pathname.startsWith("/admin-pregled");
+    pathname.startsWith("/admin-pregled") ||
+    pathname.startsWith("/field") ||
+    pathname.startsWith("/join");
 
   useEffect(() => {
     if (typeof window === "undefined") return;
