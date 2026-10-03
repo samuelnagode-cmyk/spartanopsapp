@@ -227,6 +227,11 @@ function FieldPage() {
     body = (
       <form onSubmit={submitPassword}>
         <FieldName name={info.name} />
+        {notice === "entry" && (
+          <p style={{ color: ACCENT, fontFamily: "monospace", fontSize: 12, textAlign: "center", marginBottom: 14 }}>
+            {en ? "Enter the field password to join." : "Za vstop vnesi geslo poligona."}
+          </p>
+        )}
         <label style={labelStyle}>{en ? "Today's password — ask the marshal" : "Današnje geslo — vprašaj maršala"}</label>
         <input style={{ ...inputStyle, marginBottom: 6 }} type={showPassword ? "text" : "password"} required autoCapitalize="off" autoCorrect="off" spellCheck={false} autoComplete="off" value={password} onChange={(e) => setPassword(e.target.value)} />
         <button
