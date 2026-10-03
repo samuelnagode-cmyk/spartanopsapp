@@ -1,3 +1,4 @@
+import { saveActiveSession } from "@/lib/active-session";
 import { bumpTelemetryClient } from "@/lib/telemetry-client";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { Fragment, memo, useCallback, useEffect, useMemo, useRef, useState, type PointerEvent as ReactPointerEvent } from "react";
@@ -427,6 +428,7 @@ function ActiveMissionChangeBanner() {
         }
       }
     } catch { /* fall through to normal registration on the new mission */ }
+    saveActiveSession(newLobbyId);
     window.location.href = `/misija?field=${encodeURIComponent(newLobbyId)}`;
   };
 
