@@ -209,7 +209,9 @@ export type Database = {
           business_name: string
           created_at: string
           field_code: string | null
+          field_password_changed_at: string | null
           field_password_hash: string | null
+          field_password_version: number
           id: string
           is_platform_showcase: boolean
         }
@@ -218,7 +220,9 @@ export type Database = {
           business_name: string
           created_at?: string
           field_code?: string | null
+          field_password_changed_at?: string | null
           field_password_hash?: string | null
+          field_password_version?: number
           id: string
           is_platform_showcase?: boolean
         }
@@ -227,7 +231,9 @@ export type Database = {
           business_name?: string
           created_at?: string
           field_code?: string | null
+          field_password_changed_at?: string | null
           field_password_hash?: string | null
+          field_password_version?: number
           id?: string
           is_platform_showcase?: boolean
         }

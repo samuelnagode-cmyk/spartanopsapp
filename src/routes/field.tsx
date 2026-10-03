@@ -6,12 +6,13 @@ import { useLang } from "@/lib/i18n";
 import { saveActiveSession } from "@/lib/active-session";
 import { spartanopsEnterField, spartanopsGetFieldPublicInfo } from "@/lib/spartanops-checkin.functions";
 
-type FieldSearch = { code?: string; id?: string };
+type FieldSearch = { code?: string; id?: string; notice?: string };
 
 export const Route = createFileRoute("/field")({
   validateSearch: (s: Record<string, unknown>): FieldSearch => ({
     code: typeof s.code === "string" ? s.code : undefined,
     id: typeof s.id === "string" ? s.id : undefined,
+    notice: typeof s.notice === "string" ? s.notice : undefined,
   }),
   head: () => ({
     meta: [
@@ -56,7 +57,7 @@ type Info =
 function FieldPage() {
   const { lang } = useLang();
   const en = lang === "en";
-  const { code, id } = Route.useSearch();
+  const { code, id, notice } = Route.useSearch();
   const navigate = useNavigate();
   const getInfo = useServerFn(spartanopsGetFieldPublicInfo);
   const enter = useServerFn(spartanopsEnterField);
@@ -143,7 +144,17 @@ function FieldPage() {
     setBusy(true);
     try {
       const r = await enter({ data: { accountId: info.accountId, password } });
-      if (!r.ok) { setErr(en ? "Wrong password" : "Napačno geslo"); return; }
+      if (!r.ok) {
+        if ("throttled" in r && r.throttled) {
+          setErr(en ? "Too many wrong attempts. Try again in a few minutes." : "Preveč napačnih poskusov. Poskusi znova čez nekaj minut.");
+        } else {
+          setErr(en ? "Wrong password" : "Napačno geslo");
+        }
+        return;
+      }
+      try {
+        localStorage.setItem("spartanops:field-entry", JSON.stringify({ accountId: info.accountId, token: r.token }));
+      } catch { /* storage unavailable */ }
       try {
         localStorage.setItem("spartanops:last-field", JSON.stringify({ accountId: info.accountId, code: code ?? null, name: r.name || info.name }));
       } catch { /* storage unavailable */ }
@@ -216,6 +227,11 @@ function FieldPage() {
     body = (
       <form onSubmit={submitPassword}>
         <FieldName name={info.name} />
+        {notice === "entry" && (
+          <p style={{ color: ACCENT, fontFamily: "monospace", fontSize: 12, textAlign: "center", marginBottom: 14 }}>
+            {en ? "Enter the field password to join." : "Za vstop vnesi geslo poligona."}
+          </p>
+        )}
         <label style={labelStyle}>{en ? "Today's password — ask the marshal" : "Današnje geslo — vprašaj maršala"}</label>
         <input style={{ ...inputStyle, marginBottom: 6 }} type={showPassword ? "text" : "password"} required autoCapitalize="off" autoCorrect="off" spellCheck={false} autoComplete="off" value={password} onChange={(e) => setPassword(e.target.value)} />
         <button

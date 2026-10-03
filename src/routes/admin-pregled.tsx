@@ -2365,6 +2365,7 @@ function MarshalLobbyConsole({ lobby: initialLobby, marshalPassword, lobbyPasswo
         experienceLevel: profile.experience,
         operatorType: "AEG",
         assignedTeam: profile.team,
+        accessToken: await getFreshOwnerAccessToken(),
       },
     });
   };
