@@ -76,6 +76,8 @@ function FieldQrPage() {
           @page { size: A4 portrait; margin: 0; }
           html, body { margin: 0 !important; padding: 0 !important; background: #fff !important; }
           header, footer, #field-screen, [role="dialog"], [data-sonner-toaster] { display: none !important; }
+          body * { visibility: hidden !important; }
+          #field-poster, #field-poster * { visibility: visible !important; }
           #field-poster {
             display: flex !important; position: static !important;
             width: 210mm; height: 297mm; box-sizing: border-box; padding: 14mm;
