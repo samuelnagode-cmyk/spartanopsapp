@@ -1,3 +1,4 @@
+import { saveActiveSession } from "@/lib/active-session";
 import { bumpTelemetryClient } from "@/lib/telemetry-client";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { Fragment, memo, useCallback, useEffect, useMemo, useRef, useState, type PointerEvent as ReactPointerEvent } from "react";
