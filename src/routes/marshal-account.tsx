@@ -226,6 +226,9 @@ function LoggedIn({ user, en }: { user: User; en: boolean }) {
         {en ? "Log out" : "Odjava"}
       </button>
       <FieldPasswordSection en={en} />
+      <Link to="/field-qr" style={{ ...btnStyle, display: "block", textAlign: "center", textDecoration: "none", marginTop: 14 }}>
+        {en ? "Player QR" : "QR za igralce"}
+      </Link>
       <p style={{ marginTop: 18, padding: "10px 12px", border: `1px dashed ${ACCENT}55`, fontFamily: "monospace", fontSize: 11.5, lineHeight: 1.6, color: INK, opacity: 0.85 }}>
         <span style={{ color: ACCENT }}>ⓘ </span>
         {en
