@@ -208,6 +208,7 @@ export type Database = {
           active_lobby_id: string | null
           business_name: string
           created_at: string
+          field_code: string | null
           field_password_hash: string | null
           id: string
           is_platform_showcase: boolean
@@ -216,6 +217,7 @@ export type Database = {
           active_lobby_id?: string | null
           business_name: string
           created_at?: string
+          field_code?: string | null
           field_password_hash?: string | null
           id: string
           is_platform_showcase?: boolean
@@ -224,6 +226,7 @@ export type Database = {
           active_lobby_id?: string | null
           business_name?: string
           created_at?: string
+          field_code?: string | null
           field_password_hash?: string | null
           id?: string
           is_platform_showcase?: boolean
@@ -844,6 +847,7 @@ export type Database = {
         Args: { p_lobby_id: string }
         Returns: undefined
       }
+      spartanops_generate_field_code: { Args: never; Returns: string }
       spartanops_get_field_map: {
         Args: {
           p_field_id: string
