@@ -90,6 +90,7 @@ function SignUpForm({ en, onSwitch }: { en: boolean; onSwitch: () => void }) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [business, setBusiness] = useState("");
   const [err, setErr] = useState<string | null>(null);
   const [msg, setMsg] = useState<string | null>(null);
@@ -132,9 +133,10 @@ function SignUpForm({ en, onSwitch }: { en: boolean; onSwitch: () => void }) {
       <label style={labelStyle}>Email</label>
       <input style={inputStyle} type="email" required autoComplete="email" value={email} onChange={(e) => setEmail(e.target.value)} />
       <label style={labelStyle}>{en ? "Password" : "Geslo"}</label>
-      <input style={inputStyle} type="password" required autoComplete="new-password" value={password} onChange={(e) => setPassword(e.target.value)} />
+      <input style={{ ...inputStyle, marginBottom: 6 }} type={showPassword ? "text" : "password"} required autoComplete="new-password" value={password} onChange={(e) => setPassword(e.target.value)} />
       <label style={labelStyle}>{en ? "Confirm password" : "Potrdi geslo"}</label>
-      <input style={inputStyle} type="password" required autoComplete="new-password" value={confirm} onChange={(e) => setConfirm(e.target.value)} />
+      <input style={{ ...inputStyle, marginBottom: 6 }} type={showPassword ? "text" : "password"} required autoComplete="new-password" value={confirm} onChange={(e) => setConfirm(e.target.value)} />
+      <PasswordVisibilityToggle en={en} visible={showPassword} onToggle={() => setShowPassword((value) => !value)} />
       <label style={labelStyle}>{en ? "Business / field name" : "Ime podjetja / poligona"}</label>
       <input style={inputStyle} type="text" required maxLength={120} value={business} onChange={(e) => setBusiness(e.target.value)} />
       {err && <p style={{ color: ERR, fontSize: 12, marginBottom: 10, textAlign: "center" }}>{err}</p>}
@@ -152,6 +154,7 @@ function SignUpForm({ en, onSwitch }: { en: boolean; onSwitch: () => void }) {
 function LoginForm({ en, onSwitch }: { en: boolean; onSwitch: () => void }) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [err, setErr] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
@@ -172,7 +175,8 @@ function LoginForm({ en, onSwitch }: { en: boolean; onSwitch: () => void }) {
       <label style={labelStyle}>Email</label>
       <input style={inputStyle} type="email" required autoComplete="email" value={email} onChange={(e) => setEmail(e.target.value)} />
       <label style={labelStyle}>{en ? "Password" : "Geslo"}</label>
-      <input style={inputStyle} type="password" required autoComplete="current-password" value={password} onChange={(e) => setPassword(e.target.value)} />
+      <input style={{ ...inputStyle, marginBottom: 6 }} type={showPassword ? "text" : "password"} required autoComplete="current-password" value={password} onChange={(e) => setPassword(e.target.value)} />
+      <PasswordVisibilityToggle en={en} visible={showPassword} onToggle={() => setShowPassword((value) => !value)} />
       {err && <p style={{ color: ERR, fontSize: 12, marginBottom: 10, textAlign: "center" }}>{err}</p>}
       <button type="submit" disabled={busy} style={{ ...btnStyle, opacity: busy ? 0.6 : 1 }}>
         {en ? "Log in" : "Prijava"}
@@ -181,6 +185,19 @@ function LoginForm({ en, onSwitch }: { en: boolean; onSwitch: () => void }) {
         {en ? "No account yet? Sign up" : "Še nimaš računa? Registracija"}
       </button>
     </form>
+  );
+}
+
+function PasswordVisibilityToggle({ en, visible, onToggle }: { en: boolean; visible: boolean; onToggle: () => void }) {
+  return (
+    <button
+      type="button"
+      onClick={onToggle}
+      aria-pressed={visible}
+      style={{ ...linkBtn, marginTop: 0, marginBottom: 14, textAlign: "left", width: "auto" }}
+    >
+      {visible ? (en ? "Hide password" : "Skrij geslo") : (en ? "See password" : "Pokaži geslo")}
+    </button>
   );
 }
 

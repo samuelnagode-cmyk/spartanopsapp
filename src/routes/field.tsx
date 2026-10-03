@@ -64,6 +64,7 @@ function FieldPage() {
   const [codeInput, setCodeInput] = useState("");
   const [info, setInfo] = useState<Info>({ status: "loading" });
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [err, setErr] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [waitingFor, setWaitingFor] = useState<string | null>(null);
@@ -216,7 +217,15 @@ function FieldPage() {
       <form onSubmit={submitPassword}>
         <FieldName name={info.name} />
         <label style={labelStyle}>{en ? "Today's password — ask the marshal" : "Današnje geslo — vprašaj maršala"}</label>
-        <input style={inputStyle} type="text" required autoCapitalize="off" autoCorrect="off" spellCheck={false} autoComplete="off" value={password} onChange={(e) => setPassword(e.target.value)} />
+        <input style={{ ...inputStyle, marginBottom: 6 }} type={showPassword ? "text" : "password"} required autoCapitalize="off" autoCorrect="off" spellCheck={false} autoComplete="off" value={password} onChange={(e) => setPassword(e.target.value)} />
+        <button
+          type="button"
+          onClick={() => setShowPassword((value) => !value)}
+          aria-pressed={showPassword}
+          style={{ background: "transparent", border: "none", color: ACCENT, cursor: "pointer", fontFamily: "monospace", fontSize: 12, textDecoration: "underline", padding: 0, marginBottom: 14 }}
+        >
+          {showPassword ? (en ? "Hide password" : "Skrij geslo") : (en ? "See password" : "Pokaži geslo")}
+        </button>
         <p style={{ fontSize: 11, opacity: 0.7, marginTop: -8, marginBottom: 14, fontFamily: "monospace", lineHeight: 1.5 }}>
           {en
             ? "This is not the field code. The marshal tells you the password at the briefing, or it is written on the poster."
