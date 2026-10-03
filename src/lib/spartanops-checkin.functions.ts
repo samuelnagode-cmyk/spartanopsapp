@@ -69,7 +69,7 @@ async function canRegister(supabaseAdmin: any, fieldId: string, sessionId: strin
   const { data: lobby } = await supabaseAdmin
     .from("spartanops_lobbies").select("account_id").eq("id", fieldId).maybeSingle();
   const accountId = (lobby as any)?.account_id as string | null | undefined;
-  if (!accountId) return true;
+  if (!accountId) return false; // unowned UUID missions are refused
   const { isVerifiedLobbyOwner } = await import("./spartanops-owner-auth");
   if (await isVerifiedLobbyOwner(fieldId, accessToken)) return true;
   if (entryToken) {

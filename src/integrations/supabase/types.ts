@@ -479,6 +479,35 @@ export type Database = {
         }
         Relationships: []
       }
+      spartanops_field_attempts: {
+        Row: {
+          account_id: string
+          at: string
+          id: number
+          ip_hash: string
+        }
+        Insert: {
+          account_id: string
+          at?: string
+          id?: number
+          ip_hash: string
+        }
+        Update: {
+          account_id?: string
+          at?: string
+          id?: number
+          ip_hash?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "spartanops_field_attempts_account_id_fkey"
+            columns: ["account_id"]
+            isOneToOne: false
+            referencedRelation: "spartanops_accounts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       spartanops_field_secrets: {
         Row: {
           field_id: string
