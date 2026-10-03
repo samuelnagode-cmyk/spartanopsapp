@@ -73,13 +73,17 @@ function FieldQrPage() {
     <>
       <style>{`
         @media print {
-          @page { size: A4 portrait; margin: 14mm; }
-          body * { visibility: hidden !important; }
-          #field-poster, #field-poster * { visibility: visible !important; }
-          #field-poster { display: flex !important; position: fixed; inset: 0; }
+          @page { size: A4 portrait; margin: 0; }
+          html, body { margin: 0 !important; padding: 0 !important; background: #fff !important; }
+          header, footer, #field-screen, [role="dialog"], [data-sonner-toaster] { display: none !important; }
+          #field-poster {
+            display: flex !important; position: static !important;
+            width: 210mm; height: 297mm; box-sizing: border-box; padding: 14mm;
+            break-inside: avoid; break-after: avoid; overflow: hidden;
+          }
         }
       `}</style>
-      <main style={{ minHeight: "100vh", background: BG, color: INK, padding: "110px 16px 48px" }}>
+      <main id="field-screen" style={{ minHeight: "100vh", background: BG, color: INK, padding: "110px 16px 48px" }}>
         <div style={{ maxWidth: 440, margin: "0 auto", background: PANEL, border: `1px solid ${ACCENT}44`, padding: "28px 22px", textAlign: "center" }}>
           <h1 style={{ fontFamily: "'Michroma', monospace", fontSize: 18, letterSpacing: "0.14em", textTransform: "uppercase", marginBottom: 18 }}>{acct.name}</h1>
           <div data-testid="field-qr" style={{ background: "#ffffff", padding: 16, display: "inline-block" }}>
@@ -97,22 +101,31 @@ function FieldQrPage() {
           <button type="button" style={btnStyle} onClick={() => window.print()}>
             {en ? "Print poster" : "Natisni plakat"}
           </button>
+          <p style={{ fontFamily: "monospace", fontSize: 11, opacity: 0.7, marginTop: 14, lineHeight: 1.6, textAlign: "left" }}>
+            {en
+              ? "Tip: laminate the poster and write the password on it with a dry-erase marker. Change the password on your account page whenever you like — for example every weekend."
+              : "Namig: plakat laminiraj in geslo napiši z brisljivim flomastrom. Geslo lahko kadar koli spremeniš na strani računa — na primer vsak vikend."}
+          </p>
         </div>
       </main>
 
       <div
         id="field-poster"
-        style={{ display: "none", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: "8mm", background: "#ffffff", color: "#000000", fontFamily: "Arial, sans-serif", textAlign: "center" }}
+        style={{ display: "none", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: "6mm", background: "#ffffff", color: "#000000", fontFamily: "Arial, sans-serif", textAlign: "center" }}
       >
         <div style={{ fontSize: "30pt", fontWeight: 800, letterSpacing: "0.04em" }}>{en ? "SCAN TO JOIN THE GAME" : "SKENIRAJ ZA VSTOP V IGRO"}</div>
-        <QRCodeSVG value={url} size={420} level="M" bgColor="#ffffff" fgColor="#000000" />
+        <QRCodeSVG value={url} size={380} level="M" bgColor="#ffffff" fgColor="#000000" />
         <div style={{ fontSize: "24pt", fontWeight: 700 }}>{acct.name}</div>
         <div style={{ fontSize: "14pt" }}>{en ? "No app to install — scan with your phone camera" : "Aplikacije ni treba namestiti — skeniraj s kamero telefona"}</div>
         <div style={{ fontSize: "13pt" }}>
           {en ? `or go to ${shortHost}/field and enter the code: ` : `ali odpri ${shortHost}/field in vnesi kodo: `}
           <strong style={{ fontFamily: "monospace", fontSize: "18pt", letterSpacing: "0.15em" }}>{acct.code}</strong>
         </div>
-        <div style={{ fontSize: "9pt", opacity: 0.6, marginTop: "6mm" }}>Powered by SpartanOps</div>
+        <div style={{ display: "flex", alignItems: "flex-end", gap: "4mm", marginTop: "4mm" }}>
+          <div style={{ fontSize: "16pt", fontWeight: 700 }}>{en ? "Today's password:" : "Današnje geslo:"}</div>
+          <div style={{ width: "120mm", height: "16mm", borderBottom: "2px solid #000" }} />
+        </div>
+        <div style={{ fontSize: "9pt", opacity: 0.6, marginTop: "4mm" }}>Powered by SpartanOps</div>
       </div>
     </>
   );

@@ -82,19 +82,40 @@ function FieldPage() {
     return () => { cancelled = true; };
   }, [code, id, hasTarget, getInfo]);
 
-  // Waiting screen: follow the account's active-mission broadcast.
+  // Waiting screen: follow the account's active-mission broadcast (fast path),
+  // plus polling + visibility re-checks so a sleeping phone can't miss the start.
   useEffect(() => {
     if (!waitingFor) return;
+    let stopped = false;
+    const go = (next: string) => {
+      if (stopped) return;
+      stopped = true;
+      window.location.assign(`/misija?field=${encodeURIComponent(next)}`);
+    };
     const ch = supabase
       .channel(`field:${waitingFor}`)
       .on("broadcast", { event: "active_mission_changed" }, (msg: any) => {
         const next = msg?.payload?.active_lobby_id;
-        if (typeof next === "string" && next) {
-          window.location.assign(`/misija?field=${encodeURIComponent(next)}`);
-        }
+        if (typeof next === "string" && next) go(next);
       })
       .subscribe();
-    return () => { supabase.removeChannel(ch); };
+    const recheck = () => {
+      if (stopped) return;
+      enter({ data: { accountId: waitingFor, password } })
+        .then((r) => { if (r.ok && r.activeLobbyId) go(r.activeLobbyId); })
+        .catch(() => { /* retry on next tick */ });
+    };
+    recheck();
+    const iv = window.setInterval(recheck, 10_000);
+    const onVis = () => { if (document.visibilityState === "visible") recheck(); };
+    document.addEventListener("visibilitychange", onVis);
+    return () => {
+      stopped = true;
+      window.clearInterval(iv);
+      document.removeEventListener("visibilitychange", onVis);
+      supabase.removeChannel(ch);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [waitingFor]);
 
   const submitCode = (e: FormEvent) => {
@@ -171,8 +192,13 @@ function FieldPage() {
     body = (
       <form onSubmit={submitPassword}>
         <FieldName name={info.name} />
-        <label style={labelStyle}>{en ? "Field password" : "Geslo poligona"}</label>
-        <input style={inputStyle} type="password" required autoComplete="off" value={password} onChange={(e) => setPassword(e.target.value)} />
+        <label style={labelStyle}>{en ? "Today's password — ask the marshal" : "Današnje geslo — vprašaj maršala"}</label>
+        <input style={inputStyle} type="text" required autoCapitalize="off" autoCorrect="off" spellCheck={false} autoComplete="off" value={password} onChange={(e) => setPassword(e.target.value)} />
+        <p style={{ fontSize: 11, opacity: 0.7, marginTop: -8, marginBottom: 14, fontFamily: "monospace", lineHeight: 1.5 }}>
+          {en
+            ? "This is not the field code. The marshal tells you the password at the briefing, or it is written on the poster."
+            : "To ni koda poligona. Geslo ti pove maršal na uvodnem pogovoru ali je zapisano na plakatu."}
+        </p>
         {err && <p style={{ color: ERR, fontSize: 13, marginBottom: 10, textAlign: "center" }}>{err}</p>}
         <button type="submit" style={btnStyle} disabled={busy}>
           {busy ? "…" : en ? "Enter field" : "Vstopi na poligon"}

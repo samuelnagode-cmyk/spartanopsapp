@@ -248,13 +248,14 @@ function FieldPasswordSection({ en }: { en: boolean }) {
   const save = async (e: FormEvent) => {
     e.preventDefault();
     setMsg(null); setErr(null);
-    if (value.length < 3 || value.length > 200) {
+    const normalized = value.trim().toLowerCase();
+    if (normalized.length < 3 || normalized.length > 200) {
       setErr(en ? "Password must be 3–200 characters." : "Geslo mora imeti 3–200 znakov.");
       return;
     }
     setBusy(true);
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { error } = await (supabase.rpc as any)("spartanops_set_field_password", { p_password: value });
+    const { error } = await (supabase.rpc as any)("spartanops_set_field_password", { p_password: normalized });
     setBusy(false);
     if (error) { setErr(error.message); return; }
     setValue("");
@@ -265,6 +266,9 @@ function FieldPasswordSection({ en }: { en: boolean }) {
     <form onSubmit={save} style={{ marginTop: 20 }}>
       <label style={labelStyle}>{en ? "Field password (for players)" : "Geslo poligona (za igralce)"}</label>
       <input style={inputStyle} type="password" autoComplete="new-password" maxLength={200} value={value} onChange={(e) => setValue(e.target.value)} />
+      <p style={{ fontSize: 11, opacity: 0.7, marginTop: -8, marginBottom: 12, fontFamily: "monospace" }}>
+        {en ? "Not case-sensitive. Saving a new password replaces the old one." : "Ne razlikuje velikih in malih črk. Shranjevanje novega gesla zamenja prejšnjega."}
+      </p>
       {err && <p style={{ color: ERR, fontSize: 12, marginBottom: 10, textAlign: "center" }}>{err}</p>}
       {msg && <p style={{ color: ACCENT, fontSize: 12, marginBottom: 10, textAlign: "center" }}>{msg}</p>}
       <button type="submit" disabled={busy} style={{ ...btnStyle, opacity: busy ? 0.6 : 1 }}>
