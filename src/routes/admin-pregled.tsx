@@ -1662,6 +1662,7 @@ function FieldPasswordGate({ label, fieldKey, onSuccess }: { label: string; fiel
   const { lang } = useLang();
   const en = lang === "en";
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [err, setErr] = useState("");
   const [busy, setBusy] = useState(false);
   const verifyFn = useServerFn(spartanopsAdminVerify);
@@ -1694,8 +1695,9 @@ function FieldPasswordGate({ label, fieldKey, onSuccess }: { label: string; fiel
         </div>
         <h2 style={{ fontFamily: "'Michroma', monospace", fontSize: 12, letterSpacing: "0.18em", marginBottom: 4, color: ACCENT }}>{label}</h2>
         <p style={{ fontSize: 11, color: MUTED, marginBottom: 20, letterSpacing: "0.12em", textTransform: "uppercase" }}>{en ? "Enter password" : "Vnesi geslo"}</p>
-        <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="••••••••" autoFocus
-          style={{ width: "100%", background: BG, color: INK, border: "1px solid rgba(236,227,196,0.2)", padding: "12px 14px", fontSize: 14, marginBottom: 12, textAlign: "center", letterSpacing: "0.2em" }} />
+        <input type={showPassword ? "text" : "password"} value={password} onChange={(e) => setPassword(e.target.value)} placeholder="••••••••" autoFocus
+          style={{ width: "100%", background: BG, color: INK, border: "1px solid rgba(236,227,196,0.2)", padding: "12px 14px", fontSize: 14, marginBottom: 6, textAlign: "center", letterSpacing: "0.2em" }} />
+        <PasswordVisibilityToggle en={en} visible={showPassword} onToggle={() => setShowPassword((value) => !value)} />
         {err && <p style={{ color: "#d97a6c", fontSize: 12, marginBottom: 10 }}>{err}</p>}
         <button type="submit" style={{ width: "100%", padding: "12px", background: ACCENT, color: BG, border: "none", fontSize: 12, letterSpacing: "0.2em", textTransform: "uppercase", fontWeight: 700, cursor: "pointer" }}>
           {en ? "Enter" : "Vstop"}
@@ -1706,7 +1708,10 @@ function FieldPasswordGate({ label, fieldKey, onSuccess }: { label: string; fiel
 }
 
 function MasterPasswordModal({ onClose, onSuccess }: { onClose: () => void; onSuccess: (pw: string) => void }) {
+  const { lang } = useLang();
+  const en = lang === "en";
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [err, setErr] = useState("");
   const [busy, setBusy] = useState(false);
   const verifyFn = useServerFn(verifyMasterPassword);
@@ -1773,13 +1778,14 @@ function MasterPasswordModal({ onClose, onSuccess }: { onClose: () => void; onSu
         </p>
 
         <input
-          type="password"
+          type={showPassword ? "text" : "password"}
           value={password}
           onChange={(e) => setPassword(e.target.value)}
           autoFocus
           placeholder="••••••••"
-          style={{ width: "100%", background: BG, color: INK, border: "1px solid rgba(236,227,196,0.20)", padding: "12px 14px", fontSize: 14, marginBottom: 12, textAlign: "center", letterSpacing: "0.2em" }}
+          style={{ width: "100%", background: BG, color: INK, border: "1px solid rgba(236,227,196,0.20)", padding: "12px 14px", fontSize: 14, marginBottom: 6, textAlign: "center", letterSpacing: "0.2em" }}
         />
+        <PasswordVisibilityToggle en={en} visible={showPassword} onToggle={() => setShowPassword((value) => !value)} />
         {err && <p style={{ color: "#d97a6c", fontSize: 12, marginBottom: 10, textAlign: "center" }}>{err}</p>}
 
         <div style={{ display: "flex", gap: 8 }}>
@@ -1799,7 +1805,9 @@ function MasterPasswordModal({ onClose, onSuccess }: { onClose: () => void; onSu
 
 function MarshalPasswordPrompt({ lobby, onClose, onSuccess }: { lobby: LobbyRecord; onClose: () => void; onSuccess: (pw: string) => void }) {
   const { lang } = useLang();
+  const en = lang === "en";
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
 
   const [err, setErr] = useState("");
   const [busy, setBusy] = useState(false);
@@ -1848,14 +1856,28 @@ function MarshalPasswordPrompt({ lobby, onClose, onSuccess }: { lobby: LobbyReco
             : "Vnesite geslo Poveljniškega centra za odpiranje nadzorne plošče maršala za to misijo."}
         </p>
 
-        <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} autoFocus placeholder="••••••••"
-          style={{ width: "100%", background: BG, color: INK, border: "1px solid rgba(236,227,196,0.20)", padding: "12px 14px", fontSize: 14, marginBottom: 12, textAlign: "center", letterSpacing: "0.2em" }} />
+        <input type={showPassword ? "text" : "password"} value={password} onChange={(e) => setPassword(e.target.value)} autoFocus placeholder="••••••••"
+          style={{ width: "100%", background: BG, color: INK, border: "1px solid rgba(236,227,196,0.20)", padding: "12px 14px", fontSize: 14, marginBottom: 6, textAlign: "center", letterSpacing: "0.2em" }} />
+        <PasswordVisibilityToggle en={en} visible={showPassword} onToggle={() => setShowPassword((value) => !value)} />
         {err && <p style={{ color: "#d97a6c", fontSize: 12, marginBottom: 10, textAlign: "center" }}>{err}</p>}
         <button type="submit" disabled={busy} style={{ width: "100%", padding: "12px", background: ACCENT, color: BG, border: "none", fontFamily: "'Michroma', monospace", fontSize: 11, letterSpacing: "0.20em", textTransform: "uppercase", fontWeight: 700, cursor: busy ? "wait" : "pointer", opacity: busy ? 0.6 : 1 }}>
           Authorize Marshal
         </button>
       </form>
     </div>
+  );
+}
+
+function PasswordVisibilityToggle({ en, visible, onToggle }: { en: boolean; visible: boolean; onToggle: () => void }) {
+  return (
+    <button
+      type="button"
+      onClick={onToggle}
+      aria-pressed={visible}
+      style={{ display: "block", background: "transparent", border: "none", color: ACCENT, padding: 0, marginBottom: 12, fontFamily: "monospace", fontSize: 11, textDecoration: "underline", cursor: "pointer" }}
+    >
+      {visible ? (en ? "Hide password" : "Skrij geslo") : (en ? "See password" : "Pokaži geslo")}
+    </button>
   );
 }
 

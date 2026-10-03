@@ -5,6 +5,7 @@ import { ArrowLeft, MapPin, Archive as ArchiveIcon, Trash2, Lock, Unlock } from 
 import { listArchivedMissions, masterDeleteArchivedMission, type SpartanOpsArchiveRow } from "@/lib/spartanops-archive.functions";
 import { verifyMasterPassword } from "@/lib/spartanops-lobbies.functions";
 import { getMasterPw, setMasterPw as persistMasterPw } from "@/lib/master-admin";
+import { useLang } from "@/lib/i18n";
 
 export const Route = createFileRoute("/archive")({
   head: () => ({
@@ -27,6 +28,8 @@ const DANGER = "#ff6b6b";
 const HAIRLINE = "rgba(236,227,196,0.10)";
 
 function ArchivePage() {
+  const { lang } = useLang();
+  const en = lang === "en";
   const navigate = useNavigate();
   const getArchive = useServerFn(listArchivedMissions);
   const deleteArchived = useServerFn(masterDeleteArchivedMission);
@@ -38,6 +41,7 @@ function ArchivePage() {
   const [pwInput, setPwInput] = useState("");
   const [pwError, setPwError] = useState(false);
   const [showUnlock, setShowUnlock] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
   const [busyId, setBusyId] = useState<string | null>(null);
 
   useEffect(() => {
@@ -139,18 +143,24 @@ function ArchivePage() {
               onSubmit={(e) => { e.preventDefault(); void tryUnlock(); }}
               style={{ display: "flex", gap: 6 }}
             >
-              <input
-                type="password"
-                value={pwInput}
-                onChange={(e) => { setPwInput(e.target.value); setPwError(false); }}
-                placeholder="Master password"
-                autoFocus
-                style={{
-                  background: "rgba(0,0,0,0.4)", color: INK,
-                  border: `1px solid ${pwError ? DANGER : `${ACCENT}55`}`,
-                  padding: "8px 10px", fontFamily: "monospace", fontSize: 11, letterSpacing: "0.12em", minWidth: 220,
-                }}
-              />
+              <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+                <input
+                  type={showPassword ? "text" : "password"}
+                  value={pwInput}
+                  onChange={(e) => { setPwInput(e.target.value); setPwError(false); }}
+                  placeholder="Master password"
+                  autoFocus
+                  style={{
+                    background: "rgba(0,0,0,0.4)", color: INK,
+                    border: `1px solid ${pwError ? DANGER : `${ACCENT}55`}`,
+                    padding: "8px 10px", fontFamily: "monospace", fontSize: 11, letterSpacing: "0.12em", minWidth: 220,
+                  }}
+                />
+                <button type="button" onClick={() => setShowPassword((value) => !value)} aria-pressed={showPassword}
+                  style={{ alignSelf: "flex-start", background: "transparent", border: "none", color: ACCENT, padding: 0, fontFamily: "monospace", fontSize: 10, textDecoration: "underline", cursor: "pointer" }}>
+                  {showPassword ? (en ? "Hide password" : "Skrij geslo") : (en ? "See password" : "Pokaži geslo")}
+                </button>
+              </div>
               <button
                 type="submit"
                 style={{ background: ACCENT, color: BG, border: `1px solid ${ACCENT}`, padding: "8px 12px", fontFamily: "monospace", fontSize: 10, letterSpacing: "0.16em", textTransform: "uppercase", cursor: "pointer", fontWeight: 700 }}
@@ -159,7 +169,7 @@ function ArchivePage() {
               </button>
               <button
                 type="button"
-                onClick={() => { setShowUnlock(false); setPwInput(""); setPwError(false); }}
+                onClick={() => { setShowUnlock(false); setShowPassword(false); setPwInput(""); setPwError(false); }}
                 style={{ background: "transparent", color: MUTED, border: `1px solid ${HAIRLINE}`, padding: "8px 10px", fontFamily: "monospace", fontSize: 10, letterSpacing: "0.16em", textTransform: "uppercase", cursor: "pointer" }}
               >
                 Cancel
