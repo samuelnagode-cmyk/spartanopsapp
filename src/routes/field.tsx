@@ -3,6 +3,7 @@ import { useEffect, useState, type CSSProperties, type FormEvent } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { supabase } from "@/integrations/supabase/client";
 import { useLang } from "@/lib/i18n";
+import { saveActiveSession } from "@/lib/active-session";
 import { spartanopsEnterField, spartanopsGetFieldPublicInfo } from "@/lib/spartanops-checkin.functions";
 
 type FieldSearch = { code?: string; id?: string };
@@ -68,6 +69,14 @@ function FieldPage() {
   const [waitingFor, setWaitingFor] = useState<string | null>(null);
 
   const hasTarget = Boolean(code || id);
+  const [lastField, setLastField] = useState<{ accountId: string; code: string | null; name: string } | null>(null);
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem("spartanops:last-field");
+      const v = raw ? JSON.parse(raw) : null;
+      if (v && typeof v.accountId === "string") setLastField({ accountId: v.accountId, code: v.code ?? null, name: v.name ?? "" });
+    } catch { /* ignore */ }
+  }, []);
 
   useEffect(() => {
     if (!hasTarget) return;
@@ -90,6 +99,7 @@ function FieldPage() {
     const go = (next: string) => {
       if (stopped) return;
       stopped = true;
+      saveActiveSession(next);
       window.location.assign(`/misija?field=${encodeURIComponent(next)}`);
     };
     const ch = supabase
@@ -137,6 +147,7 @@ function FieldPage() {
         localStorage.setItem("spartanops:last-field", JSON.stringify({ accountId: info.accountId, code: code ?? null, name: r.name || info.name }));
       } catch { /* storage unavailable */ }
       if (r.activeLobbyId) {
+        saveActiveSession(r.activeLobbyId);
         window.location.assign(`/misija?field=${encodeURIComponent(r.activeLobbyId)}`);
       } else {
         setWaitingFor(info.accountId);
@@ -152,6 +163,15 @@ function FieldPage() {
   if (!hasTarget) {
     body = (
       <form onSubmit={submitCode}>
+        {lastField && (
+          <button
+            type="button"
+            style={{ ...btnStyle, marginBottom: 22 }}
+            onClick={() => navigate({ to: "/field", search: lastField.code ? { code: lastField.code } : { id: lastField.accountId } })}
+          >
+            {en ? `Continue to ${lastField.name || "your field"}` : `Nadaljuj na ${lastField.name || "svoj poligon"}`}
+          </button>
+        )}
         <label style={labelStyle}>{en ? "Enter your field code" : "Vnesi kodo poligona"}</label>
         <input
           style={{ ...inputStyle, textAlign: "center", letterSpacing: "0.4em", fontSize: 22, textTransform: "uppercase" }}
@@ -164,6 +184,9 @@ function FieldPage() {
         <button type="submit" style={{ ...btnStyle, opacity: codeInput.length === 6 ? 1 : 0.5 }} disabled={codeInput.length !== 6}>
           {en ? "Continue" : "Nadaljuj"}
         </button>
+        <p style={{ fontSize: 11, opacity: 0.7, marginTop: 12, fontFamily: "monospace", textAlign: "center" }}>
+          {en ? "Find the code on the poster at your field." : "Kodo najdeš na plakatu na poligonu."}
+        </p>
       </form>
     );
   } else if (info.status === "loading") {
