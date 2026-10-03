@@ -77,6 +77,7 @@ function FieldQrPage() {
           html, body { margin: 0 !important; padding: 0 !important; background: #fff !important; }
           header, footer, #field-screen, [role="dialog"], [data-sonner-toaster] { display: none !important; }
           body * { visibility: hidden !important; }
+          [style*="position: fixed"] { display: none !important; }
           #field-poster, #field-poster * { visibility: visible !important; }
           #field-poster {
             display: flex !important; position: static !important;
