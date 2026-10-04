@@ -181,7 +181,7 @@ export function QRScanner({ open, onClose, onDecode, mode = "capture", onRaw, on
             if (codes && codes.length > 0) {
               const raw = codes[0].rawValue ?? "";
               handleDecoded(raw);
-              if (decodedRef.current) return;
+              if (decodedRef.current || modeRef.current !== "field") return;
             }
           } else if (jsQR) {
             const w = video.videoWidth;
@@ -196,7 +196,7 @@ export function QRScanner({ open, onClose, onDecode, mode = "capture", onRaw, on
                 const code = jsQR(img.data, w, h, { inversionAttempts: "dontInvert" });
                 if (code?.data) {
                   handleDecoded(code.data);
-                  if (decodedRef.current) return;
+                  if (decodedRef.current || modeRef.current !== "field") return;
                 }
               }
             }
