@@ -74,6 +74,10 @@ export const dict: Dict = {
     sl: "Neveljavna QR koda za to misijo.",
     en: "Invalid QR code for this mission.",
   },
+  "scanner.notFieldCode": {
+    sl: "To ni QR koda poligona",
+    en: "That is not a field QR code",
+  },
   "scanner.securityAlert": {
     sl: "VARNOSTNO OPOZORILO: Zajem točke je mogoč le preko vgrajenega skenerja v aplikaciji.",
     en: "SECURITY ALERT: Point capture is only valid via the In-App Scanner.",
@@ -512,7 +516,7 @@ export const dict: Dict = {
   "spartan.heroTag": { sl: "// TAKTIČNI AIRSOFT HUD SISTEM", en: "// TACTICAL AIRSOFT HUD SYSTEM" },
   "spartan.heroSubtext": { sl: "Spletna aplikacija za spremljanje airsoft spopadov v živo. Prenesite grafike za print za vaše airsoft misije in omogočite igralcem skeniranje QR kod ki jim bodo prinesle zmago.", en: "The ultimate web app for live-tracking airsoft games. Download tactical printouts for your field and let players scan QR codes to secure victory." },
   "spartan.btnCreateMission": { sl: "USTVARI MISIJO", en: "CREATE MISSION" },
-  "spartan.btnJoinMission": { sl: "PRIDRUŽI SE MISIJI", en: "JOIN MISSION" },
+  "spartan.btnJoinMission": { sl: "VSTOPI V IGRO", en: "JOIN A GAME" },
   "spartan.tagSimplicity": { sl: "// TAKTIČNA PREPROSTOST", en: "// TACTICAL SIMPLICITY" },
   "spartan.titleRevolutionize": { sl: "REVOLUCIJA AIRSOFT MISIJ", en: "REVOLUTIONIZE YOUR AIRSOFT FIELD" },
   "spartan.descProblem": { sl: "Airsoft spopadi so izjemno zabavni, vendar je organizacija in spremljanje ciljev na terenu pogosto tehnično zapleteno. Tradicionalni elektronski rekviziti za sledenje sektorjem v realnem času predstavljajo ogromno finančno breme — še posebej za manjše klube in upravljavce polj.", en: "Airsoft games are incredibly fun, but organizing and tracking objectives on the field is often technically complicated. Traditional electronic props used for real-time sector tracking can be an immense financial burden — especially for smaller clubs and field operators." },
