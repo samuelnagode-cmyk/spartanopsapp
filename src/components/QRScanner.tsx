@@ -78,7 +78,10 @@ export function parseScanPayload(raw: string): ScanPayload | null {
 type Props = {
   open: boolean;
   onClose: () => void;
-  onDecode: (payload: ScanPayload) => void;
+  onDecode?: (payload: ScanPayload) => void;
+  mode?: "capture" | "field";
+  onRaw?: (raw: string) => boolean;
+  onCameraError?: () => void;
 };
 
 /**
@@ -87,7 +90,7 @@ type Props = {
  * decoded text into a validated payload so a poisoned printed URL (or a
  * hand-crafted string) can never bypass validation.
  */
-export function QRScanner({ open, onClose, onDecode }: Props) {
+export function QRScanner({ open, onClose, onDecode, mode = "capture", onRaw, onCameraError }: Props) {
   const t = useT();
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
@@ -103,8 +106,14 @@ export function QRScanner({ open, onClose, onDecode }: Props) {
   // and re-created the MediaStream, which made the viewport flicker between
   // the camera feed and a black frame.
   const onDecodeRef = useRef(onDecode);
+  const onRawRef = useRef(onRaw);
+  const onCameraErrorRef = useRef(onCameraError);
+  const modeRef = useRef(mode);
   const tRef = useRef(t);
   useEffect(() => { onDecodeRef.current = onDecode; }, [onDecode]);
+  useEffect(() => { onRawRef.current = onRaw; }, [onRaw]);
+  useEffect(() => { onCameraErrorRef.current = onCameraError; }, [onCameraError]);
+  useEffect(() => { modeRef.current = mode; }, [mode]);
   useEffect(() => { tRef.current = t; }, [t]);
 
   useEffect(() => {
@@ -137,6 +146,7 @@ export function QRScanner({ open, onClose, onDecode }: Props) {
         beginDecodeLoop();
       } catch {
         setErr(tRef.current("scanner.cameraDenied"));
+        onCameraErrorRef.current?.();
       }
     }
 
@@ -171,7 +181,7 @@ export function QRScanner({ open, onClose, onDecode }: Props) {
             if (codes && codes.length > 0) {
               const raw = codes[0].rawValue ?? "";
               handleDecoded(raw);
-              return;
+              if (decodedRef.current) return;
             }
           } else if (jsQR) {
             const w = video.videoWidth;
@@ -186,7 +196,7 @@ export function QRScanner({ open, onClose, onDecode }: Props) {
                 const code = jsQR(img.data, w, h, { inversionAttempts: "dontInvert" });
                 if (code?.data) {
                   handleDecoded(code.data);
-                  return;
+                  if (decodedRef.current) return;
                 }
               }
             }
@@ -199,6 +209,17 @@ export function QRScanner({ open, onClose, onDecode }: Props) {
 
     function handleDecoded(raw: string) {
       if (decodedRef.current) return;
+      if (modeRef.current === "field") {
+        const accepted = onRawRef.current?.(raw) === true;
+        if (!accepted) {
+          setErr(tRef.current("scanner.notFieldCode"));
+          setTimeout(() => setErr(""), 1600);
+          return;
+        }
+        decodedRef.current = true;
+        stopStream();
+        return;
+      }
       const payload = parseScanPayload(raw);
       if (!payload) {
         // Ignore and keep scanning — some printed codes may be misfired.
@@ -208,7 +229,7 @@ export function QRScanner({ open, onClose, onDecode }: Props) {
       }
       decodedRef.current = true;
       stopStream();
-      onDecodeRef.current(payload);
+      onDecodeRef.current?.(payload);
     }
 
     function stopStream() {
