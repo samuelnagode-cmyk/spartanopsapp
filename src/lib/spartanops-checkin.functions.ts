@@ -595,3 +595,56 @@ export const spartanopsEnterField = createServerFn({ method: "POST" })
     const token = await signFieldToken(data.accountId, Number((row as any)?.field_password_version ?? 1));
     return { ok: true as const, token, name: ((row as any)?.business_name ?? "") as string, activeLobbyId: ((row as any)?.active_lobby_id ?? null) as string | null };
   });
+
+// ---- Public Join directory (names only) ----
+const FIELD_LIST_ALL_MAX = 30;
+const FIELD_SEARCH_LIMIT = 20;
+
+export function spartanopsFoldQuery(q: string): string {
+  return q.trim().toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/đ/g, "d");
+}
+
+export const spartanopsListFields = createServerFn({ method: "POST" })
+  .inputValidator((d: { q?: string }) => ({ q: String(d?.q ?? "").slice(0, 80) }))
+  .handler(async ({ data }) => {
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const base = () => supabaseAdmin.from("spartanops_accounts")
+      .select("id, business_name", { count: "exact" })
+      .eq("listed_publicly" as any, true).eq("listing_blocked" as any, false)
+      .not("field_password_hash", "is", null);
+    const folded = spartanopsFoldQuery(data.q);
+    const map = (rows: any[] | null) => (rows ?? []).map((r) => ({ id: r.id as string, name: r.business_name as string }));
+    if (folded.length >= 2) {
+      const pat = folded.replace(/[\\%_]/g, (c) => "\\" + c);
+      const { data: rows, count } = await base().ilike("name_fold" as any, `%${pat}%`).order("business_name").limit(FIELD_SEARCH_LIMIT);
+      return { mode: "search" as const, fields: map(rows), total: count ?? 0 };
+    }
+    const { count } = await supabaseAdmin.from("spartanops_accounts").select("id", { count: "exact", head: true })
+      .eq("listed_publicly" as any, true).eq("listing_blocked" as any, false).not("field_password_hash", "is", null);
+    const total = count ?? 0;
+    if (total > FIELD_LIST_ALL_MAX) return { mode: "prompt" as const, fields: [] as { id: string; name: string }[], total };
+    const { data: rows } = await base().order("business_name");
+    return { mode: "all" as const, fields: map(rows), total };
+  });
+
+export const spartanopsResumeField = createServerFn({ method: "POST" })
+  .inputValidator((d: { accountId: string; token: string }) => ({
+    accountId: String(d?.accountId ?? ""),
+    token: String(d?.token ?? "").slice(0, 1000),
+  }))
+  .handler(async ({ data }) => {
+    try {
+      if (!UUID_RE.test(data.accountId) || !data.token) return { ok: false as const };
+      const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+      const { data: row } = await supabaseAdmin.from("spartanops_accounts")
+        .select("business_name, active_lobby_id, field_password_version" as any).eq("id", data.accountId).maybeSingle();
+      if (!row) return { ok: false as const };
+      const version = Number((row as any).field_password_version ?? 1);
+      const { verifyFieldToken, signFieldToken } = await import("./spartanops-field-token");
+      if (!(await verifyFieldToken(data.token, data.accountId, version))) return { ok: false as const };
+      const token = await signFieldToken(data.accountId, version);
+      return { ok: true as const, name: ((row as any).business_name ?? "") as string, activeLobbyId: ((row as any).active_lobby_id ?? null) as string | null, token };
+    } catch {
+      return { ok: false as const };
+    }
+  });

@@ -45,7 +45,16 @@ function FieldQrPage() {
   const { lang } = useLang();
   const en = lang === "en";
   const navigate = useNavigate();
-  const [acct, setAcct] = useState<{ name: string; code: string } | null>(null);
+  const [acct, setAcct] = useState<{ id: string; name: string; code: string; listed: boolean } | null>(null);
+  const [listBusy, setListBusy] = useState(false);
+  const toggleListed = async () => {
+    if (!acct || listBusy) return;
+    const next = !acct.listed;
+    setListBusy(true);
+    const { error } = await db.from("spartanops_accounts").update({ listed_publicly: next }).eq("id", acct.id);
+    if (!error) setAcct({ ...acct, listed: next });
+    setListBusy(false);
+  };
   const [copied, setCopied] = useState(false);
   const [base, setBase] = useState(PROD_ORIGIN);
 
@@ -55,10 +64,10 @@ function FieldQrPage() {
       if (!data.user) { navigate({ to: "/marshal-account" }); return; }
       const { data: row } = await db
         .from("spartanops_accounts")
-        .select("business_name, field_code")
+        .select("business_name, field_code, listed_publicly")
         .eq("id", data.user.id)
         .maybeSingle();
-      if (row) setAcct({ name: (row as any).business_name ?? "", code: (row as any).field_code ?? "" });
+      if (row) setAcct({ id: data.user.id, name: (row as any).business_name ?? "", code: (row as any).field_code ?? "", listed: (row as any).listed_publicly !== false });
     });
   }, [navigate]);
 
@@ -67,7 +76,6 @@ function FieldQrPage() {
   }
 
   const url = `${base}/field?code=${acct.code}`;
-  const shortHost = base.replace(/^https?:\/\//, "");
 
   return (
     <>
@@ -101,6 +109,13 @@ function FieldQrPage() {
           >
             {copied ? (en ? "Copied" : "Kopirano") : en ? "Copy link" : "Kopiraj povezavo"}
           </button>
+          <label style={{ display: "flex", alignItems: "center", gap: 10, marginTop: 18, textAlign: "left", fontFamily: "monospace", fontSize: 13, cursor: "pointer" }}>
+            <input type="checkbox" role="switch" checked={acct.listed} disabled={listBusy} onChange={toggleListed} style={{ width: 20, height: 20, accentColor: ACCENT }} />
+            {en ? "Show my field on the Join page" : "Prikaži moj poligon na strani za vstop"}
+          </label>
+          <p style={{ fontFamily: "monospace", fontSize: 11, opacity: 0.7, marginTop: 6, lineHeight: 1.5, textAlign: "left" }}>
+            {en ? "Players can always join with your poster QR, whether or not you are listed." : "Igralci lahko vedno vstopijo s QR kodo na plakatu, ne glede na to, ali si na seznamu."}
+          </p>
           <button type="button" style={btnStyle} onClick={() => window.print()}>
             {en ? "Print poster" : "Natisni plakat"}
           </button>
@@ -120,10 +135,6 @@ function FieldQrPage() {
         <QRCodeSVG value={url} size={380} level="M" bgColor="#ffffff" fgColor="#000000" />
         <div style={{ fontSize: "24pt", fontWeight: 700 }}>{acct.name}</div>
         <div style={{ fontSize: "14pt" }}>{en ? "No app to install — scan with your phone camera" : "Aplikacije ni treba namestiti — skeniraj s kamero telefona"}</div>
-        <div style={{ fontSize: "13pt" }}>
-          {en ? `or go to ${shortHost}/field and enter the code: ` : `ali odpri ${shortHost}/field in vnesi kodo: `}
-          <strong style={{ fontFamily: "monospace", fontSize: "18pt", letterSpacing: "0.15em" }}>{acct.code}</strong>
-        </div>
         <div style={{ display: "flex", alignItems: "flex-end", gap: "4mm", marginTop: "4mm" }}>
           <div style={{ fontSize: "16pt", fontWeight: 700 }}>{en ? "Today's password:" : "Današnje geslo:"}</div>
           <div style={{ width: "120mm", height: "16mm", borderBottom: "2px solid #000" }} />
