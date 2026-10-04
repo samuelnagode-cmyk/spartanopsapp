@@ -214,6 +214,9 @@ export type Database = {
           field_password_version: number
           id: string
           is_platform_showcase: boolean
+          listed_publicly: boolean
+          listing_blocked: boolean
+          name_fold: string | null
         }
         Insert: {
           active_lobby_id?: string | null
@@ -225,6 +228,9 @@ export type Database = {
           field_password_version?: number
           id: string
           is_platform_showcase?: boolean
+          listed_publicly?: boolean
+          listing_blocked?: boolean
+          name_fold?: string | null
         }
         Update: {
           active_lobby_id?: string | null
@@ -236,6 +242,9 @@ export type Database = {
           field_password_version?: number
           id?: string
           is_platform_showcase?: boolean
+          listed_publicly?: boolean
+          listing_blocked?: boolean
+          name_fold?: string | null
         }
         Relationships: [
           {
@@ -882,6 +891,7 @@ export type Database = {
         Args: { p_lobby_id: string }
         Returns: undefined
       }
+      spartanops_fold: { Args: { p: string }; Returns: string }
       spartanops_generate_field_code: { Args: never; Returns: string }
       spartanops_get_field_map: {
         Args: {
