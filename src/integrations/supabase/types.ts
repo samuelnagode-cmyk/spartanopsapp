@@ -597,7 +597,7 @@ export type Database = {
       }
       spartanops_lobbies: {
         Row: {
-          account_id: string | null
+          account_id: string
           city: string | null
           countdown_seconds: number
           country: string | null
@@ -620,7 +620,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
-          account_id?: string | null
+          account_id: string
           city?: string | null
           countdown_seconds?: number
           country?: string | null
@@ -643,7 +643,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
-          account_id?: string | null
+          account_id?: string
           city?: string | null
           countdown_seconds?: number
           country?: string | null
