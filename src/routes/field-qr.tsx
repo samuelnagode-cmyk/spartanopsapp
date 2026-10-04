@@ -100,8 +100,7 @@ function FieldQrPage() {
           <div data-testid="field-qr" style={{ background: "#ffffff", padding: 16, display: "inline-block" }}>
             <QRCodeSVG value={url} size={260} level="M" bgColor="#ffffff" fgColor="#000000" />
           </div>
-          <p style={{ fontFamily: "monospace", fontSize: 34, letterSpacing: "0.3em", color: ACCENT, margin: "18px 0 6px" }}>{acct.code}</p>
-          <p style={{ fontFamily: "monospace", fontSize: 11, opacity: 0.7, wordBreak: "break-all" }}>{url}</p>
+          <p style={{ fontFamily: "monospace", fontSize: 11, opacity: 0.7, wordBreak: "break-all", marginTop: 18 }}>{url}</p>
           <button
             type="button"
             style={btnStyle}
