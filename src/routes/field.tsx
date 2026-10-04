@@ -206,8 +206,6 @@ function FieldPage() {
   let body: React.ReactNode;
   if (!hasTarget || info.status === "loading" || resuming) {
     body = <p style={{ ...msgStyle, opacity: 0.7 }}>…</p>;
-  } else if (info.status === "loading") {
-    body = <p style={{ ...msgStyle, opacity: 0.7 }}>…</p>;
   } else if (info.status === "notfound") {
     body = <p style={{ ...msgStyle, color: ERR }}>{en ? "Field not found. Check the code on your field's poster, or ask the marshal." : "Poligon ni najden. Preveri kodo na plakatu ali vprašaj maršala."}</p>;
   } else if (!info.hasPassword) {
