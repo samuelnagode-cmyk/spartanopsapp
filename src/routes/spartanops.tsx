@@ -261,7 +261,7 @@ function Hero() {
             {t("spartan.heroSubtext")}
           </p>
           <div className="mt-5 mx-auto grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4" style={{ maxWidth: 480 }}>
-            <BtnPrimary to={startTo} fullWidth>{t("spartan.btnStartFree")}</BtnPrimary>
+            <BtnPrimary to={startTo} fullWidth>{t("spartan.btnStartFreeCta")}</BtnPrimary>
             <BtnOutline to="/join" fullWidth>{t("spartan.btnJoinMission")}</BtnOutline>
           </div>
           <p className="mt-4 font-mono text-[11px] leading-[1.6]" style={{ color: MUTED, letterSpacing: "0.06em" }}>
@@ -1130,7 +1130,7 @@ function FinalCta() {
         {t("spartan.finalCtaTitle")}
       </h2>
       <div className="mt-6 flex justify-center">
-        <BtnPrimary to={startTo}>{t("spartan.btnStartFree")}</BtnPrimary>
+        <BtnPrimary to={startTo}>{t("spartan.btnStartFreeCta")}</BtnPrimary>
       </div>
     </SectionShell>
   );

@@ -551,7 +551,7 @@ export const dict: Dict = {
   "spartan.btnAccessPrint": { sl: "DOSTOP DO DATOTEK ZA PRINT", en: "ACCESS PRINT FILES" },
   "spartan.tagLicensing": { sl: "// LICENCE SISTEMA", en: "// SYSTEM LICENSING" },
   "spartan.heroHeadline": { sl: "IgrAJ airsoft z rezultati v živo. Brez elektronskih rekvizitov.", en: "Live-scored airsoft games. No electronic props." },
-  "spartan.btnStartFree": { sl: "ZAČNI BREZPLAČNO", en: "START FREE" },
+  "spartan.btnStartFreeCta": { sl: "ZAČNI BREZPLAČNO", en: "START FREE" },
   "spartan.heroUnderButtons": { sl: "Brez namestitve aplikacije · Brez nakupa opreme · Brezplačen začetek", en: "No app to install · No hardware to buy · Free to start" },
   "spartan.benefitsTitle": { sl: "Manj prepirov. Manj priprav. Brez opreme.", en: "Fewer arguments. Less setup. No hardware." },
   "spartan.benefit1Title": { sl: "Brez nakupa opreme.", en: "No hardware to buy." },
