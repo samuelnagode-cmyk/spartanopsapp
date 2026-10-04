@@ -3020,13 +3020,13 @@ function MarshalLobbyConsole({ lobby: initialLobby, marshalPassword, lobbyPasswo
 
 
       <div style={{ marginTop: 18, textAlign: "center" }}>
-        <Link to="/join"
+        <Link to="/field-qr"
           style={{
             color: MUTED, textDecoration: "none", fontFamily: "monospace",
             fontSize: 11, letterSpacing: "0.20em", textTransform: "uppercase",
             borderBottom: `1px solid ${MUTED}`, paddingBottom: 2,
           }}>
-          {en ? "Open Join Page" : "Odpri stran za pridružitev"}
+          {en ? "Open player QR" : "Odpri QR za igralce"}
         </Link>
       </div>
 

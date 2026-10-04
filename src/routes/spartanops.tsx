@@ -466,7 +466,7 @@ function Locations() {
   }, [listFn]);
 
 
-  const goJoin = () => navigate({ to: "/join", search: { browse: "1" } as any });
+  const t = useT();
 
   return (
     <SectionShell>
@@ -515,15 +515,8 @@ function Locations() {
             const isActive = l.status === "ACTIVE";
             const badge = isActive ? "#3ddc84" : "#c86a4a";
             return (
-              <div
-                key={l.id}
-                onClick={goJoin}
-                role="button"
-                tabIndex={0}
-                onKeyDown={(e) => { if (e.key === "Enter") goJoin(); }}
-                style={{ cursor: "pointer" }}
-              >
-                <HudCard className="p-6 transition-colors hover:brightness-110">
+              <div key={l.id}>
+                <HudCard className="p-6">
                   <div className="flex items-start justify-between gap-3" style={{ opacity: isActive ? 1 : 0.75 }}>
                     <div className="flex items-center gap-3 min-w-0">
                       <MapPin size={18} strokeWidth={1.6} color={ACCENT} />
@@ -566,7 +559,7 @@ function Locations() {
       <div className="mt-10 flex justify-center">
         <button
           type="button"
-          onClick={() => navigate({ to: "/join", search: { browse: "1" } as any })}
+          onClick={() => navigate({ to: "/join" })}
           className="inline-flex items-center justify-center gap-2 font-mono uppercase transition-all hover:brightness-125"
           style={{
             background: "transparent",
@@ -581,7 +574,7 @@ function Locations() {
             cursor: "pointer",
           }}
         >
-          ACTIVE MISSIONS LIST <ArrowRight size={14} />
+          {t("spartan.btnJoinMission")} <ArrowRight size={14} />
         </button>
       </div>
     </SectionShell>

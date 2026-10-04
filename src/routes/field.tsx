@@ -1,10 +1,26 @@
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { useEffect, useState, type CSSProperties, type FormEvent } from "react";
+import { createFileRoute, redirect } from "@tanstack/react-router";
+import { useEffect, useRef, useState, type CSSProperties, type FormEvent } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { supabase } from "@/integrations/supabase/client";
 import { useLang } from "@/lib/i18n";
 import { saveActiveSession } from "@/lib/active-session";
-import { spartanopsEnterField, spartanopsGetFieldPublicInfo } from "@/lib/spartanops-checkin.functions";
+import { spartanopsEnterField, spartanopsGetFieldPublicInfo, spartanopsResumeField } from "@/lib/spartanops-checkin.functions";
+
+const RECENT_KEY = "spartanops:recent-fields";
+function rememberField(accountId: string, name: string) {
+  try {
+    const raw = localStorage.getItem(RECENT_KEY);
+    const list: { accountId: string; name: string }[] = raw ? JSON.parse(raw) : [];
+    const next = [{ accountId, name }, ...(Array.isArray(list) ? list : []).filter((f) => f && f.accountId !== accountId)].slice(0, 5);
+    localStorage.setItem(RECENT_KEY, JSON.stringify(next));
+  } catch { /* storage unavailable */ }
+}
+function readEntryToken(accountId: string): string | null {
+  try {
+    const v = JSON.parse(localStorage.getItem("spartanops:field-entry") ?? "null");
+    return v && v.accountId === accountId && typeof v.token === "string" ? v.token : null;
+  } catch { return null; }
+}
 
 type FieldSearch = { code?: string; id?: string; notice?: string };
 
@@ -14,6 +30,9 @@ export const Route = createFileRoute("/field")({
     id: typeof s.id === "string" ? s.id : undefined,
     notice: typeof s.notice === "string" ? s.notice : undefined,
   }),
+  beforeLoad: ({ search }) => {
+    if (!search.code && !search.id) throw redirect({ to: "/join", replace: true });
+  },
   head: () => ({
     meta: [
       { title: "Join the Field — SpartanOps" },
@@ -58,28 +77,20 @@ function FieldPage() {
   const { lang } = useLang();
   const en = lang === "en";
   const { code, id, notice } = Route.useSearch();
-  const navigate = useNavigate();
   const getInfo = useServerFn(spartanopsGetFieldPublicInfo);
   const enter = useServerFn(spartanopsEnterField);
+  const resume = useServerFn(spartanopsResumeField);
 
-  const [codeInput, setCodeInput] = useState("");
   const [info, setInfo] = useState<Info>({ status: "loading" });
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [err, setErr] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [waitingFor, setWaitingFor] = useState<string | null>(null);
+  const [resuming, setResuming] = useState(false);
+  const enteredByTokenRef = useRef(false);
 
   const hasTarget = Boolean(code || id);
-  const [lastField, setLastField] = useState<{ accountId: string; code: string | null; name: string } | null>(null);
-  useEffect(() => {
-    try {
-      const raw = localStorage.getItem("spartanops:last-field");
-      const v = raw ? JSON.parse(raw) : null;
-      if (v && typeof v.accountId === "string") setLastField({ accountId: v.accountId, code: v.code ?? null, name: v.name ?? "" });
-    } catch { /* ignore */ }
-  }, []);
-
   useEffect(() => {
     if (!hasTarget) return;
     let cancelled = false;
@@ -87,7 +98,20 @@ function FieldPage() {
     getInfo({ data: { code, id } })
       .then((r) => {
         if (cancelled) return;
-        setInfo(r.found ? { status: "found", accountId: r.accountId, name: r.name, hasPassword: r.hasPassword } : { status: "notfound" });
+        if (!r.found) { setInfo({ status: "notfound" }); return; }
+        const found = { status: "found" as const, accountId: r.accountId, name: r.name, hasPassword: r.hasPassword };
+        const token = r.hasPassword ? readEntryToken(r.accountId) : null;
+        if (!token) { setInfo(found); return; }
+        setResuming(true);
+        setInfo(found);
+        resume({ data: { accountId: r.accountId, token } })
+          .then((res) => {
+            if (cancelled) return;
+            if (!res.ok) { setResuming(false); return; }
+            enteredByTokenRef.current = true;
+            afterEntry(r.accountId, res.name || r.name, res.token, res.activeLobbyId);
+          })
+          .catch(() => { if (!cancelled) setResuming(false); });
       })
       .catch(() => { if (!cancelled) setInfo({ status: "notfound" }); });
     return () => { cancelled = true; };
@@ -113,8 +137,16 @@ function FieldPage() {
       .subscribe();
     const recheck = () => {
       if (stopped) return;
-      enter({ data: { accountId: waitingFor, password } })
-        .then((r) => { if (r.ok && r.activeLobbyId) go(r.activeLobbyId); })
+      const p = enteredByTokenRef.current
+        ? resume({ data: { accountId: waitingFor, token: readEntryToken(waitingFor) ?? "" } })
+        : enter({ data: { accountId: waitingFor, password } });
+      p.then((r) => {
+          if (!r.ok) return;
+          if (enteredByTokenRef.current && "token" in r && r.token) {
+            try { localStorage.setItem("spartanops:field-entry", JSON.stringify({ accountId: waitingFor, token: r.token })); } catch { /* ignore */ }
+          }
+          if (r.activeLobbyId) go(r.activeLobbyId);
+        })
         .catch(() => { /* retry on next tick */ });
     };
     recheck();
@@ -130,11 +162,21 @@ function FieldPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [waitingFor]);
 
-  const submitCode = (e: FormEvent) => {
-    e.preventDefault();
-    const c = codeInput.trim().toUpperCase();
-    if (c.length !== 6) return;
-    navigate({ to: "/field", search: { code: c } });
+  const afterEntry = (accountId: string, name: string, token: string, activeLobbyId: string | null) => {
+    try {
+      localStorage.setItem("spartanops:field-entry", JSON.stringify({ accountId, token }));
+    } catch { /* storage unavailable */ }
+    try {
+      localStorage.setItem("spartanops:last-field", JSON.stringify({ accountId, code: code ?? null, name }));
+    } catch { /* storage unavailable */ }
+    rememberField(accountId, name);
+    if (activeLobbyId) {
+      saveActiveSession(activeLobbyId);
+      window.location.assign(`/misija?field=${encodeURIComponent(activeLobbyId)}`);
+    } else {
+      setResuming(false);
+      setWaitingFor(accountId);
+    }
   };
 
   const submitPassword = async (e: FormEvent) => {
@@ -152,18 +194,8 @@ function FieldPage() {
         }
         return;
       }
-      try {
-        localStorage.setItem("spartanops:field-entry", JSON.stringify({ accountId: info.accountId, token: r.token }));
-      } catch { /* storage unavailable */ }
-      try {
-        localStorage.setItem("spartanops:last-field", JSON.stringify({ accountId: info.accountId, code: code ?? null, name: r.name || info.name }));
-      } catch { /* storage unavailable */ }
-      if (r.activeLobbyId) {
-        saveActiveSession(r.activeLobbyId);
-        window.location.assign(`/misija?field=${encodeURIComponent(r.activeLobbyId)}`);
-      } else {
-        setWaitingFor(info.accountId);
-      }
+      enteredByTokenRef.current = false;
+      afterEntry(info.accountId, r.name || info.name, r.token, r.activeLobbyId);
     } catch {
       setErr(en ? "Connection error. Try again." : "Napaka povezave. Poskusi znova.");
     } finally {
@@ -172,36 +204,7 @@ function FieldPage() {
   };
 
   let body: React.ReactNode;
-  if (!hasTarget) {
-    body = (
-      <form onSubmit={submitCode}>
-        {lastField && (
-          <button
-            type="button"
-            style={{ ...btnStyle, marginBottom: 22 }}
-            onClick={() => navigate({ to: "/field", search: lastField.code ? { code: lastField.code } : { id: lastField.accountId } })}
-          >
-            {en ? `Continue to ${lastField.name || "your field"}` : `Nadaljuj na ${lastField.name || "svoj poligon"}`}
-          </button>
-        )}
-        <label style={labelStyle}>{en ? "Enter your field code" : "Vnesi kodo poligona"}</label>
-        <input
-          style={{ ...inputStyle, textAlign: "center", letterSpacing: "0.4em", fontSize: 22, textTransform: "uppercase" }}
-          value={codeInput}
-          maxLength={6}
-          autoCapitalize="characters"
-          autoComplete="off"
-          onChange={(e) => setCodeInput(e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, ""))}
-        />
-        <button type="submit" style={{ ...btnStyle, opacity: codeInput.length === 6 ? 1 : 0.5 }} disabled={codeInput.length !== 6}>
-          {en ? "Continue" : "Nadaljuj"}
-        </button>
-        <p style={{ fontSize: 11, opacity: 0.7, marginTop: 12, fontFamily: "monospace", textAlign: "center" }}>
-          {en ? "Find the code on the poster at your field." : "Kodo najdeš na plakatu na poligonu."}
-        </p>
-      </form>
-    );
-  } else if (info.status === "loading") {
+  if (!hasTarget || info.status === "loading" || resuming) {
     body = <p style={{ ...msgStyle, opacity: 0.7 }}>…</p>;
   } else if (info.status === "notfound") {
     body = <p style={{ ...msgStyle, color: ERR }}>{en ? "Field not found. Check the code on your field's poster, or ask the marshal." : "Poligon ni najden. Preveri kodo na plakatu ali vprašaj maršala."}</p>;

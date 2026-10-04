@@ -387,7 +387,7 @@ export default function Header() {
             <nav className="px-6 py-8 max-w-2xl mx-auto space-y-6">
               {([
                 { label: lang === "en" ? "HOME" : "DOMOV", to: "/spartanops" as const },
-                { label: lang === "en" ? "JOIN MISSION" : "PRIDRUŽI SE MISIJI", to: "/join" as const },
+                { label: lang === "en" ? "JOIN A GAME" : "VSTOPI V IGRO", to: "/join" as const },
                 { label: lang === "en" ? "MARSHAL COMMAND CENTER" : "MARSHAL COMMAND CENTER", to: "/admin-pregled" as const },
                 { label: lang === "en" ? "SYSTEM UPDATES" : "SISTEMSKE POSODOBITVE", to: "/updates" as const },
                 { label: lang === "en" ? "PRICING" : "CENIK", to: "/spartanops" as const, hash: "pricing" },
