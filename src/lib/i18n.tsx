@@ -514,7 +514,7 @@ export const dict: Dict = {
 
   // SpartanOps homepage / landing page
   "spartan.heroTag": { sl: "// PRINTAJ. SKENIRAJ. IGRAJ.", en: "// PRINT. SCAN. PLAY." },
-  "spartan.heroSubtext": { sl: "Natisni liste z QR kodami, jih postavi na teren in igralci jih zavzemajo s telefoni. Rezultat se vsem posodablja v \u017eivo.", en: "Print the QR sectors, place them on your field, and players capture them with their phones. Scores update live for everyone." },
+  "spartan.heroSubtext": { sl: "Natisni QR sektorje. Igralci skenirajo s telefoni.", en: "Print QR sectors. Players scan with their phones." },
   "spartan.btnCreateMission": { sl: "USTVARI MISIJO", en: "CREATE MISSION" },
   "spartan.btnJoinMission": { sl: "VSTOPI V IGRO", en: "JOIN A GAME" },
   "spartan.tagSimplicity": { sl: "// TAKTIČNA PREPROSTOST", en: "// TACTICAL SIMPLICITY" },
@@ -552,7 +552,8 @@ export const dict: Dict = {
   "spartan.tagLicensing": { sl: "// LICENCE SISTEMA", en: "// SYSTEM LICENSING" },
   "spartan.heroHeadline": { sl: "IgrAJ airsoft z rezultati v živo. Brez elektronskih rekvizitov.", en: "Live-scored airsoft games. No electronic props." },
   "spartan.btnStartFreeCta": { sl: "ZAČNI BREZPLAČNO", en: "START FREE" },
-  "spartan.heroUnderButtons": { sl: "Brez namestitve aplikacije · Brez nakupa opreme · Brezplačen začetek", en: "No app to install · No hardware to buy · Free to start" },
+  "spartan.heroUnderButtons": { sl: "Brezplačen začetek · Brez namestitve aplikacije", en: "Free to start · No app to install" },
+  "spartan.heroJoinLink": { sl: "Igraš danes? Vstopi v igro →", en: "Playing today? Join a game →" },
   "spartan.benefitsTitle": { sl: "Manj prepirov. Manj priprav. Brez opreme.", en: "Fewer arguments. Less setup. No hardware." },
   "spartan.benefit1Title": { sl: "Brez nakupa opreme.", en: "No hardware to buy." },
   "spartan.benefit1Desc": { sl: "Elektronski rekviziti za zavzemanje so dragi in se kvarijo. SpartanOps uporablja natisnjene QR kode in telefone, ki jih igralci že imajo. Brez baterij, kablov in vzdrževanja.", en: "Electronic domination props are expensive and break. SpartanOps uses printed QR codes and the phones your players already carry. No batteries, no wiring, no maintenance." },

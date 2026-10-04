@@ -214,7 +214,7 @@ function Hero() {
           src={HERO_BG_URL}
           alt=""
           className="absolute inset-0 w-full h-full object-cover"
-          style={{ opacity: 0.33 }}
+          style={{ opacity: 0.18 }}
           loading="eager"
           decoding="async"
         />
@@ -232,13 +232,9 @@ function Hero() {
 
       <SectionShell className="relative pt-16 md:pt-20 pb-24 md:pb-32">
         <div className="relative text-center" style={{ zIndex: 1 }}>
-          <Reticle />
-          <p
-            className="font-mono uppercase mt-3 mb-2"
-            style={{ fontSize: 11, letterSpacing: "0.34em", color: BLUE }}
-          >
-            {t("spartan.heroTag")}
-          </p>
+          <div className="origin-top scale-[0.6] -mb-[59px] md:scale-100 md:mb-0">
+            <Reticle />
+          </div>
           <div className="relative mx-auto" style={{ maxWidth: "min(560px, 88vw)", width: "100%" }}>
             <img
               src={LOGO_URL}
@@ -260,42 +256,19 @@ function Hero() {
           >
             {t("spartan.heroSubtext")}
           </p>
-          <div className="mt-5 mx-auto grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4" style={{ maxWidth: 480 }}>
+          <div className="mt-5 mx-auto" style={{ maxWidth: 360 }}>
             <BtnPrimary to={startTo} fullWidth>{t("spartan.btnStartFreeCta")}</BtnPrimary>
-            <BtnOutline to="/join" fullWidth>{t("spartan.btnJoinMission")}</BtnOutline>
           </div>
-          <p className="mt-4 font-mono text-[11px] leading-[1.6]" style={{ color: MUTED, letterSpacing: "0.06em" }}>
+          <Link
+            to="/join"
+            className="inline-block mt-4 font-mono text-[13px] underline-offset-4 hover:underline"
+            style={{ color: INK, opacity: 0.8, letterSpacing: "0.04em" }}
+          >
+            {t("spartan.heroJoinLink")}
+          </Link>
+          <p className="mt-3 font-mono text-[11px] leading-[1.6]" style={{ color: MUTED, letterSpacing: "0.06em" }}>
             {t("spartan.heroUnderButtons")}
           </p>
-          {/* Scroll cue — tactical down chevron */}
-          <button
-            type="button"
-            aria-label="Scroll down"
-            onClick={() =>
-              window.scrollBy({ top: window.innerHeight * 0.8, behavior: "smooth" })
-            }
-            className="mx-auto mt-8 flex items-center justify-center animate-bounce"
-            style={{ color: ACCENT, opacity: 0.9 }}
-          >
-            <svg
-              width="32"
-              height="32"
-              viewBox="0 0 32 32"
-              fill="none"
-              xmlns="http://www.w3.org/2000/svg"
-              style={{
-                filter: "drop-shadow(0 0 4px rgba(232,154,10,0.45)) drop-shadow(0 0 10px rgba(232,154,10,0.15))",
-              }}
-            >
-              <path
-                d="M8 13L16 21L24 13"
-                stroke="currentColor"
-                strokeWidth="1.5"
-                strokeLinecap="square"
-                strokeLinejoin="miter"
-              />
-            </svg>
-          </button>
         </div>
       </SectionShell>
     </div>
