@@ -88,6 +88,10 @@ function freshScores(teamScores?: Record<string, number>) {
 const FREE_NODES = { "1": null, "2": null, "3": null, "4": null, "5": null };
 
 async function resetMissionRuntime(supabaseAdmin: any, fieldId: string) {
+  // Record the results ledger before anything is wiped; never block the reset on it.
+  try {
+    await supabaseAdmin.rpc("spartanops_record_results_safe" as any, { p_field_id: fieldId, p_reason: "reset" });
+  } catch { /* recording must never break a reset */ }
   const { error } = await supabaseAdmin.rpc("spartanops_reset_match_runtime" as any, { p_field_id: fieldId });
   await supabaseAdmin
     .from("spartanops_qr_anchors" as any)

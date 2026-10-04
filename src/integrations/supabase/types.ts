@@ -684,6 +684,89 @@ export type Database = {
           },
         ]
       }
+      spartanops_match_results: {
+        Row: {
+          account_id: string
+          callsign: string
+          captures: number
+          deaths: number
+          duration_minutes: number | null
+          end_reason: string
+          ended_at: string
+          gamemode: string | null
+          id: number
+          is_mvp: boolean
+          lobby_id: string
+          match_started_at: string
+          mission_name: string | null
+          played_seconds: number
+          player_key: string
+          player_user_id: string | null
+          players_in_match: number
+          point_target: number | null
+          team: string
+          team_scores: Json | null
+          team_won: boolean
+          winner_team: string | null
+        }
+        Insert: {
+          account_id: string
+          callsign: string
+          captures?: number
+          deaths?: number
+          duration_minutes?: number | null
+          end_reason: string
+          ended_at?: string
+          gamemode?: string | null
+          id?: number
+          is_mvp?: boolean
+          lobby_id: string
+          match_started_at: string
+          mission_name?: string | null
+          played_seconds: number
+          player_key: string
+          player_user_id?: string | null
+          players_in_match: number
+          point_target?: number | null
+          team: string
+          team_scores?: Json | null
+          team_won?: boolean
+          winner_team?: string | null
+        }
+        Update: {
+          account_id?: string
+          callsign?: string
+          captures?: number
+          deaths?: number
+          duration_minutes?: number | null
+          end_reason?: string
+          ended_at?: string
+          gamemode?: string | null
+          id?: number
+          is_mvp?: boolean
+          lobby_id?: string
+          match_started_at?: string
+          mission_name?: string | null
+          played_seconds?: number
+          player_key?: string
+          player_user_id?: string | null
+          players_in_match?: number
+          point_target?: number | null
+          team?: string
+          team_scores?: Json | null
+          team_won?: boolean
+          winner_team?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "spartanops_match_results_account_id_fkey"
+            columns: ["account_id"]
+            isOneToOne: false
+            referencedRelation: "spartanops_accounts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       spartanops_qr_anchors: {
         Row: {
           anchor_accuracy_m: number | null
@@ -918,6 +1001,15 @@ export type Database = {
       spartanops_hash_password: {
         Args: { p_password: string }
         Returns: string
+      }
+      spartanops_leader_team: { Args: { p_scores: Json }; Returns: string }
+      spartanops_record_results: {
+        Args: { p_field_id: string; p_reason?: string }
+        Returns: number
+      }
+      spartanops_record_results_safe: {
+        Args: { p_field_id: string; p_reason?: string }
+        Returns: number
       }
       spartanops_reset_match_runtime: {
         Args: { p_field_id: string }
