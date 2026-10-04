@@ -8,23 +8,23 @@ import { listShowcaseLobbies } from "@/lib/spartanops-lobbies.functions";
 import { flagFor } from "@/lib/countries";
 import { missionTitle } from "@/lib/mission-title";
 import { spartanDevlogEntries, useT } from "@/lib/i18n";
+import { supabase } from "@/integrations/supabase/client";
 import FeatureShowcase from "@/components/FeatureShowcase";
 
+
+const PAGE_TITLE = "SpartanOps — Live-scored airsoft games, no electronic props";
+const PAGE_DESC =
+  "Run airsoft domination games with printed QR codes and players' phones. Live scoring, optional anti-cheat, free to start. No hardware, no app to install.";
 
 export const Route = createFileRoute("/spartanops")({
   head: () => ({
     meta: [
-      { title: "SpartanOps — Next-Gen Airsoft HUD" },
-      {
-        name: "description",
-        content:
-          "SpartanOps is a next-gen tactical HUD for airsoft fields. Live sector tracking, universal QR check-in, and real-time command console.",
-      },
-      { property: "og:title", content: "SpartanOps — Next-Gen Airsoft HUD" },
-      {
-        property: "og:description",
-        content: "Digital immersion for fields, live sector tracking, and tactical command.",
-      },
+      { title: PAGE_TITLE },
+      { name: "description", content: PAGE_DESC },
+      { property: "og:title", content: PAGE_TITLE },
+      { property: "og:description", content: PAGE_DESC },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
     ],
   }),
   component: SpartanOpsHome,
@@ -201,6 +201,7 @@ const HERO_BG_URL =
 
 function Hero() {
   const t = useT();
+  const startTo = useStartFreeTarget();
   return (
     <div className="relative">
       {/* Backdrop image — barely visible, fades to page BG at the bottom */}
@@ -238,7 +239,6 @@ function Hero() {
           >
             {t("spartan.heroTag")}
           </p>
-          <h1 className="sr-only">SpartanOps</h1>
           <div className="relative mx-auto" style={{ maxWidth: "min(560px, 88vw)", width: "100%" }}>
             <img
               src={LOGO_URL}
@@ -248,16 +248,25 @@ function Hero() {
               decoding="async"
             />
           </div>
+          <h1
+            className="mx-auto mt-3"
+            style={{ fontFamily: "'Michroma', monospace", fontSize: "clamp(18px, 3vw, 28px)", letterSpacing: "0.06em", color: INK, lineHeight: 1.35, maxWidth: 680 }}
+          >
+            {t("spartan.heroHeadline")}
+          </h1>
           <p
-            className="mx-auto mt-2 text-[14px] md:text-[16px] leading-[1.6]"
+            className="mx-auto mt-3 text-[14px] md:text-[16px] leading-[1.6]"
             style={{ color: INK, maxWidth: 620 }}
           >
             {t("spartan.heroSubtext")}
           </p>
           <div className="mt-5 mx-auto grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4" style={{ maxWidth: 480 }}>
-            <BtnPrimary to="/admin-pregled" fullWidth>{t("spartan.btnCreateMission")}</BtnPrimary>
+            <BtnPrimary to={startTo} fullWidth>{t("spartan.btnStartFreeCta")}</BtnPrimary>
             <BtnOutline to="/join" fullWidth>{t("spartan.btnJoinMission")}</BtnOutline>
           </div>
+          <p className="mt-4 font-mono text-[11px] leading-[1.6]" style={{ color: MUTED, letterSpacing: "0.06em" }}>
+            {t("spartan.heroUnderButtons")}
+          </p>
           {/* Scroll cue — tactical down chevron */}
           <button
             type="button"
@@ -743,6 +752,9 @@ function SectorShowcase() {
           >
             {t("spartan.titleRevolutionize")}
           </h2>
+          <p className="mt-3 text-[14px] md:text-[15px] leading-[1.7]" style={{ color: MUTED, maxWidth: 620 }}>
+            {t("spartan.showcaseLead")}
+          </p>
           <div className="mt-8 w-full">
             <FeatureShowcase />
           </div>
@@ -1031,15 +1043,96 @@ function SpartanOpsHome() {
     <div style={{ background: BG, color: INK, minHeight: "100dvh", paddingTop: 80 }}>
       {/* Modular sections — reorder or remove freely */}
       <Hero />
+      <Benefits />
       <SectorShowcase />
+      <HowItWorks />
       <LiveTracker />
       <Locations />
-      <HowItWorks />
-
       <FieldSupply />
       <OperationalPlans />
+      <Faq />
+      <FinalCta />
       <Changelog />
     </div>
+  );
+}
+
+/* ---------- Signed-in aware "START FREE" target ---------- */
+function useStartFreeTarget(): string {
+  const [signedIn, setSignedIn] = useState(false);
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data }) => setSignedIn(!!data.session));
+    const { data: sub } = supabase.auth.onAuthStateChange((_e, session) => setSignedIn(!!session));
+    return () => sub.subscription.unsubscribe();
+  }, []);
+  return signedIn ? "/admin-pregled" : "/marshal-account";
+}
+
+/* ---------- BENEFITS ---------- */
+function Benefits() {
+  const t = useT();
+  const items = [1, 2, 3, 4, 5].map((n) => ({
+    title: t(`spartan.benefit${n}Title`),
+    body: t(`spartan.benefit${n}Desc`),
+  }));
+  return (
+    <SectionShell>
+      <SectionHeader title={t("spartan.benefitsTitle")} />
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {items.map((it) => (
+          <HudCard key={it.title} className="p-5 md:p-6">
+            <h3
+              style={{ fontFamily: "'Michroma', monospace", fontSize: 15, letterSpacing: "0.06em", color: INK, lineHeight: 1.35, marginBottom: 8 }}
+            >
+              {it.title}
+            </h3>
+            <p className="text-[14px] leading-[1.7]" style={{ color: MUTED }}>{it.body}</p>
+          </HudCard>
+        ))}
+      </div>
+    </SectionShell>
+  );
+}
+
+/* ---------- FAQ ---------- */
+function Faq() {
+  const t = useT();
+  return (
+    <SectionShell>
+      <SectionHeader title={t("spartan.faqTitle")} />
+      <div className="flex flex-col gap-3">
+        {[1, 2, 3, 4, 5, 6].map((n) => (
+          <details key={n} className="group" style={{ background: PANEL, border: `1px solid ${HAIRLINE}` }}>
+            <summary
+              className="cursor-pointer list-none flex items-center justify-between gap-3 px-4 py-4"
+              style={{ color: INK, fontSize: 15 }}
+            >
+              <span>{t(`spartan.faqQ${n}`)}</span>
+              <span className="font-mono transition-transform group-open:rotate-45" style={{ color: ACCENT, fontSize: 18 }} aria-hidden>+</span>
+            </summary>
+            <p className="px-4 pb-4 text-[14px] leading-[1.7]" style={{ color: MUTED }}>{t(`spartan.faqA${n}`)}</p>
+          </details>
+        ))}
+      </div>
+    </SectionShell>
+  );
+}
+
+/* ---------- FINAL CTA ---------- */
+function FinalCta() {
+  const t = useT();
+  const startTo = useStartFreeTarget();
+  return (
+    <SectionShell className="text-center">
+      <h2
+        style={{ fontFamily: "'Michroma', monospace", fontSize: "clamp(20px, 3.4vw, 30px)", letterSpacing: "0.08em", color: INK, lineHeight: 1.3 }}
+      >
+        {t("spartan.finalCtaTitle")}
+      </h2>
+      <div className="mt-6 flex justify-center">
+        <BtnPrimary to={startTo}>{t("spartan.btnStartFreeCta")}</BtnPrimary>
+      </div>
+    </SectionShell>
   );
 }
 
