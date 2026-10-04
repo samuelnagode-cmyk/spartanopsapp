@@ -516,7 +516,7 @@ function Locations() {
             const badge = isActive ? "#3ddc84" : "#c86a4a";
             return (
               <div key={l.id}>
-                <HudCard className="p-6 transition-colors hover:brightness-110">
+                <HudCard className="p-6">
                   <div className="flex items-start justify-between gap-3" style={{ opacity: isActive ? 1 : 0.75 }}>
                     <div className="flex items-center gap-3 min-w-0">
                       <MapPin size={18} strokeWidth={1.6} color={ACCENT} />
