@@ -83,7 +83,7 @@ function FieldPage() {
 
   const [info, setInfo] = useState<Info>({ status: "loading" });
   const [password, setPassword] = useState("");
-  const [showPassword, setShowPassword] = useState(false);
+  const [showPassword, setShowPassword] = useState(true);
   const [err, setErr] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [waitingFor, setWaitingFor] = useState<string | null>(null);
@@ -247,8 +247,8 @@ function FieldPage() {
         </button>
         <p style={{ fontSize: 11, opacity: 0.7, marginTop: -8, marginBottom: 14, fontFamily: "monospace", lineHeight: 1.5 }}>
           {en
-            ? "This is not the field code. The marshal tells you the password at the briefing, or it is written on the poster."
-            : "To ni koda poligona. Geslo ti pove maršal na uvodnem pogovoru ali je zapisano na plakatu."}
+            ? "The marshal tells you the password at the briefing, or it is written on the poster."
+            : "Geslo ti pove maršal na uvodnem pogovoru ali je zapisano na plakatu."}
         </p>
         {err && <p style={{ color: ERR, fontSize: 13, marginBottom: 10, textAlign: "center" }}>{err}</p>}
         <button type="submit" style={btnStyle} disabled={busy}>
