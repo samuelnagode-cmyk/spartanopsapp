@@ -8,6 +8,13 @@
       "when": 1791121890284,
       "tag": "0000_match_results_ledger_and_timeout_end",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1791187574656,
+      "tag": "0001_tick_scores_clamp_target",
+      "breakpoints": true
     }
   ]
 }
