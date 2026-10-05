@@ -1492,9 +1492,9 @@ function AccountMissionsSection({ en, onOpenMission, onCreateInEvent }: { en: bo
   useEffect(() => {
     if (!missions || expanded) return;
     const init: Record<string, boolean> = {};
-    for (const g of groups) init[g.key] = total <= 8 || g.missions.some((m) => m.id === activeLobbyId);
+    for (const g of groups) init[g.key] = false;
     setExpanded(init);
-  }, [missions, groups, total, activeLobbyId, expanded]);
+  }, [missions, groups, expanded]);
 
   if (!ready) return null;
 
@@ -1509,12 +1509,14 @@ function AccountMissionsSection({ en, onOpenMission, onCreateInEvent }: { en: bo
     );
   }
 
+  const matchesQ = (m: AccountLobby) => !q || foldEvent(titleOf(m)).includes(q) || foldEvent(m.event_name).includes(q);
+  const activeMission = missions?.find((m) => m.id === activeLobbyId) ?? null;
+  const pinned = activeMission && matchesQ(activeMission) ? activeMission : null;
   const visibleGroups = groups
     .map((g) => {
-      if (!q) return g;
-      const gMatch = g.key && foldEvent(g.title).includes(q);
-      const ms = gMatch ? g.missions : g.missions.filter((m) => foldEvent(titleOf(m)).includes(q) || foldEvent(m.event_name).includes(q));
-      return { ...g, missions: ms };
+      const rest = g.missions.filter((m) => m.id !== activeLobbyId);
+      if (!q) return { ...g, missions: rest };
+      return { ...g, missions: rest.filter(matchesQ) };
     })
     .filter((g) => g.missions.length > 0);
 
@@ -1542,8 +1544,32 @@ function AccountMissionsSection({ en, onOpenMission, onCreateInEvent }: { en: bo
       ) : missions.length === 0 ? (
         <p style={{ fontFamily: "monospace", fontSize: 12, color: MUTED }}>{en ? "No missions linked yet." : "Še ni povezanih misij."}</p>
       ) : (
-        visibleGroups.map((g) => {
-          const open = q ? true : (expanded?.[g.key] ?? true);
+        <>
+        {pinned && (() => {
+          const dur = pinned.match_duration_minutes ?? (pinned.settings as any)?.matchDurationMinutes;
+          return (
+            <div style={{ marginBottom: 16 }}>
+              <p style={{ fontFamily: "monospace", fontSize: 10, letterSpacing: "0.2em", color: MUTED, margin: "0 0 6px", textTransform: "uppercase" }}>{en ? "Active now" : "Aktivna zdaj"}</p>
+              <div
+                role="button"
+                tabIndex={0}
+                onClick={() => onOpenMission(pinned)}
+                onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onOpenMission(pinned); } }}
+                style={{ border: `1px solid ${ACCENT}`, background: "rgba(0,0,0,0.35)", padding: "10px 12px", fontFamily: "monospace", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10 }}
+              >
+                <div style={{ minWidth: 0 }}>
+                  <div style={{ fontSize: 14, color: INK, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{titleOf(pinned)}</div>
+                  <div style={{ fontSize: 11, color: MUTED, marginTop: 2 }}>{gamemodeLabel(pinned.gamemode)}{dur ? ` · ${dur} min` : ""}</div>
+                </div>
+                <span style={{ fontSize: 9.5, letterSpacing: "0.15em", color: BG, background: ACCENT, padding: "4px 7px", whiteSpace: "nowrap", flexShrink: 0 }}>
+                  {en ? "ACTIVE MISSION" : "AKTIVNA MISIJA"}
+                </span>
+              </div>
+            </div>
+          );
+        })()}
+        {visibleGroups.map((g) => {
+          const open = q ? true : (expanded?.[g.key] ?? false);
           const n = g.missions.length;
           return (
             <section key={g.key || "__none"} style={{ marginBottom: 14 }}>
@@ -1558,15 +1584,6 @@ function AccountMissionsSection({ en, onOpenMission, onCreateInEvent }: { en: bo
                   <span style={{ fontSize: 13, fontWeight: 700, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{g.title}</span>
                   <span style={{ fontSize: 11, color: MUTED, whiteSpace: "nowrap" }}>{en ? `${n} mission${n === 1 ? "" : "s"}` : slMissionCount(n)}</span>
                 </button>
-                {g.key && <button
-                  type="button"
-                  onClick={() => onCreateInEvent(g.title)}
-                  aria-label={en ? "Add mission to this event" : "Dodaj misijo temu dogodku"}
-                  title={en ? "Add mission to this event" : "Dodaj misijo temu dogodku"}
-                  style={{ width: 36, height: 36, flexShrink: 0, background: "transparent", border: `1px solid ${ACCENT}66`, color: ACCENT, fontSize: 18, cursor: "pointer", lineHeight: 1 }}
-                >
-                  +
-                </button>}
               </div>
               {open && (
                 <ul style={{ listStyle: "none", padding: 0, margin: 0 }}>
@@ -1605,11 +1622,23 @@ function AccountMissionsSection({ en, onOpenMission, onCreateInEvent }: { en: bo
                       </li>
                     );
                   })}
+                  {g.key && (
+                    <li>
+                      <button
+                        type="button"
+                        onClick={() => onCreateInEvent(g.title)}
+                        style={{ width: "100%", minHeight: 40, background: "transparent", border: `1px dashed ${ACCENT}44`, color: MUTED, cursor: "pointer", fontFamily: "monospace", fontSize: 12, textAlign: "left", padding: "0 12px" }}
+                      >
+                        {en ? "+ Add mission to this event" : "+ Dodaj misijo temu dogodku"}
+                      </button>
+                    </li>
+                  )}
                 </ul>
               )}
             </section>
           );
-        })
+        })}
+        </>
       )}
     </div>
   );
