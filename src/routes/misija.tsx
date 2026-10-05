@@ -74,48 +74,6 @@ function teamName(team: string, settings: any, en: boolean): string {
 const NODE_NAMES = ["ALPHA", "BETA", "GAMMA", "DELTA", "EPSILON"];
 const NEUTRAL_NODE = "#ece3c4";
 const FREE_NODES: Record<string, string | null> = { "1": null, "2": null, "3": null, "4": null, "5": null };
-// Baseline: holding exactly 3 flags → reach `pointTarget` in 40 min (2400s).
-// per-flag-per-second = pointTarget / 3 / 2400
-function scoreRatePerNode(pointTarget: number | undefined) {
-  const t = Math.max(1, pointTarget ?? 200);
-  return t / 3 / 2400;
-}
-
-function computeDynamicScores(
-  captures: Capture[],
-  currentHolders: Record<string, string | null>,
-  startMs: number | null,
-  nowMs: number,
-  matchEndMs: number | null,
-  pointTarget: number | undefined,
-): Record<string, number> {
-  const scores: Record<string, number> = { modra: 0, rdeca: 0, rumena: 0 };
-  if (!startMs) return scores;
-  const tEnd = Math.min(nowMs, matchEndMs ?? nowMs);
-  if (tEnd <= startMs) return scores;
-  const rate = scoreRatePerNode(pointTarget);
-
-  for (let node = 1; node <= 5; node++) {
-    const nodeCaps = captures
-      .filter((c) => c.point_number === node && new Date(c.captured_at).getTime() <= tEnd)
-      .sort((a, b) => new Date(a.captured_at).getTime() - new Date(b.captured_at).getTime());
-    let owner: string | null = null;
-    let lastT = startMs;
-    for (const cap of nodeCaps) {
-      const t = Math.max(new Date(cap.captured_at).getTime(), startMs);
-      if (owner && scores[owner] !== undefined) {
-        scores[owner] += ((t - lastT) / 1000) * rate;
-      }
-      owner = cap.team;
-      lastT = t;
-    }
-    const tailOwner = owner ?? currentHolders[String(node)] ?? null;
-    if (tailOwner && scores[tailOwner] !== undefined && lastT < tEnd) {
-      scores[tailOwner] += ((tEnd - lastT) / 1000) * rate;
-    }
-  }
-  return scores;
-}
 const RANK_OPTIONS = EXPERIENCE_LEVELS.map((l) => ({
   v: l.value,
   label: l.labelSl,
@@ -3117,11 +3075,9 @@ function LiveMatch({ state, captures, now, roster, myTeam, meId, meCallsign }: {
     [captures, startMs],
   );
   const visibleNodeHolders = useMemo(() => nodeHoldersFromCaptures(visibleCaptures), [visibleCaptures]);
-  const dynamicScores = useMemo(
-    () => computeDynamicScores(visibleCaptures, visibleNodeHolders, startMs, effectiveNow, matchEndMs, target),
-    [visibleCaptures, visibleNodeHolders, startMs, effectiveNow, matchEndMs, target],
-  );
-  const scoreFor = (t: string) => Math.floor(dynamicScores[t] ?? 0);
+  // Server-stored scores only (spartanops_tick_scores): steps with each 30s tick.
+  const dynamicScores = state.team_scores ?? {};
+  const scoreFor = (t: string) => Math.floor(Number(dynamicScores[t] ?? 0) || 0);
 
   return (
     <div className="max-w-5xl mx-auto px-4 py-6" style={{ paddingTop: 84 }}>
@@ -3356,7 +3312,7 @@ function EndgameReport({ state, roster, captures, en, now, myTeam }: { state: Ga
   // Determine winner from dynamic team scores (falls back to DB state).
   const startMs = state.match_started_at ? new Date(state.match_started_at).getTime() : null;
   const matchEndMs = startMs ? startMs + state.match_duration_minutes * 60 * 1000 : null;
-  const dynamicScores = computeDynamicScores(captures, state.node_holders, startMs, now, matchEndMs, state.point_target);
+  const dynamicScores: Record<string, number> = state.team_scores ?? {};
   const activeTeams = (["modra", "rdeca", "rumena"] as const).filter(
     (t) => roster.some((r) => r.assigned_team === t) || (dynamicScores[t] ?? 0) > 0,
   );

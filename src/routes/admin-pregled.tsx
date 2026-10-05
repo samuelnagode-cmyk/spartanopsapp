@@ -1177,16 +1177,16 @@ function CreateFieldForm({ onCreated }: { onCreated: (rec: LobbyRecord, pws: { p
           <div style={{ fontSize: 9, letterSpacing: "0.2em", textTransform: "uppercase", color: MUTED, marginBottom: 4, fontFamily: "monospace" }}>
             {en ? "Target points (win when reached)" : "Ciljne točke (zmaga ob doseženem številu)"}
           </div>
-          <p style={{ fontSize: 10, color: MUTED, fontFamily: "monospace", lineHeight: 1.55, marginBottom: 8, fontStyle: "italic" }}>
-            {en
-              ? "Planning note: the system is balanced so that a team holding 3 sectors for 55 minutes gains 100 points."
-              : "Pojasnilo: točkovanje je narejeno tako, da ekipa, ki zavzame in drži 3 sektorje, pridobi 100 točk v 55 minutah."}
-          </p>
           <select value={pointTarget} onChange={(e) => setPointTarget(Number(e.target.value))} style={consoleSelectStyle}>
             {Array.from({ length: 30 }, (_, i) => (i + 1) * 10).map((p) => (
               <option key={p} value={p}>{p} {en ? "pts" : "točk"}</option>
             ))}
           </select>
+          <p style={{ fontSize: 10, color: MUTED, fontFamily: "monospace", lineHeight: 1.55, marginTop: 8, fontStyle: "italic" }}>
+            {en
+              ? `Each sector held earns 1 point every 30 seconds. With 3 sectors held, ${pointTarget} points takes about ${Math.ceil(pointTarget / 6)} minutes.`
+              : `Vsak zadržan sektor prinese 1 točko na 30 sekund. Pri 3 zadržanih sektorjih je za ${pointTarget} točk potrebnih približno ${Math.ceil(pointTarget / 6)} minut.`}
+          </p>
         </div>
       </Pane>
 
@@ -2881,16 +2881,16 @@ function MarshalLobbyConsole({ lobby: initialLobby, marshalPassword, lobbyPasswo
           <div style={{ fontSize: 9, letterSpacing: "0.2em", textTransform: "uppercase", color: MUTED, marginBottom: 4, fontFamily: "monospace" }}>
             {en ? "Target points (win when reached)" : "Ciljne točke (zmaga ob doseženem številu)"}
           </div>
-          <p style={{ fontSize: 10, color: MUTED, fontFamily: "monospace", lineHeight: 1.55, marginBottom: 8, fontStyle: "italic" }}>
-            {en
-              ? "Planning note: the system is balanced so that a team holding 3 sectors for 55 minutes gains 100 points."
-              : "Pojasnilo: točkovanje je narejeno tako, da ekipa, ki zavzame in drži 3 sektorje, pridobi 100 točk v 55 minutah."}
-          </p>
           <select value={target} onChange={(e) => patch({ pointTarget: Number(e.target.value) })} style={consoleSelectStyle}>
             {Array.from({ length: 30 }, (_, i) => (i + 1) * 10).map((p) => (
               <option key={p} value={p}>{p} {en ? "pts" : "točk"}</option>
             ))}
           </select>
+          <p style={{ fontSize: 10, color: MUTED, fontFamily: "monospace", lineHeight: 1.55, marginTop: 8, fontStyle: "italic" }}>
+            {en
+              ? `Each sector held earns 1 point every 30 seconds. With 3 sectors held, ${pointTarget} points takes about ${Math.ceil(pointTarget / 6)} minutes.`
+              : `Vsak zadržan sektor prinese 1 točko na 30 sekund. Pri 3 zadržanih sektorjih je za ${pointTarget} točk potrebnih približno ${Math.ceil(pointTarget / 6)} minut.`}
+          </p>
         </div>
       </Pane>
 
