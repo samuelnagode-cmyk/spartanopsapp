@@ -132,24 +132,3 @@ export function FieldPasswordPanel({ en }: { en: boolean }) {
     </form>
   );
 }
-
-/** Info block explaining that players join with the account's field password. */
-export function FieldPasswordInfo({ en, withPanelButton = false }: { en: boolean; withPanelButton?: boolean }) {
-  const [open, setOpen] = useState(false);
-  return (
-    <div style={{ border: `1px dashed ${ACCENT}55`, padding: "10px 12px", marginBottom: 14, fontFamily: "monospace", fontSize: 11.5, lineHeight: 1.6, color: INK }}>
-      <span style={{ color: ACCENT }}>ⓘ </span>
-      {en
-        ? "Players join with your field password (Account → Field password). Leave the helper password empty if you run the mission yourself."
-        : "Igralci se pridružijo z geslom poligona (Račun → Geslo poligona). Geslo pomočnika pusti prazno, če misijo vodiš sam."}
-      {withPanelButton && (
-        <>
-          <button type="button" onClick={() => setOpen((v) => !v)} style={{ ...ghostBtn, display: "block", marginTop: 10, padding: "8px 12px" }}>
-            {en ? "Field password" : "Geslo poligona"}
-          </button>
-          {open && <FieldPasswordPanel en={en} />}
-        </>
-      )}
-    </div>
-  );
-}

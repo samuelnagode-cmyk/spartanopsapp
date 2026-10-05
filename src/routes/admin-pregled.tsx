@@ -1376,7 +1376,6 @@ function AccountMissionsSection({ en, onOpenMission, onCreateInEvent }: { en: bo
   const [missions, setMissions] = useState<AccountLobby[] | null>(null);
   const [err, setErr] = useState<string | null>(null);
   const [business, setBusiness] = useState<string | null>(null);
-  const [showFieldPw, setShowFieldPw] = useState(false);
   const [query, setQuery] = useState("");
   const [expanded, setExpanded] = useState<Record<string, boolean> | null>(null);
 
@@ -1686,39 +1685,6 @@ function FieldsWelcome({
 }
 
 /** Always-visible join link for a created mission, with one-click copy. */
-function LobbyLinkRow({ lobbyId, en }: { lobbyId: string; en: boolean }) {
-  const [copied, setCopied] = useState(false);
-  const url = typeof window !== "undefined" ? `${window.location.origin}/misija?field=${lobbyId}` : "";
-  return (
-    <div style={{ marginTop: 14, paddingTop: 12, borderTop: `1px dashed ${ACCENT}33` }}>
-      <p style={{ fontFamily: "monospace", fontSize: 9.5, letterSpacing: "0.24em", color: MUTED, textTransform: "uppercase", marginBottom: 6 }}>
-        {en ? "LOBBY URL" : "POVEZAVA DO MISIJE"}
-      </p>
-      <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-        <input
-          readOnly
-          value={url}
-          onFocus={(e) => e.currentTarget.select()}
-          style={{ flex: 1, minWidth: 0, background: "rgba(0,0,0,0.35)", border: `1px solid ${ACCENT}33`, color: INK, fontFamily: "monospace", fontSize: 10.5, padding: "7px 8px" }}
-        />
-        <button
-          type="button"
-          onClick={async (e) => {
-            e.stopPropagation();
-            try { await navigator.clipboard.writeText(url); } catch { /* ignore */ }
-            setCopied(true);
-            setTimeout(() => setCopied(false), 1800);
-          }}
-          style={{ background: "transparent", border: `1px solid ${ACCENT}`, color: ACCENT, padding: "7px 10px", fontFamily: "'Michroma', monospace", fontSize: 9, letterSpacing: "0.14em", textTransform: "uppercase", cursor: "pointer", whiteSpace: "nowrap" }}
-        >
-          {copied ? (en ? "COPIED" : "KOPIRANO") : (en ? "COPY" : "KOPIRAJ")}
-        </button>
-      </div>
-    </div>
-  );
-}
-
-
 function FieldConsole({
   field, authedPw, onBack, onAuth,
 }: {
@@ -2713,8 +2679,6 @@ function MarshalLobbyConsole({ lobby: initialLobby, marshalPassword, lobbyPasswo
           )}
         </div>
 
-        {/* Join link is only exposed inside the password-protected marshal console. */}
-        <LobbyLinkRow lobbyId={lobby.id} en={en} />
 
 
 
