@@ -1,4 +1,4 @@
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState, type CSSProperties } from "react";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { QRCodeSVG } from "qrcode.react";
@@ -46,15 +46,6 @@ function FieldQrPage() {
   const en = lang === "en";
   const navigate = useNavigate();
   const [acct, setAcct] = useState<{ id: string; name: string; code: string; listed: boolean } | null>(null);
-  const [listBusy, setListBusy] = useState(false);
-  const toggleListed = async () => {
-    if (!acct || listBusy) return;
-    const next = !acct.listed;
-    setListBusy(true);
-    const { error } = await db.from("spartanops_accounts").update({ listed_publicly: next }).eq("id", acct.id);
-    if (!error) setAcct({ ...acct, listed: next });
-    setListBusy(false);
-  };
   const [copied, setCopied] = useState(false);
   const [base, setBase] = useState(PROD_ORIGIN);
 
@@ -96,6 +87,9 @@ function FieldQrPage() {
       `}</style>
       <main id="field-screen" style={{ minHeight: "100vh", background: BG, color: INK, padding: "110px 16px 48px" }}>
         <div style={{ maxWidth: 440, margin: "0 auto", background: PANEL, border: `1px solid ${ACCENT}44`, padding: "28px 22px", textAlign: "center" }}>
+          <Link to="/marshal-account" style={{ display: "block", textAlign: "left", color: ACCENT, fontFamily: "monospace", fontSize: 12, marginBottom: 14 }}>
+            {en ? "← Field settings" : "← Nastavitve poligona"}
+          </Link>
           <h1 style={{ fontFamily: "'Michroma', monospace", fontSize: 18, letterSpacing: "0.14em", textTransform: "uppercase", marginBottom: 18 }}>{acct.name}</h1>
           <div data-testid="field-qr" style={{ background: "#ffffff", padding: 16, display: "inline-block" }}>
             <QRCodeSVG value={url} size={260} level="M" bgColor="#ffffff" fgColor="#000000" />
@@ -108,13 +102,6 @@ function FieldQrPage() {
           >
             {copied ? (en ? "Copied" : "Kopirano") : en ? "Copy link" : "Kopiraj povezavo"}
           </button>
-          <label style={{ display: "flex", alignItems: "center", gap: 10, marginTop: 18, textAlign: "left", fontFamily: "monospace", fontSize: 13, cursor: "pointer" }}>
-            <input type="checkbox" role="switch" checked={acct.listed} disabled={listBusy} onChange={toggleListed} style={{ width: 20, height: 20, accentColor: ACCENT }} />
-            {en ? "Show my field on the Join page" : "Prikaži moj poligon na strani za vstop"}
-          </label>
-          <p style={{ fontFamily: "monospace", fontSize: 11, opacity: 0.7, marginTop: 6, lineHeight: 1.5, textAlign: "left" }}>
-            {en ? "Players can always join with your poster QR, whether or not you are listed." : "Igralci lahko vedno vstopijo s QR kodo na plakatu, ne glede na to, ali si na seznamu."}
-          </p>
           <button type="button" style={btnStyle} onClick={() => window.print()}>
             {en ? "Print poster" : "Natisni plakat"}
           </button>
