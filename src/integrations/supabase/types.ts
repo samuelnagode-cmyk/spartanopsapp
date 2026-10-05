@@ -207,6 +207,9 @@ export type Database = {
         Row: {
           active_lobby_id: string | null
           business_name: string
+          city: string | null
+          city_fold: string | null
+          country: string | null
           created_at: string
           field_code: string | null
           field_password_changed_at: string | null
@@ -221,6 +224,9 @@ export type Database = {
         Insert: {
           active_lobby_id?: string | null
           business_name: string
+          city?: string | null
+          city_fold?: string | null
+          country?: string | null
           created_at?: string
           field_code?: string | null
           field_password_changed_at?: string | null
@@ -235,6 +241,9 @@ export type Database = {
         Update: {
           active_lobby_id?: string | null
           business_name?: string
+          city?: string | null
+          city_fold?: string | null
+          country?: string | null
           created_at?: string
           field_code?: string | null
           field_password_changed_at?: string | null
