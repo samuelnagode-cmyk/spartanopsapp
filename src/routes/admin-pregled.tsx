@@ -1,7 +1,7 @@
 import { createFileRoute, Link, useSearch, useNavigate } from "@tanstack/react-router";
 import { getMasterPw, setMasterPw, clearMasterPw } from "@/lib/master-admin";
 import { missionTitle } from "@/lib/mission-title";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useId, useMemo, useRef, useState, type CSSProperties } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import {
   ArrowLeft, Lock, ChevronLeft, X, Crosshair, ShieldCheck,
@@ -371,6 +371,7 @@ function AdminPage() {
   const [isEditMode, setIsEditMode] = useState(false);
   const [editModalOpen, setEditModalOpen] = useState(false);
   const [creating, setCreating] = useState(false);
+  const [createEventName, setCreateEventName] = useState("");
   const [marshalPromptLobby, setMarshalPromptLobby] = useState<LobbyRecord | null>(null);
   const [marshalActiveLobby, setMarshalActiveLobby] = useState<LobbyRecord | null>(null);
   const [ownerAccessToken, setOwnerAccessToken] = useState<string | undefined>(undefined);
@@ -652,6 +653,7 @@ function AdminPage() {
 
         {section === "fields" && creating && (
           <CreateFieldForm
+            initialEventName={createEventName}
             onCreated={async (rec, pws) => {
               setCreating(false);
               setCustomLobbies(loadLobbies());
@@ -670,7 +672,7 @@ function AdminPage() {
 
         {section === "fields" && !creating && !activeField && !marshalActiveLobby && (
           <FieldsWelcome
-            onCreate={() => setCreating(true)}
+            onCreate={(ev?: string) => { setCreateEventName(ev ?? ""); setCreating(true); }}
             onOpenAccountMission={async (m) => {
               // Silent owner open: a signed-in account owner skips the password prompt.
               try {
@@ -832,7 +834,7 @@ function GameModeButtons({ active, isPremium, openPremiumModal, en, onPick }: {
   );
 }
 
-function CreateFieldForm({ onCreated }: { onCreated: (rec: LobbyRecord, pws: { password: string; marshalPassword: string }) => void }) {
+function CreateFieldForm({ onCreated, initialEventName = "" }: { onCreated: (rec: LobbyRecord, pws: { password: string; marshalPassword: string }) => void; initialEventName?: string }) {
   const { lang } = useLang();
   const en = lang === "en";
   const { isPremium, openPremiumModal } = usePremium();
@@ -846,7 +848,19 @@ function CreateFieldForm({ onCreated }: { onCreated: (rec: LobbyRecord, pws: { p
   const [password, setPassword] = useState("");
   const [marshalPassword, setMarshalPassword] = useState("");
   const [showMarshalPassword, setShowMarshalPassword] = useState(true);
-  const [eventName, setEventName] = useState("");
+  const [eventName, setEventName] = useState(initialEventName);
+  // Pre-fill field name with the account's business name (still editable).
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user || cancelled) return;
+      const { data } = await supabase.from("spartanops_accounts").select("business_name").eq("id", user.id).maybeSingle();
+      const b = (data?.business_name ?? "").trim();
+      if (!cancelled && b) setFieldName((cur) => (cur.trim() ? cur : b));
+    })();
+    return () => { cancelled = true; };
+  }, []);
   const [country, setCountry] = useState("");
   const [city, setCity] = useState("");
   const [marshalName, setMarshalName] = useState("");
@@ -1033,7 +1047,7 @@ function CreateFieldForm({ onCreated }: { onCreated: (rec: LobbyRecord, pws: { p
           <input required value={fieldName} onChange={(e) => setFieldName(e.target.value)} style={consoleInputStyle} placeholder="Poligon Ljubljana" />
         </FieldRow>
         <FieldRow label={en ? "Event name (optional)" : "Ime dogodka (neobvezno)"}>
-          <input value={eventName} onChange={(e) => setEventName(e.target.value)} style={consoleInputStyle} placeholder={en ? "e.g. Operation Sparta" : "npr. Operacija Sparta"} />
+          <EventNameInput value={eventName} onChange={setEventName} en={en} />
         </FieldRow>
         <FieldRow label={en ? "Mission name" : "Ime misije"}>
           <input value={missionName} onChange={(e) => setMissionName(e.target.value)} style={consoleInputStyle} placeholder={en ? "Operation Fallen Angel" : "Operacija Fallen Angel"} />
@@ -1324,16 +1338,95 @@ function CreateFieldForm({ onCreated }: { onCreated: (rec: LobbyRecord, pws: { p
 
 
 
-type AccountLobby = { id: string; field_name: string; event_name: string | null };
+type AccountLobby = {
+  id: string;
+  field_name: string;
+  event_name: string | null;
+  settings?: Record<string, any> | null;
+  gamemode?: string | null;
+  match_duration_minutes?: number | null;
+  created_at?: string | null;
+};
 
-// Step 0.3: account-scoped mission list, shown alongside the local-cache list.
-function AccountMissionsSection({ en, onOpenMission }: { en: boolean; onOpenMission: (m: AccountLobby) => void }) {
+/** Case-, space- and diacritic-insensitive key for event names. */
+function foldEvent(s: string | null | undefined): string {
+  return (s ?? "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim().replace(/\s+/g, " ").toLowerCase();
+}
+
+function slMissionCount(n: number): string {
+  const m100 = n % 100;
+  if (m100 === 1) return `${n} misija`;
+  if (m100 === 2) return `${n} misiji`;
+  if (m100 === 3 || m100 === 4) return `${n} misije`;
+  return `${n} misij`;
+}
+
+function gamemodeLabel(key: string | null | undefined): string {
+  return GAME_MODES.find((g) => g.key === key)?.label ?? (key ? key : "Domination");
+}
+
+/** Event-name input with suggestions from this account's existing events.
+ *  A value matching an existing event (ignoring case/spaces/accents) is stored in the existing spelling. */
+function EventNameInput({ value, onChange, en }: { value: string; onChange: (v: string) => void; en: boolean }) {
+  const [events, setEvents] = useState<string[]>([]);
+  const listId = `evt-list-${useId().replace(/:/g, "")}`;
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user || cancelled) return;
+      const { data } = await supabase
+        .from("spartanops_lobbies")
+        .select("event_name, created_at")
+        .eq("account_id", user.id)
+        .order("created_at", { ascending: true });
+      if (cancelled) return;
+      const seen = new Map<string, string>();
+      for (const r of (data ?? []) as { event_name: string | null }[]) {
+        const k = foldEvent(r.event_name);
+        if (k && !seen.has(k)) seen.set(k, (r.event_name ?? "").trim());
+      }
+      setEvents([...seen.values()]);
+    })();
+    return () => { cancelled = true; };
+  }, []);
+  const handle = (v: string) => {
+    const k = foldEvent(v);
+    const match = k ? events.find((e) => foldEvent(e) === k) : undefined;
+    onChange(match && !v.endsWith(" ") ? match : v);
+  };
+  return (
+    <>
+      <input value={value} list={listId} onChange={(e) => handle(e.target.value)} style={consoleInputStyle} placeholder={en ? "e.g. Operation Sparta" : "npr. Operacija Sparta"} />
+      <datalist id={listId}>
+        {events.map((e) => <option key={e} value={e} />)}
+      </datalist>
+    </>
+  );
+}
+
+const smallBarBtn: CSSProperties = {
+  fontFamily: "monospace", fontSize: 11, letterSpacing: "0.04em", color: ACCENT,
+  background: "transparent", border: `1px solid ${ACCENT}66`, padding: "5px 10px",
+  whiteSpace: "nowrap", cursor: "pointer", textDecoration: "none", flexShrink: 0,
+};
+const smallLink: CSSProperties = {
+  background: "transparent", border: "none", color: ACCENT, textDecoration: "underline", cursor: "pointer",
+  fontFamily: "monospace", fontSize: 11, padding: 0, whiteSpace: "nowrap", flexShrink: 0,
+};
+
+type MissionGroup = { key: string; title: string; missions: AccountLobby[]; newest: number };
+
+// Step 0.3: account-scoped mission list, grouped by event.
+function AccountMissionsSection({ en, onOpenMission, onCreateInEvent }: { en: boolean; onOpenMission: (m: AccountLobby) => void; onCreateInEvent: (eventName: string) => void }) {
   const [userId, setUserId] = useState<string | null>(null);
   const [ready, setReady] = useState(false);
   const [missions, setMissions] = useState<AccountLobby[] | null>(null);
   const [err, setErr] = useState<string | null>(null);
   const [business, setBusiness] = useState<string | null>(null);
   const [showFieldPw, setShowFieldPw] = useState(false);
+  const [query, setQuery] = useState("");
+  const [expanded, setExpanded] = useState<Record<string, boolean> | null>(null);
 
   useEffect(() => {
     const { data: sub } = supabase.auth.onAuthStateChange((_e, session) => {
@@ -1357,7 +1450,7 @@ function AccountMissionsSection({ en, onOpenMission }: { en: boolean; onOpenMiss
       const [{ data, error }, acc] = await Promise.all([
         supabase
           .from("spartanops_lobbies")
-          .select("id, field_name, event_name")
+          .select("id, field_name, event_name, settings, gamemode, match_duration_minutes, created_at")
           .eq("account_id", userId)
           .order("created_at", { ascending: false }),
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -1410,6 +1503,48 @@ function AccountMissionsSection({ en, onOpenMission }: { en: boolean; onOpenMiss
     return () => { cancelled = true; };
   }, [userId]);
 
+  const titleOf = (m: AccountLobby) => missionTitle(
+    { fieldName: null, eventName: m.event_name, settings: m.settings ?? null },
+    "",
+  ) || (m.event_name ?? "").trim() || m.field_name;
+
+  const groups: MissionGroup[] = useMemo(() => {
+    if (!missions) return [];
+    const ts = (m: AccountLobby) => (m.created_at ? Date.parse(m.created_at) : 0);
+    const map = new Map<string, MissionGroup>();
+    for (const m of missions) {
+      const key = foldEvent(m.event_name);
+      let g = map.get(key);
+      if (!g) { g = { key, title: "", missions: [], newest: 0 }; map.set(key, g); }
+      g.missions.push(m);
+      g.newest = Math.max(g.newest, ts(m));
+    }
+    const out = [...map.values()];
+    for (const g of out) {
+      g.missions.sort((a, b) => ts(a) - ts(b));
+      g.title = g.key ? (g.missions[0].event_name ?? "").trim() : (en ? "No event" : "Brez dogodka");
+    }
+    const hasActive = (g: MissionGroup) => g.missions.some((m) => m.id === activeLobbyId);
+    out.sort((a, b) => {
+      if (hasActive(a) !== hasActive(b)) return hasActive(a) ? -1 : 1;
+      if (!a.key !== !b.key) return a.key ? -1 : 1; // "No event" last
+      return b.newest - a.newest;
+    });
+    return out;
+  }, [missions, activeLobbyId, en]);
+
+  const total = missions?.length ?? 0;
+  const showSearch = total > 8;
+  const q = showSearch ? foldEvent(query) : "";
+
+  // Initial collapse state (component-only).
+  useEffect(() => {
+    if (!missions || expanded) return;
+    const init: Record<string, boolean> = {};
+    for (const g of groups) init[g.key] = total <= 8 || g.missions.some((m) => m.id === activeLobbyId);
+    setExpanded(init);
+  }, [missions, groups, total, activeLobbyId, expanded]);
+
   if (!ready) return null;
 
   if (!userId) {
@@ -1423,50 +1558,42 @@ function AccountMissionsSection({ en, onOpenMission }: { en: boolean; onOpenMiss
     );
   }
 
+  const visibleGroups = groups
+    .map((g) => {
+      if (!q) return g;
+      const gMatch = g.key && foldEvent(g.title).includes(q);
+      const ms = gMatch ? g.missions : g.missions.filter((m) => foldEvent(titleOf(m)).includes(q) || foldEvent(m.event_name).includes(q));
+      return { ...g, missions: ms };
+    })
+    .filter((g) => g.missions.length > 0);
+
   return (
     <div style={{ marginBottom: 32 }}>
-      {business && (
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10, fontFamily: "monospace", fontSize: 11, color: MUTED }}>
-          <span>
-            {en ? "Logged in as " : "Prijavljen kot "}
-            <strong style={{ color: ACCENT }}>{business}</strong>
-          </span>
-          <span style={{ display: "flex", gap: 12 }}>
-            <Link to="/marshal-account" style={{ color: ACCENT, textDecoration: "underline", fontFamily: "monospace", fontSize: 11 }}>
-              {en ? "Account" : "Račun"}
-            </Link>
-            <button
-              type="button"
-              onClick={() => supabase.auth.signOut()}
-              style={{ background: "transparent", border: "none", color: ACCENT, textDecoration: "underline", cursor: "pointer", fontFamily: "monospace", fontSize: 11, padding: 0 }}
-            >
-              {en ? "Log out" : "Odjava"}
-            </button>
-          </span>
-        </div>
-      )}
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 10, marginBottom: 14 }}>
-        <p style={{ fontFamily: "monospace", fontSize: 10, letterSpacing: "0.30em", color: ACCENT, margin: 0, textTransform: "uppercase" }}>
-          {en ? "// YOUR MISSIONS" : "// TVOJE MISIJE"}
-        </p>
-        <span style={{ display: "flex", gap: 8 }}>
-          <button
-            type="button"
-            onClick={() => setShowFieldPw((v) => !v)}
-            aria-expanded={showFieldPw}
-            style={{ fontFamily: "monospace", fontSize: 10, letterSpacing: "0.16em", color: ACCENT, background: showFieldPw ? `${ACCENT}22` : "transparent", border: `1px solid ${ACCENT}66`, padding: "4px 8px", textTransform: "uppercase", cursor: "pointer" }}
-          >
-            {en ? "Field password" : "Geslo poligona"}
-          </button>
-          <Link to="/field-qr" style={{ fontFamily: "monospace", fontSize: 10, letterSpacing: "0.16em", color: ACCENT, border: `1px solid ${ACCENT}66`, padding: "4px 8px", textDecoration: "none", textTransform: "uppercase" }}>
-            {en ? "Player QR" : "QR za igralce"}
-          </Link>
-        </span>
+      {/* Compact field bar */}
+      <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 14, overflowX: "auto", fontFamily: "monospace", fontSize: 11, color: MUTED, paddingBottom: 2 }}>
+        {business && <strong style={{ color: ACCENT, whiteSpace: "nowrap", flexShrink: 0 }}>{business}</strong>}
+        <Link to="/field-qr" style={smallBarBtn}>{en ? "Player QR" : "QR za igralce"}</Link>
+        <button type="button" onClick={() => setShowFieldPw((v) => !v)} aria-expanded={showFieldPw} style={{ ...smallBarBtn, background: showFieldPw ? `${ACCENT}22` : "transparent" }}>
+          {en ? "Field password" : "Geslo poligona"}
+        </button>
+        <Link to="/marshal-account" style={smallLink}>{en ? "Account" : "Račun"}</Link>
+        <button type="button" onClick={() => supabase.auth.signOut()} style={smallLink}>{en ? "Log out" : "Odjava"}</button>
       </div>
       {showFieldPw && (
         <div style={{ marginBottom: 18 }}>
           <FieldPasswordPanel en={en} />
         </div>
+      )}
+      <p style={{ fontFamily: "monospace", fontSize: 10, letterSpacing: "0.30em", color: ACCENT, margin: "0 0 10px", textTransform: "uppercase" }}>
+        {en ? "// YOUR MISSIONS" : "// TVOJE MISIJE"}
+      </p>
+      {showSearch && (
+        <input
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          placeholder={en ? "Search missions…" : "Išči misije…"}
+          style={{ ...consoleInputStyle, width: "100%", marginBottom: 12, boxSizing: "border-box" }}
+        />
       )}
       {err ? (
         <p style={{ color: "#d97a6c", fontSize: 12 }}>{err}</p>
@@ -1475,38 +1602,74 @@ function AccountMissionsSection({ en, onOpenMission }: { en: boolean; onOpenMiss
       ) : missions.length === 0 ? (
         <p style={{ fontFamily: "monospace", fontSize: 12, color: MUTED }}>{en ? "No missions linked yet." : "Še ni povezanih misij."}</p>
       ) : (
-        <ul style={{ listStyle: "none", padding: 0, margin: 0 }}>
-          {missions.map((m) => (
-            <li
-              key={m.id}
-              role="button"
-              tabIndex={0}
-              onClick={() => onOpenMission(m)}
-              onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onOpenMission(m); } }}
-              style={{ border: `1px solid ${ACCENT}33`, background: "rgba(0,0,0,0.25)", padding: "8px 10px", marginBottom: 6, fontFamily: "monospace", fontSize: 13, cursor: "pointer" }}
-            >
-              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8 }}>
-                <span>{m.field_name}</span>
-                {activeLobbyId === m.id ? (
-                  <span style={{ fontSize: 9.5, letterSpacing: "0.15em", color: "#0b0b0b", background: ACCENT, padding: "2px 6px", whiteSpace: "nowrap" }}>
-                    {en ? "ACTIVE MISSION" : "AKTIVNA MISIJA"}
-                  </span>
-                ) : (
-                  <button
-                    type="button"
-                    disabled={settingActive}
-                    onClick={(e) => { e.stopPropagation(); setActiveMission(m.id); }}
-                    onKeyDown={(e) => e.stopPropagation()}
-                    style={{ background: "transparent", border: "none", color: ACCENT, textDecoration: "underline", cursor: "pointer", fontFamily: "monospace", fontSize: 11, whiteSpace: "nowrap", opacity: settingActive ? 0.5 : 1 }}
-                  >
-                    {en ? "Set as Active Mission" : "Nastavi kot aktivno"}
-                  </button>
-                )}
+        visibleGroups.map((g) => {
+          const open = q ? true : (expanded?.[g.key] ?? true);
+          const n = g.missions.length;
+          return (
+            <section key={g.key || "__none"} style={{ marginBottom: 14 }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 8, borderBottom: `1px solid ${ACCENT}33`, paddingBottom: 4, marginBottom: 6 }}>
+                <button
+                  type="button"
+                  onClick={() => setExpanded((s) => ({ ...(s ?? {}), [g.key]: !open }))}
+                  aria-expanded={open}
+                  style={{ flex: 1, minWidth: 0, display: "flex", alignItems: "center", gap: 8, background: "transparent", border: "none", color: INK, cursor: "pointer", padding: "8px 0", textAlign: "left", fontFamily: "monospace" }}
+                >
+                  <span style={{ color: ACCENT, width: 12, display: "inline-block" }}>{open ? "▾" : "▸"}</span>
+                  <span style={{ fontSize: 13, fontWeight: 700, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{g.title}</span>
+                  <span style={{ fontSize: 11, color: MUTED, whiteSpace: "nowrap" }}>{en ? `${n} mission${n === 1 ? "" : "s"}` : slMissionCount(n)}</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => onCreateInEvent(g.key ? g.title : "")}
+                  aria-label={en ? "Add mission to this event" : "Dodaj misijo temu dogodku"}
+                  title={en ? "Add mission to this event" : "Dodaj misijo temu dogodku"}
+                  style={{ width: 36, height: 36, flexShrink: 0, background: "transparent", border: `1px solid ${ACCENT}66`, color: ACCENT, fontSize: 18, cursor: "pointer", lineHeight: 1 }}
+                >
+                  +
+                </button>
               </div>
-              {m.event_name && <div style={{ fontSize: 11.5, color: MUTED }}>{m.event_name}</div>}
-            </li>
-          ))}
-        </ul>
+              {open && (
+                <ul style={{ listStyle: "none", padding: 0, margin: 0 }}>
+                  {g.missions.map((m) => {
+                    const dur = m.match_duration_minutes ?? (m.settings as any)?.matchDurationMinutes;
+                    return (
+                      <li
+                        key={m.id}
+                        role="button"
+                        tabIndex={0}
+                        onClick={() => onOpenMission(m)}
+                        onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onOpenMission(m); } }}
+                        style={{ border: `1px solid ${activeLobbyId === m.id ? ACCENT : `${ACCENT}33`}`, background: "rgba(0,0,0,0.25)", padding: "10px 12px", marginBottom: 6, fontFamily: "monospace", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10 }}
+                      >
+                        <div style={{ minWidth: 0 }}>
+                          <div style={{ fontSize: 14, color: INK, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{titleOf(m)}</div>
+                          <div style={{ fontSize: 11, color: MUTED, marginTop: 2 }}>
+                            {gamemodeLabel(m.gamemode)}{dur ? ` · ${dur} min` : ""}
+                          </div>
+                        </div>
+                        {activeLobbyId === m.id ? (
+                          <span style={{ fontSize: 9.5, letterSpacing: "0.15em", color: BG, background: ACCENT, padding: "4px 7px", whiteSpace: "nowrap", flexShrink: 0 }}>
+                            {en ? "ACTIVE MISSION" : "AKTIVNA MISIJA"}
+                          </span>
+                        ) : (
+                          <button
+                            type="button"
+                            disabled={settingActive}
+                            onClick={(e) => { e.stopPropagation(); setActiveMission(m.id); }}
+                            onKeyDown={(e) => e.stopPropagation()}
+                            style={{ minHeight: 36, padding: "0 10px", background: "transparent", border: `1px solid ${ACCENT}88`, color: ACCENT, cursor: "pointer", fontFamily: "monospace", fontSize: 11, whiteSpace: "nowrap", flexShrink: 0, opacity: settingActive ? 0.5 : 1 }}
+                          >
+                            {en ? "Set active" : "Nastavi kot aktivno"}
+                          </button>
+                        )}
+                      </li>
+                    );
+                  })}
+                </ul>
+              )}
+            </section>
+          );
+        })
       )}
     </div>
   );
@@ -1515,7 +1678,7 @@ function AccountMissionsSection({ en, onOpenMission }: { en: boolean; onOpenMiss
 function FieldsWelcome({
   onCreate, onOpenAccountMission,
 }: {
-  onCreate: () => void;
+  onCreate: (eventName?: string) => void;
   onOpenAccountMission: (m: AccountLobby) => void;
 }) {
   const { lang } = useLang();
@@ -1561,19 +1724,9 @@ function FieldsWelcome({
 
   return (
     <>
-      {/* Deployment onboarding */}
-      <div style={{ textAlign: "center", maxWidth: 620, margin: "0 auto 28px" }}>
-        <p style={{ fontFamily: "monospace", fontSize: 11, letterSpacing: "0.30em", color: ACCENT, marginBottom: 10, textTransform: "uppercase" }}>
-          {en ? "// CREATE YOUR OPERATIONAL PLAN" : "// USTVARITE SVOJ OPERATIVNI NAČRT"}
-        </p>
-        <p style={{ fontSize: 13, color: MUTED, lineHeight: 1.7 }}>
-          {en ? "Create a new mission from scratch or resume an existing one." : "Ustvarite novo misijo iz nič ali nadaljujte z obstoječo."}
-        </p>
-      </div>
-
-      <div style={{ display: "flex", flexDirection: "column", gap: 12, maxWidth: 480, margin: "0 auto 40px" }}>
+      <div style={{ display: "flex", flexDirection: "column", gap: 12, maxWidth: 480, margin: "0 auto 24px" }}>
         <button
-          onClick={onCreate}
+          onClick={() => onCreate()}
           style={{
             background: ACCENT, color: BG, border: "none",
             padding: "16px 18px", fontFamily: "'Michroma', monospace",
@@ -1582,11 +1735,11 @@ function FieldsWelcome({
             display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 10,
           }}
         >
-          {en ? "[ + CREATE NEW MISSION ]" : "[ + USTVARI NOVO MISIJO ]"}
+          {en ? "+ New mission" : "+ Nova misija"}
         </button>
       </div>
 
-      <AccountMissionsSection en={en} onOpenMission={onOpenAccountMission} />
+      <AccountMissionsSection en={en} onOpenMission={onOpenAccountMission} onCreateInEvent={(ev) => onCreate(ev)} />
     </>
   );
 }
@@ -2729,7 +2882,7 @@ function MarshalLobbyConsole({ lobby: initialLobby, marshalPassword, lobbyPasswo
           <input value={lobby.fieldName} readOnly disabled style={{ ...consoleInputStyle, opacity: 0.65, cursor: "not-allowed" }} />
         </FieldRow>
         <FieldRow label={en ? "Event name (optional)" : "Ime dogodka (neobvezno)"}>
-          <input value={lobby.eventName ?? ""} onChange={(e) => patch({ eventName: e.target.value })} style={consoleInputStyle} placeholder={en ? "e.g. Operation Sparta" : "npr. Operacija Sparta"} />
+          <EventNameInput value={lobby.eventName ?? ""} onChange={(v) => patch({ eventName: v })} en={en} />
         </FieldRow>
         <FieldRow label={en ? "Mission description / instructions (optional)" : "Opis misije / navodila (neobvezno)"}>
           <textarea
