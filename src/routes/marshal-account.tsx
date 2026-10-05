@@ -71,7 +71,7 @@ function MarshalAccountPage() {
     <main style={{ minHeight: "100vh", background: BG, color: INK, padding: "110px 16px 48px" }}>
       <div style={{ maxWidth: 420, margin: "0 auto", background: PANEL, border: `1px solid ${ACCENT}44`, padding: "28px 22px" }}>
         <h1 style={{ fontFamily: "'Michroma', monospace", fontSize: 15, letterSpacing: "0.18em", color: INK, textAlign: "center", textTransform: "uppercase", marginBottom: 22 }}>
-          {en ? "Marshal Account" : "Račun maršala"}
+          {user ? (en ? "Field settings" : "Nastavitve poligona") : (en ? "Marshal Account" : "Račun maršala")}
         </h1>
         {!ready ? (
           <p style={{ textAlign: "center", fontFamily: "monospace", fontSize: 12, opacity: 0.7 }}>…</p>
@@ -204,6 +204,8 @@ function PasswordVisibilityToggle({ en, visible, onToggle }: { en: boolean; visi
 
 function LoggedIn({ user, en }: { user: User; en: boolean }) {
   const [business, setBusiness] = useState<string | null>(null);
+  const [listed, setListed] = useState<boolean | null>(null);
+  const [listBusy, setListBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
 
   useEffect(() => {
@@ -211,12 +213,12 @@ function LoggedIn({ user, en }: { user: User; en: boolean }) {
     (async () => {
       const { data, error } = await db
         .from("spartanops_accounts")
-        .select("business_name")
+        .select("business_name, listed_publicly")
         .eq("id", user.id)
         .maybeSingle();
       if (cancelled) return;
       if (error) { setErr(error.message); return; }
-      if (data) { setBusiness(data.business_name); return; }
+      if (data) { setBusiness(data.business_name); setListed(data.listed_publicly !== false); return; }
       // First login after email confirmation: create the row from sign-up metadata.
       const pending = (user.user_metadata?.business_name as string | undefined)?.trim();
       if (!pending) { setBusiness(""); return; }
@@ -225,34 +227,64 @@ function LoggedIn({ user, en }: { user: User; en: boolean }) {
         .insert({ id: user.id, business_name: pending });
       if (cancelled) return;
       if (insErr) setErr(insErr.message);
-      else setBusiness(pending);
+      else { setBusiness(pending); setListed(true); }
     })();
     return () => { cancelled = true; };
   }, [user]);
 
+  const toggleListed = async () => {
+    if (listed === null || listBusy) return;
+    const next = !listed;
+    setListBusy(true);
+    const { error } = await db.from("spartanops_accounts").update({ listed_publicly: next }).eq("id", user.id);
+    if (!error) setListed(next); else setErr(error.message);
+    setListBusy(false);
+  };
+
+  const section: CSSProperties = { borderTop: `1px solid ${ACCENT}33`, paddingTop: 18, marginTop: 22 };
+  const sectionTitle: CSSProperties = { fontFamily: "'Michroma', monospace", fontSize: 11, letterSpacing: "0.18em", color: INK, textTransform: "uppercase", marginBottom: 12 };
+
   return (
     <div>
+      <Link to="/admin-pregled" style={{ display: "inline-block", color: ACCENT, fontFamily: "monospace", fontSize: 13, textDecoration: "none", marginBottom: 18 }}>
+        {en ? "← Missions" : "← Misije"}
+      </Link>
+
+      <h2 style={sectionTitle}>{en ? "Account" : "Račun"}</h2>
       <p style={labelStyle}>Email</p>
       <p style={{ fontFamily: "monospace", fontSize: 14, marginBottom: 16 }}>{user.email}</p>
       <p style={labelStyle}>{en ? "Business / field" : "Podjetje / poligon"}</p>
-      <p style={{ fontFamily: "monospace", fontSize: 14, marginBottom: 20 }}>{business === null ? "…" : business || "—"}</p>
+      <p style={{ fontFamily: "monospace", fontSize: 14, marginBottom: 16 }}>{business === null ? "…" : business || "—"}</p>
       {err && <p style={{ color: ERR, fontSize: 12, marginBottom: 10, textAlign: "center" }}>{err}</p>}
-      <Link to="/admin-pregled" style={{ ...btnStyle, display: "block", textAlign: "center", textDecoration: "none", marginBottom: 12 }}>
-        {en ? "Go to your missions" : "Pojdi na svoje misije"}
-      </Link>
-      <FieldPasswordPanel en={en} />
-      <Link to="/field-qr" style={{ ...btnStyle, display: "block", textAlign: "center", textDecoration: "none", marginTop: 14 }}>
-        {en ? "Player QR" : "QR za igralce"}
-      </Link>
-      <p style={{ marginTop: 18, padding: "10px 12px", border: `1px dashed ${ACCENT}55`, fontFamily: "monospace", fontSize: 11.5, lineHeight: 1.6, color: INK, opacity: 0.85 }}>
-        <span style={{ color: ACCENT }}>ⓘ </span>
-        {en
-          ? "This account will soon let you manage all of your fields and missions in one place. That part is coming in the next update."
-          : "Ta račun ti bo kmalu omogočil upravljanje vseh tvojih poligonov in misij na enem mestu. Ta del prihaja v naslednji posodobitvi."}
-      </p>
-      <button type="button" onClick={() => supabase.auth.signOut()} style={{ ...btnStyle, marginTop: 14 }}>
+      <button type="button" onClick={() => supabase.auth.signOut()} style={btnStyle}>
         {en ? "Log out" : "Odjava"}
       </button>
+
+      <div style={section}>
+        <h2 style={sectionTitle}>{en ? "Field password" : "Geslo poligona"}</h2>
+        <FieldPasswordPanel en={en} />
+      </div>
+
+      <div style={section}>
+        <h2 style={sectionTitle}>{en ? "Player QR" : "QR za igralce"}</h2>
+        <p style={{ fontFamily: "monospace", fontSize: 11.5, opacity: 0.8, lineHeight: 1.6, marginBottom: 12 }}>
+          {en ? "Players scan this QR to reach your field's password page." : "Igralci skenirajo to QR kodo za vstop na stran z geslom tvojega poligona."}
+        </p>
+        <Link to="/field-qr" style={{ ...btnStyle, display: "block", textAlign: "center", textDecoration: "none" }}>
+          {en ? "Show QR and print poster" : "Prikaži QR in natisni plakat"}
+        </Link>
+      </div>
+
+      <div style={section}>
+        <h2 style={sectionTitle}>{en ? "Listing" : "Seznam"}</h2>
+        <label style={{ display: "flex", alignItems: "center", gap: 10, fontFamily: "monospace", fontSize: 13, cursor: "pointer" }}>
+          <input type="checkbox" role="switch" checked={listed ?? false} disabled={listed === null || listBusy} onChange={toggleListed} style={{ width: 20, height: 20, accentColor: ACCENT }} />
+          {en ? "Show my field on the Join page" : "Prikaži moj poligon na strani za vstop"}
+        </label>
+        <p style={{ fontFamily: "monospace", fontSize: 11, opacity: 0.7, marginTop: 6, lineHeight: 1.5 }}>
+          {en ? "Players can always join with your poster QR, whether or not you are listed." : "Igralci lahko vedno vstopijo s QR kodo na plakatu, ne glede na to, ali si na seznamu."}
+        </p>
+      </div>
     </div>
   );
 }
