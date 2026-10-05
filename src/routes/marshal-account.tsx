@@ -274,10 +274,10 @@ function LoggedIn({ user, en }: { user: User; en: boolean }) {
       <div style={section}>
         <h2 style={sectionTitle}>{en ? "Player QR" : "QR za igralce"}</h2>
         <p style={{ fontFamily: "monospace", fontSize: 11.5, opacity: 0.8, lineHeight: 1.6, marginBottom: 12 }}>
-          {en ? "Players scan this QR to reach your field's password page." : "Igralci skenirajo to QR kodo za vstop na stran z geslom tvojega poligona."}
+          {en ? "Players scan this QR to reach your field's password page. You can also send them the URL to pre-join and get ready for missions in advance." : "Igralci skenirajo to QR kodo za vstop na stran z geslom tvojega poligona. Lahko pa jim pošlješ povezavo, da se pred pripravami vnaprej prijavijo in se pripravijo na misije."}
         </p>
         <Link to="/field-qr" style={{ ...btnStyle, display: "block", textAlign: "center", textDecoration: "none" }}>
-          {en ? "Show QR and print poster" : "Prikaži QR in natisni plakat"}
+          {en ? "SHOW QR / URL OR PRINT POSTER" : "POKAŽI QR / POVEZAVO ALI NATISNI PLAKAT"}
         </Link>
       </div>
 
