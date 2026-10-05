@@ -240,9 +240,6 @@ function LoggedIn({ user, en }: { user: User; en: boolean }) {
       <Link to="/admin-pregled" style={{ ...btnStyle, display: "block", textAlign: "center", textDecoration: "none", marginBottom: 12 }}>
         {en ? "Go to your missions" : "Pojdi na svoje misije"}
       </Link>
-      <button type="button" onClick={() => supabase.auth.signOut()} style={btnStyle}>
-        {en ? "Log out" : "Odjava"}
-      </button>
       <FieldPasswordPanel en={en} />
       <Link to="/field-qr" style={{ ...btnStyle, display: "block", textAlign: "center", textDecoration: "none", marginTop: 14 }}>
         {en ? "Player QR" : "QR za igralce"}
@@ -253,6 +250,9 @@ function LoggedIn({ user, en }: { user: User; en: boolean }) {
           ? "This account will soon let you manage all of your fields and missions in one place. That part is coming in the next update."
           : "Ta račun ti bo kmalu omogočil upravljanje vseh tvojih poligonov in misij na enem mestu. Ta del prihaja v naslednji posodobitvi."}
       </p>
+      <button type="button" onClick={() => supabase.auth.signOut()} style={{ ...btnStyle, marginTop: 14 }}>
+        {en ? "Log out" : "Odjava"}
+      </button>
     </div>
   );
 }
