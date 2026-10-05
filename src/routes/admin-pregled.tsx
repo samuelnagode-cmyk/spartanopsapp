@@ -28,7 +28,6 @@ import { CountrySearchInput } from "@/components/CountrySearchInput";
 import { flagFor } from "@/lib/countries";
 import { usePremium } from "@/lib/premium";
 import { supabase } from "@/integrations/supabase/client";
-import { FieldPasswordPanel, FieldPasswordInfo } from "@/components/FieldPasswordPanel";
 import {
   listAllLobbies,
   listPublishedLobbies,
@@ -886,7 +885,7 @@ function CreateFieldForm({ onCreated, initialEventName = "" }: { onCreated: (rec
   const [err, setErr] = useState("");
   const [ok, setOk] = useState(false);
   const [showPassword, setShowPassword] = useState(true);
-  const [formTab, setFormTab] = useState<"mission" | "location" | "passwords" | "weapons" | "mode" | "map">("mission");
+  const [formTab, setFormTab] = useState<"mission" | "location" | "weapons" | "mode" | "map">("mission");
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const onMapFile = (file: File) => {
@@ -911,12 +910,6 @@ function CreateFieldForm({ onCreated, initialEventName = "" }: { onCreated: (rec
       setErr(en
         ? "Mission name, field name, city, country and marshal name are required."
         : "Ime misije, ime poligona, mesto, država in ime maršala so obvezni.");
-      return;
-    }
-    if (marshalPassword.trim() && marshalPassword.trim().length < 3) {
-      setErr(en
-        ? "Helper marshal password must be at least 3 characters (or leave it empty)."
-        : "Geslo pomočnika maršala mora imeti vsaj 3 znake (ali ga pusti prazno).");
       return;
     }
     const location = `${city.trim()}, ${country.trim()}`;
@@ -954,8 +947,6 @@ function CreateFieldForm({ onCreated, initialEventName = "" }: { onCreated: (rec
           pointTarget,
           nodePositions,
           settings: settingsWithMission,
-          password: password.trim(),
-          marshalPassword: marshalPassword.trim(),
           masterPassword: getMasterPw(),
           published: true,
         },
@@ -963,8 +954,7 @@ function CreateFieldForm({ onCreated, initialEventName = "" }: { onCreated: (rec
 
       const rec = dtoToRecord(dto);
       // Cache marshal password locally so the marshal keeps it around this session.
-      rec.marshalPassword = marshalPassword.trim();
-      rec.password = password.trim();
+
       // Mirror to localStorage for legacy code paths.
       const list = loadLobbies();
       list.unshift(rec);
@@ -979,7 +969,7 @@ function CreateFieldForm({ onCreated, initialEventName = "" }: { onCreated: (rec
       setOk(true);
       // Go straight into the command center for the new mission — the lobby URL
       // and all controls live there.
-      onCreated(rec, { password: password.trim(), marshalPassword: marshalPassword.trim() });
+      onCreated(rec, { password: "", marshalPassword: "" });
     } catch (e: any) {
       console.error("[admin] createLobby failed", { error: e, message: e?.message, cause: e?.cause, stack: e?.stack });
       setErr(e?.message ? `Error: ${e.message}` : "Failed to create lobby.");
@@ -991,7 +981,6 @@ function CreateFieldForm({ onCreated, initialEventName = "" }: { onCreated: (rec
   const formTabs: { k: typeof formTab; l: string; done: boolean }[] = [
     { k: "mission", l: en ? "Mission & Field" : "Misija in poligon", done: !!fieldName.trim() && !!missionName.trim() },
     { k: "location", l: en ? "Location & Marshals" : "Lokacija in maršali", done: !!city.trim() && !!country.trim() && !!marshalName.trim() },
-    { k: "passwords", l: en ? "Passwords" : "Gesla", done: true },
     { k: "weapons", l: en ? "Replica Power & Shooting Rules" : "Moč replik in pravila streljanja", done: hasWeaponRules(weaponRules) },
     { k: "mode", l: en ? "Game Mode & Parameters" : "Igralni način in parametri", done: true },
     { k: "map", l: en ? "Tactical Map" : "Taktični zemljevid", done: !!mapUrl.trim() },
@@ -1116,43 +1105,6 @@ function CreateFieldForm({ onCreated, initialEventName = "" }: { onCreated: (rec
         <Pane title={en ? "REPLICA POWER & SHOOTING RULES" : "MOČ REPLIK IN PRAVILA STRELJANJA"}>
           <WeaponRulesEditor value={weaponRules} onChange={setWeaponRules} />
         </Pane>
-      </div>
-
-      {/* ── TAB 3: PASSWORDS ────────────────────────────────── */}
-      <div style={{ display: formTab === "passwords" ? "block" : "none" }}>
-      <Pane title={en ? "PASSWORDS" : "GESLA"}>
-        <FieldPasswordInfo en={en} />
-        <FieldRow label={en ? "Helper marshal password (optional)" : "Geslo pomočnika maršala (neobvezno)"}>
-          <div style={{ position: "relative" }}>
-            <input
-              type={showMarshalPassword ? "text" : "password"}
-              value={marshalPassword}
-              onChange={(e) => setMarshalPassword(e.target.value)}
-              style={{ ...consoleInputStyle, paddingRight: 40 }}
-              placeholder={en ? "e.g. marshal-override-2025" : "npr. marshal-override-2025"}
-              autoComplete="off"
-              spellCheck={false}
-            />
-            <button
-              type="button"
-              onClick={() => setShowMarshalPassword((v) => !v)}
-              aria-label={showMarshalPassword ? (en ? "Hide password" : "Skrij geslo") : (en ? "Show password" : "Prikaži geslo")}
-              style={{
-                position: "absolute", top: "50%", right: 8, transform: "translateY(-50%)",
-                background: "transparent", border: "none", color: MUTED, cursor: "pointer",
-                padding: 4, display: "grid", placeItems: "center",
-              }}
-            >
-              {showMarshalPassword ? <EyeOff size={16} /> : <Eye size={16} />}
-            </button>
-          </div>
-          <p style={{ fontSize: 10, color: MUTED, fontFamily: "monospace", marginTop: 6, lineHeight: 1.5 }}>
-            {en
-              ? "Lets a helper open this mission's control center without your account. At least 3 characters if used."
-              : "Pomočniku omogoči odpiranje komandnega centra te misije brez tvojega računa. Vsaj 3 znaki, če ga uporabiš."}
-          </p>
-        </FieldRow>
-      </Pane>
       </div>
 
       {/* ── TAB 5: GAME MODE & PARAMETERS ───────────────────── */}
@@ -1424,7 +1376,6 @@ function AccountMissionsSection({ en, onOpenMission, onCreateInEvent }: { en: bo
   const [missions, setMissions] = useState<AccountLobby[] | null>(null);
   const [err, setErr] = useState<string | null>(null);
   const [business, setBusiness] = useState<string | null>(null);
-  const [showFieldPw, setShowFieldPw] = useState(false);
   const [query, setQuery] = useState("");
   const [expanded, setExpanded] = useState<Record<string, boolean> | null>(null);
 
@@ -1569,21 +1520,10 @@ function AccountMissionsSection({ en, onOpenMission, onCreateInEvent }: { en: bo
 
   return (
     <div style={{ marginBottom: 32 }}>
-      {/* Compact field bar */}
-      <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 14, overflowX: "auto", fontFamily: "monospace", fontSize: 11, color: MUTED, paddingBottom: 2 }}>
-        {business && <strong style={{ color: ACCENT, whiteSpace: "nowrap", flexShrink: 0 }}>{business}</strong>}
-        <Link to="/field-qr" style={smallBarBtn}>{en ? "Player QR" : "QR za igralce"}</Link>
-        <button type="button" onClick={() => setShowFieldPw((v) => !v)} aria-expanded={showFieldPw} style={{ ...smallBarBtn, background: showFieldPw ? `${ACCENT}22` : "transparent" }}>
-          {en ? "Field password" : "Geslo poligona"}
-        </button>
-        <Link to="/marshal-account" style={smallLink}>{en ? "Account" : "Račun"}</Link>
-        <button type="button" onClick={() => supabase.auth.signOut()} style={smallLink}>{en ? "Log out" : "Odjava"}</button>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, marginBottom: 14 }}>
+        <strong style={{ color: ACCENT, fontFamily: "monospace", fontSize: 14, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{business || ""}</strong>
+        <Link to="/marshal-account" style={{ ...smallBarBtn, flexShrink: 0 }}>{en ? "Field settings" : "Nastavitve poligona"}</Link>
       </div>
-      {showFieldPw && (
-        <div style={{ marginBottom: 18 }}>
-          <FieldPasswordPanel en={en} />
-        </div>
-      )}
       <p style={{ fontFamily: "monospace", fontSize: 10, letterSpacing: "0.30em", color: ACCENT, margin: "0 0 10px", textTransform: "uppercase" }}>
         {en ? "// YOUR MISSIONS" : "// TVOJE MISIJE"}
       </p>
@@ -1618,15 +1558,15 @@ function AccountMissionsSection({ en, onOpenMission, onCreateInEvent }: { en: bo
                   <span style={{ fontSize: 13, fontWeight: 700, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{g.title}</span>
                   <span style={{ fontSize: 11, color: MUTED, whiteSpace: "nowrap" }}>{en ? `${n} mission${n === 1 ? "" : "s"}` : slMissionCount(n)}</span>
                 </button>
-                <button
+                {g.key && <button
                   type="button"
-                  onClick={() => onCreateInEvent(g.key ? g.title : "")}
+                  onClick={() => onCreateInEvent(g.title)}
                   aria-label={en ? "Add mission to this event" : "Dodaj misijo temu dogodku"}
                   title={en ? "Add mission to this event" : "Dodaj misijo temu dogodku"}
                   style={{ width: 36, height: 36, flexShrink: 0, background: "transparent", border: `1px solid ${ACCENT}66`, color: ACCENT, fontSize: 18, cursor: "pointer", lineHeight: 1 }}
                 >
                   +
-                </button>
+                </button>}
               </div>
               {open && (
                 <ul style={{ listStyle: "none", padding: 0, margin: 0 }}>
@@ -1745,39 +1685,6 @@ function FieldsWelcome({
 }
 
 /** Always-visible join link for a created mission, with one-click copy. */
-function LobbyLinkRow({ lobbyId, en }: { lobbyId: string; en: boolean }) {
-  const [copied, setCopied] = useState(false);
-  const url = typeof window !== "undefined" ? `${window.location.origin}/misija?field=${lobbyId}` : "";
-  return (
-    <div style={{ marginTop: 14, paddingTop: 12, borderTop: `1px dashed ${ACCENT}33` }}>
-      <p style={{ fontFamily: "monospace", fontSize: 9.5, letterSpacing: "0.24em", color: MUTED, textTransform: "uppercase", marginBottom: 6 }}>
-        {en ? "LOBBY URL" : "POVEZAVA DO MISIJE"}
-      </p>
-      <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-        <input
-          readOnly
-          value={url}
-          onFocus={(e) => e.currentTarget.select()}
-          style={{ flex: 1, minWidth: 0, background: "rgba(0,0,0,0.35)", border: `1px solid ${ACCENT}33`, color: INK, fontFamily: "monospace", fontSize: 10.5, padding: "7px 8px" }}
-        />
-        <button
-          type="button"
-          onClick={async (e) => {
-            e.stopPropagation();
-            try { await navigator.clipboard.writeText(url); } catch { /* ignore */ }
-            setCopied(true);
-            setTimeout(() => setCopied(false), 1800);
-          }}
-          style={{ background: "transparent", border: `1px solid ${ACCENT}`, color: ACCENT, padding: "7px 10px", fontFamily: "'Michroma', monospace", fontSize: 9, letterSpacing: "0.14em", textTransform: "uppercase", cursor: "pointer", whiteSpace: "nowrap" }}
-        >
-          {copied ? (en ? "COPIED" : "KOPIRANO") : (en ? "COPY" : "KOPIRAJ")}
-        </button>
-      </div>
-    </div>
-  );
-}
-
-
 function FieldConsole({
   field, authedPw, onBack, onAuth,
 }: {
@@ -2598,11 +2505,10 @@ function MarshalLobbyConsole({ lobby: initialLobby, marshalPassword, lobbyPasswo
     }
   };
 
-  const [lobbyTab, setLobbyTab] = useState<"mission" | "location" | "passwords" | "weapons" | "mode" | "map" | "match" | "review">("match");
+  const [lobbyTab, setLobbyTab] = useState<"mission" | "location" | "weapons" | "mode" | "map" | "match" | "review">("match");
   const lobbyTabs: { k: typeof lobbyTab; l: string }[] = [
     { k: "mission", l: en ? "Mission & Field" : "Misija in poligon" },
     { k: "location", l: en ? "Location & Marshals" : "Lokacija in maršali" },
-    { k: "passwords", l: en ? "Passwords" : "Gesla" },
     { k: "weapons", l: en ? "Replica Power & Shooting Rules" : "Moč replik in pravila streljanja" },
     { k: "mode", l: en ? "Gamemode & Teams" : "Način igre in ekipe" },
     { k: "map", l: en ? "Tactical Map" : "Taktični zemljevid" },
@@ -2773,8 +2679,6 @@ function MarshalLobbyConsole({ lobby: initialLobby, marshalPassword, lobbyPasswo
           )}
         </div>
 
-        {/* Join link is only exposed inside the password-protected marshal console. */}
-        <LobbyLinkRow lobbyId={lobby.id} en={en} />
 
 
 
@@ -2945,54 +2849,6 @@ function MarshalLobbyConsole({ lobby: initialLobby, marshalPassword, lobbyPasswo
             onChange={(next) => patch({ settings: { ...(lobby.settings ?? {}), weaponRules: next } as any })}
           />
         </div>
-      </Pane>
-      </div>
-
-      <div style={{ height: 16 }} />
-
-      <div style={{ display: lobbyTab === "passwords" ? "block" : "none" }}>
-      {/* ── CARD 2: PASSWORDS ───────────────────────────────── */}
-      <Pane title={en ? "PASSWORDS" : "GESLA"}>
-        <FieldPasswordInfo en={en} withPanelButton />
-        <FieldRow label={en ? "Helper marshal password (optional)" : "Geslo pomočnika maršala (neobvezno)"}>
-          <p style={{ fontSize: 10, color: MUTED, fontFamily: "monospace", marginBottom: 6, lineHeight: 1.5 }}>
-            {en
-              ? "Lets a helper open this mission's control center without your account. You don't need it."
-              : "Pomočniku omogoči odpiranje komandnega centra te misije brez tvojega računa. Sam ga ne potrebuješ."}
-          </p>
-          <div style={{ position: "relative" }}>
-            <input
-              type={showMarshalPw ? "text" : "password"}
-              value={marshalPwInput}
-              placeholder={marshalPwInput ? "" : "••••••••"}
-              onChange={(e) => {
-                const v = e.target.value;
-                setMarshalPwInput(v);
-                if (v.trim()) patch({ marshalPassword: v });
-              }}
-              style={{ ...consoleInputStyle, paddingRight: 40 }}
-              autoComplete="off"
-              spellCheck={false}
-            />
-            <button
-              type="button"
-              onClick={() => setShowMarshalPw((v) => !v)}
-              aria-label={showMarshalPw ? (en ? "Hide password" : "Skrij geslo") : (en ? "Show password" : "Prikaži geslo")}
-              style={{
-                position: "absolute", top: "50%", right: 8, transform: "translateY(-50%)",
-                background: "transparent", border: "none", color: MUTED, cursor: "pointer",
-                padding: 4, display: "grid", placeItems: "center",
-              }}
-            >
-              {showMarshalPw ? <EyeOff size={16} /> : <Eye size={16} />}
-            </button>
-          </div>
-          {!marshalPwInput && (
-            <p style={{ fontSize: 10, color: MUTED, marginTop: 4, fontFamily: "monospace", letterSpacing: "0.08em" }}>
-              // {en ? "Password stored securely — type a new value to change it." : "Geslo je varno shranjeno — vpiši novo vrednost za spremembo."}
-            </p>
-          )}
-        </FieldRow>
       </Pane>
       </div>
 
@@ -3171,17 +3027,6 @@ function MarshalLobbyConsole({ lobby: initialLobby, marshalPassword, lobbyPasswo
 
 
 
-
-      <div style={{ marginTop: 18, textAlign: "center" }}>
-        <Link to="/field-qr"
-          style={{
-            color: MUTED, textDecoration: "none", fontFamily: "monospace",
-            fontSize: 11, letterSpacing: "0.20em", textTransform: "uppercase",
-            borderBottom: `1px solid ${MUTED}`, paddingBottom: 2,
-          }}>
-          {en ? "Open player QR" : "Odpri QR za igralce"}
-        </Link>
-      </div>
 
       {joinModal && (
         <div role="dialog" aria-modal="true" onClick={() => !joinBusy && setJoinModal(false)}
