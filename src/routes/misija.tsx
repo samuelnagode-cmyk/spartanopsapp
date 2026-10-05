@@ -2977,56 +2977,29 @@ function ScanCodeButton({ paused, en }: { paused: boolean; en: boolean }) {
 
   return (
     <>
-      <div className="mb-6 flex justify-center">
-        <button
-          type="button"
-          onClick={() => setOpen(true)}
-          disabled={paused}
-          className={paused ? "" : "animate-pulse"}
-          style={{
-            width: "100%",
-            maxWidth: 520,
-            background: `linear-gradient(180deg, ${ACCENT}22, ${ACCENT}05)`,
-            color: paused ? "rgba(224,176,78,0.35)" : ACCENT,
-            border: `2px solid ${paused ? "rgba(224,176,78,0.28)" : ACCENT}`,
-            padding: "16px 12px",
-            fontFamily: "'Michroma', monospace",
-            fontSize: 13,
-            letterSpacing: "0.24em",
-            textTransform: "uppercase",
-            fontWeight: 700,
-            cursor: paused ? "not-allowed" : "pointer",
-            boxShadow: paused ? "none" : `0 0 24px -6px ${ACCENT}, inset 0 0 12px -6px ${ACCENT}`,
-            display: "inline-flex",
-            alignItems: "center",
-            justifyContent: "center",
-            gap: 10,
-          }}
-        >
-          <Crosshair size={16} /> {t("scanner.hudButton")}
-        </button>
-      </div>
       <button
         type="button"
         onClick={() => setOpen(true)}
         disabled={paused}
         aria-label={t("scanner.hudButton")}
+        className={paused ? "" : "animate-pulse"}
         style={{
           position: "fixed",
-          bottom: 16,
-          right: 16,
+          bottom: "calc(16px + env(safe-area-inset-bottom, 0px))",
+          right: "calc(16px + env(safe-area-inset-right, 0px))",
           zIndex: 55,
           display: "flex",
           alignItems: "center",
           gap: 8,
+          minHeight: 48,
           background: paused ? "rgba(11,13,9,0.85)" : "rgba(11,13,9,0.9)",
           backdropFilter: "blur(8px)",
           color: paused ? "rgba(224,176,78,0.35)" : ACCENT,
           border: `1px solid ${paused ? "rgba(224,176,78,0.28)" : ACCENT}`,
           borderRadius: 999,
-          padding: "12px 18px",
+          padding: "14px 20px",
           fontFamily: "'Michroma', monospace",
-          fontSize: 11,
+          fontSize: 12,
           letterSpacing: "0.18em",
           textTransform: "uppercase",
           fontWeight: 700,
@@ -3034,8 +3007,8 @@ function ScanCodeButton({ paused, en }: { paused: boolean; en: boolean }) {
           boxShadow: paused ? "none" : `0 4px 20px rgba(0,0,0,0.5), 0 0 16px -4px ${ACCENT}`,
         }}
       >
-        <QrCode size={16} />
-        {en ? "SCANNER" : "SKENER"}
+        <QrCode size={18} />
+        {t("scanner.hudButton")}
       </button>
       <QRScanner open={open} onClose={() => setOpen(false)} onDecode={handleDecode} />
     </>
@@ -3080,7 +3053,7 @@ function LiveMatch({ state, captures, now, roster, myTeam, meId, meCallsign }: {
   const scoreFor = (t: string) => Math.floor(Number(dynamicScores[t] ?? 0) || 0);
 
   return (
-    <div className="max-w-5xl mx-auto px-4 py-6" style={{ paddingTop: 84 }}>
+    <div className="max-w-5xl mx-auto px-4 py-6" style={{ paddingTop: 84, paddingBottom: "calc(96px + env(safe-area-inset-bottom, 0px))" }}>
       <HudNoticeFeed captures={visibleCaptures} roster={roster} myTeam={myTeam} meId={meId} meCallsign={meCallsign} teamLabelFor={teamLabelFor} respawnEnabled={!!state.settings?.respawn?.enabled || !!state.settings?.respawn?.publicDeaths} fieldId={state.field_id ?? ""} />
       {preMatchSec > 0 && <PreMatchCountdown seconds={preMatchSec} polygon={fieldTitleFromState(state, "")} eventName={missionTitleFromState(state, "")} gamemode={state.gamemode} pointTarget={state.point_target} settings={state.settings} en={en} state={state} roster={roster} />}
 
@@ -3152,8 +3125,8 @@ function LiveMatch({ state, captures, now, roster, myTeam, meId, meCallsign }: {
         style={{ color: MUTED, fontSize: "clamp(12px, 3.4vw, 15px)", lineHeight: 1.45, letterSpacing: "0.02em", maxWidth: 560, marginLeft: "auto", marginRight: "auto" }}
       >
         {en
-          ? "Scan the QR codes at flagged locations to score points for your team."
-          : "Z skeniranjem QR kod na lokacijah z zastavico vaša ekipa pridobiva točke."}
+          ? `Tap ${t("scanner.hudButton")} and scan the QR codes at flagged locations to score points for your team.`
+          : `Tapni ${t("scanner.hudButton")} in skeniraj QR kode na lokacijah z zastavico, da tvoja ekipa pridobi točke.`}
       </p>
 
       <div className="text-center mb-6 font-mono text-[12px] uppercase tracking-widest" style={{ color: ACCENT }}>
