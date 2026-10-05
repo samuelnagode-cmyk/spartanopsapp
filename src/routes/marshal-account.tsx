@@ -1,4 +1,4 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState, type CSSProperties, type FormEvent } from "react";
 import type { SupabaseClient, User } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
@@ -153,6 +153,7 @@ function SignUpForm({ en, onSwitch }: { en: boolean; onSwitch: () => void }) {
 }
 
 function LoginForm({ en, onSwitch }: { en: boolean; onSwitch: () => void }) {
+  const navigate = useNavigate();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -164,8 +165,16 @@ function LoginForm({ en, onSwitch }: { en: boolean; onSwitch: () => void }) {
     setErr(null);
     setBusy(true);
     try {
-      const { error } = await supabase.auth.signInWithPassword({ email: email.trim(), password });
-      if (error) setErr(error.message);
+      const { data, error } = await supabase.auth.signInWithPassword({ email: email.trim(), password });
+      if (error) { setErr(error.message); return; }
+      if (data.user) {
+        const { data: acct } = await db
+          .from("spartanops_accounts")
+          .select("field_password_changed_at")
+          .eq("id", data.user.id)
+          .maybeSingle();
+        if (acct?.field_password_changed_at) navigate({ to: "/admin-pregled" });
+      }
     } finally {
       setBusy(false);
     }
@@ -246,8 +255,8 @@ function LoggedIn({ user, en }: { user: User; en: boolean }) {
 
   return (
     <div>
-      <Link to="/admin-pregled" style={{ display: "inline-block", color: ACCENT, fontFamily: "monospace", fontSize: 13, textDecoration: "none", marginBottom: 18 }}>
-        {en ? "← Missions" : "← Misije"}
+      <Link to="/admin-pregled" style={{ ...btnStyle, display: "block", textAlign: "center", textDecoration: "none", marginBottom: 22 }}>
+        {en ? "Missions" : "Misije"}
       </Link>
 
       <h2 style={sectionTitle}>{en ? "Account" : "Račun"}</h2>
@@ -256,9 +265,6 @@ function LoggedIn({ user, en }: { user: User; en: boolean }) {
       <p style={labelStyle}>{en ? "Business / field" : "Podjetje / poligon"}</p>
       <p style={{ fontFamily: "monospace", fontSize: 14, marginBottom: 16 }}>{business === null ? "…" : business || "—"}</p>
       {err && <p style={{ color: ERR, fontSize: 12, marginBottom: 10, textAlign: "center" }}>{err}</p>}
-      <button type="button" onClick={() => supabase.auth.signOut()} style={btnStyle}>
-        {en ? "Log out" : "Odjava"}
-      </button>
 
       <div style={section}>
         <h2 style={sectionTitle}>{en ? "Field password" : "Geslo poligona"}</h2>
@@ -285,6 +291,10 @@ function LoggedIn({ user, en }: { user: User; en: boolean }) {
           {en ? "Players can always join with your poster QR, whether or not you are listed." : "Igralci lahko vedno vstopijo s QR kodo na plakatu, ne glede na to, ali si na seznamu."}
         </p>
       </div>
+
+      <button type="button" onClick={() => supabase.auth.signOut()} style={{ ...btnStyle, background: "transparent", color: ACCENT, border: `1px solid ${ACCENT}88`, marginTop: 28 }}>
+        {en ? "Log out" : "Odjava"}
+      </button>
     </div>
   );
 }
