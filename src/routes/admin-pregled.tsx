@@ -1,7 +1,7 @@
 import { createFileRoute, Link, useSearch, useNavigate } from "@tanstack/react-router";
 import { getMasterPw, setMasterPw, clearMasterPw } from "@/lib/master-admin";
 import { missionTitle } from "@/lib/mission-title";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useId, useMemo, useRef, useState, type CSSProperties } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import {
   ArrowLeft, Lock, ChevronLeft, X, Crosshair, ShieldCheck,
@@ -1369,7 +1369,7 @@ function gamemodeLabel(key: string | null | undefined): string {
  *  A value matching an existing event (ignoring case/spaces/accents) is stored in the existing spelling. */
 function EventNameInput({ value, onChange, en }: { value: string; onChange: (v: string) => void; en: boolean }) {
   const [events, setEvents] = useState<string[]>([]);
-  const listId = useMemo(() => `evt-list-${Math.random().toString(36).slice(2, 8)}`, []);
+  const listId = `evt-list-${useId().replace(/:/g, "")}`;
   useEffect(() => {
     let cancelled = false;
     (async () => {
@@ -1393,7 +1393,7 @@ function EventNameInput({ value, onChange, en }: { value: string; onChange: (v: 
   const handle = (v: string) => {
     const k = foldEvent(v);
     const match = k ? events.find((e) => foldEvent(e) === k) : undefined;
-    onChange(match && match !== v.trim() && v.endsWith(" ") === false ? match : v);
+    onChange(match && !v.endsWith(" ") ? match : v);
   };
   return (
     <>
@@ -1405,12 +1405,12 @@ function EventNameInput({ value, onChange, en }: { value: string; onChange: (v: 
   );
 }
 
-const smallBarBtn: React.CSSProperties = {
+const smallBarBtn: CSSProperties = {
   fontFamily: "monospace", fontSize: 11, letterSpacing: "0.04em", color: ACCENT,
   background: "transparent", border: `1px solid ${ACCENT}66`, padding: "5px 10px",
   whiteSpace: "nowrap", cursor: "pointer", textDecoration: "none", flexShrink: 0,
 };
-const smallLink: React.CSSProperties = {
+const smallLink: CSSProperties = {
   background: "transparent", border: "none", color: ACCENT, textDecoration: "underline", cursor: "pointer",
   fontFamily: "monospace", fontSize: 11, padding: 0, whiteSpace: "nowrap", flexShrink: 0,
 };
