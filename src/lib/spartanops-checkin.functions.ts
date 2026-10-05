@@ -609,20 +609,20 @@ export const spartanopsListFields = createServerFn({ method: "POST" })
   .handler(async ({ data }) => {
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const base = () => supabaseAdmin.from("spartanops_accounts")
-      .select("id, business_name", { count: "exact" })
+      .select("id, business_name, city, country" as any, { count: "exact" })
       .eq("listed_publicly" as any, true).eq("listing_blocked" as any, false)
       .not("field_password_hash", "is", null);
     const folded = spartanopsFoldQuery(data.q);
-    const map = (rows: any[] | null) => (rows ?? []).map((r) => ({ id: r.id as string, name: r.business_name as string }));
+    const map = (rows: any[] | null) => (rows ?? []).map((r) => ({ id: r.id as string, name: r.business_name as string, city: (r.city ?? null) as string | null, country: (r.country ?? null) as string | null }));
     if (folded.length >= 2) {
       const pat = folded.replace(/[\\%_]/g, (c) => "\\" + c);
-      const { data: rows, count } = await base().ilike("name_fold" as any, `%${pat}%`).order("business_name").limit(FIELD_SEARCH_LIMIT);
+      const { data: rows, count } = await base().or(`name_fold.ilike.%${pat}%,city_fold.ilike.%${pat}%`).order("business_name").limit(FIELD_SEARCH_LIMIT);
       return { mode: "search" as const, fields: map(rows), total: count ?? 0 };
     }
     const { count } = await supabaseAdmin.from("spartanops_accounts").select("id", { count: "exact", head: true })
       .eq("listed_publicly" as any, true).eq("listing_blocked" as any, false).not("field_password_hash", "is", null);
     const total = count ?? 0;
-    if (total > FIELD_LIST_ALL_MAX) return { mode: "prompt" as const, fields: [] as { id: string; name: string }[], total };
+    if (total > FIELD_LIST_ALL_MAX) return { mode: "prompt" as const, fields: [] as { id: string; name: string; city: string | null; country: string | null }[], total };
     const { data: rows } = await base().order("business_name");
     return { mode: "all" as const, fields: map(rows), total };
   });
