@@ -1393,6 +1393,7 @@ function AccountMissionsSection({ en, onOpenMission, onCreateInEvent }: { en: bo
   const [activeLobbyId, setActiveLobbyId] = useState<string | null>(null);
   const [settingActive, setSettingActive] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
+  const [locMissing, setLocMissing] = useState(false);
 
   useEffect(() => {
     if (!userId) { setMissions(null); setActiveLobbyId(null); return; }
@@ -1406,7 +1407,7 @@ function AccountMissionsSection({ en, onOpenMission, onCreateInEvent }: { en: bo
           .order("created_at", { ascending: false }),
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         (supabase.from("spartanops_accounts") as any)
-          .select("active_lobby_id")
+          .select("active_lobby_id, city, country")
           .eq("id", userId)
           .maybeSingle(),
       ]);
@@ -1415,6 +1416,7 @@ function AccountMissionsSection({ en, onOpenMission, onCreateInEvent }: { en: bo
       setErr(null);
       setMissions((data ?? []) as AccountLobby[]);
       setActiveLobbyId((acc?.data?.active_lobby_id as string | null) ?? null);
+      setLocMissing(!acc?.data?.city || !acc?.data?.country);
     })();
     return () => { cancelled = true; };
   }, [userId, refreshKey]);
@@ -1529,6 +1531,12 @@ function AccountMissionsSection({ en, onOpenMission, onCreateInEvent }: { en: bo
       <p style={{ fontFamily: "monospace", fontSize: 10, letterSpacing: "0.30em", color: ACCENT, margin: "0 0 10px", textTransform: "uppercase" }}>
         {en ? "// YOUR MISSIONS" : "// TVOJE MISIJE"}
       </p>
+      {locMissing && (
+        <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 12, fontFamily: "monospace", fontSize: 11, opacity: 0.85 }}>
+          <span style={{ flex: 1, minWidth: 0, lineHeight: 1.5 }}>{en ? "Add your field's city and country so players can find you." : "Dodaj mesto in državo poligona, da te igralci lahko najdejo."}</span>
+          <Link to="/marshal-account" style={{ ...smallBarBtn, flexShrink: 0 }}>{en ? "Field settings" : "Nastavitve poligona"}</Link>
+        </div>
+      )}
       {showSearch && (
         <input
           value={query}
