@@ -3018,7 +3018,7 @@ function ScanCodeButton({ paused, en }: { paused: boolean; en: boolean }) {
 function LiveMatch({ state, captures, now, roster, myTeam, meId, meCallsign }: { state: GameState; captures: Capture[]; now: number; roster: Checkin[]; myTeam: string; meId?: string; meCallsign?: string }) {
 
   const deathLog = useDeathLog(state.field_id ?? "");
-  const { lang } = useLang();
+  const { lang, t } = useLang();
   const en = lang === "en";
   const teamLabelFor = (t: string) => teamName(t, state.settings, en);
   const startMs = state.match_started_at ? new Date(state.match_started_at).getTime() : null;
