@@ -371,6 +371,7 @@ function AdminPage() {
   const [isEditMode, setIsEditMode] = useState(false);
   const [editModalOpen, setEditModalOpen] = useState(false);
   const [creating, setCreating] = useState(false);
+  const [createEventName, setCreateEventName] = useState("");
   const [marshalPromptLobby, setMarshalPromptLobby] = useState<LobbyRecord | null>(null);
   const [marshalActiveLobby, setMarshalActiveLobby] = useState<LobbyRecord | null>(null);
   const [ownerAccessToken, setOwnerAccessToken] = useState<string | undefined>(undefined);
@@ -652,6 +653,7 @@ function AdminPage() {
 
         {section === "fields" && creating && (
           <CreateFieldForm
+            initialEventName={createEventName}
             onCreated={async (rec, pws) => {
               setCreating(false);
               setCustomLobbies(loadLobbies());
@@ -670,7 +672,7 @@ function AdminPage() {
 
         {section === "fields" && !creating && !activeField && !marshalActiveLobby && (
           <FieldsWelcome
-            onCreate={() => setCreating(true)}
+            onCreate={(ev?: string) => { setCreateEventName(ev ?? ""); setCreating(true); }}
             onOpenAccountMission={async (m) => {
               // Silent owner open: a signed-in account owner skips the password prompt.
               try {
@@ -832,7 +834,7 @@ function GameModeButtons({ active, isPremium, openPremiumModal, en, onPick }: {
   );
 }
 
-function CreateFieldForm({ onCreated }: { onCreated: (rec: LobbyRecord, pws: { password: string; marshalPassword: string }) => void }) {
+function CreateFieldForm({ onCreated, initialEventName = "" }: { onCreated: (rec: LobbyRecord, pws: { password: string; marshalPassword: string }) => void; initialEventName?: string }) {
   const { lang } = useLang();
   const en = lang === "en";
   const { isPremium, openPremiumModal } = usePremium();
@@ -846,7 +848,19 @@ function CreateFieldForm({ onCreated }: { onCreated: (rec: LobbyRecord, pws: { p
   const [password, setPassword] = useState("");
   const [marshalPassword, setMarshalPassword] = useState("");
   const [showMarshalPassword, setShowMarshalPassword] = useState(true);
-  const [eventName, setEventName] = useState("");
+  const [eventName, setEventName] = useState(initialEventName);
+  // Pre-fill field name with the account's business name (still editable).
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user || cancelled) return;
+      const { data } = await supabase.from("spartanops_accounts").select("business_name").eq("id", user.id).maybeSingle();
+      const b = (data?.business_name ?? "").trim();
+      if (!cancelled && b) setFieldName((cur) => (cur.trim() ? cur : b));
+    })();
+    return () => { cancelled = true; };
+  }, []);
   const [country, setCountry] = useState("");
   const [city, setCity] = useState("");
   const [marshalName, setMarshalName] = useState("");
@@ -1033,7 +1047,7 @@ function CreateFieldForm({ onCreated }: { onCreated: (rec: LobbyRecord, pws: { p
           <input required value={fieldName} onChange={(e) => setFieldName(e.target.value)} style={consoleInputStyle} placeholder="Poligon Ljubljana" />
         </FieldRow>
         <FieldRow label={en ? "Event name (optional)" : "Ime dogodka (neobvezno)"}>
-          <input value={eventName} onChange={(e) => setEventName(e.target.value)} style={consoleInputStyle} placeholder={en ? "e.g. Operation Sparta" : "npr. Operacija Sparta"} />
+          <EventNameInput value={eventName} onChange={setEventName} en={en} />
         </FieldRow>
         <FieldRow label={en ? "Mission name" : "Ime misije"}>
           <input value={missionName} onChange={(e) => setMissionName(e.target.value)} style={consoleInputStyle} placeholder={en ? "Operation Fallen Angel" : "Operacija Fallen Angel"} />
@@ -2729,7 +2743,7 @@ function MarshalLobbyConsole({ lobby: initialLobby, marshalPassword, lobbyPasswo
           <input value={lobby.fieldName} readOnly disabled style={{ ...consoleInputStyle, opacity: 0.65, cursor: "not-allowed" }} />
         </FieldRow>
         <FieldRow label={en ? "Event name (optional)" : "Ime dogodka (neobvezno)"}>
-          <input value={lobby.eventName ?? ""} onChange={(e) => patch({ eventName: e.target.value })} style={consoleInputStyle} placeholder={en ? "e.g. Operation Sparta" : "npr. Operacija Sparta"} />
+          <EventNameInput value={lobby.eventName ?? ""} onChange={(v) => patch({ eventName: v })} en={en} />
         </FieldRow>
         <FieldRow label={en ? "Mission description / instructions (optional)" : "Opis misije / navodila (neobvezno)"}>
           <textarea
