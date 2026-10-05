@@ -2888,8 +2888,8 @@ function MarshalLobbyConsole({ lobby: initialLobby, marshalPassword, lobbyPasswo
           </select>
           <p style={{ fontSize: 10, color: MUTED, fontFamily: "monospace", lineHeight: 1.55, marginTop: 8, fontStyle: "italic" }}>
             {en
-              ? `Each sector held earns 1 point every 30 seconds. With 3 sectors held, ${pointTarget} points takes about ${Math.ceil(pointTarget / 6)} minutes.`
-              : `Vsak zadržan sektor prinese 1 točko na 30 sekund. Pri 3 zadržanih sektorjih je za ${pointTarget} točk potrebnih približno ${Math.ceil(pointTarget / 6)} minut.`}
+              ? `Each sector held earns 1 point every 30 seconds. With 3 sectors held, ${target} points takes about ${Math.ceil(target / 6)} minutes.`
+              : `Vsak zadržan sektor prinese 1 točko na 30 sekund. Pri 3 zadržanih sektorjih je za ${target} točk potrebnih približno ${Math.ceil(target / 6)} minut.`}
           </p>
         </div>
       </Pane>
