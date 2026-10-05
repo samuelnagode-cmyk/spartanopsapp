@@ -4,6 +4,8 @@ import type { SupabaseClient, User } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
 import { useLang } from "@/lib/i18n";
 import { FieldPasswordPanel } from "@/components/FieldPasswordPanel";
+import { CountrySearchInput } from "@/components/CountrySearchInput";
+import { COUNTRIES, countryCodeFor } from "@/lib/countries";
 
 // Same shared client; untyped view because the generated types do not yet include spartanops_accounts.
 const db = supabase as unknown as SupabaseClient;
@@ -216,18 +218,28 @@ function LoggedIn({ user, en }: { user: User; en: boolean }) {
   const [listed, setListed] = useState<boolean | null>(null);
   const [listBusy, setListBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
+  const [city, setCity] = useState("");
+  const [countryName, setCountryName] = useState("");
+  const [locBusy, setLocBusy] = useState(false);
+  const [locMsg, setLocMsg] = useState<{ ok: boolean; text: string } | null>(null);
 
   useEffect(() => {
     let cancelled = false;
     (async () => {
       const { data, error } = await db
         .from("spartanops_accounts")
-        .select("business_name, listed_publicly")
+        .select("business_name, listed_publicly, city, country")
         .eq("id", user.id)
         .maybeSingle();
       if (cancelled) return;
       if (error) { setErr(error.message); return; }
-      if (data) { setBusiness(data.business_name); setListed(data.listed_publicly !== false); return; }
+      if (data) {
+        setBusiness(data.business_name); setListed(data.listed_publicly !== false);
+        setCity((data as any).city ?? "");
+        const code = (data as any).country as string | null;
+        setCountryName(code ? (COUNTRIES.find((c) => c.code === code)?.name ?? code) : "");
+        return;
+      }
       // First login after email confirmation: create the row from sign-up metadata.
       const pending = (user.user_metadata?.business_name as string | undefined)?.trim();
       if (!pending) { setBusiness(""); return; }
@@ -250,6 +262,25 @@ function LoggedIn({ user, en }: { user: User; en: boolean }) {
     setListBusy(false);
   };
 
+  const saveLocation = async () => {
+    if (locBusy) return;
+    setLocMsg(null);
+    const c = city.trim();
+    if (c.length > 80) { setLocMsg({ ok: false, text: en ? "City must be 80 characters or fewer." : "Mesto ima lahko največ 80 znakov." }); return; }
+    const cn = countryName.trim();
+    const code = cn ? countryCodeFor(cn) : null;
+    if (cn && !code) { setLocMsg({ ok: false, text: en ? "Pick a country from the list." : "Izberi državo s seznama." }); return; }
+    setLocBusy(true);
+    const { error } = await db.from("spartanops_accounts").update({ city: c || null, country: code } as any).eq("id", user.id);
+    setLocBusy(false);
+    if (error) setLocMsg({ ok: false, text: error.message });
+    else {
+      setCity(c);
+      setCountryName(code ? (COUNTRIES.find((x) => x.code === code)?.name ?? code) : "");
+      setLocMsg({ ok: true, text: en ? "Location saved." : "Lokacija shranjena." });
+    }
+  };
+
   const section: CSSProperties = { borderTop: `1px solid ${ACCENT}33`, paddingTop: 18, marginTop: 22 };
   const sectionTitle: CSSProperties = { fontFamily: "'Michroma', monospace", fontSize: 11, letterSpacing: "0.18em", color: INK, textTransform: "uppercase", marginBottom: 12 };
 
@@ -265,6 +296,21 @@ function LoggedIn({ user, en }: { user: User; en: boolean }) {
       <p style={labelStyle}>{en ? "Business / field" : "Podjetje / poligon"}</p>
       <p style={{ fontFamily: "monospace", fontSize: 14, marginBottom: 16 }}>{business === null ? "…" : business || "—"}</p>
       {err && <p style={{ color: ERR, fontSize: 12, marginBottom: 10, textAlign: "center" }}>{err}</p>}
+
+      <div style={section}>
+        <h2 style={sectionTitle}>{en ? "Field location" : "Lokacija poligona"}</h2>
+        <p style={{ fontFamily: "monospace", fontSize: 11.5, opacity: 0.8, lineHeight: 1.6, marginBottom: 12 }}>
+          {en ? "Shown next to your field's name on the Join page so players can tell fields apart." : "Prikazano ob imenu poligona na strani za vstop, da igralci ločijo poligone."}
+        </p>
+        <p style={labelStyle}>{en ? "City" : "Mesto"}</p>
+        <input value={city} maxLength={80} onChange={(e) => setCity(e.target.value)} style={{ ...inputStyle, marginBottom: 12 }} autoComplete="address-level2" />
+        <p style={labelStyle}>{en ? "Country" : "Država"}</p>
+        <CountrySearchInput value={countryName} onChange={setCountryName} inputStyle={inputStyle} accent={ACCENT} />
+        <button type="button" onClick={saveLocation} disabled={locBusy} style={{ ...btnStyle, marginTop: 12, opacity: locBusy ? 0.6 : 1 }}>
+          {locBusy ? "…" : en ? "Save" : "Shrani"}
+        </button>
+        {locMsg && <p style={{ color: locMsg.ok ? ACCENT : ERR, fontSize: 12, marginTop: 8, textAlign: "center" }}>{locMsg.text}</p>}
+      </div>
 
       <div style={section}>
         <h2 style={sectionTitle}>{en ? "Field password" : "Geslo poligona"}</h2>

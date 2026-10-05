@@ -5,6 +5,7 @@ import { QrCode } from "lucide-react";
 import { useLang } from "@/lib/i18n";
 import { QRScanner } from "@/components/QRScanner";
 import { parseFieldLink } from "@/lib/field-link";
+import { flagFor } from "@/lib/countries";
 import { spartanopsListFields } from "@/lib/spartanops-checkin.functions";
 
 export const Route = createFileRoute("/join")({
@@ -28,7 +29,7 @@ const INK = "#ece3c4";
 const ERR = "#d97a6c";
 const RECENT_KEY = "spartanops:recent-fields";
 
-type FieldRow = { id: string; name: string };
+type FieldRow = { id: string; name: string; city?: string | null; country?: string | null };
 type Recent = { accountId: string; name: string };
 
 const labelStyle: CSSProperties = {
@@ -157,7 +158,17 @@ function JoinPage() {
             {result.mode === "all" && <span style={labelStyle}>{en ? "All fields" : "Vsi poligoni"}</span>}
             <div style={{ marginTop: result.mode === "search" ? 12 : 0 }}>
               {result.fields.map((f) => (
-                <button key={f.id} type="button" style={rowStyle} onClick={() => goField(f.id)}>{f.name}</button>
+                <button key={f.id} type="button" style={f.city || f.country ? { ...rowStyle, display: "flex", alignItems: "center", gap: 10 } : rowStyle} onClick={() => goField(f.id)}>
+                  {f.city || f.country ? (
+                    <>
+                      <span style={{ flex: 1, minWidth: 0, textAlign: "left" }}>
+                        <span style={{ display: "block" }}>{f.name}</span>
+                        {f.city && <span style={{ display: "block", fontSize: 11, opacity: 0.6, marginTop: 2 }}>{f.city}</span>}
+                      </span>
+                      {f.country && flagFor(f.country) && <span aria-hidden style={{ fontSize: 18, lineHeight: 1 }}>{flagFor(f.country)}</span>}
+                    </>
+                  ) : f.name}
+                </button>
               ))}
             </div>
           </>
