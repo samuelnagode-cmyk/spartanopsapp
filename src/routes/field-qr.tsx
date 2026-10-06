@@ -87,7 +87,7 @@ function FieldQrPage() {
     <>
       <style>{`
         .field-screen-qr {
-          width: 240px; margin: 0 auto 6px; background: #ffffff; padding: 14px;
+          width: 100%; margin: 0 auto 6px; background: #ffffff; padding: 14px;
           box-sizing: border-box; line-height: 0;
         }
         .field-screen-qr svg { width: 100%; height: auto; display: block; }
