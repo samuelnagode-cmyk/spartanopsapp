@@ -226,6 +226,8 @@ export function MissionSettingsTabs({
   mode,
   existingEvents,
   missingRequired = [],
+  tab: tabProp,
+  hideTabBar = false,
 }: {
   en: boolean;
   value: MissionSettingsValue;
@@ -233,10 +235,14 @@ export function MissionSettingsTabs({
   mode: "create" | "live";
   existingEvents: string[];
   missingRequired?: string[];
+  /** Controlled tab (the live console renders its own tab bar). */
+  tab?: MissionTabKey;
+  hideTabBar?: boolean;
 }) {
   void mode;
   const { isPremium, openPremiumModal } = usePremium();
-  const [tab, setTab] = useState<MissionTabKey>("mission");
+  const [innerTab, setTab] = useState<MissionTabKey>("mission");
+  const tab = tabProp ?? innerTab;
   const [mapErr, setMapErr] = useState("");
   const [howOpen, setHowOpen] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -281,7 +287,7 @@ export function MissionSettingsTabs({
   return (
     <div>
       {/* Tab bar: 3 columns on phones (two rows), 5 on wider screens. */}
-      <div className="grid grid-cols-3 sm:grid-cols-5" style={{ gap: 6, marginBottom: 18 }}>
+      {!hideTabBar && <div className="grid grid-cols-3 sm:grid-cols-5" style={{ gap: 6, marginBottom: 18 }}>
         {tabs.map((t) => {
           const active = tab === t.k;
           const warn = tabsWithMissing.has(t.k);
@@ -311,7 +317,7 @@ export function MissionSettingsTabs({
             </button>
           );
         })}
-      </div>
+      </div>}
 
       {/* ── MISSION ─────────────────────────────────────────── */}
       {tab === "mission" && (
