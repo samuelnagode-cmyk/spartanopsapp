@@ -86,7 +86,13 @@ function FieldQrPage() {
   return (
     <>
       <style>{`
+        .field-screen-qr {
+          width: 240px; margin: 0 auto 6px; background: #ffffff; padding: 14px;
+          box-sizing: border-box; line-height: 0;
+        }
+        .field-screen-qr svg { width: 100%; height: auto; display: block; }
         .field-poster-frame {
+          display: none;
           width: 300px; height: ${(300 * 297) / 210}px; margin: 0 auto 6px; overflow: hidden;
           border: 1px solid ${ACCENT}; position: relative;
         }
@@ -154,7 +160,7 @@ function FieldQrPage() {
           body * { visibility: hidden !important; }
           #field-poster, #field-poster * { visibility: visible !important; }
           #field-screen, #field-screen-card { padding: 0 !important; margin: 0 !important; border: 0 !important; background: none !important; min-height: 0 !important; max-width: none !important; }
-          .field-poster-frame { width: 210mm !important; height: 297mm !important; margin: 0 !important; border: 0 !important; }
+          .field-poster-frame { display: block !important; width: 210mm !important; height: 297mm !important; margin: 0 !important; border: 0 !important; }
           #field-poster {
             position: fixed !important; top: 0 !important; left: 0 !important; transform: none !important;
             break-inside: avoid; break-after: avoid; page-break-after: avoid;
@@ -167,7 +173,11 @@ function FieldQrPage() {
             {en ? "← Field settings" : "← Nastavitve poligona"}
           </Link>
 
-          <div className="field-poster-frame" data-testid="field-qr">
+          <div className="field-screen-qr field-screen-only" data-testid="field-qr">
+            <QRCodeSVG value={url} size={400} level="M" bgColor="#ffffff" fgColor="#000000" />
+          </div>
+
+          <div className="field-poster-frame">
             <div id="field-poster">
               <img className="field-poster-background" src={posterBackground.url} alt="" />
               <div className="field-poster-overlay" />
