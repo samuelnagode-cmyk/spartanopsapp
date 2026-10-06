@@ -47,7 +47,7 @@ function SectionShell({ id, children, className = "" }: { id?: string; children:
 
 function SectionHeader({ eyebrow, title, sub }: { eyebrow?: string; title: string; sub?: string }) {
   return (
-    <div className="mb-10 md:mb-14">
+    <div className="mb-7 md:mb-14">
       {eyebrow && (
         <p
           className="font-mono uppercase mb-3"
@@ -59,8 +59,8 @@ function SectionHeader({ eyebrow, title, sub }: { eyebrow?: string; title: strin
       <h2
         style={{
           fontFamily: "'Michroma', 'Rajdhani', monospace",
-          fontSize: "clamp(22px, 3.4vw, 34px)",
-          letterSpacing: "0.10em",
+          fontSize: "clamp(18px, 2.4vw, 26px)",
+          letterSpacing: "0.08em",
           color: ACCENT,
           lineHeight: 1.1,
         }}
@@ -225,7 +225,7 @@ function Hero() {
         />
       </div>
 
-      <SectionShell className="relative pt-16 md:pt-20 pb-6 md:pb-11">
+      <SectionShell className="relative pt-16 md:pt-20 pb-2 md:pb-6">
         <div className="relative text-center" style={{ zIndex: 1 }}>
           <div className="origin-top scale-[0.6] -mb-[59px] md:scale-100 md:mb-0">
             <Reticle />
