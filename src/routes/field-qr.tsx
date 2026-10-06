@@ -173,6 +173,10 @@ function FieldQrPage() {
             {en ? "← Field settings" : "← Nastavitve poligona"}
           </Link>
 
+          <h1 className="field-screen-only" style={{ fontFamily: "'Michroma', monospace", fontSize: 20, letterSpacing: "0.15em", color: INK, textTransform: "uppercase", margin: "0 0 18px", overflowWrap: "anywhere" }}>
+            {acct.name}
+          </h1>
+
           <div className="field-screen-qr field-screen-only" data-testid="field-qr">
             <QRCodeSVG value={url} size={400} level="M" bgColor="#ffffff" fgColor="#000000" />
           </div>
