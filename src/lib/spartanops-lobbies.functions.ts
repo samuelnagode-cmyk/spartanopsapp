@@ -208,9 +208,9 @@ export const getLobby = createServerFn({ method: "POST" })
   });
 
 type CreateInput = {
-  fieldName: string;
+  fieldName?: string;
   eventName?: string;
-  location: string;
+  location?: string;
   country?: string;
   city?: string;
   gamemode: "domination" | "search_destroy";
@@ -236,13 +236,22 @@ export const createLobby = createServerFn({ method: "POST" })
     if (!user) throw new Error("login_required");
     const { data: account } = await authAdmin
       .from("spartanops_accounts" as any)
-      .select("id")
+      .select("id, business_name, city, country")
       .eq("id", user.id)
       .maybeSingle();
     if (!account) throw new Error("account_required");
+    // Field identity comes from the account, never from the client.
+    const acct = account as any;
+    const fieldName = String(acct.business_name ?? "").trim();
+    const acctCity = String(acct.city ?? "").trim() || null;
+    const acctCode = String(acct.country ?? "").trim();
+    // Lobbies have always stored the country's display name (as picked in the old form).
+    const { COUNTRIES } = await import("@/lib/countries");
+    const acctCountry = acctCode ? (COUNTRIES.find((c) => c.code === acctCode.toUpperCase())?.name ?? acctCode) : null;
+    const location = [acctCity, acctCountry].filter(Boolean).join(", ");
     // Any marshal can create their own lobby (they set their own passwords).
     // Master password is not required for lobby creation — only for admin edit/delete.
-    if (!data.fieldName?.trim()) throw new Error("Field name required");
+    if (!fieldName) throw new Error("Field name required");
     // Per-mission passwords are optional: players join with the account's field
     // password. Missing values get a random 20-char secret so DB constraints and
     // the "must differ" rule still hold.
@@ -266,11 +275,11 @@ export const createLobby = createServerFn({ method: "POST" })
     if (e1 || e2 || !pHash || !mHash) throw new Error("Failed to hash password");
 
     const row = {
-      field_name: data.fieldName.trim(),
+      field_name: fieldName,
       event_name: data.eventName?.trim() || null,
-      location: data.location || "",
-      country: data.country?.trim() || null,
-      city: data.city?.trim() || null,
+      location,
+      country: acctCountry,
+      city: acctCity,
       gamemode: data.gamemode,
       map_url: data.mapUrl?.trim() || null,
       match_duration_minutes: data.matchDurationMinutes,
