@@ -1,8 +1,6 @@
-import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { type ReactNode, useEffect, useRef, useState } from "react";
-import { useServerFn } from "@tanstack/react-start";
-import { Crosshair, QrCode, Users, MapPin, ArrowRight, Printer, CheckCircle2, Flag, Skull, Target } from "lucide-react";
-import { flagFor } from "@/lib/countries";
+import { createFileRoute, Link } from "@tanstack/react-router";
+import { type ReactNode, useEffect, useState } from "react";
+import { Crosshair, QrCode, ArrowRight, Printer, Flag } from "lucide-react";
 import { useT } from "@/lib/i18n";
 import { supabase } from "@/integrations/supabase/client";
 import FeatureShowcase from "@/components/FeatureShowcase";
