@@ -105,7 +105,6 @@ function FieldQrPage() {
         .field-poster-overlay {
           position: absolute; inset: 0;
           background: linear-gradient(to bottom, rgba(0,0,0,0.65) 0%, rgba(0,0,0,0.25) 50%, rgba(0,0,0,0.70) 100%);
-          box-shadow: inset 0 0 0 300mm rgba(0,0,0,0); /* keeps overlay with background graphics off via exact */
         }
         .field-poster-content {
           position: relative; height: 100%; display: flex; flex-direction: column;
