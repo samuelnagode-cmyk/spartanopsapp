@@ -129,8 +129,11 @@ function FieldQrPage() {
           display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
         }
         .field-poster-rule { width: 30mm; height: 0; border-top: 0.5mm solid ${ACCENT}; margin-top: 3mm; }
-        .field-poster-cardwrap { position: relative; margin-top: 8mm; }
-        .field-poster-card { width: 92mm; background: #ffffff; padding: 5mm 8mm 4mm; box-sizing: border-box; text-shadow: none; }
+        .field-poster-cardwrap { position: relative; margin: auto 0; }
+        .field-poster-card {
+          width: 92mm; background: #ffffff; padding: 5mm 8mm 4mm; box-sizing: border-box; text-shadow: none;
+          display: flex; flex-direction: column; align-items: center;
+        }
         .field-poster-qr { line-height: 0; }
         .field-poster-qr svg { width: 68mm; height: 68mm; display: block; }
         .field-poster-divider { border-top: 0.3mm solid #9a9a9a; margin: 4mm 0 2mm; }
@@ -145,10 +148,10 @@ function FieldQrPage() {
         .field-poster-corner.bl { bottom: -3mm; left: -3mm; border-bottom-width: 0.6mm; border-left-width: 0.6mm; }
         .field-poster-corner.br { bottom: -3mm; right: -3mm; border-bottom-width: 0.6mm; border-right-width: 0.6mm; }
         .field-poster-instruction {
-          margin-top: 7mm; font-family: 'Michroma', sans-serif; font-size: 18pt;
+          margin-top: 0; font-family: 'Michroma', sans-serif; font-size: 18pt;
           letter-spacing: 0.12em; text-transform: uppercase;
         }
-        .field-poster-camera { margin-top: 2mm; font-size: 11pt; opacity: 0.85; }
+        .field-poster-camera { margin-top: 2mm; margin-bottom: 24mm; font-size: 11pt; opacity: 0.85; }
         .field-poster-credit {
           position: absolute; left: 0; right: 0; bottom: 10mm; font-size: 8pt; opacity: 0.6;
         }
