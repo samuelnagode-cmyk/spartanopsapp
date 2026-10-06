@@ -225,7 +225,7 @@ function Hero() {
         />
       </div>
 
-      <SectionShell className="relative pt-16 md:pt-20 pb-24 md:pb-32">
+      <SectionShell className="relative pt-16 md:pt-20 pb-6 md:pb-11">
         <div className="relative text-center" style={{ zIndex: 1 }}>
           <div className="origin-top scale-[0.6] -mb-[59px] md:scale-100 md:mb-0">
             <Reticle />
@@ -240,23 +240,23 @@ function Hero() {
             />
           </div>
           <h1
-            className="mx-auto mt-3"
-            style={{ fontFamily: "'Michroma', monospace", fontSize: "clamp(17px, 3vw, 28px)", letterSpacing: "0.04em", color: INK, lineHeight: 1.35, maxWidth: 680, textWrap: "balance" }}
+            className="mx-auto mt-5"
+            style={{ fontFamily: "'Michroma', monospace", fontSize: "clamp(22px, 3.4vw, 34px)", letterSpacing: "0.04em", color: INK, lineHeight: 1.25, maxWidth: 760, textWrap: "balance" }}
           >
             {t("spartan.heroHeadline")}
           </h1>
           <p
-            className="mx-auto mt-3 text-[14px] md:text-[16px] leading-[1.6]"
-            style={{ color: INK, maxWidth: 620 }}
+            className="mx-auto mt-4 max-w-[300px] md:max-w-[560px] text-[14px] md:text-[16px] leading-[1.6]"
+            style={{ color: MUTED, textWrap: "balance" }}
           >
             {t("spartan.heroSubtext")}
           </p>
-          <div className="mt-5 mx-auto" style={{ maxWidth: 360 }}>
+          <div className="mt-8 md:mt-9 mx-auto" style={{ maxWidth: 360 }}>
             <BtnPrimary to={startTo} fullWidth>{t("spartan.btnStartFreeCta")}</BtnPrimary>
           </div>
           <Link
             to="/join"
-            className="inline-block mt-4 font-mono text-[13px] no-underline underline-offset-4 hover:underline"
+            className="inline-flex items-center min-h-[44px] mt-1 font-mono text-[13px] no-underline underline-offset-4 hover:underline"
             style={{ color: MUTED, letterSpacing: "0.04em" }}
           >
             {t("spartan.heroJoinLink")}
