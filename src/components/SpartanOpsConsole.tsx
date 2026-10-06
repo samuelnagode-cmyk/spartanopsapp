@@ -1,4 +1,5 @@
 import { memo, useEffect, useRef, useState } from "react";
+import { mapNodesFor } from "@/lib/map-nodes";
 import { useServerFn } from "@tanstack/react-start";
 import { Award, ChevronUp, ChevronsUp, Compass, Pause, Play, RotateCcw, Trash2, Upload, MapPin, Copy, Check, AlertTriangle, ShieldOff, ShieldCheck, ArrowLeftRight, Info } from "lucide-react";
 import { QRCodeSVG } from "qrcode.react";
@@ -981,20 +982,10 @@ function MapUploader({ fieldId, password, currentUrl, onUploaded, en }: { fieldI
   );
 }
 
-export function NodePlacer({ mapUrl, positions, onChange, en }: { mapUrl: string | null; positions: Record<string, { x: number; y: number } | null>; onChange: (p: Record<string, { x: number; y: number } | null>) => void; en: boolean }) {
+export function NodePlacer({ mapUrl, positions, onChange, en, teamCount }: { mapUrl: string | null; positions: Record<string, { x: number; y: number } | null>; onChange: (p: Record<string, { x: number; y: number } | null>) => void; en: boolean; teamCount?: number }) {
   const [selected, setSelected] = useState<string>("1");
   const wrapRef = useRef<HTMLDivElement>(null);
-  const NODES: { key: string; label: string; color: string; type: "capture" | "spawn" | "compass" }[] = [
-    { key: "1", label: "1·ALPHA", color: ACCENT, type: "capture" },
-    { key: "2", label: "2·BETA", color: ACCENT, type: "capture" },
-    { key: "3", label: "3·GAMMA", color: ACCENT, type: "capture" },
-    { key: "4", label: "4·DELTA", color: ACCENT, type: "capture" },
-    { key: "5", label: "5·EPSILON", color: ACCENT, type: "capture" },
-    { key: "spawn_rdeca", label: en ? "SPAWN RED" : "SPAWN RDEČA", color: "#c0392b", type: "spawn" },
-    { key: "spawn_modra", label: en ? "SPAWN BLUE" : "SPAWN MODRA", color: "#2e86de", type: "spawn" },
-    { key: "spawn_rumena", label: en ? "SPAWN YELLOW" : "SPAWN RUMENA", color: "#f1c40f", type: "spawn" },
-    { key: "compass", label: en ? "COMPASS" : "KOMPAS", color: "#7fd4ff", type: "compass" },
-  ];
+  const NODES = mapNodesFor(teamCount).map((n) => ({ key: n.key, label: en ? n.labelEn : n.labelSl, color: n.type === "capture" ? ACCENT : n.color, type: n.type }));
 
   const onClickMap = (e: React.MouseEvent<HTMLDivElement>) => {
     const el = wrapRef.current;
@@ -1247,7 +1238,7 @@ const SPARTACUS_RADIUS_PRESETS = [
   { value: 25, labelEn: "Loose", labelSl: "Ohlapno" },
 ] as const;
 
-function SpartacusRadiusControl({ settings, onPatch, en, enabled }: { settings: GameSettings; onPatch: (s: GameSettings) => void; en: boolean; enabled: boolean }) {
+export function SpartacusRadiusControl({ settings, onPatch, en, enabled }: { settings: GameSettings; onPatch: (s: GameSettings) => void; en: boolean; enabled: boolean }) {
   const raw = typeof settings.spartacusRadius === "number" && isFinite(settings.spartacusRadius)
     ? settings.spartacusRadius
     : SPARTACUS_RADIUS_DEFAULT;
