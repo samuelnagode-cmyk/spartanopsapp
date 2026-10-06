@@ -85,6 +85,8 @@ body {
 
 :root {
   --radius: 0.5rem;
+  --poster-paper: #ffffff;
+  --poster-ink: #000000;
 
   /* Brand palette */
   --forest: #1E3F20;
