@@ -1,7 +1,8 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { type ReactNode, useEffect, useState } from "react";
-import { Crosshair, QrCode, ArrowRight, Printer, Flag } from "lucide-react";
+import { Crosshair, QrCode, ArrowRight, Printer, Flag, ZapOff, Scale, Repeat, Trophy, Smartphone } from "lucide-react";
 import { useT } from "@/lib/i18n";
+import { motion, useReducedMotion } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
 import FeatureShowcase from "@/components/FeatureShowcase";
 
@@ -240,7 +241,7 @@ function Hero() {
           </div>
           <h1
             className="mx-auto mt-3"
-            style={{ fontFamily: "'Michroma', monospace", fontSize: "clamp(18px, 3vw, 28px)", letterSpacing: "0.06em", color: INK, lineHeight: 1.35, maxWidth: 680 }}
+            style={{ fontFamily: "'Michroma', monospace", fontSize: "clamp(17px, 3vw, 28px)", letterSpacing: "0.04em", color: INK, lineHeight: 1.35, maxWidth: 680, textWrap: "balance" }}
           >
             {t("spartan.heroHeadline")}
           </h1>
@@ -255,14 +256,11 @@ function Hero() {
           </div>
           <Link
             to="/join"
-            className="inline-block mt-4 font-mono text-[13px] underline-offset-4 hover:underline"
-            style={{ color: INK, opacity: 0.8, letterSpacing: "0.04em" }}
+            className="inline-block mt-4 font-mono text-[13px] no-underline underline-offset-4 hover:underline"
+            style={{ color: MUTED, letterSpacing: "0.04em" }}
           >
             {t("spartan.heroJoinLink")}
           </Link>
-          <p className="mt-3 font-mono text-[11px] leading-[1.6]" style={{ color: MUTED, letterSpacing: "0.06em" }}>
-            {t("spartan.heroUnderButtons")}
-          </p>
         </div>
       </SectionShell>
     </div>
@@ -666,24 +664,44 @@ function useStartFreeTarget(): string {
 /* ---------- BENEFITS ---------- */
 function Benefits() {
   const t = useT();
-  const items = [1, 2, 3, 4, 5].map((n) => ({
+  const reduce = useReducedMotion();
+  const icons = [ZapOff, Scale, Repeat, Trophy, Smartphone];
+  const items = [1, 2, 3, 4, 5].map((n, i) => ({
     title: t(`spartan.benefit${n}Title`),
     body: t(`spartan.benefit${n}Desc`),
+    Icon: icons[i],
   }));
   return (
     <SectionShell>
       <SectionHeader title={t("spartan.benefitsTitle")} />
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {items.map((it) => (
-          <HudCard key={it.title} className="p-5 md:p-6">
-            <h3
-              style={{ fontFamily: "'Michroma', monospace", fontSize: 15, letterSpacing: "0.06em", color: INK, lineHeight: 1.35, marginBottom: 8 }}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+        {items.map((it, i) => {
+          const featured = i === 0;
+          return (
+            <motion.div
+              key={it.title}
+              className={featured ? "col-span-2 md:col-span-4" : ""}
+              initial={reduce ? false : { opacity: 0, y: 8 }}
+              whileInView={reduce ? undefined : { opacity: 1, y: 0 }}
+              viewport={{ once: true, margin: "-40px" }}
+              transition={{ duration: 0.4, delay: i * 0.06 }}
             >
-              {it.title}
-            </h3>
-            <p className="text-[14px] leading-[1.7]" style={{ color: MUTED }}>{it.body}</p>
-          </HudCard>
-        ))}
+              <HudCard className="h-full p-4 md:p-5">
+                <div className={featured ? "md:flex md:items-start md:gap-5" : ""}>
+                  <it.Icon size={22} strokeWidth={1.6} color={ACCENT} style={{ marginBottom: 12, flexShrink: 0 }} />
+                  <div className="min-w-0">
+                    <h3
+                      style={{ fontFamily: "'Michroma', monospace", fontSize: featured ? 14 : 13, letterSpacing: "0.04em", color: INK, lineHeight: 1.35, overflowWrap: "normal", wordBreak: "normal", hyphens: "manual" }}
+                    >
+                      {it.title}
+                    </h3>
+                    <p style={{ color: MUTED, fontSize: featured ? 14 : 13, lineHeight: 1.55, marginTop: 6 }}>{it.body}</p>
+                  </div>
+                </div>
+              </HudCard>
+            </motion.div>
+          );
+        })}
       </div>
     </SectionShell>
   );
