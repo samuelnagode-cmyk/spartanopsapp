@@ -47,9 +47,11 @@ const inputStyle: React.CSSProperties = {
 export function WeaponRulesEditor({
   value,
   onChange,
+  hideHeading = false,
 }: {
   value?: WeaponRules | null;
   onChange: (next: WeaponRules) => void;
+  hideHeading?: boolean;
 }) {
   const { lang } = useLang();
   const en = lang === "en";
@@ -69,9 +71,11 @@ export function WeaponRulesEditor({
 
   return (
     <div style={{ display: "grid", gap: 12 }}>
-      <p style={{ fontFamily: "monospace", fontSize: 10, letterSpacing: "0.2em", color: ACCENT, textTransform: "uppercase" }}>
-        // {en ? "REPLICA POWER AND SHOOTING RULES" : "MOČ REPLIK IN PRAVILA STRELJANJA"}
-      </p>
+      {!hideHeading && (
+        <p style={{ fontFamily: "monospace", fontSize: 10, letterSpacing: "0.2em", color: ACCENT, textTransform: "uppercase" }}>
+          // {en ? "REPLICA POWER AND SHOOTING RULES" : "MOČ REPLIK IN PRAVILA STRELJANJA"}
+        </p>
+      )}
 
       {WEAPON_CLASSES.map((c) => (
         <div key={c.key} style={{ display: "grid", gap: 6 }}>

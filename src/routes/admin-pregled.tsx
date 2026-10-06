@@ -24,6 +24,7 @@ import {
   type GameState,
 } from "@/components/SpartanOpsConsole";
 import { useLang, useT } from "@/lib/i18n";
+import { MissionSettingsTabs, GAME_MODES, GameModeButtons, TeamConfigSection, type GameModeKey, type MissionSettingsValue } from "@/components/MissionSettings";
 import { CountrySearchInput } from "@/components/CountrySearchInput";
 import { flagFor } from "@/lib/countries";
 import { usePremium } from "@/lib/premium";
@@ -779,150 +780,80 @@ function AdminPage() {
   );
 }
 
-type GameModeKey = "domination" | "search_destroy";
-
-const GAME_MODES: { key: string; label: string; subEn?: string; subSl?: string; locked?: boolean }[] = [
-  { key: "domination", label: "Domination", subEn: "Point capture", subSl: "Zavzemanje točk" },
-  { key: "search_destroy", label: "Search & Destroy", locked: true },
-  { key: "infection", label: "Infection", locked: true },
-  { key: "king_of_the_hill", label: "King of the Hill", locked: true },
-];
-
-function GameModeButtons({ active, isPremium, openPremiumModal, en, onPick }: {
-  active: GameModeKey;
-  isPremium: boolean;
-  openPremiumModal: () => void;
-  en: boolean;
-  onPick: (key: GameModeKey) => void;
-}) {
-  return (
-    <div className="grid grid-cols-2 gap-2">
-      {GAME_MODES.map((m) => {
-        if (m.locked) {
-          return (
-            <button key={m.key} type="button" onClick={() => { if (!isPremium) openPremiumModal(); }}
-              style={{
-                background: "rgba(255,255,255,0.03)", color: MUTED,
-                border: "1px dashed rgba(236,227,196,0.18)",
-                padding: "10px 8px", fontFamily: "monospace", fontSize: 11,
-                letterSpacing: "0.08em", textTransform: "uppercase",
-                cursor: "pointer", textAlign: "left", opacity: 0.75,
-              }}>
-              <span style={{ whiteSpace: "nowrap" }}>🔒 {m.label}</span>
-              <br /><span style={{ fontSize: 9 }}>{en ? "Coming soon" : "Prihaja kmalu"}</span>
-            </button>
-          );
-        }
-        const isActive = active === m.key;
-        return (
-          <button key={m.key} type="button" onClick={() => onPick(m.key as GameModeKey)}
-            style={{
-              background: isActive ? `${ACCENT}22` : "transparent",
-              color: isActive ? ACCENT : INK,
-              border: `1px solid ${isActive ? ACCENT : "rgba(236,227,196,0.18)"}`,
-              padding: "10px 8px", fontFamily: "monospace", fontSize: 11,
-              letterSpacing: "0.08em", textTransform: "uppercase",
-              cursor: "pointer", textAlign: "left",
-            }}>
-            <span style={{ whiteSpace: "nowrap" }}>● {m.label}</span>
-            <br /><span style={{ fontSize: 9, color: MUTED }}>{en ? m.subEn : m.subSl}</span>
-          </button>
-        );
-      })}
-    </div>
-  );
-}
-
 function CreateFieldForm({ onCreated, initialEventName = "" }: { onCreated: (rec: LobbyRecord, pws: { password: string; marshalPassword: string }) => void; initialEventName?: string }) {
   const { lang } = useLang();
   const en = lang === "en";
-  const { isPremium, openPremiumModal } = usePremium();
+  const [value, setValue] = useState<MissionSettingsValue>({
+    missionName: "",
+    eventName: initialEventName,
+    missionDescription: "",
+    afterGameInstructions: "",
+    marshalName: "",
+    marshalPhone: "",
+    gamemode: "domination",
+    duration: 20,
+    countdown: 300,
+    pointTarget: 50,
+    settings: { respawn: { ...DEFAULT_RESPAWN }, capturePointsScoring: true },
+    weaponRules: {},
+    mapUrl: "",
+    nodePositions: {},
+  });
+  const onChange = (patch: Partial<MissionSettingsValue>) => setValue((v) => ({ ...v, ...patch }));
+  const [existingEvents, setExistingEvents] = useState<string[]>([]);
 
-  // Core lobby identity
-  const [fieldName, setFieldName] = useState("");
-  const [missionName, setMissionName] = useState("");
-  const [missionDescription, setMissionDescription] = useState("");
-  const [afterGameInstructions, setAfterGameInstructions] = useState("");
-  const [weaponRules, setWeaponRules] = useState<WeaponRules>({});
-  const [password, setPassword] = useState("");
-  const [marshalPassword, setMarshalPassword] = useState("");
-  const [showMarshalPassword, setShowMarshalPassword] = useState(true);
-  const [eventName, setEventName] = useState(initialEventName);
-  // Pre-fill field name with the account's business name (still editable).
+  // Load this account's event names and pre-fill the marshal from its most recent mission.
   useEffect(() => {
     let cancelled = false;
     (async () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user || cancelled) return;
-      const { data } = await supabase.from("spartanops_accounts").select("business_name").eq("id", user.id).maybeSingle();
-      const b = (data?.business_name ?? "").trim();
-      if (!cancelled && b) setFieldName((cur) => (cur.trim() ? cur : b));
+      const { data } = await supabase
+        .from("spartanops_lobbies")
+        .select("event_name, settings, created_at")
+        .eq("account_id", user.id)
+        .order("created_at", { ascending: true });
+      if (cancelled) return;
+      const rows = (data ?? []) as { event_name: string | null; settings: any }[];
+      const seen = new Map<string, string>();
+      for (const r of rows) {
+        const k = foldEvent(r.event_name);
+        if (k && !seen.has(k)) seen.set(k, (r.event_name ?? "").trim());
+      }
+      setExistingEvents([...seen.values()]);
+      const last = rows[rows.length - 1]?.settings ?? null;
+      if (last) {
+        setValue((v) => ({
+          ...v,
+          marshalName: v.marshalName || String(last.marshalName ?? ""),
+          marshalPhone: v.marshalPhone || String(last.marshalPhone ?? ""),
+        }));
+      }
     })();
     return () => { cancelled = true; };
   }, []);
-  const [country, setCountry] = useState("");
-  const [city, setCity] = useState("");
-  const [marshalName, setMarshalName] = useState("");
-  const [marshalPhone, setMarshalPhone] = useState("");
-
-
-  // Field / map / game settings (mirrors SpartanOpsConsole atoms)
-  const [gamemode, setGamemode] = useState<"domination" | "search_destroy">("domination");
-  const [mapUrl, setMapUrl] = useState("");
-  const [duration, setDuration] = useState(20);
-  const [countdown, setCountdown] = useState(300); // seconds
-  const [pointTarget, setPointTarget] = useState(50);
-
-  // Node positions on the map (Alpha–Epsilon, spawns, compass)
-  const [nodePositions, setNodePositions] = useState<NodePositions>({});
-
-  // Advanced tactical settings (respawn + capture scoring) — same shape as GameSettings
-  const [settings, setSettings] = useState<GameSettings>({
-    respawn: { ...DEFAULT_RESPAWN },
-    capturePointsScoring: true,
-  });
 
   const [err, setErr] = useState("");
   const [ok, setOk] = useState(false);
-  const [showPassword, setShowPassword] = useState(true);
-  const [formTab, setFormTab] = useState<"mission" | "location" | "weapons" | "mode" | "map">("mission");
-  const fileInputRef = useRef<HTMLInputElement>(null);
-
-  const onMapFile = (file: File) => {
-    if (!file.type.startsWith("image/")) {
-      setErr(en ? "Please upload an image file." : "Naloži slikovno datoteko.");
-      return;
-    }
-    const reader = new FileReader();
-    reader.onload = () => {
-      if (typeof reader.result === "string") setMapUrl(reader.result);
-    };
-    reader.readAsDataURL(file);
-  };
-
   const createFn = useServerFn(createLobbyFn);
   const [busy, setBusy] = useState(false);
 
+  const missing: string[] = [];
+  if (!value.missionName.trim()) missing.push("missionName");
+  if (!value.marshalName.trim()) missing.push("marshalName");
+  const missingLabels = missing.map((k) => k === "missionName" ? (en ? "mission name" : "ime misije") : (en ? "marshal name" : "ime maršala"));
+
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (busy) return;
-    if (!missionName.trim() || !fieldName.trim() || !country.trim() || !city.trim() || !marshalName.trim()) {
-      setErr(en
-        ? "Mission name, field name, city, country and marshal name are required."
-        : "Ime misije, ime poligona, mesto, država in ime maršala so obvezni.");
-      return;
-    }
-    const location = `${city.trim()}, ${country.trim()}`;
-    const effectiveFieldName = fieldName.trim();
-    // Persist mission name / description inside the settings JSON so no DB migration is needed.
+    if (busy || missing.length) return;
     const settingsWithMission = {
-      ...settings,
-      missionName: missionName.trim(),
-      marshalName: marshalName.trim(),
-      marshalPhone: marshalPhone.trim() || undefined,
-      missionDescription: missionDescription.trim() || undefined,
-      afterGameInstructions: afterGameInstructions.trim() || undefined,
-      weaponRules: hasWeaponRules(weaponRules) ? weaponRules : undefined,
+      ...value.settings,
+      missionName: value.missionName.trim(),
+      marshalName: value.marshalName.trim(),
+      marshalPhone: value.marshalPhone.trim() || undefined,
+      missionDescription: value.missionDescription.trim() || undefined,
+      afterGameInstructions: value.afterGameInstructions.trim() || undefined,
+      weaponRules: hasWeaponRules(value.weaponRules) ? value.weaponRules : undefined,
     } as any;
     const createToken = await getFreshOwnerAccessToken();
     if (!createToken) {
@@ -932,20 +863,17 @@ function CreateFieldForm({ onCreated, initialEventName = "" }: { onCreated: (rec
     setBusy(true);
     setErr("");
     try {
+      // Field name, city, country and location are filled in by the server from the account.
       const dto = await createFn({
         data: {
           accessToken: createToken,
-          fieldName: effectiveFieldName,
-          eventName: eventName.trim() || undefined,
-          location,
-          country: country.trim(),
-          city: city.trim(),
-          gamemode,
-          mapUrl: mapUrl.trim() || undefined,
-          matchDurationMinutes: duration,
-          countdownSeconds: countdown,
-          pointTarget,
-          nodePositions,
+          eventName: value.eventName.trim() || undefined,
+          gamemode: value.gamemode,
+          mapUrl: value.mapUrl.trim() || undefined,
+          matchDurationMinutes: value.duration,
+          countdownSeconds: value.countdown,
+          pointTarget: value.pointTarget,
+          nodePositions: value.nodePositions,
           settings: settingsWithMission,
           masterPassword: getMasterPw(),
           published: true,
@@ -953,9 +881,6 @@ function CreateFieldForm({ onCreated, initialEventName = "" }: { onCreated: (rec
       });
 
       const rec = dtoToRecord(dto);
-      // Cache marshal password locally so the marshal keeps it around this session.
-
-      // Mirror to localStorage for legacy code paths.
       const list = loadLobbies();
       list.unshift(rec);
       saveLobbies(list);
@@ -967,8 +892,6 @@ function CreateFieldForm({ onCreated, initialEventName = "" }: { onCreated: (rec
         createdAt: rec.createdAt,
       });
       setOk(true);
-      // Go straight into the command center for the new mission — the lobby URL
-      // and all controls live there.
       onCreated(rec, { password: "", marshalPassword: "" });
     } catch (e: any) {
       console.error("[admin] createLobby failed", { error: e, message: e?.message, cause: e?.cause, stack: e?.stack });
@@ -978,316 +901,40 @@ function CreateFieldForm({ onCreated, initialEventName = "" }: { onCreated: (rec
     }
   };
 
-  const formTabs: { k: typeof formTab; l: string; done: boolean }[] = [
-    { k: "mission", l: en ? "Mission & Field" : "Misija in poligon", done: !!fieldName.trim() && !!missionName.trim() },
-    { k: "location", l: en ? "Location & Marshals" : "Lokacija in maršali", done: !!city.trim() && !!country.trim() && !!marshalName.trim() },
-    { k: "weapons", l: en ? "Replica Power & Shooting Rules" : "Moč replik in pravila streljanja", done: hasWeaponRules(weaponRules) },
-    { k: "mode", l: en ? "Game Mode & Parameters" : "Igralni način in parametri", done: true },
-    { k: "map", l: en ? "Tactical Map" : "Taktični zemljevid", done: !!mapUrl.trim() },
-  ];
-
+  const disabled = busy || missing.length > 0;
   return (
-    <form onSubmit={submit} style={{ maxWidth: 780, margin: "0 auto", paddingBottom: 170 }}>
-      {/* Screen header */}
+    <form onSubmit={submit} style={{ maxWidth: 780, margin: "0 auto", paddingBottom: 190 }}>
       <div style={{ textAlign: "center", marginBottom: 22 }}>
-        <p style={{ fontFamily: "'Michroma', monospace", fontSize: 18, letterSpacing: "0.24em", color: ACCENT, marginBottom: 10, textTransform: "uppercase", fontWeight: 700 }}>
-          // {en ? "GAME SETTINGS" : "NASTAVITVE IGRE"}
-        </p>
-        <h2 style={{ fontFamily: "'Michroma', monospace", fontSize: 16, letterSpacing: "0.14em", color: INK, textTransform: "uppercase" }}>
-          {en ? "DEPLOY NEW MISSION" : "POSTAVI NOVO MISIJO"}
+        <h2 style={{ fontFamily: "'Michroma', monospace", fontSize: 18, letterSpacing: "0.2em", color: ACCENT, textTransform: "uppercase", fontWeight: 700 }}>
+          {en ? "New mission" : "Nova misija"}
         </h2>
       </div>
 
-      {/* ── TAB BAR ─────────────────────────────────────────── */}
-      <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 18 }}>
-        {formTabs.map((t) => {
-          const active = formTab === t.k;
-          return (
-            <button
-              key={t.k}
-              type="button"
-              onClick={() => setFormTab(t.k)}
-              style={{
-                flex: "1 1 150px",
-                background: active ? ACCENT : "transparent",
-                color: active ? BG : INK,
-                border: `1px solid ${active ? ACCENT : "rgba(224,176,78,0.35)"}`,
-                padding: "10px 8px",
-                fontFamily: "'Michroma', monospace",
-                fontSize: 10,
-                letterSpacing: "0.12em",
-                textTransform: "uppercase",
-                cursor: "pointer",
-                fontWeight: active ? 700 : 500,
-                display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 6,
-              }}
-            >
-              <span aria-hidden style={{ width: 7, height: 7, borderRadius: "50%", flexShrink: 0, background: t.done ? (active ? BG : "#6fcf6f") : "transparent", border: `1px solid ${t.done ? (active ? BG : "#6fcf6f") : (active ? BG : "rgba(236,227,196,0.35)")}` }} />
-              {t.l}
-            </button>
-          );
-        })}
-      </div>
+      <MissionSettingsTabs en={en} value={value} onChange={onChange} mode="create" existingEvents={existingEvents} missingRequired={missing} />
 
-      {/* ── TAB 1: MISSION AND FIELD ────────────────────────── */}
-      <div style={{ display: formTab === "mission" ? "block" : "none" }}>
-      <Pane title={en ? "MISSION AND FIELD" : "MISIJA IN POLIGON"}>
-        <FieldRow label={en ? "Field name" : "Ime poligona"}>
-          <input required value={fieldName} onChange={(e) => setFieldName(e.target.value)} style={consoleInputStyle} placeholder="Poligon Ljubljana" />
-        </FieldRow>
-        <FieldRow label={en ? "Event name (optional)" : "Ime dogodka (neobvezno)"}>
-          <EventNameInput value={eventName} onChange={setEventName} en={en} />
-        </FieldRow>
-        <FieldRow label={en ? "Mission name" : "Ime misije"}>
-          <input value={missionName} onChange={(e) => setMissionName(e.target.value)} style={consoleInputStyle} placeholder={en ? "Operation Fallen Angel" : "Operacija Fallen Angel"} />
-        </FieldRow>
-        <FieldRow label={en ? "Mission description / instructions (Optional)" : "Opis misije / navodila (Neobvezno)"}>
-          <textarea
-            value={missionDescription}
-            onChange={(e) => setMissionDescription(e.target.value)}
-            style={{ ...consoleInputStyle, minHeight: 72, resize: "vertical" }}
-            placeholder={en ? "The players will see this description/instructions before and during the game." : "Igralci bodo videli ta opis/navodila pred in med igro."}
-          />
-        </FieldRow>
-        <FieldRow label={en ? "After game instructions" : "Navodila po igri"}>
-          <textarea
-            value={afterGameInstructions}
-            onChange={(e) => setAfterGameInstructions(e.target.value)}
-            style={{ ...consoleInputStyle, minHeight: 72, resize: "vertical" }}
-            placeholder={en ? "The players will see this text in the debriefing screen (after the mission is finished)." : "Igralci bodo to besedilo videli na zaključnem zaslonu (po koncu misije)."}
-          />
-        </FieldRow>
-      </Pane>
-      </div>
-
-      {/* ── TAB 2: LOCATION & MARSHALS ──────────────────────── */}
-      <div style={{ display: formTab === "location" ? "block" : "none" }}>
-      <Pane title={en ? "LOCATION & MARSHALS" : "LOKACIJA IN MARŠALI"}>
-        <div>
-          <p
-            style={{
-              fontFamily: "'Michroma', monospace",
-              fontSize: 12,
-              letterSpacing: "0.22em",
-              color: ACCENT,
-              textTransform: "uppercase",
-              fontWeight: 700,
-              textShadow: `0 0 12px ${ACCENT}80`,
-              marginBottom: 12,
-            }}
-          >
-            // {en ? "LOCATION, MARSHALS" : "LOKACIJA, MARŠALI"}
-          </p>
-        </div>
-        <FieldRow label={en ? "City" : "Mesto"}>
-          <input value={city} onChange={(e) => setCity(e.target.value)} style={consoleInputStyle} placeholder="Ljubljana" />
-        </FieldRow>
-        <FieldRow label={en ? "Country" : "Država"}>
-          <CountrySearchInput
-            value={country}
-            onChange={setCountry}
-            inputStyle={consoleInputStyle}
-            placeholder={en ? "Search country…" : "Išči državo…"}
-          />
-        </FieldRow>
-
-        <FieldRow label={en ? "Marshal name (mandatory)" : "Ime maršala (obvezno)"}>
-          <input required value={marshalName} onChange={(e) => setMarshalName(e.target.value)} style={consoleInputStyle} placeholder={en ? "e.g. Luka" : "npr. Luka"} />
-        </FieldRow>
-        <FieldRow label={en ? "Marshal phone number (optional)" : "Telefonska številka maršala (neobvezno)"}>
-          <input value={marshalPhone} onChange={(e) => setMarshalPhone(e.target.value)} style={consoleInputStyle} placeholder="+386 40 123 456" inputMode="tel" />
-        </FieldRow>
-      </Pane>
-      </div>
-
-      {/* ── TAB 4: REPLICA POWER & SHOOTING RULES ───────────── */}
-      <div style={{ display: formTab === "weapons" ? "block" : "none" }}>
-        <Pane title={en ? "REPLICA POWER & SHOOTING RULES" : "MOČ REPLIK IN PRAVILA STRELJANJA"}>
-          <WeaponRulesEditor value={weaponRules} onChange={setWeaponRules} />
-        </Pane>
-      </div>
-
-      {/* ── TAB 5: GAME MODE & PARAMETERS ───────────────────── */}
-      <div style={{ display: formTab === "mode" ? "block" : "none" }}>
-      <div style={{ margin: "8px 0 14px", textAlign: "center" }}>
-        <h3 style={{ fontFamily: "'Michroma', monospace", fontSize: 18, letterSpacing: "0.22em", color: ACCENT, textTransform: "uppercase", fontWeight: 700 }}>
-          {en ? "GAMEMODE AND PARAMETERS" : "IGRALNI NAČIN IN PARAMETRI"}
-        </h3>
-        <div style={{ height: 1, background: `${ACCENT}30`, marginTop: 10 }} />
-      </div>
-
-      {/* ── CARD 3: GAME MODE SELECTION ─────────────────────── */}
-      <Pane title={en ? "GAME MODE SELECTION" : "IZBIRA IGRALNEGA NAČINA"}>
-        <FieldRow label={en ? "Game mode selection" : "Izbira igralnega načina (Gamemode)"}>
-          <GameModeButtons active={gamemode} isPremium={isPremium} openPremiumModal={openPremiumModal} en={en} onPick={(k) => setGamemode(k)} />
-        </FieldRow>
-
-        <div className="grid grid-cols-2 gap-3">
-          <FieldRow label={en ? "Duration (min)" : "Trajanje (min)"}>
-            <select value={duration} onChange={(e) => setDuration(Number(e.target.value))} style={consoleSelectStyle}>
-              {Array.from({ length: 24 }, (_, i) => (i + 1) * 5).map((m) => (
-                <option key={m} value={m}>{m} min</option>
-              ))}
-            </select>
-          </FieldRow>
-          <FieldRow label={en ? "Pre-start" : "Pred-štart"}>
-            <select value={countdown} onChange={(e) => setCountdown(Number(e.target.value))} style={consoleSelectStyle}>
-              {Array.from({ length: 30 }, (_, i) => i + 1).map((m) => (
-                <option key={m} value={m * 60}>{m} min</option>
-              ))}
-            </select>
-          </FieldRow>
-        </div>
-
-        <div style={{ marginTop: 10 }}>
-          <div style={{ fontSize: 9, letterSpacing: "0.2em", textTransform: "uppercase", color: MUTED, marginBottom: 4, fontFamily: "monospace" }}>
-            {en ? "Target points (win when reached)" : "Ciljne točke (zmaga ob doseženem številu)"}
-          </div>
-          <select value={pointTarget} onChange={(e) => setPointTarget(Number(e.target.value))} style={consoleSelectStyle}>
-            {Array.from({ length: 30 }, (_, i) => (i + 1) * 10).map((p) => (
-              <option key={p} value={p}>{p} {en ? "pts" : "točk"}</option>
-            ))}
-          </select>
-          <p style={{ fontSize: 10, color: MUTED, fontFamily: "monospace", lineHeight: 1.55, marginTop: 8, fontStyle: "italic" }}>
-            {en
-              ? `Each sector held earns 1 point every 30 seconds. With 3 sectors held, ${pointTarget} points takes about ${Math.ceil(pointTarget / 6)} minutes.`
-              : `Vsak zadržan sektor prinese 1 točko na 30 sekund. Pri 3 zadržanih sektorjih je za ${pointTarget} točk potrebnih približno ${Math.ceil(pointTarget / 6)} minut.`}
-          </p>
-        </div>
-      </Pane>
-
-      <div style={{ height: 16 }} />
-
-      {/* ── RESPAWN QR CODES (self-titled card) ─────────────── */}
-      <RespawnQrConfig settings={settings} onPatch={setSettings} en={en} />
-
-      <div style={{ height: 16 }} />
-
-      {/* ── CAPTURE POINTS SCORING (self-titled card) ───────── */}
-      <CaptureScoringConfig settings={settings} onPatch={setSettings} en={en} />
-
-      <div style={{ height: 16 }} />
-
-      {/* ── SPARTACUS ANTI-CHEAT (self-titled card) ─────────── */}
-      <SpartacusConfig settings={settings} onPatch={setSettings} en={en} />
-
-      <div style={{ height: 16 }} />
-
-      {/* ── TEAMS (self-titled card) ────────────────────────── */}
-      <TeamConfigSection settings={settings} onPatch={setSettings} en={en} />
-      </div>
-
-      {/* ── TAB 6: TACTICAL MAP ─────────────────────────────── */}
-      <div style={{ display: formTab === "map" ? "block" : "none" }}>
-      <Pane title={en ? "TACTICAL MAP" : "TAKTIČNI ZEMLJEVID"}>
-        <p style={{ fontSize: 11, color: MUTED, fontFamily: "monospace", lineHeight: 1.55, marginBottom: 12 }}>
-          {en ? "Upload the image of your field or playing area." : "Naloži sliko svojega poligona ali igralne površine."}
-        </p>
-        <FieldRow label={en ? "Upload image from device (or link)" : "Naloži sliko z naprave (ali povezavo)"}>
-          <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept="image/*"
-              style={{ display: "none" }}
-              onChange={(e) => {
-                const f = e.target.files?.[0];
-                if (f) onMapFile(f);
-                if (fileInputRef.current) fileInputRef.current.value = "";
-              }}
-            />
-            <button
-              type="button"
-              onClick={() => fileInputRef.current?.click()}
-              style={{
-                background: "transparent", color: ACCENT,
-                border: `1px dashed ${ACCENT}`, padding: "12px 14px",
-                fontFamily: "'Michroma', monospace", fontSize: 11,
-                letterSpacing: "0.18em", textTransform: "uppercase", cursor: "pointer",
-                display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 8,
-              }}
-            >
-              <Upload size={14} /> [ {en ? "UPLOAD IMAGE FROM DEVICE" : "NALOŽI SLIKO Z NAPRAVE"} ]
-            </button>
-            <input
-              value={mapUrl.startsWith("data:") ? "" : mapUrl}
-              onChange={(e) => setMapUrl(e.target.value)}
-              style={consoleInputStyle}
-              placeholder="https://.../map.webp"
-            />
-            {mapUrl && (
-              <div style={{ display: "flex", alignItems: "center", gap: 10, padding: 8, border: `1px solid ${ACCENT}33`, background: "rgba(224,176,78,0.04)" }}>
-                <img
-                  src={mapUrl}
-                  alt="Map preview"
-                  style={{ width: 72, height: 54, objectFit: "cover", border: `1px solid ${ACCENT}55` }}
-                />
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <p style={{ fontFamily: "monospace", fontSize: 10, letterSpacing: "0.18em", color: ACCENT, textTransform: "uppercase", marginBottom: 2 }}>
-                    // {en ? "MAP READY" : "ZEMLJEVID PRIPRAVLJEN"}
-                  </p>
-                  <p style={{ fontSize: 11, color: MUTED, wordBreak: "break-all", lineHeight: 1.4 }}>
-                    {mapUrl.startsWith("data:") ? (en ? "Uploaded from device" : "Naloženo z naprave") : mapUrl}
-                  </p>
-                </div>
-                <button type="button" onClick={() => setMapUrl("")}
-                  aria-label="Clear map"
-                  style={{ background: "transparent", border: "none", color: MUTED, cursor: "pointer" }}>
-                  <X size={14} />
-                </button>
-              </div>
-            )}
-            <p style={{ fontSize: 10, color: MUTED, fontFamily: "monospace", lineHeight: 1.5, fontStyle: "italic" }}>
-              {en
-                ? "Recommended: Upload compressed .webp images for the fastest loading speeds during live gameplay on the field."
-                : "Priporočeno: naloži stisnjene .webp slike za najhitrejše nalaganje med igro na terenu."}
-            </p>
-          </div>
-        </FieldRow>
-      </Pane>
-
-      <div style={{ height: 16 }} />
-
-      {/* ── CREATE YOUR MAP ─────────────────────────────────── */}
-      <Pane title={en ? "CREATE YOUR MAP" : "SESTAVI ZEMLJEVID"}>
-        <NodePlacer
-          mapUrl={mapUrl || null}
-          positions={nodePositions}
-          onChange={(p) => setNodePositions(p)}
-          en={en}
-        />
-      </Pane>
-      </div>
-
-      <p style={{ fontSize: 11, color: MUTED, fontFamily: "monospace", lineHeight: 1.6, margin: "18px 0 16px", padding: "12px 14px", border: `1px dashed ${ACCENT}33`, background: "rgba(224,176,78,0.03)" }}>
-        <strong style={{ color: ACCENT }}>{en ? "NOTE:" : "OPOMBA:"}</strong>{" "}
-        {en
-          ? "Initializing the lobby adds the mission to the missions list. The player must then join the mission with the mission password you have created, register and choose their teams. Before the game starts you can balance the teams."
-          : "Inicializacija lobbyja doda misijo na seznam misij. Igralec se mora nato pridružiti misiji z geslom, ki ste ga ustvarili, se registrirati in izbrati svojo ekipo. Pred začetkom igre lahko ekipe uravnotežite."}
-      </p>
-
-      {/* ── PINNED DEPLOY BAR ───────────────────────────────── */}
       <div style={{ position: "fixed", left: 0, right: 0, bottom: 0, zIndex: 50, background: `${BG}f2`, borderTop: `1px solid ${ACCENT}55`, padding: "12px 16px calc(12px + env(safe-area-inset-bottom))", backdropFilter: "blur(6px)" }}>
         {err && <p style={{ color: "#d97a6c", fontSize: 12, marginBottom: 8, textAlign: "center" }}>{err}</p>}
-        {ok && <p style={{ color: ACCENT, fontSize: 12, marginBottom: 8, fontFamily: "monospace", letterSpacing: "0.14em", textAlign: "center" }}>// {en ? "LOBBY INITIALIZED" : "LOBBY INICIALIZIRAN"}</p>}
+        {ok && <p style={{ color: ACCENT, fontSize: 12, marginBottom: 8, fontFamily: "monospace", letterSpacing: "0.14em", textAlign: "center" }}>// {en ? "MISSION CREATED" : "MISIJA USTVARJENA"}</p>}
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 8 }}>
-          <button type="submit" disabled={busy}
-            style={{ background: ACCENT, color: BG, border: "none", padding: "14px 28px", fontFamily: "'Michroma', monospace", fontSize: 12, letterSpacing: "0.22em", textTransform: "uppercase", fontWeight: 700, cursor: busy ? "wait" : "pointer", opacity: busy ? 0.6 : 1, minWidth: 280 }}>
-            [ {busy ? (en ? "STARTING…" : "VZPOSTAVLJAM…") : (en ? "START LOBBY" : "VZPOSTAVI MISIJO")} ]
+          {missing.length > 0 && (
+            <p style={{ color: "#e8833a", fontSize: 11, fontFamily: "monospace", margin: 0, textAlign: "center" }}>
+              {en ? "Missing: " : "Manjka: "}{missingLabels.join(", ")}
+            </p>
+          )}
+          <button type="submit" disabled={disabled}
+            style={{ background: ACCENT, color: BG, border: "none", padding: "14px 28px", fontFamily: "'Michroma', monospace", fontSize: 12, letterSpacing: "0.22em", textTransform: "uppercase", fontWeight: 700, cursor: busy ? "wait" : disabled ? "not-allowed" : "pointer", opacity: disabled ? 0.5 : 1, width: "min(320px, 100%)" }}>
+            [ {busy ? (en ? "CREATING…" : "USTVARJAM…") : (en ? "Create mission" : "Ustvari misijo")} ]
           </button>
-          <p style={{ color: `${ACCENT}99`, fontSize: 11, fontFamily: "monospace", letterSpacing: "0.06em", lineHeight: 1.55, textAlign: "center", maxWidth: 520, margin: 0 }}>
+          <p style={{ color: `${ACCENT}99`, fontSize: 11, fontFamily: "monospace", letterSpacing: "0.04em", lineHeight: 1.55, textAlign: "center", maxWidth: 520, margin: 0 }}>
             {en
-              ? "Click to show this lobby on the list of missions."
-              : "Klikni, da se ta misija prikaže na seznamu aktivnih misij — igralci se lahko po tem pridružijo misiji z geslom, ki ste ga ustvarili."}
+              ? "The mission appears in your list. Players can join once you set it active."
+              : "Misija se prikaže na tvojem seznamu. Igralci lahko vstopijo, ko jo nastaviš kot aktivno."}
           </p>
         </div>
       </div>
-
     </form>
   );
 }
-
-
 
 
 type AccountLobby = {
@@ -1475,7 +1122,7 @@ function AccountMissionsSection({ en, onOpenMission, onCreateInEvent }: { en: bo
     const out = [...map.values()];
     for (const g of out) {
       g.missions.sort((a, b) => ts(a) - ts(b));
-      g.title = g.key ? (g.missions[0].event_name ?? "").trim() : (en ? "No event" : "Brez dogodka");
+      g.title = g.key ? (g.missions[0].event_name ?? "").trim() : (en ? "Standalone missions" : "Samostojne misije");
     }
     const hasActive = (g: MissionGroup) => g.missions.some((m) => m.id === activeLobbyId);
     out.sort((a, b) => {
@@ -3358,80 +3005,6 @@ function LeaderRow({ label, color, score, target }: { label: string; color: stri
       <span style={{ fontFamily: "monospace", fontSize: 13, color: INK }}>
         <strong style={{ color: ACCENT }}>{score}</strong> <span style={{ color: MUTED }}>/ {target}</span>
       </span>
-    </div>
-  );
-}
-
-
-function TeamConfigSection({ settings, onPatch, en }: { settings: any; onPatch: (s: any) => void; en: boolean }) {
-  const teamNames = (settings?.teamNames ?? {}) as Record<string, string>;
-  const teamCount = Number(settings?.teamCount ?? 2);
-  const { isPremium, openPremiumModal } = usePremium();
-  const update = (patch: any) => onPatch({ ...settings, ...patch });
-  const setName = (key: string, value: string) =>
-    onPatch({ ...settings, teamNames: { ...teamNames, [key]: value } });
-  return (
-    <div style={{ marginTop: 22, padding: 14, border: `1px solid ${ACCENT}44`, background: "rgba(0,0,0,0.25)" }}>
-      <div style={{ fontFamily: "'Michroma', monospace", fontSize: 11, letterSpacing: "0.18em", color: ACCENT, textTransform: "uppercase", marginBottom: 4 }}>
-        {en ? "TEAMS" : "EKIPE"}
-      </div>
-      <p style={{ fontSize: 10.5, color: MUTED, fontFamily: "monospace", lineHeight: 1.6, marginBottom: 12 }}>
-        {en
-          ? "Number of teams and their faction names. Faction names replace the default BLUE/RED labels in the roster and scoreboards."
-          : "Število ekip in imena frakcij. Imena zamenjajo privzete oznake MODRA/RDEČA v roster-ju in scoreboardih."}
-      </p>
-      <div style={{ marginBottom: 10 }}>
-        <div style={{ fontSize: 9, letterSpacing: "0.2em", textTransform: "uppercase", color: MUTED, marginBottom: 4, fontFamily: "monospace" }}>
-          {en ? "Number of teams" : "Število ekip"}
-        </div>
-        <select
-          value={teamCount > 2 && !isPremium ? 2 : teamCount}
-          onChange={(e) => {
-            const next = Number(e.target.value);
-            if (next > 2 && !isPremium) {
-              openPremiumModal();
-              return;
-            }
-            update({ teamCount: next });
-          }}
-          style={{
-            width: "100%", background: "rgba(0,0,0,0.35)", color: INK,
-            border: `1px solid ${ACCENT}55`, padding: "10px 12px",
-            fontFamily: "'Michroma', monospace", fontSize: 12, letterSpacing: "0.12em",
-          }}
-        >
-          <option value={2}>2</option>
-          <option value={3}>3 — 🔒 {en ? "Premium feature" : "Premium funkcija"}</option>
-          <option value={4}>4 — 🔒 {en ? "Premium feature" : "Premium funkcija"}</option>
-          <option value={5}>5 — 🔒 {en ? "Premium feature" : "Premium funkcija"}</option>
-        </select>
-      </div>
-      <div className="grid grid-cols-2 gap-3">
-        <div>
-          <div style={{ fontSize: 9, letterSpacing: "0.2em", textTransform: "uppercase", color: "#3b82f6", marginBottom: 4, fontFamily: "monospace" }}>
-            {en ? "Blue faction name" : "Ime modre ekipe"}
-          </div>
-          <input
-            value={teamNames.modra ?? ""}
-            onChange={(e) => setName("modra", e.target.value)}
-            maxLength={24}
-            placeholder={en ? "e.g. Lions" : "npr. Levi"}
-            style={{ width: "100%", background: "rgba(0,0,0,0.35)", color: INK, border: `1px solid #3b82f655`, padding: "10px 12px", fontFamily: "monospace", fontSize: 13 }}
-          />
-        </div>
-        <div>
-          <div style={{ fontSize: 9, letterSpacing: "0.2em", textTransform: "uppercase", color: "#ef4444", marginBottom: 4, fontFamily: "monospace" }}>
-            {en ? "Red faction name" : "Ime rdeče ekipe"}
-          </div>
-          <input
-            value={teamNames.rdeca ?? ""}
-            onChange={(e) => setName("rdeca", e.target.value)}
-            maxLength={24}
-            placeholder={en ? "e.g. Spartans" : "npr. Spartanci"}
-            style={{ width: "100%", background: "rgba(0,0,0,0.35)", color: INK, border: `1px solid #ef444455`, padding: "10px 12px", fontFamily: "monospace", fontSize: 13 }}
-          />
-        </div>
-      </div>
     </div>
   );
 }
