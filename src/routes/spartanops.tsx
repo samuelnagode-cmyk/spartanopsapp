@@ -225,7 +225,7 @@ function Hero() {
         />
       </div>
 
-      <SectionShell className="relative pt-16 md:pt-20 pb-0 md:pb-4">
+      <SectionShell className="relative pt-16 md:pt-20 pb-6 md:pb-11">
         <div className="relative text-center" style={{ zIndex: 1 }}>
           <div className="origin-top scale-[0.6] -mb-[59px] md:scale-100 md:mb-0">
             <Reticle />
