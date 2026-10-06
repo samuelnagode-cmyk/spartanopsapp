@@ -4,6 +4,8 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { QRCodeSVG } from "qrcode.react";
 import { supabase } from "@/integrations/supabase/client";
 import { useLang } from "@/lib/i18n";
+import posterBackground from "@/assets/field-poster-background.jpg.asset.json";
+import posterLogo from "@/assets/poster-homepage-logo.webp.asset.json";
 
 const db = supabase as unknown as SupabaseClient;
 
@@ -71,15 +73,43 @@ function FieldQrPage() {
   return (
     <>
       <style>{`
+        #field-poster {
+          display: none; position: relative; flex-direction: column;
+          align-items: center; justify-content: center; gap: 6mm;
+          background: var(--poster-ink); color: var(--poster-ink);
+          font-family: Arial, sans-serif; text-align: center;
+          print-color-adjust: exact; -webkit-print-color-adjust: exact;
+        }
+        .field-poster-background {
+          position: absolute; inset: 0; width: 100%; height: 100%;
+          object-fit: cover; object-position: center top;
+        }
+        .field-poster-content {
+          position: relative; width: 100%; display: flex; flex-direction: column;
+          align-items: center; gap: 6mm;
+        }
+        .field-poster-logo { width: 148mm; max-width: 100%; height: auto; }
+        .field-poster-label { background: var(--poster-paper); padding: 3mm 5mm; }
+        .field-poster-name { font-size: 24pt; font-weight: 700; overflow-wrap: anywhere; }
+        .field-poster-qr { background: var(--poster-paper); padding: 6mm; line-height: 0; }
+        .field-poster-instruction { font-size: 18pt; font-weight: 800; }
+        .field-poster-camera { font-size: 14pt; }
+        .field-poster-password {
+          display: flex; align-items: flex-end; gap: 4mm; margin-top: 4mm;
+          width: 100%; box-sizing: border-box; text-align: left;
+        }
+        .field-poster-password-label { font-size: 16pt; font-weight: 700; flex-shrink: 0; }
+        .field-poster-password-line { flex: 1; min-width: 0; height: 16mm; border-bottom: 2px solid var(--poster-ink); }
+        .field-poster-credit { font-size: 9pt; margin-top: 4mm; }
         @media print {
           @page { size: A4 portrait; margin: 0; }
-          html, body { margin: 0 !important; padding: 0 !important; background: #fff !important; }
+          html, body { margin: 0 !important; padding: 0 !important; background: var(--poster-paper) !important; }
           header, footer, #field-screen, [role="dialog"], [data-sonner-toaster] { display: none !important; }
           body * { visibility: hidden !important; }
           [style*="position: fixed"] { display: none !important; }
           #field-poster, #field-poster * { visibility: visible !important; }
           #field-poster {
-            display: flex !important; position: static !important;
+            display: flex !important; position: relative !important;
             width: 210mm; height: 297mm; box-sizing: border-box; padding: 14mm;
             break-inside: avoid; break-after: avoid; overflow: hidden;
           }
@@ -113,19 +143,22 @@ function FieldQrPage() {
         </div>
       </main>
 
-      <div
-        id="field-poster"
-        style={{ display: "none", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: "6mm", background: "#ffffff", color: "#000000", fontFamily: "Arial, sans-serif", textAlign: "center" }}
-      >
-        <div style={{ fontSize: "30pt", fontWeight: 800, letterSpacing: "0.04em" }}>{en ? "SCAN TO JOIN THE GAME" : "SKENIRAJ ZA VSTOP V IGRO"}</div>
-        <QRCodeSVG value={url} size={380} level="M" bgColor="#ffffff" fgColor="#000000" />
-        <div style={{ fontSize: "24pt", fontWeight: 700 }}>{acct.name}</div>
-        <div style={{ fontSize: "14pt" }}>{en ? "No app to install — scan with your phone camera" : "Aplikacije ni treba namestiti — skeniraj s kamero telefona"}</div>
-        <div style={{ display: "flex", alignItems: "flex-end", gap: "4mm", marginTop: "4mm" }}>
-          <div style={{ fontSize: "16pt", fontWeight: 700 }}>{en ? "Today's password:" : "Današnje geslo:"}</div>
-          <div style={{ width: "120mm", height: "16mm", borderBottom: "2px solid #000" }} />
+      <div id="field-poster">
+        <img className="field-poster-background" src={posterBackground.url} alt="" />
+        <div className="field-poster-content">
+          <img className="field-poster-logo" src={posterLogo.url} alt="SpartanOps" />
+          <div className="field-poster-label field-poster-name">{en ? "FIELD:" : "POLIGON:"} {acct.name}</div>
+          <div className="field-poster-qr">
+            <QRCodeSVG value={url} size={380} level="M" bgColor="var(--poster-paper)" fgColor="var(--poster-ink)" />
+          </div>
+          <div className="field-poster-label field-poster-instruction">{en ? "Scan to join the game" : "Skeniraj za vstop v igro"}</div>
+          <div className="field-poster-label field-poster-camera">{en ? "No app to install — scan with your phone camera" : "Aplikacije ni treba namestiti — skeniraj s kamero telefona"}</div>
+          <div className="field-poster-label field-poster-password">
+            <div className="field-poster-password-label">{en ? "Today's password:" : "Današnje geslo:"}</div>
+            <div className="field-poster-password-line" />
+          </div>
+          <div className="field-poster-label field-poster-credit">Powered by SpartanOps</div>
         </div>
-        <div style={{ fontSize: "9pt", opacity: 0.6, marginTop: "4mm" }}>Powered by SpartanOps</div>
       </div>
     </>
   );
