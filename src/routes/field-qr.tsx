@@ -130,15 +130,15 @@ function FieldQrPage() {
         }
         .field-poster-rule { width: 30mm; height: 0; border-top: 0.5mm solid ${ACCENT}; margin-top: 3mm; }
         .field-poster-cardwrap { position: relative; margin-top: 8mm; }
-        .field-poster-card { width: 130mm; background: #ffffff; padding: 8mm 15mm 6mm; box-sizing: border-box; text-shadow: none; }
+        .field-poster-card { width: 92mm; background: #ffffff; padding: 5mm 8mm 4mm; box-sizing: border-box; text-shadow: none; }
         .field-poster-qr { line-height: 0; }
-        .field-poster-qr svg { width: 100mm; height: 100mm; display: block; }
-        .field-poster-divider { border-top: 0.3mm solid #9a9a9a; margin: 6mm 0 3mm; }
+        .field-poster-qr svg { width: 68mm; height: 68mm; display: block; }
+        .field-poster-divider { border-top: 0.3mm solid #9a9a9a; margin: 4mm 0 2mm; }
         .field-poster-pwlabel {
-          font-family: 'Michroma', sans-serif; font-size: 9pt; letter-spacing: 0.2em;
+          font-family: 'Michroma', sans-serif; font-size: 7pt; letter-spacing: 0.2em;
           color: #444444; text-transform: uppercase;
         }
-        .field-poster-pwspace { height: 18mm; border-bottom: 1.2mm solid #000000; }
+        .field-poster-pwspace { height: 10mm; border-bottom: 1mm solid #000000; }
         .field-poster-corner { position: absolute; width: 8mm; height: 8mm; border: 0 solid ${ACCENT}; }
         .field-poster-corner.tl { top: -3mm; left: -3mm; border-top-width: 0.6mm; border-left-width: 0.6mm; }
         .field-poster-corner.tr { top: -3mm; right: -3mm; border-top-width: 0.6mm; border-right-width: 0.6mm; }
