@@ -92,7 +92,7 @@ function PremiumUpgradeModal({ onClose }: { onClose: () => void }) {
       aria-modal="true"
       onClick={onClose}
       style={{
-        position: "fixed", inset: 0, zIndex: 200,
+        position: "fixed", inset: 0, zIndex: 1100,
         background: "rgba(0,0,0,0.72)", backdropFilter: "blur(6px)",
         display: "flex", alignItems: "center", justifyContent: "center",
         padding: 20,

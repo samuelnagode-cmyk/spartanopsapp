@@ -1047,7 +1047,7 @@ function MisijaPageInner() {
   const colorWordEn = me.assigned_team === "modra" ? "BLUE" : me.assigned_team === "rdeca" ? "RED" : me.assigned_team === "rumena" ? "YELLOW" : "";
   const reassignedBanner = me.team_changed_flag ? (
     <div
-      className="fixed inset-0 z-[70] flex items-center justify-center p-4"
+      className="fixed inset-0 z-[1100] flex items-center justify-center p-4"
       style={{ background: "rgba(0,0,0,0.85)", backdropFilter: "blur(6px)", animation: "spops-alert-flash 1.6s ease-in-out infinite" }}
     >
       <div style={{ background: "#141008", border: `2px solid ${teamColorNow}`, boxShadow: `0 0 32px ${teamColorNow}80`, padding: "28px 24px", maxWidth: 460, width: "100%", textAlign: "center" }}>
@@ -1447,7 +1447,7 @@ function RespawnLockScreen({ until, field, sessionId, serverOffset, en }: { unti
 
   return (
     <div
-      className="fixed inset-0 z-50 flex flex-col items-center justify-center p-5 text-center"
+      className="fixed inset-0 z-[1100] flex flex-col items-center justify-center p-5 text-center"
       style={{ background: "radial-gradient(circle at 50% 0%, rgba(224,176,78,0.16), rgba(11,13,9,0.98) 42%, #050604 100%)", color: INK }}
     >
       <p style={{ color: ACCENT, fontFamily: "monospace", fontSize: 11, letterSpacing: "0.32em", textTransform: "uppercase", marginBottom: 10 }}>
@@ -2319,7 +2319,7 @@ function TeamSelectModal({
   };
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-4"
+      className="fixed inset-0 z-[1100] flex items-center justify-center p-4"
       style={{ background: "rgba(0,0,0,0.85)" }}
       onClick={onClose}
     >
@@ -2386,7 +2386,7 @@ function PreMatchCountdown({ seconds, polygon, eventName, gamemode, pointTarget,
   }, [seconds]);
   return (
     <div
-      className="fixed inset-0 z-50 flex flex-col items-center justify-start overflow-y-auto p-4 text-center"
+      className="fixed inset-0 z-[1100] flex flex-col items-center justify-start overflow-y-auto p-4 text-center"
       style={{ background: "radial-gradient(circle at 50% 0%, rgba(224,176,78,0.14), rgba(11,13,9,0.99) 34%, #050604 100%)", color: INK, paddingTop: 112, paddingBottom: 40 }}
     >
       <p style={{ color: ACCENT, fontFamily: "monospace", fontSize: 11, letterSpacing: "0.32em", textTransform: "uppercase", marginBottom: 8 }}>
@@ -2855,7 +2855,7 @@ function TacticalMap({ state, captures, en, hasPositions, missionName, timeLabel
 
       {open && (
         <div
-          className="fixed inset-0 z-[1001] flex flex-col"
+          className="fixed inset-0 z-[1100] flex flex-col"
           style={{ background: "rgba(4,6,3,0.98)" }}
           role="dialog"
           aria-modal="true"
@@ -3717,7 +3717,7 @@ function HudNoticeFeed({
 function WarningModal({ message, en, onAcknowledge }: { message: string; en: boolean; onAcknowledge: () => void | Promise<void> }) {
   const [busy, setBusy] = useState(false);
   return (
-    <div className="fixed inset-0 z-[80] flex items-center justify-center p-4" style={{ background: "rgba(0,0,0,0.88)", backdropFilter: "blur(6px)" }}>
+    <div className="fixed inset-0 z-[1100] flex items-center justify-center p-4" style={{ background: "rgba(0,0,0,0.88)", backdropFilter: "blur(6px)" }}>
       <div style={{ background: "#141008", border: `2px solid ${ACCENT}`, boxShadow: `0 0 40px ${ACCENT}88`, padding: "28px 24px", maxWidth: 480, width: "100%", textAlign: "center" }}>
         <p style={{ fontFamily: "'Michroma', monospace", fontSize: 15, color: ACCENT, letterSpacing: "0.16em", marginBottom: 16, textTransform: "uppercase", fontWeight: 700 }}>
           {en ? "⚠ MARSHAL WARNING" : "⚠ OPOZORILO MARŠALA"}
@@ -3754,7 +3754,7 @@ function PausedOverlay({ en }: { en: boolean }) {
       aria-label={title}
       onContextMenu={(e) => e.preventDefault()}
       style={{
-        position: "fixed", inset: 0, zIndex: 90,
+        position: "fixed", inset: 0, zIndex: 1100,
         background: "rgba(4,6,3,0.95)",
         backdropFilter: "blur(10px)",
         display: "grid", placeItems: "center", padding: 20,

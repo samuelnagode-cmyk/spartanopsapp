@@ -1483,7 +1483,7 @@ function MasterPasswordModal({ onClose, onSuccess }: { onClose: () => void; onSu
       aria-modal="true"
       onClick={onClose}
       style={{
-        position: "fixed", inset: 0, zIndex: 200,
+        position: "fixed", inset: 0, zIndex: 1100,
         background: "rgba(0,0,0,0.72)", backdropFilter: "blur(6px)",
         display: "grid", placeItems: "center", padding: 16,
       }}
@@ -1576,7 +1576,7 @@ function MarshalPasswordPrompt({ lobby, onClose, onSuccess }: { lobby: LobbyReco
 
   return (
     <div role="dialog" aria-modal="true" onClick={onClose}
-      style={{ position: "fixed", inset: 0, zIndex: 200, background: "rgba(0,0,0,0.72)", backdropFilter: "blur(6px)", display: "grid", placeItems: "center", padding: 16 }}>
+      style={{ position: "fixed", inset: 0, zIndex: 1100, background: "rgba(0,0,0,0.72)", backdropFilter: "blur(6px)", display: "grid", placeItems: "center", padding: 16 }}>
       <form onClick={(e) => e.stopPropagation()} onSubmit={submit}
         style={{ background: PANEL, border: `1px solid ${ACCENT}`, padding: 28, maxWidth: 420, width: "100%" }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 18 }}>
@@ -2521,7 +2521,7 @@ function MarshalLobbyConsole({ lobby: initialLobby, marshalPassword, lobbyPasswo
 
       {joinModal && (
         <div role="dialog" aria-modal="true" onClick={() => !joinBusy && setJoinModal(false)}
-          style={{ position: "fixed", inset: 0, zIndex: 200, background: "rgba(0,0,0,0.78)", backdropFilter: "blur(6px)", display: "grid", placeItems: "center", padding: 16 }}>
+          style={{ position: "fixed", inset: 0, zIndex: 1100, background: "rgba(0,0,0,0.78)", backdropFilter: "blur(6px)", display: "grid", placeItems: "center", padding: 16 }}>
           <form onClick={(e) => e.stopPropagation()} onSubmit={submitJoinModal}
             style={{ background: PANEL, border: `1px solid ${ACCENT}`, padding: 24, maxWidth: 440, width: "100%" }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>

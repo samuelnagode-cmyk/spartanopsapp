@@ -796,7 +796,7 @@ const RosterBoard = memo(function RosterBoard({ roster, settings, onReassign, on
         );
       })}
       {switching && (
-        <div role="dialog" aria-modal="true" style={{ position: "fixed", inset: 0, zIndex: 80, background: "rgba(0,0,0,0.78)", display: "flex", alignItems: "center", justifyContent: "center", padding: 18 }}>
+        <div role="dialog" aria-modal="true" style={{ position: "fixed", inset: 0, zIndex: 1100, background: "rgba(0,0,0,0.78)", display: "flex", alignItems: "center", justifyContent: "center", padding: 18 }}>
           <div style={{ width: "min(420px, 100%)", background: PANEL, border: `1px solid ${ACCENT}`, padding: 18, boxShadow: `0 0 45px ${ACCENT}22` }}>
             <p style={{ color: ACCENT, fontFamily: "'Michroma', monospace", fontSize: 12, letterSpacing: "0.16em", textTransform: "uppercase", marginBottom: 12 }}>
               {en ? "SWITCH FACTION" : "PREMESTI FRAKCIJO"}

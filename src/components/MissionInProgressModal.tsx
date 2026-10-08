@@ -86,7 +86,7 @@ export default function MissionInProgressModal() {
       role="dialog"
       aria-modal="true"
       style={{
-        position: "fixed", inset: 0, zIndex: 200,
+        position: "fixed", inset: 0, zIndex: 1100,
         background: "rgba(0,0,0,0.75)",
         display: "grid", placeItems: "center", padding: 16,
       }}
