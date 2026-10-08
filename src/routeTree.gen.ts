@@ -14,6 +14,7 @@ import { Route as SpawnRouteImport } from './routes/spawn'
 import { Route as SpartanopsRouteImport } from './routes/spartanops'
 import { Route as SitemapDotxmlRouteImport } from './routes/sitemap[.]xml'
 import { Route as ScanRouteImport } from './routes/scan'
+import { Route as SRouteImport } from './routes/s'
 import { Route as QrGeneratorRouteImport } from './routes/qr-generator'
 import { Route as PrintRouteImport } from './routes/print'
 import { Route as MisijaRouteImport } from './routes/misija'
@@ -58,6 +59,11 @@ const SitemapDotxmlRoute = SitemapDotxmlRouteImport.update({
 const ScanRoute = ScanRouteImport.update({
   id: '/scan',
   path: '/scan',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SRoute = SRouteImport.update({
+  id: '/s',
+  path: '/s',
   getParentRoute: () => rootRouteImport,
 } as any)
 const QrGeneratorRoute = QrGeneratorRouteImport.update({
@@ -180,6 +186,7 @@ export interface FileRoutesByFullPath {
   '/misija': typeof MisijaRoute
   '/print': typeof PrintRoute
   '/qr-generator': typeof QrGeneratorRoute
+  '/s': typeof SRoute
   '/scan': typeof ScanRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/spartanops': typeof SpartanopsRoute
@@ -207,6 +214,7 @@ export interface FileRoutesByTo {
   '/misija': typeof MisijaRoute
   '/print': typeof PrintRoute
   '/qr-generator': typeof QrGeneratorRoute
+  '/s': typeof SRoute
   '/scan': typeof ScanRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/spartanops': typeof SpartanopsRoute
@@ -235,6 +243,7 @@ export interface FileRoutesById {
   '/misija': typeof MisijaRoute
   '/print': typeof PrintRoute
   '/qr-generator': typeof QrGeneratorRoute
+  '/s': typeof SRoute
   '/scan': typeof ScanRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/spartanops': typeof SpartanopsRoute
@@ -264,6 +273,7 @@ export interface FileRouteTypes {
     | '/misija'
     | '/print'
     | '/qr-generator'
+    | '/s'
     | '/scan'
     | '/sitemap.xml'
     | '/spartanops'
@@ -291,6 +301,7 @@ export interface FileRouteTypes {
     | '/misija'
     | '/print'
     | '/qr-generator'
+    | '/s'
     | '/scan'
     | '/sitemap.xml'
     | '/spartanops'
@@ -318,6 +329,7 @@ export interface FileRouteTypes {
     | '/misija'
     | '/print'
     | '/qr-generator'
+    | '/s'
     | '/scan'
     | '/sitemap.xml'
     | '/spartanops'
@@ -346,6 +358,7 @@ export interface RootRouteChildren {
   MisijaRoute: typeof MisijaRoute
   PrintRoute: typeof PrintRoute
   QrGeneratorRoute: typeof QrGeneratorRoute
+  SRoute: typeof SRoute
   ScanRoute: typeof ScanRoute
   SitemapDotxmlRoute: typeof SitemapDotxmlRoute
   SpartanopsRoute: typeof SpartanopsRoute
@@ -391,6 +404,13 @@ declare module '@tanstack/react-router' {
       path: '/scan'
       fullPath: '/scan'
       preLoaderRoute: typeof ScanRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/s': {
+      id: '/s'
+      path: '/s'
+      fullPath: '/s'
+      preLoaderRoute: typeof SRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/qr-generator': {
@@ -554,6 +574,7 @@ const rootRouteChildren: RootRouteChildren = {
   MisijaRoute: MisijaRoute,
   PrintRoute: PrintRoute,
   QrGeneratorRoute: QrGeneratorRoute,
+  SRoute: SRoute,
   ScanRoute: ScanRoute,
   SitemapDotxmlRoute: SitemapDotxmlRoute,
   SpartanopsRoute: SpartanopsRoute,
