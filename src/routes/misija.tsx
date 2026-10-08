@@ -1522,7 +1522,7 @@ function ChooseFactionButton({ onClick, en }: { onClick: () => void; en: boolean
 
 function SpartacusConsentBlock({ en, onClearedChange }: { en: boolean; onClearedChange: (ok: boolean) => void }) {
   // Always start in "idle" so both mobile & desktop show the same amber
-  // "AGREE + ACTIVATE GPS" call-to-action. Only an explicit user tap flips
+  // "ALLOW LOCATION" call-to-action. Only an explicit user tap flips
   // the state — no silent auto-grant from localStorage or the Permissions API.
   const [status, setStatus] = useState<"idle" | "granted" | "denied">("idle");
   const [busy, setBusy] = useState(false);
@@ -1584,46 +1584,55 @@ function SpartacusConsentBlock({ en, onClearedChange }: { en: boolean; onCleared
   const granted = status === "granted";
   return (
     <div style={{ border: `1px solid ${granted ? "#3ddc84" : ACCENT}66`, background: granted ? "rgba(61,220,132,0.08)" : "rgba(224,176,78,0.08)", padding: 14 }}>
-      <p style={{ fontFamily: "'Michroma', monospace", fontSize: 10.5, color: granted ? "#3ddc84" : ACCENT, letterSpacing: "0.16em", textTransform: "uppercase", fontWeight: 800, marginBottom: 6 }}>
-        {granted
-          ? (en ? "📡 TELEMETRY STATUS: SECURED (LAT/LON ACTIVE)" : "📡 STATUS TELEMETRIJE: ZAVAROVANO (GPS AKTIVEN)")
-          : (en ? "SPARTACUS ANTI-CHEAT SYSTEM" : "SPARTACUS ANTI-CHEAT SISTEM")}
+      <p style={{ display: "flex", alignItems: "center", gap: 6, fontFamily: "'Michroma', monospace", fontSize: 10.5, color: granted ? "#3ddc84" : ACCENT, letterSpacing: "0.16em", textTransform: "uppercase", fontWeight: 800, marginBottom: 6 }}>
+        <MapPin size={14} aria-hidden="true" className="shrink-0" />
+        {en ? "LOCATION CHECK" : "PREVERJANJE LOKACIJE"}
       </p>
-      <p style={{ fontFamily: "monospace", color: MUTED, fontSize: 11, lineHeight: 1.6, marginBottom: 12 }}>
-        {en
-          ? "I agree to activate browser location telemetry for mission integrity, objective validation, and marshal override review."
-          : "Strinjam se z aktivacijo lokacijske telemetrije za integriteto misije, validacijo ciljev in pregled maršala."}
-      </p>
+      {granted ? (
+        <div role="status" style={{ display: "flex", alignItems: "center", gap: 6, fontFamily: "monospace", fontSize: 13, lineHeight: 1.6, color: "#3ddc84" }}>
+          <Check size={14} aria-hidden="true" className="shrink-0" />
+          {en ? "LOCATION ON" : "LOKACIJA VKLOPLJENA"}
+        </div>
+      ) : (
+        <>
+          <p style={{ fontFamily: "monospace", color: MUTED, fontSize: 13, lineHeight: 1.6, marginBottom: 12 }}>
+            {en
+              ? "Scan at the sector. Location is required to play. Allow your phone's location so SpartanOps can check scans when location checks are enabled. Your position is read at check-in and while the capture screen is open. The marshal can review flagged scans. By tapping Allow you agree to this."
+              : "Skeniraj pri sektorju. Za igranje je lokacija obvezna. Dovoli lokacijo telefona, da SpartanOps preveri skene, ko je preverjanje lokacije vključeno. Položaj se prebere ob vstopu v igro in med odprtim zaslonom za zavzetje. Maršal lahko pregleda sporne skene. S pritiskom na Dovoli se s tem strinjaš."}
+          </p>
       <button
         type="button"
         onClick={activate}
-        disabled={granted || busy}
+        disabled={busy}
         style={{
           width: "100%",
-          background: granted ? "rgba(61,220,132,0.16)" : `${ACCENT}18`,
-          border: `1px solid ${granted ? "#3ddc84" : ACCENT}`,
-          color: granted ? "#3ddc84" : ACCENT,
+          background: `${ACCENT}18`,
+          border: `1px solid ${ACCENT}`,
+          color: ACCENT,
           padding: "10px 12px",
           fontFamily: "'Michroma', monospace",
           fontSize: 10,
           letterSpacing: "0.16em",
           textTransform: "uppercase",
-          cursor: granted || busy ? "default" : "pointer",
+          cursor: busy ? "default" : "pointer",
         }}
       >
-        {granted
-          ? (en ? "✓ AGREED / SATELLITE LINK SECURED" : "✓ POTRJENO / SATELITSKA POVEZAVA VARNA")
-          : busy
-            ? (en ? "ACQUIRING GPS SIGNAL…" : "PRIDOBIVANJE GPS SIGNALA…")
-            : (en ? "AGREE + ACTIVATE GPS" : "STRINJAM SE + AKTIVIRAJ GPS")}
+        {busy
+          ? (en ? "FINDING YOUR POSITION…" : "ISKANJE POLOŽAJA…")
+          : (en ? "ALLOW LOCATION" : "DOVOLI LOKACIJO")}
       </button>
+          <p style={{ fontFamily: "monospace", color: MUTED, fontSize: 12, lineHeight: 1.6, marginTop: 8 }}>
+            {en ? "Your browser will ask for permission. Choose “Allow”." : "Brskalnik te bo vprašal za dovoljenje. Izberi »Dovoli«."}
+          </p>
+        </>
+      )}
       {status === "denied" && failReason === "blocked" && (
-        <p style={{ color: "#ff8a8a", fontFamily: "monospace", fontSize: 10.5, lineHeight: 1.5, marginTop: 8 }}>
-          {en ? "Location permission is blocked. Enable it in your browser settings to register." : "Dovoljenje za lokacijo je blokirano. Omogočite ga v nastavitvah brskalnika za prijavo."}
+        <p style={{ color: "#ff8a8a", fontFamily: "monospace", fontSize: 13, lineHeight: 1.6, marginTop: 8 }}>
+          {en ? "Location permission is blocked. Enable it in your browser settings to enter the game." : "Dovoljenje za lokacijo je blokirano. Omogočite ga v nastavitvah brskalnika za vstop v igro."}
         </p>
       )}
       {status === "denied" && failReason === "signal" && (
-        <p style={{ color: "#ff8a8a", fontFamily: "monospace", fontSize: 10.5, lineHeight: 1.5, marginTop: 8 }}>
+        <p style={{ color: "#ff8a8a", fontFamily: "monospace", fontSize: 13, lineHeight: 1.6, marginTop: 8 }}>
           {en
             ? "Couldn't get a GPS fix — this can happen indoors or right after allowing location for the first time. Tap the button to try again."
             : "GPS signala ni bilo mogoče pridobiti — to se lahko zgodi v zaprtih prostorih ali takoj po prvi odobritvi lokacije. Za ponovni poskus pritisnite gumb."}
