@@ -17,7 +17,7 @@ import { MissionRulesAccordion, MissionDescriptionCard, CollapsibleCard } from "
 
 import { OfflineBanner } from "@/components/OfflineBanner";
 import { TacticalCompass } from "@/components/TacticalCompass";
-import { Crosshair, Shield, Phone, QrCode } from "lucide-react";
+import { Crosshair, Shield, Phone, QrCode, MapPin, Headphones, Check } from "lucide-react";
 import { useLang, useT } from "@/lib/i18n";
 import { HudNotificationStack, useHudNotices, fillTemplate } from "@/components/HudNotificationStack";
 import { HudHistoryLog } from "@/components/HudHistoryLog";
@@ -1522,7 +1522,7 @@ function ChooseFactionButton({ onClick, en }: { onClick: () => void; en: boolean
 
 function SpartacusConsentBlock({ en, onClearedChange }: { en: boolean; onClearedChange: (ok: boolean) => void }) {
   // Always start in "idle" so both mobile & desktop show the same amber
-  // "AGREE + ACTIVATE GPS" call-to-action. Only an explicit user tap flips
+  // "ALLOW LOCATION" call-to-action. Only an explicit user tap flips
   // the state — no silent auto-grant from localStorage or the Permissions API.
   const [status, setStatus] = useState<"idle" | "granted" | "denied">("idle");
   const [busy, setBusy] = useState(false);
@@ -1584,46 +1584,55 @@ function SpartacusConsentBlock({ en, onClearedChange }: { en: boolean; onCleared
   const granted = status === "granted";
   return (
     <div style={{ border: `1px solid ${granted ? "#3ddc84" : ACCENT}66`, background: granted ? "rgba(61,220,132,0.08)" : "rgba(224,176,78,0.08)", padding: 14 }}>
-      <p style={{ fontFamily: "'Michroma', monospace", fontSize: 10.5, color: granted ? "#3ddc84" : ACCENT, letterSpacing: "0.16em", textTransform: "uppercase", fontWeight: 800, marginBottom: 6 }}>
-        {granted
-          ? (en ? "📡 TELEMETRY STATUS: SECURED (LAT/LON ACTIVE)" : "📡 STATUS TELEMETRIJE: ZAVAROVANO (GPS AKTIVEN)")
-          : (en ? "SPARTACUS ANTI-CHEAT SYSTEM" : "SPARTACUS ANTI-CHEAT SISTEM")}
+      <p style={{ display: "flex", alignItems: "center", gap: 6, fontFamily: "'Michroma', monospace", fontSize: 10.5, color: granted ? "#3ddc84" : ACCENT, letterSpacing: "0.16em", textTransform: "uppercase", fontWeight: 800, marginBottom: 6 }}>
+        <MapPin size={14} aria-hidden="true" className="shrink-0" />
+        {en ? "LOCATION CHECK" : "PREVERJANJE LOKACIJE"}
       </p>
-      <p style={{ fontFamily: "monospace", color: MUTED, fontSize: 11, lineHeight: 1.6, marginBottom: 12 }}>
-        {en
-          ? "I agree to activate browser location telemetry for mission integrity, objective validation, and marshal override review."
-          : "Strinjam se z aktivacijo lokacijske telemetrije za integriteto misije, validacijo ciljev in pregled maršala."}
-      </p>
+      {granted ? (
+        <div role="status" style={{ display: "flex", alignItems: "center", gap: 6, fontFamily: "monospace", fontSize: 13, lineHeight: 1.6, color: "#3ddc84" }}>
+          <Check size={14} aria-hidden="true" className="shrink-0" />
+          {en ? "LOCATION ON" : "LOKACIJA VKLOPLJENA"}
+        </div>
+      ) : (
+        <>
+          <p style={{ fontFamily: "monospace", color: MUTED, fontSize: 13, lineHeight: 1.6, marginBottom: 12 }}>
+            {en
+              ? "Scan at the sector. Location is required to play. Allow your phone's location so SpartanOps can check scans when location checks are enabled. Your position is read at check-in and while the capture screen is open. The marshal can review flagged scans. By tapping Allow you agree to this."
+              : "Skeniraj pri sektorju. Za igranje je lokacija obvezna. Dovoli lokacijo telefona, da SpartanOps preveri skene, ko je preverjanje lokacije vključeno. Položaj se prebere ob vstopu v igro in med odprtim zaslonom za zavzetje. Maršal lahko pregleda sporne skene. S pritiskom na Dovoli se s tem strinjaš."}
+          </p>
       <button
         type="button"
         onClick={activate}
-        disabled={granted || busy}
+        disabled={busy}
         style={{
           width: "100%",
-          background: granted ? "rgba(61,220,132,0.16)" : `${ACCENT}18`,
-          border: `1px solid ${granted ? "#3ddc84" : ACCENT}`,
-          color: granted ? "#3ddc84" : ACCENT,
+          background: `${ACCENT}18`,
+          border: `1px solid ${ACCENT}`,
+          color: ACCENT,
           padding: "10px 12px",
           fontFamily: "'Michroma', monospace",
           fontSize: 10,
           letterSpacing: "0.16em",
           textTransform: "uppercase",
-          cursor: granted || busy ? "default" : "pointer",
+          cursor: busy ? "default" : "pointer",
         }}
       >
-        {granted
-          ? (en ? "✓ AGREED / SATELLITE LINK SECURED" : "✓ POTRJENO / SATELITSKA POVEZAVA VARNA")
-          : busy
-            ? (en ? "ACQUIRING GPS SIGNAL…" : "PRIDOBIVANJE GPS SIGNALA…")
-            : (en ? "AGREE + ACTIVATE GPS" : "STRINJAM SE + AKTIVIRAJ GPS")}
+        {busy
+          ? (en ? "FINDING YOUR POSITION…" : "ISKANJE POLOŽAJA…")
+          : (en ? "ALLOW LOCATION" : "DOVOLI LOKACIJO")}
       </button>
+          <p style={{ fontFamily: "monospace", color: MUTED, fontSize: 12, lineHeight: 1.6, marginTop: 8 }}>
+            {en ? "Your browser will ask for permission. Choose “Allow”." : "Brskalnik te bo vprašal za dovoljenje. Izberi »Dovoli«."}
+          </p>
+        </>
+      )}
       {status === "denied" && failReason === "blocked" && (
-        <p style={{ color: "#ff8a8a", fontFamily: "monospace", fontSize: 10.5, lineHeight: 1.5, marginTop: 8 }}>
-          {en ? "Location permission is blocked. Enable it in your browser settings to register." : "Dovoljenje za lokacijo je blokirano. Omogočite ga v nastavitvah brskalnika za prijavo."}
+        <p style={{ color: "#ff8a8a", fontFamily: "monospace", fontSize: 13, lineHeight: 1.6, marginTop: 8 }}>
+          {en ? "Location permission is blocked. Enable it in your browser settings to enter the game." : "Dovoljenje za lokacijo je blokirano. Omogočite ga v nastavitvah brskalnika za vstop v igro."}
         </p>
       )}
       {status === "denied" && failReason === "signal" && (
-        <p style={{ color: "#ff8a8a", fontFamily: "monospace", fontSize: 10.5, lineHeight: 1.5, marginTop: 8 }}>
+        <p style={{ color: "#ff8a8a", fontFamily: "monospace", fontSize: 13, lineHeight: 1.6, marginTop: 8 }}>
           {en
             ? "Couldn't get a GPS fix — this can happen indoors or right after allowing location for the first time. Tap the button to try again."
             : "GPS signala ni bilo mogoče pridobiti — to se lahko zgodi v zaprtih prostorih ali takoj po prvi odobritvi lokacije. Za ponovni poskus pritisnite gumb."}
@@ -1636,20 +1645,14 @@ function SpartacusConsentBlock({ en, onClearedChange }: { en: boolean; onCleared
 
 function AudioSettingsBlock({ en }: { en: boolean }) {
   const { musicEnabled, sfxEnabled, setMusicEnabled, setSfxEnabled, unlock } = useAmbientAudio();
-  const Row = ({ on, onChange, label }: { on: boolean; onChange: () => void; label: string }) => (
+  const row = ({ on, onChange, label, description }: { on: boolean; onChange: () => void; label: string; description: string }) => (
     <label
-      style={{
-        display: "flex",
-        alignItems: "flex-start",
-        gap: 10,
-        padding: "8px 4px",
-        cursor: "pointer",
-      }}
+      style={{ display: "flex", alignItems: "flex-start", gap: 10, padding: "8px 4px", minHeight: 44, cursor: "pointer" }}
     >
+      <input type="checkbox" role="switch" className="sr-only audio-setting-input" checked={on} onChange={onChange} aria-label={label} />
       <span
-        onClick={onChange}
-        role="switch"
-        aria-checked={on}
+        aria-hidden="true"
+        className="audio-setting-track"
         style={{
           flexShrink: 0,
           width: 36,
@@ -1676,37 +1679,39 @@ function AudioSettingsBlock({ en }: { en: boolean }) {
           }}
         />
       </span>
-      <span style={{ fontFamily: "monospace", color: INK, fontSize: 11.5, lineHeight: 1.55 }}>{label}</span>
+      <span style={{ fontFamily: "monospace", minWidth: 0, lineHeight: 1.6 }}>
+        <span style={{ display: "block", color: INK, fontSize: 12.5, fontWeight: 700 }}>{label}</span>
+        <span style={{ display: "block", color: MUTED, fontSize: 12 }}>{description}</span>
+      </span>
     </label>
   );
   return (
     <div style={{ border: `1px solid ${ACCENT}55`, background: "rgba(0,0,0,0.28)", padding: 14 }}>
-      <p style={{ fontFamily: "'Michroma', monospace", fontSize: 10.5, color: ACCENT, letterSpacing: "0.16em", textTransform: "uppercase", fontWeight: 800, marginBottom: 8 }}>
-        {en ? "🎧 AUDIO SETTINGS" : "🎧 NASTAVITVE ZVOKA"}
+      <style>{`.audio-setting-input:focus-visible + .audio-setting-track { outline: 2px solid ${ACCENT}; outline-offset: 4px; }`}</style>
+      <p style={{ display: "flex", alignItems: "center", gap: 6, fontFamily: "'Michroma', monospace", fontSize: 10.5, color: ACCENT, letterSpacing: "0.16em", textTransform: "uppercase", fontWeight: 800, marginBottom: 8 }}>
+        <Headphones size={14} aria-hidden="true" className="shrink-0" />
+        {en ? "SOUND" : "ZVOK"}
       </p>
-      <Row
-        on={musicEnabled}
-        onChange={() => { unlock(); setMusicEnabled(!musicEnabled); }}
-        label={en
-          ? "Background Music: Optional. Immersive atmosphere for lobby and debriefing."
-          : "Glasba v ozadju: Izbirno. Ambience za lobby in debriefing."}
-      />
-      <Row
-        on={sfxEnabled}
-        onChange={() => { unlock(); setSfxEnabled(!sfxEnabled); }}
-        label={en
-          ? "Sound Effects (SFX): Recommended. Tactical in-game alerts (respawns, sectors, countdowns)."
-          : "Zvočni efekti (SFX): Priporočeno. Taktični zvoki med igro (respawn, sektorji, odštevanje)."}
-      />
-      <p style={{ fontFamily: "monospace", color: MUTED, fontSize: 10.5, lineHeight: 1.55, marginTop: 8, fontStyle: "italic" }}>
+      {row({
+        on: musicEnabled,
+        onChange: () => { unlock(); setMusicEnabled(!musicEnabled); },
+        label: en ? "Music" : "Glasba",
+        description: en ? "Atmosphere in the lobby and after the game." : "Vzdušje pred igro in po njej.",
+      })}
+      {row({
+        on: sfxEnabled,
+        onChange: () => { unlock(); setSfxEnabled(!sfxEnabled); },
+        label: en ? "Sound effects" : "Zvočni efekti",
+        description: en ? "Alerts for respawns, captures and countdowns. Turn off if you need to stay quiet." : "Opozorila za respawn, zavzetja in odštevanja. Izklopi, če moraš biti tiho.",
+      })}
+      <p style={{ fontFamily: "monospace", color: MUTED, fontSize: 12, lineHeight: 1.6, marginTop: 8 }}>
         {en
-          ? "*(Note: Sounds play only while your screen is active. You can mute them at any time during the game using the bottom-left icon.)*"
-          : "*(Opomba: Zvoki se predvajajo le ob prižganem zaslonu. Med igro jih lahko kadarkoli izklopite s krogcem spodaj levo.)*"}
+          ? "Your browser may pause sound when the screen is off. Mute any time with the speaker button, bottom left."
+          : "Brskalnik lahko prekine zvok, ko je zaslon ugasnjen. Kadarkoli ga utišaš z gumbom z zvočnikom spodaj levo."}
       </p>
     </div>
   );
 }
-
 
 
 function readFieldEntryToken(): string | undefined {
@@ -1752,7 +1757,7 @@ function CheckinForm({ sessionId, fieldId, preview, onGhost, fieldLabel }: { ses
 
   const activeField = (fieldLabel ?? fieldId ?? "").toString().toUpperCase();
   const t = {
-    title: en ? "MISSION DEPLOYMENT REGISTRATION" : "PRIJAVA NA MISIJO",
+    title: en ? "PLAYER CHECK-IN" : "PRIJAVA V IGRO",
     subtitle: activeField ? `// MISSION: ${activeField}` : (en ? "// CHECK-IN · ANONYMOUS MODE" : "// CHECK-IN · ANONIMNO"),
     callsign: en ? "Callsign / Tactical Moniker *" : "Callsign / Taktični vzdevek *",
     firstName: en ? "First name" : "Ime",
@@ -1761,8 +1766,8 @@ function CheckinForm({ sessionId, fieldId, preview, onGhost, fieldLabel }: { ses
     club: en ? "Team / Club (Optional*)" : "Ekipa / Klub (opcijsko*)",
     experience: en ? "Experience level" : "Nivo izkušenj",
     operatorType: en ? "Operator type" : "Tip operaterja",
-    submit: en ? "OK" : "OK",
-    submitting: en ? "Sending..." : "Pošiljam...",
+    submit: en ? "ENTER THE GAME" : "VSTOPI V IGRO",
+    submitting: en ? "ENTERING…" : "VSTOPAM…",
     needCallsign: en ? "Enter a callsign (tactical moniker)." : "Vnesite callsign (taktični vzdevek).",
   };
 
