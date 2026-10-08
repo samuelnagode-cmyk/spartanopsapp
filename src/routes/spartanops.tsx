@@ -5,6 +5,7 @@ import { useT } from "@/lib/i18n";
 import { motion, useReducedMotion } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
 import FeatureShowcase from "@/components/FeatureShowcase";
+import { useSignedIn } from "@/lib/use-signed-in";
 
 
 const PAGE_TITLE = "SpartanOps — Live-scored airsoft games, no electronic props";
@@ -448,45 +449,6 @@ function SectorShowcase() {
   );
 }
 
-/* ---------- 5. FIELD SUPPLY ---------- */
-function FieldSupply() {
-  const t = useT();
-  return (
-    <SectionShell>
-      <HudCard className="p-8 md:p-10">
-        <div className="grid grid-cols-1 md:grid-cols-[1fr_auto] items-center gap-6">
-          <div>
-            <p
-              className="font-mono uppercase mb-3"
-              style={{ fontSize: 11, letterSpacing: "0.32em", color: ACCENT }}
-            >
-              {t("spartan.tagLogistics")}
-            </p>
-            <h2
-              style={{
-                fontFamily: "'Michroma', monospace",
-                fontSize: "clamp(20px, 3vw, 28px)",
-                letterSpacing: "0.10em",
-                color: ACCENT,
-              }}
-            >
-              {t("spartan.titleSupply")}
-            </h2>
-            <p className="mt-3 text-[14px] md:text-[15px] leading-[1.7]" style={{ color: MUTED, maxWidth: 620 }}>
-              {t("spartan.descSupply")}
-            </p>
-          </div>
-          <div className="shrink-0">
-            <BtnPrimary to="/print">
-              <Printer size={14} /> {t("spartan.btnAccessPrint")}
-            </BtnPrimary>
-          </div>
-        </div>
-      </HudCard>
-    </SectionShell>
-  );
-}
-
 /* ---------- 7. OPERATIONAL PLANS ---------- */
 function OperationalPlans() {
   const t = useT();
@@ -642,7 +604,6 @@ function SpartanOpsHome() {
       <Benefits />
       <SectorShowcase />
       <HowItWorks />
-      <FieldSupply />
       <OperationalPlans />
       <Faq />
       <FinalCta />
@@ -652,12 +613,7 @@ function SpartanOpsHome() {
 
 /* ---------- Signed-in aware "START FREE" target ---------- */
 function useStartFreeTarget(): string {
-  const [signedIn, setSignedIn] = useState(false);
-  useEffect(() => {
-    supabase.auth.getSession().then(({ data }) => setSignedIn(!!data.session));
-    const { data: sub } = supabase.auth.onAuthStateChange((_e, session) => setSignedIn(!!session));
-    return () => sub.subscription.unsubscribe();
-  }, []);
+  const signedIn = useSignedIn();
   return signedIn ? "/admin-pregled" : "/marshal-account";
 }
 

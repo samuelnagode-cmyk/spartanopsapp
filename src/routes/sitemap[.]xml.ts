@@ -10,7 +10,7 @@ const paths = [
   { path: "/join", priority: "0.9", changefreq: "weekly" as const },
   { path: "/updates", priority: "0.6", changefreq: "weekly" as const },
   { path: "/archive", priority: "0.5", changefreq: "monthly" as const },
-  { path: "/print", priority: "0.4", changefreq: "monthly" as const },
+  { path: "/print", priority: "0.6", changefreq: "monthly" as const },
 ];
 
 export const Route = createFileRoute("/sitemap.xml")({
