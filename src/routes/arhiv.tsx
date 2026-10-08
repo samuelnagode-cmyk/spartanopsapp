@@ -87,7 +87,7 @@ function AirsoftArchivePage() {
   return (
     <div className="min-h-screen bg-airsoft-bg text-cream">
       {/* HEADER */}
-      <section className="max-w-5xl mx-auto px-5 md:px-8 pt-10 md:pt-14">
+      <section className="max-w-5xl mx-auto px-5 md:px-8 pt-24 md:pt-28">
         <div className="text-center">
           <h1
             className="font-display text-cream leading-tight"
@@ -269,7 +269,7 @@ function AirsoftArchivePage() {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.2 }}
-            className="fixed inset-0 z-40 overflow-y-auto"
+            className="fixed inset-0 z-[1100] overflow-y-auto"
             style={{ backgroundColor: "rgba(10, 12, 8, 0.97)" }}
             onClick={closeGrid}
           >
@@ -281,7 +281,7 @@ function AirsoftArchivePage() {
                 closeGrid();
               }}
               aria-label={en ? "Close" : "Zapri"}
-              className="fixed top-[88px] right-3 md:right-5 z-50 rounded-full p-2.5 text-cream/90 hover:text-cream transition-colors"
+              className="fixed top-[88px] right-3 md:right-5 z-[1110] rounded-full p-2.5 text-cream/90 hover:text-cream transition-colors"
               style={{ backgroundColor: "rgba(0,0,0,0.6)", border: "1px solid rgba(168,149,79,0.35)" }}
             >
               <X size={22} />
@@ -318,7 +318,7 @@ function AirsoftArchivePage() {
 
             {/* Always-visible bottom bar with title/date/count */}
             <div
-              className="fixed bottom-0 left-0 right-0 z-50 px-4 md:px-8 py-3.5 text-center"
+              className="fixed bottom-0 left-0 right-0 z-[1110] px-4 md:px-8 py-3.5 text-center"
               style={{
                 backgroundColor: "rgba(10, 12, 8, 0.94)",
                 backdropFilter: "blur(10px)",
@@ -353,7 +353,7 @@ function AirsoftArchivePage() {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.2 }}
-            className="fixed inset-0 z-40 flex items-center justify-center"
+            className="fixed inset-0 z-[1100] flex items-center justify-center"
             style={{ backgroundColor: "rgba(0,0,0,0.97)" }}
             onClick={closeLightbox}
             onTouchStart={(e) => {
@@ -380,7 +380,7 @@ function AirsoftArchivePage() {
                 closeLightbox();
               }}
               aria-label="Zapri"
-              className="fixed top-[88px] right-3 md:right-5 z-50 rounded-full p-2.5 text-cream/90 hover:text-cream transition-colors"
+              className="fixed top-[88px] right-3 md:right-5 z-[1110] rounded-full p-2.5 text-cream/90 hover:text-cream transition-colors"
               style={{ backgroundColor: "rgba(0,0,0,0.6)", border: "1px solid rgba(168,149,79,0.35)" }}
             >
               <X size={22} />
@@ -393,7 +393,7 @@ function AirsoftArchivePage() {
                 navigate(-1);
               }}
               aria-label="Prejšnja"
-              className="absolute left-2 md:left-6 top-1/2 -translate-y-1/2 text-cream/70 hover:text-cream p-3 z-50"
+              className="absolute left-2 md:left-6 top-1/2 -translate-y-1/2 text-cream/70 hover:text-cream p-3 z-[1110]"
             >
               <ChevronLeft size={36} />
             </button>
@@ -405,7 +405,7 @@ function AirsoftArchivePage() {
                 navigate(1);
               }}
               aria-label="Naslednja"
-              className="absolute right-2 md:right-6 top-1/2 -translate-y-1/2 text-cream/70 hover:text-cream p-3 z-50"
+              className="absolute right-2 md:right-6 top-1/2 -translate-y-1/2 text-cream/70 hover:text-cream p-3 z-[1110]"
             >
               <ChevronRight size={36} />
             </button>
@@ -423,7 +423,7 @@ function AirsoftArchivePage() {
 
             {/* Always-visible bottom bar with title/date/counter */}
             <div
-              className="fixed bottom-0 left-0 right-0 z-50 px-4 md:px-8 py-3.5 text-center"
+              className="fixed bottom-0 left-0 right-0 z-[1110] px-4 md:px-8 py-3.5 text-center"
               style={{
                 backgroundColor: "rgba(0, 0, 0, 0.92)",
                 backdropFilter: "blur(10px)",

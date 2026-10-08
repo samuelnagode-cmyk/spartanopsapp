@@ -326,9 +326,9 @@ function DevPreviewPage() {
   ];
 
   return (
-    <div style={{ background: BG, minHeight: "100dvh", color: INK, paddingBottom: 60 }}>
+    <div style={{ background: BG, minHeight: "100dvh", color: INK, paddingBottom: 60, paddingTop: 80 }}>
       {/* Top control bar */}
-      <div style={{ position: "sticky", top: 0, zIndex: 50, background: `${BG}f0`, backdropFilter: "blur(8px)", borderBottom: `1px solid ${ACCENT}44`, padding: "14px 20px" }}>
+      <div style={{ position: "sticky", top: 64, zIndex: 50, background: `${BG}f0`, backdropFilter: "blur(8px)", borderBottom: `1px solid ${ACCENT}44`, padding: "14px 20px" }}>
         <div style={{ maxWidth: 1400, margin: "0 auto", display: "flex", flexWrap: "wrap", gap: 20, alignItems: "center", justifyContent: "space-between" }}>
           <div>
             <p style={{ fontFamily: "'Michroma', monospace", fontSize: 13, letterSpacing: "0.14em", color: ACCENT, margin: 0, fontWeight: 700 }}>

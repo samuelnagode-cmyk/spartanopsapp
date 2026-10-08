@@ -278,7 +278,7 @@ export function QRScanner({ open, onClose, onDecode, mode = "capture", onRaw, on
     <div
       role="dialog"
       aria-modal="true"
-      className="fixed inset-0 z-[300] flex flex-col"
+      className="fixed inset-0 z-[1100] flex flex-col"
       style={{ background: "rgba(0,0,0,0.90)", backdropFilter: "blur(6px)" }}
     >
       <div className="flex items-center justify-between px-4 py-3" style={{ borderBottom: `1px solid ${ACCENT}44` }}>

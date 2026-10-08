@@ -39,7 +39,7 @@ export default function BentralBookingModal({ isOpen, onClose }: Props) {
       aria-labelledby="bentral-booking-modal-title"
       onClick={onClose}
       style={{
-        position: "fixed", inset: 0, zIndex: 1000,
+        position: "fixed", inset: 0, zIndex: 1100,
         background: "rgba(0,0,0,0.6)", backdropFilter: "blur(8px)",
         display: "flex", alignItems: "center", justifyContent: "center",
         padding: 16, animation: "rezFade .25s ease",
