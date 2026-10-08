@@ -11,8 +11,8 @@ export const dict: Dict = {
   "startButtonText": { sl: "ZAČNI MISIJO", en: "START MATCH" },
   "pauseModalTitle": { sl: "// OPERACIJA PREKINJENA", en: "// OPERATION PAUSED" },
   "pauseModalDesc": {
-    sl: "Maršal je začasno zamrznil igro. Aktivna telemetrija, števci in protokoli za skeniranje QR kod so do nadaljnjega onemogočeni. Ostanite na svojih trenutnih položajih.",
-    en: "The Marshal has temporarily frozen the match. Active telemetry, timers, and QR scanning protocols are suspended until further notice. Remain at your current positions.",
+    sl: "Maršal je začasno zamrznil igro. Števci in skeniranje QR kod so do nadaljnjega ustavljeni. Ostanite, kjer ste.",
+    en: "The Marshal has temporarily frozen the match. Timers and QR scanning are paused until further notice. Stay where you are.",
   },
 
   // Team change forced by marshal
@@ -545,7 +545,7 @@ export const dict: Dict = {
   "spartan.featurePureImmersionDesc": { sl: "Visoko vidne taktične QR tablice in na boj pripravljen HUD, zgrajen za zunanje bojne scenarije.", en: "High-visibility tactical QR plates and a battle-ready HUD built for outdoor combat scenarios." },
   "spartan.btnGetPrintFiles": { sl: "PRENESI PRINT KIT", en: "GET THE PRINT KIT" },
   "spartan.tagLiveOps": { sl: "// SLEDENJE OPERACIJAM V ŽIVO", en: "// LIVE OPS TRACKER" },
-  "spartan.titleTelemetry": { sl: "OPERATIVNA TELEMETRIJA", en: "OPERATIONAL TELEMETRY" },
+  "spartan.titleTelemetry": { sl: "SPARTANOPS V ŠTEVILKAH", en: "SPARTANOPS IN NUMBERS" },
   "spartan.statOperators": { sl: "AKTIVIRANIH OPERATIVCEV", en: "OPERATORS DEPLOYED" },
   "spartan.statQRScanned": { sl: "SKENIRANIH QR KOD", en: "QR CODES SCANNED" },
   "spartan.statRespawns": { sl: "opravljeni respawni", en: "RESPAWNS DONE" },

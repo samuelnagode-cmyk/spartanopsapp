@@ -50,7 +50,7 @@ const TABS: Tab[] = [
       sl: "Igralni HUD – digitalni prikaz igre",
     },
     desc: {
-      en: "Live operational telemetry in the palm of your hand. Track match timers, active faction points, and objective status without slowing down your advance.",
+      en: "The live game in the palm of your hand. Track match timers, active faction points, and objective status without slowing down your advance.",
       sl: "Vpogled v stanje igre – kadarkoli in kjerkoli. Spremljajte časovne števce tekme, točke frakcij in stanje taktičnih ciljev in dodatnih funkcij. Kot igralec ali maršal imejte popoln vpogled v stanje igre – kadarkoli in kjerkoli. Pred tekmo si oglejte pozicije, pravila in zastavljene cilje, ki bodo vaši ekipi prinesli zmago. Poleg tega spremljajte časovne števce tekme, točke frakcij in posameznikov.",
     },
     images: [
