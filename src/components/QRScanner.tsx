@@ -8,7 +8,7 @@ const INK = "#ece3c4";
 const POINT_NAMES = new Set(["alpha", "bravo", "beta", "charlie", "gamma", "delta", "echo", "epsilon"]);
 
 export type ScanPayload = {
-  kind: "capture" | "respawn" | "mystery" | "perk";
+  kind: "capture" | "respawn" | "mystery" | "perk" | "koth_board" | "koth_secret";
   fieldId: string;
   point: string;
   type: string;
@@ -47,6 +47,10 @@ export function parseScanPayload(raw: string): ScanPayload | null {
   const fieldId = (params.get("field_id") ?? params.get("field") ?? "").trim();
   const point = (params.get("point") ?? "").trim().toLowerCase();
   const type = (params.get("type") ?? "").trim().toLowerCase();
+  // King of the Hill reserved codes (field-independent; query ignored).
+  const kothPath = path.replace(/\/+$/, "");
+  if (kothPath === "/k") return { kind: "koth_board", fieldId: "", point: "", type: "koth", raw: text };
+  if (kothPath === "/s") return { kind: "koth_secret", fieldId: "", point: "", type: "koth", raw: text };
   if (!fieldId) return null;
 
   // Universal respawn code: /spawn?field=<id> (no point).

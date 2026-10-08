@@ -390,6 +390,7 @@ export const dict: Dict = {
   "koth.joinFirst": { sl: "Najprej vstopi na svoj poligon.", en: "Join your field first." },
   "koth.joinHint": { sl: "Skeniraj plakat na poligonu, da vstopiš.", en: "Scan the poster at your field to get in." },
   "koth.joinGame": { sl: "Vstopi v igro", en: "Join a game" },
+  "koth.secretUnavailable": { sl: "Skrivni vhodi v tej misiji še niso na voljo.", en: "Secret passages are not available in this mission yet." },
   "airsoft.join.title": { sl: "Iščeš ekipo?", en: "Looking for a team?" },
   "airsoft.join.body": {
     sl: "Če iščeš ekipo ali te zanima sodelovanje pri organiziranih scenarijih, nam lahko pišeš tukaj.",

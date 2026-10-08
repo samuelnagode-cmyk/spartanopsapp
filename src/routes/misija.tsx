@@ -2956,6 +2956,15 @@ function ScanCodeButton({ paused, en }: { paused: boolean; en: boolean }) {
 
   const handleDecode = useCallback((payload: ScanPayload) => {
     setOpen(false);
+    // King of the Hill reserved codes — no scan ticket, no field id.
+    if (payload.kind === "koth_board") {
+      navigate({ to: "/k", replace: true });
+      return;
+    }
+    if (payload.kind === "koth_secret") {
+      navigate({ to: "/s", replace: true });
+      return;
+    }
     // Universal respawn QR — route straight into the respawn sequence.
     if (payload.kind === "respawn") {
       navigate({ to: "/spawn", search: { field: payload.fieldId } as any, replace: true });
