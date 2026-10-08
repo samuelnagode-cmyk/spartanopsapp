@@ -1866,7 +1866,7 @@ function CheckinForm({ sessionId, fieldId, preview, onGhost, fieldLabel }: { ses
   };
 
   return (
-    <div style={{ background: BG, color: INK, minHeight: "100dvh", padding: "60px 16px" }}>
+    <div style={{ background: BG, color: INK, minHeight: "100dvh", padding: "96px 16px 60px" }}>
       <div className="max-w-md mx-auto">
         <h1
           className="text-center mb-2"

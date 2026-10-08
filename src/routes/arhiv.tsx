@@ -87,7 +87,7 @@ function AirsoftArchivePage() {
   return (
     <div className="min-h-screen bg-airsoft-bg text-cream">
       {/* HEADER */}
-      <section className="max-w-5xl mx-auto px-5 md:px-8 pt-10 md:pt-14">
+      <section className="max-w-5xl mx-auto px-5 md:px-8 pt-24 md:pt-28">
         <div className="text-center">
           <h1
             className="font-display text-cream leading-tight"
