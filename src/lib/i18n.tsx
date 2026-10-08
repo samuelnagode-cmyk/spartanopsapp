@@ -385,6 +385,11 @@ export const dict: Dict = {
     en: "Events and scenarios at the field are also regularly organized by the SPARTAN club.",
   },
   "airsoft.join.kicker": { sl: "Skupnost", en: "Community" },
+  "koth.unavailable": { sl: "King of the Hill v tej misiji še ni na voljo.", en: "King of the Hill is not available in this mission yet." },
+  "koth.backToGame": { sl: "Nazaj v igro", en: "Back to the game" },
+  "koth.joinFirst": { sl: "Najprej vstopi na svoj poligon.", en: "Join your field first." },
+  "koth.joinHint": { sl: "Skeniraj plakat na poligonu, da vstopiš.", en: "Scan the poster at your field to get in." },
+  "koth.joinGame": { sl: "Vstopi v igro", en: "Join a game" },
   "airsoft.join.title": { sl: "Iščeš ekipo?", en: "Looking for a team?" },
   "airsoft.join.body": {
     sl: "Če iščeš ekipo ali te zanima sodelovanje pri organiziranih scenarijih, nam lahko pišeš tukaj.",
