@@ -17,7 +17,7 @@ import { MissionRulesAccordion, MissionDescriptionCard, CollapsibleCard } from "
 
 import { OfflineBanner } from "@/components/OfflineBanner";
 import { TacticalCompass } from "@/components/TacticalCompass";
-import { Crosshair, Shield, Phone, QrCode } from "lucide-react";
+import { Crosshair, Shield, Phone, QrCode, MapPin, Headphones, Check } from "lucide-react";
 import { useLang, useT } from "@/lib/i18n";
 import { HudNotificationStack, useHudNotices, fillTemplate } from "@/components/HudNotificationStack";
 import { HudHistoryLog } from "@/components/HudHistoryLog";
@@ -1636,20 +1636,14 @@ function SpartacusConsentBlock({ en, onClearedChange }: { en: boolean; onCleared
 
 function AudioSettingsBlock({ en }: { en: boolean }) {
   const { musicEnabled, sfxEnabled, setMusicEnabled, setSfxEnabled, unlock } = useAmbientAudio();
-  const Row = ({ on, onChange, label }: { on: boolean; onChange: () => void; label: string }) => (
+  const row = ({ on, onChange, label, description }: { on: boolean; onChange: () => void; label: string; description: string }) => (
     <label
-      style={{
-        display: "flex",
-        alignItems: "flex-start",
-        gap: 10,
-        padding: "8px 4px",
-        cursor: "pointer",
-      }}
+      style={{ display: "flex", alignItems: "flex-start", gap: 10, padding: "8px 4px", minHeight: 44, cursor: "pointer" }}
     >
+      <input type="checkbox" role="switch" className="sr-only audio-setting-input" checked={on} onChange={onChange} aria-label={label} />
       <span
-        onClick={onChange}
-        role="switch"
-        aria-checked={on}
+        aria-hidden="true"
+        className="audio-setting-track"
         style={{
           flexShrink: 0,
           width: 36,
@@ -1676,37 +1670,39 @@ function AudioSettingsBlock({ en }: { en: boolean }) {
           }}
         />
       </span>
-      <span style={{ fontFamily: "monospace", color: INK, fontSize: 11.5, lineHeight: 1.55 }}>{label}</span>
+      <span style={{ fontFamily: "monospace", minWidth: 0, lineHeight: 1.6 }}>
+        <span style={{ display: "block", color: INK, fontSize: 12.5, fontWeight: 700 }}>{label}</span>
+        <span style={{ display: "block", color: MUTED, fontSize: 12 }}>{description}</span>
+      </span>
     </label>
   );
   return (
     <div style={{ border: `1px solid ${ACCENT}55`, background: "rgba(0,0,0,0.28)", padding: 14 }}>
-      <p style={{ fontFamily: "'Michroma', monospace", fontSize: 10.5, color: ACCENT, letterSpacing: "0.16em", textTransform: "uppercase", fontWeight: 800, marginBottom: 8 }}>
-        {en ? "🎧 AUDIO SETTINGS" : "🎧 NASTAVITVE ZVOKA"}
+      <style>{`.audio-setting-input:focus-visible + .audio-setting-track { outline: 2px solid ${ACCENT}; outline-offset: 4px; }`}</style>
+      <p style={{ display: "flex", alignItems: "center", gap: 6, fontFamily: "'Michroma', monospace", fontSize: 10.5, color: ACCENT, letterSpacing: "0.16em", textTransform: "uppercase", fontWeight: 800, marginBottom: 8 }}>
+        <Headphones size={14} aria-hidden="true" className="shrink-0" />
+        {en ? "SOUND" : "ZVOK"}
       </p>
-      <Row
-        on={musicEnabled}
-        onChange={() => { unlock(); setMusicEnabled(!musicEnabled); }}
-        label={en
-          ? "Background Music: Optional. Immersive atmosphere for lobby and debriefing."
-          : "Glasba v ozadju: Izbirno. Ambience za lobby in debriefing."}
-      />
-      <Row
-        on={sfxEnabled}
-        onChange={() => { unlock(); setSfxEnabled(!sfxEnabled); }}
-        label={en
-          ? "Sound Effects (SFX): Recommended. Tactical in-game alerts (respawns, sectors, countdowns)."
-          : "Zvočni efekti (SFX): Priporočeno. Taktični zvoki med igro (respawn, sektorji, odštevanje)."}
-      />
-      <p style={{ fontFamily: "monospace", color: MUTED, fontSize: 10.5, lineHeight: 1.55, marginTop: 8, fontStyle: "italic" }}>
+      {row({
+        on: musicEnabled,
+        onChange: () => { unlock(); setMusicEnabled(!musicEnabled); },
+        label: en ? "Music" : "Glasba",
+        description: en ? "Atmosphere in the lobby and after the game." : "Vzdušje pred igro in po njej.",
+      })}
+      {row({
+        on: sfxEnabled,
+        onChange: () => { unlock(); setSfxEnabled(!sfxEnabled); },
+        label: en ? "Sound effects" : "Zvočni efekti",
+        description: en ? "Alerts for respawns, captures and countdowns. Turn off if you need to stay quiet." : "Opozorila za respawn, zavzetja in odštevanja. Izklopi, če moraš biti tiho.",
+      })}
+      <p style={{ fontFamily: "monospace", color: MUTED, fontSize: 12, lineHeight: 1.6, marginTop: 8 }}>
         {en
-          ? "*(Note: Sounds play only while your screen is active. You can mute them at any time during the game using the bottom-left icon.)*"
-          : "*(Opomba: Zvoki se predvajajo le ob prižganem zaslonu. Med igro jih lahko kadarkoli izklopite s krogcem spodaj levo.)*"}
+          ? "Your browser may pause sound when the screen is off. Mute any time with the speaker button, bottom left."
+          : "Brskalnik lahko prekine zvok, ko je zaslon ugasnjen. Kadarkoli ga utišaš z gumbom z zvočnikom spodaj levo."}
       </p>
     </div>
   );
 }
-
 
 
 function readFieldEntryToken(): string | undefined {
@@ -1752,7 +1748,7 @@ function CheckinForm({ sessionId, fieldId, preview, onGhost, fieldLabel }: { ses
 
   const activeField = (fieldLabel ?? fieldId ?? "").toString().toUpperCase();
   const t = {
-    title: en ? "MISSION DEPLOYMENT REGISTRATION" : "PRIJAVA NA MISIJO",
+    title: en ? "PLAYER CHECK-IN" : "PRIJAVA V IGRO",
     subtitle: activeField ? `// MISSION: ${activeField}` : (en ? "// CHECK-IN · ANONYMOUS MODE" : "// CHECK-IN · ANONIMNO"),
     callsign: en ? "Callsign / Tactical Moniker *" : "Callsign / Taktični vzdevek *",
     firstName: en ? "First name" : "Ime",
@@ -1761,8 +1757,8 @@ function CheckinForm({ sessionId, fieldId, preview, onGhost, fieldLabel }: { ses
     club: en ? "Team / Club (Optional*)" : "Ekipa / Klub (opcijsko*)",
     experience: en ? "Experience level" : "Nivo izkušenj",
     operatorType: en ? "Operator type" : "Tip operaterja",
-    submit: en ? "OK" : "OK",
-    submitting: en ? "Sending..." : "Pošiljam...",
+    submit: en ? "ENTER THE GAME" : "VSTOPI V IGRO",
+    submitting: en ? "ENTERING…" : "VSTOPAM…",
     needCallsign: en ? "Enter a callsign (tactical moniker)." : "Vnesite callsign (taktični vzdevek).",
   };
 
