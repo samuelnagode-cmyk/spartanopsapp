@@ -475,31 +475,35 @@ function OperationalPlans() {
   return (
     <SectionShell id="pricing">
       <SectionHeader eyebrow={t("pricing.eyebrow")} title={t("spartan.titlePlans")} sub={t("pricing.sub")} />
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-8 md:items-stretch">
-        {/* FREE — minimalist */}
-        <div className="flex flex-col py-2 md:py-4 min-w-0">
-          <p className="font-mono uppercase mb-2" style={{ fontSize: 11, letterSpacing: "0.28em", color: MUTED }}>
-            {t("pricing.freeTag")}
-          </p>
-          <h3 style={{ ...titleStyle, color: INK }}>{t("pricing.freeTitle")}</h3>
-          <div style={{ width: 40, height: 1, background: ACCENT_SOFT, marginTop: 14 }} />
-          <ul className="mt-6 space-y-3 flex-1">
-            {free.map((b) => (
-              <li key={b} className="flex gap-3 text-[14px] leading-[1.6]" style={{ color: INK }}>
-                <span style={{ marginTop: 8, width: 6, height: 6, background: MUTED, display: "inline-block", flexShrink: 0 }} />
-                <span>{b}</span>
-              </li>
-            ))}
-          </ul>
-          <p className="mt-6 text-[13px]" style={{ color: MUTED }}>{t("pricing.freeFootnote")}</p>
-          <div className="mt-4 [&>a]:w-full sm:[&>a]:w-auto [&>a:focus-visible]:outline [&>a:focus-visible]:outline-2 [&>a:focus-visible]:outline-offset-2 [&>a:focus-visible]:outline-[#E0B04E]">
-            <BtnOutline to={startTo}>{t("spartan.btnStartFreeCta")}</BtnOutline>
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-2 lg:grid-rows-[1fr_auto] lg:gap-x-8 lg:gap-y-0">
+        {/* FREE — quiet card */}
+        <div className="min-w-0 border p-6 lg:row-span-2 lg:grid lg:grid-rows-subgrid lg:p-8" style={{ borderColor: HAIRLINE }}>
+          <div>
+            <p className="font-mono uppercase mb-2 mt-3 text-balance" style={{ fontSize: 11, letterSpacing: "0.28em", color: MUTED }}>
+              {t("pricing.freeTag")}
+            </p>
+            <h3 style={{ ...titleStyle, color: INK }}>{t("pricing.freeTitle")}</h3>
+            <div style={{ width: 40, height: 1, background: ACCENT_SOFT, marginTop: 14 }} />
+            <ul className="mt-6 space-y-3">
+              {free.map((b) => (
+                <li key={b} className="flex gap-3 text-[14px] leading-[1.6]" style={{ color: INK }}>
+                  <span style={{ marginTop: 8, width: 6, height: 6, background: MUTED, display: "inline-block", flexShrink: 0 }} />
+                  <span>{b}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+          <div className="mt-8 lg:mt-0 lg:pt-8">
+            <div className="[&>a]:w-full sm:[&>a]:w-auto [&>a:focus-visible]:outline [&>a:focus-visible]:outline-2 [&>a:focus-visible]:outline-offset-2 [&>a:focus-visible]:outline-[#E0B04E]">
+              <BtnOutline to={startTo}>{t("spartan.btnStartFreeCta")}</BtnOutline>
+            </div>
+            <p className="mt-3 text-[12.5px] leading-[1.6]" style={{ color: MUTED }}>{t("pricing.freeFootnote")}</p>
           </div>
         </div>
 
         {/* PRO — featured */}
         <div
-          className="relative flex flex-col p-6 md:p-8 min-w-0"
+          className="relative min-w-0 p-6 lg:row-span-2 lg:grid lg:grid-rows-subgrid lg:p-8"
           style={{
             background: PANEL_2,
             border: `1px solid ${ACCENT_SOFT}`,
@@ -525,40 +529,42 @@ function OperationalPlans() {
           >
             {t("pricing.proBadge")}
           </span>
-          <p className="font-mono uppercase mb-2 mt-3" style={{ fontSize: 11, letterSpacing: "0.28em", color: ACCENT }}>
-            {t("pricing.proTag")}
-          </p>
-          <h3 style={{ ...titleStyle, color: ACCENT }}>{t("pricing.proTitle")}</h3>
-          <div style={{ width: 40, height: 1, background: ACCENT, marginTop: 14 }} />
-          <div className="mt-6" style={{ background: "rgba(224,176,78,0.08)", border: `1px solid ${ACCENT_SOFT}`, padding: "14px 16px" }}>
-            <p style={{ fontSize: 13.5, lineHeight: 1.6, color: INK }}>
-              <span className="font-mono uppercase" style={{ fontSize: 11, letterSpacing: "0.2em", color: ACCENT }}>
-                {t("pricing.foundingLabel")}
-              </span>{" "}
-              {founding}
+          <div>
+            <p className="font-mono uppercase mb-2 mt-3 text-balance" style={{ fontSize: 11, letterSpacing: "0.28em", color: ACCENT }}>
+              {t("pricing.proTag")}
             </p>
+            <h3 style={{ ...titleStyle, color: ACCENT }}>{t("pricing.proTitle")}</h3>
+            <div style={{ width: 40, height: 1, background: ACCENT, marginTop: 14 }} />
+            <div className="mt-6" style={{ background: "rgba(224,176,78,0.08)", border: `1px solid ${ACCENT_SOFT}`, padding: "14px 16px" }}>
+              <p style={{ fontSize: 13.5, lineHeight: 1.6, color: INK }}>
+                <span className="font-mono uppercase" style={{ fontSize: 11, letterSpacing: "0.2em", color: ACCENT }}>
+                  {t("pricing.foundingLabel")}
+                </span>{" "}
+                {founding}
+              </p>
+            </div>
+            <p className="mt-6 text-[14px]" style={{ color: MUTED }}>{t("pricing.leadIn")}</p>
+            <ul className="mt-3 space-y-3">
+              {now.map((b) => (
+                <li key={b} className="flex gap-3 text-[14px] leading-[1.6]" style={{ color: INK }}>
+                  <span style={{ marginTop: 8, width: 6, height: 6, background: ACCENT, display: "inline-block", flexShrink: 0, boxShadow: `0 0 8px ${ACCENT}` }} />
+                  <span>{b}</span>
+                </li>
+              ))}
+            </ul>
+            <p className="font-mono uppercase mt-6" style={{ fontSize: 10.5, letterSpacing: "0.28em", color: MUTED }}>
+              {t("pricing.soonLabel")}
+            </p>
+            <ul className="mt-3 space-y-3">
+              {soon.map((b) => (
+                <li key={b} className="flex gap-3 text-[14px] leading-[1.6]" style={{ color: MUTED }}>
+                  <span style={{ marginTop: 8, width: 6, height: 6, border: `1px solid ${MUTED}`, display: "inline-block", flexShrink: 0 }} />
+                  <span>{b}</span>
+                </li>
+              ))}
+            </ul>
           </div>
-          <p className="mt-6 text-[14px]" style={{ color: MUTED }}>{t("pricing.leadIn")}</p>
-          <ul className="mt-3 space-y-3">
-            {now.map((b) => (
-              <li key={b} className="flex gap-3 text-[14px] leading-[1.6]" style={{ color: INK }}>
-                <span style={{ marginTop: 8, width: 6, height: 6, background: ACCENT, display: "inline-block", flexShrink: 0, boxShadow: `0 0 8px ${ACCENT}` }} />
-                <span>{b}</span>
-              </li>
-            ))}
-          </ul>
-          <p className="font-mono uppercase mt-6" style={{ fontSize: 10.5, letterSpacing: "0.28em", color: MUTED }}>
-            {t("pricing.soonLabel")}
-          </p>
-          <ul className="mt-3 space-y-3 flex-1">
-            {soon.map((b) => (
-              <li key={b} className="flex gap-3 text-[14px] leading-[1.6]" style={{ color: MUTED }}>
-                <span style={{ marginTop: 8, width: 6, height: 6, border: `1px solid ${MUTED}`, display: "inline-block", flexShrink: 0 }} />
-                <span>{b}</span>
-              </li>
-            ))}
-          </ul>
-          <div className="mt-8">
+          <div className="mt-8 lg:mt-0 lg:pt-8">
             <a
               href={foundingApplicationMailto(lang)}
               className={`inline-flex w-full sm:w-auto items-center justify-center text-center font-mono uppercase transition-all hover:brightness-110 tracking-[0.12em] sm:tracking-[0.22em] ${focus}`}

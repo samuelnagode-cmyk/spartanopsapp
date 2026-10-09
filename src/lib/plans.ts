@@ -60,13 +60,15 @@ export function eventLicenceMailto(lang: "en" | "sl"): string {
   );
 }
 
-/** Founding offer end date, e.g. "31 May 2027" / "31. maj 2027". */
+// Slovenian dates inside a sentence need the genitive month ("31. maja 2027"); Intl gives the nominative ("maj").
+const SL_MONTHS_GENITIVE = [
+  "januarja", "februarja", "marca", "aprila", "maja", "junija",
+  "julija", "avgusta", "septembra", "oktobra", "novembra", "decembra",
+] as const;
+
+/** Founding offer end date, e.g. "31 May 2027" / "31. maja 2027". */
 export function formatFoundingDate(lang: "en" | "sl"): string {
   const d = new Date(`${FOUNDING_OFFER.until}T12:00:00Z`);
-  return new Intl.DateTimeFormat(lang === "en" ? "en-GB" : "sl-SI", {
-    day: "numeric",
-    month: "long",
-    year: "numeric",
-    timeZone: "UTC",
-  }).format(d);
+  if (lang === "sl") return `${d.getUTCDate()}. ${SL_MONTHS_GENITIVE[d.getUTCMonth()]} ${d.getUTCFullYear()}`;
+  return new Intl.DateTimeFormat("en-GB", { day: "numeric", month: "long", year: "numeric", timeZone: "UTC" }).format(d);
 }
