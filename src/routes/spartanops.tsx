@@ -1,7 +1,8 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { type ReactNode, useEffect, useState } from "react";
 import { Crosshair, QrCode, ArrowRight, Printer, Flag, ZapOff, Scale, Repeat, Trophy, Smartphone } from "lucide-react";
-import { useT } from "@/lib/i18n";
+import { useT, useLang } from "@/lib/i18n";
+import { PLAN_LIMITS, FOUNDING_OFFER, foundingApplicationMailto, eventLicenceMailto, formatFoundingDate } from "@/lib/plans";
 import { motion, useReducedMotion } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
 import FeatureShowcase from "@/components/FeatureShowcase";
@@ -491,7 +492,7 @@ function OperationalPlans() {
             ))}
           </ul>
           <p className="mt-6 text-[13px]" style={{ color: MUTED }}>{t("pricing.freeFootnote")}</p>
-          <div className={`mt-4 [&>a]:w-full sm:[&>a]:w-auto [&>a]:${focus.split(" ").join(" [&>a]:")}`}>
+          <div className="mt-4 [&>a]:w-full sm:[&>a]:w-auto [&>a:focus-visible]:outline [&>a:focus-visible]:outline-2 [&>a:focus-visible]:outline-offset-2 [&>a:focus-visible]:outline-[#E0B04E]">
             <BtnOutline to={startTo}>{t("spartan.btnStartFreeCta")}</BtnOutline>
           </div>
         </div>
