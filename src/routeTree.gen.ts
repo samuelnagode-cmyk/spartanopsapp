@@ -17,6 +17,7 @@ import { Route as ScanRouteImport } from './routes/scan'
 import { Route as SRouteImport } from './routes/s'
 import { Route as QrGeneratorRouteImport } from './routes/qr-generator'
 import { Route as PrintRouteImport } from './routes/print'
+import { Route as PricingRouteImport } from './routes/pricing'
 import { Route as MisijaRouteImport } from './routes/misija'
 import { Route as MarshalAccountRouteImport } from './routes/marshal-account'
 import { Route as LokacijaRouteImport } from './routes/lokacija'
@@ -74,6 +75,11 @@ const QrGeneratorRoute = QrGeneratorRouteImport.update({
 const PrintRoute = PrintRouteImport.update({
   id: '/print',
   path: '/print',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PricingRoute = PricingRouteImport.update({
+  id: '/pricing',
+  path: '/pricing',
   getParentRoute: () => rootRouteImport,
 } as any)
 const MisijaRoute = MisijaRouteImport.update({
@@ -184,6 +190,7 @@ export interface FileRoutesByFullPath {
   '/lokacija': typeof LokacijaRoute
   '/marshal-account': typeof MarshalAccountRoute
   '/misija': typeof MisijaRoute
+  '/pricing': typeof PricingRoute
   '/print': typeof PrintRoute
   '/qr-generator': typeof QrGeneratorRoute
   '/s': typeof SRoute
@@ -212,6 +219,7 @@ export interface FileRoutesByTo {
   '/lokacija': typeof LokacijaRoute
   '/marshal-account': typeof MarshalAccountRoute
   '/misija': typeof MisijaRoute
+  '/pricing': typeof PricingRoute
   '/print': typeof PrintRoute
   '/qr-generator': typeof QrGeneratorRoute
   '/s': typeof SRoute
@@ -241,6 +249,7 @@ export interface FileRoutesById {
   '/lokacija': typeof LokacijaRoute
   '/marshal-account': typeof MarshalAccountRoute
   '/misija': typeof MisijaRoute
+  '/pricing': typeof PricingRoute
   '/print': typeof PrintRoute
   '/qr-generator': typeof QrGeneratorRoute
   '/s': typeof SRoute
@@ -271,6 +280,7 @@ export interface FileRouteTypes {
     | '/lokacija'
     | '/marshal-account'
     | '/misija'
+    | '/pricing'
     | '/print'
     | '/qr-generator'
     | '/s'
@@ -299,6 +309,7 @@ export interface FileRouteTypes {
     | '/lokacija'
     | '/marshal-account'
     | '/misija'
+    | '/pricing'
     | '/print'
     | '/qr-generator'
     | '/s'
@@ -327,6 +338,7 @@ export interface FileRouteTypes {
     | '/lokacija'
     | '/marshal-account'
     | '/misija'
+    | '/pricing'
     | '/print'
     | '/qr-generator'
     | '/s'
@@ -356,6 +368,7 @@ export interface RootRouteChildren {
   LokacijaRoute: typeof LokacijaRoute
   MarshalAccountRoute: typeof MarshalAccountRoute
   MisijaRoute: typeof MisijaRoute
+  PricingRoute: typeof PricingRoute
   PrintRoute: typeof PrintRoute
   QrGeneratorRoute: typeof QrGeneratorRoute
   SRoute: typeof SRoute
@@ -425,6 +438,13 @@ declare module '@tanstack/react-router' {
       path: '/print'
       fullPath: '/print'
       preLoaderRoute: typeof PrintRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/pricing': {
+      id: '/pricing'
+      path: '/pricing'
+      fullPath: '/pricing'
+      preLoaderRoute: typeof PricingRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/misija': {
@@ -572,6 +592,7 @@ const rootRouteChildren: RootRouteChildren = {
   LokacijaRoute: LokacijaRoute,
   MarshalAccountRoute: MarshalAccountRoute,
   MisijaRoute: MisijaRoute,
+  PricingRoute: PricingRoute,
   PrintRoute: PrintRoute,
   QrGeneratorRoute: QrGeneratorRoute,
   SRoute: SRoute,
