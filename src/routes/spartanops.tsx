@@ -449,66 +449,56 @@ function SectorShowcase() {
   );
 }
 
-/* ---------- 7. OPERATIONAL PLANS ---------- */
+/* ---------- 7. PRICING ---------- */
 function OperationalPlans() {
   const t = useT();
-  const core = [
-    t("spartan.tier1Feature1"),
-    t("spartan.tier1Feature2"),
-    t("spartan.tier1Feature3"),
-    t("spartan.tier1Feature4"),
-    t("spartan.tier1Feature5"),
-    t("spartan.tier1Feature6"),
-    t("spartan.tier1Feature7"),
-    t("spartan.tier1Feature8"),
+  const { lang } = useLang();
+  const startTo = useStartFreeTarget();
+  const fill = (s: string, v: Record<string, string | number>) =>
+    Object.entries(v).reduce((acc, [k, val]) => acc.split(`{${k}}`).join(String(val)), s);
+  const free = [1, 2, 3, 4, 5, 6, 7, 8].map((i) => fill(t(`pricing.free${i}`), { n: PLAN_LIMITS.free.maxPlayers }));
+  const now = [
+    fill(t("pricing.now1"), { n: PLAN_LIMITS.founding.maxPlayers }),
+    t("pricing.now2"),
+    t("pricing.now4"),
   ];
-  const premium = [
-    t("spartan.tier2Feature1"),
-    t("spartan.tier2Feature2"),
-    t("spartan.tier2Feature3"),
-    t("spartan.tier2Feature4"),
-    t("spartan.tier2Feature5"),
-  ];
+  // Auto-balance currently only opens the upgrade notice, so it is listed as coming soon.
+  const soon = [t("pricing.soonBalance"), t("pricing.soon1"), t("pricing.soon2"), t("pricing.soon3"), t("pricing.soon4")];
+  const founding = fill(t("pricing.foundingText"), {
+    date: formatFoundingDate(lang),
+    pct: FOUNDING_OFFER.discountPercent,
+    spots: FOUNDING_OFFER.spots,
+  });
+  const titleStyle = { fontFamily: "'Michroma', monospace", fontSize: 20, letterSpacing: "0.10em", lineHeight: 1.2 } as const;
+  const focus = "focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#E0B04E]";
   return (
     <SectionShell id="pricing">
-      <SectionHeader eyebrow={t("spartan.tagLicensing")} title={t("spartan.titlePlans")} />
+      <SectionHeader eyebrow={t("pricing.eyebrow")} title={t("spartan.titlePlans")} sub={t("pricing.sub")} />
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-8 md:items-stretch">
-        {/* TIER 01 — Minimalist, no card */}
-        <div className="flex flex-col py-2 md:py-4">
-          <p
-            className="font-mono uppercase mb-2"
-            style={{ fontSize: 11, letterSpacing: "0.28em", color: MUTED }}
-          >
-            {t("spartan.tier1Tag")}
+        {/* FREE — minimalist */}
+        <div className="flex flex-col py-2 md:py-4 min-w-0">
+          <p className="font-mono uppercase mb-2" style={{ fontSize: 11, letterSpacing: "0.28em", color: MUTED }}>
+            {t("pricing.freeTag")}
           </p>
-          <h3
-            style={{
-              fontFamily: "'Michroma', monospace",
-              fontSize: 20,
-              letterSpacing: "0.10em",
-              color: INK,
-              lineHeight: 1.2,
-            }}
-          >
-            {t("spartan.tier1Title")}
-          </h3>
+          <h3 style={{ ...titleStyle, color: INK }}>{t("pricing.freeTitle")}</h3>
           <div style={{ width: 40, height: 1, background: ACCENT_SOFT, marginTop: 14 }} />
           <ul className="mt-6 space-y-3 flex-1">
-            {core.map((b) => (
+            {free.map((b) => (
               <li key={b} className="flex gap-3 text-[14px] leading-[1.6]" style={{ color: INK }}>
                 <span style={{ marginTop: 8, width: 6, height: 6, background: MUTED, display: "inline-block", flexShrink: 0 }} />
                 <span>{b}</span>
               </li>
             ))}
           </ul>
-          <div className="mt-8">
-            <BtnOutline to="/admin-pregled">{t("spartan.btnStartFree")}</BtnOutline>
+          <p className="mt-6 text-[13px]" style={{ color: MUTED }}>{t("pricing.freeFootnote")}</p>
+          <div className={`mt-4 [&>a]:w-full sm:[&>a]:w-auto [&>a]:${focus.split(" ").join(" [&>a]:")}`}>
+            <BtnOutline to={startTo}>{t("spartan.btnStartFreeCta")}</BtnOutline>
           </div>
         </div>
 
-        {/* TIER 02 — Featured, premium card */}
+        {/* PRO — featured */}
         <div
-          className="relative flex flex-col p-6 md:p-8"
+          className="relative flex flex-col p-6 md:p-8 min-w-0"
           style={{
             background: PANEL_2,
             border: `1px solid ${ACCENT_SOFT}`,
@@ -529,61 +519,74 @@ function OperationalPlans() {
               letterSpacing: "0.24em",
               padding: "4px 10px",
               boxShadow: `0 0 16px -4px ${ACCENT}`,
+              maxWidth: "calc(100% - 32px)",
             }}
           >
-            {t("spartan.tier2Badge")}
+            {t("pricing.proBadge")}
           </span>
-          <p
-            className="font-mono uppercase mb-2 mt-2"
-            style={{ fontSize: 11, letterSpacing: "0.28em", color: ACCENT }}
-          >
-            {t("spartan.tier2Tag")}
+          <p className="font-mono uppercase mb-2 mt-3" style={{ fontSize: 11, letterSpacing: "0.28em", color: ACCENT }}>
+            {t("pricing.proTag")}
           </p>
-          <h3
-            style={{
-              fontFamily: "'Michroma', monospace",
-              fontSize: 20,
-              letterSpacing: "0.10em",
-              color: ACCENT,
-              lineHeight: 1.2,
-            }}
-          >
-            {t("spartan.tier2Title")}
-          </h3>
+          <h3 style={{ ...titleStyle, color: ACCENT }}>{t("pricing.proTitle")}</h3>
           <div style={{ width: 40, height: 1, background: ACCENT, marginTop: 14 }} />
-          <ul className="mt-6 space-y-3 flex-1">
-            {premium.map((b) => (
+          <div className="mt-6" style={{ background: "rgba(224,176,78,0.08)", border: `1px solid ${ACCENT_SOFT}`, padding: "14px 16px" }}>
+            <p style={{ fontSize: 13.5, lineHeight: 1.6, color: INK }}>
+              <span className="font-mono uppercase" style={{ fontSize: 11, letterSpacing: "0.2em", color: ACCENT }}>
+                {t("pricing.foundingLabel")}
+              </span>{" "}
+              {founding}
+            </p>
+          </div>
+          <p className="mt-6 text-[14px]" style={{ color: MUTED }}>{t("pricing.leadIn")}</p>
+          <ul className="mt-3 space-y-3">
+            {now.map((b) => (
               <li key={b} className="flex gap-3 text-[14px] leading-[1.6]" style={{ color: INK }}>
                 <span style={{ marginTop: 8, width: 6, height: 6, background: ACCENT, display: "inline-block", flexShrink: 0, boxShadow: `0 0 8px ${ACCENT}` }} />
                 <span>{b}</span>
               </li>
             ))}
           </ul>
+          <p className="font-mono uppercase mt-6" style={{ fontSize: 10.5, letterSpacing: "0.28em", color: MUTED }}>
+            {t("pricing.soonLabel")}
+          </p>
+          <ul className="mt-3 space-y-3 flex-1">
+            {soon.map((b) => (
+              <li key={b} className="flex gap-3 text-[14px] leading-[1.6]" style={{ color: MUTED }}>
+                <span style={{ marginTop: 8, width: 6, height: 6, border: `1px solid ${MUTED}`, display: "inline-block", flexShrink: 0 }} />
+                <span>{b}</span>
+              </li>
+            ))}
+          </ul>
           <div className="mt-8">
             <a
-              href="mailto:info@spartanopsapp.com?subject=Premium%20Access%20Request"
-              className="inline-flex items-center justify-center gap-2 font-mono uppercase transition-all hover:brightness-110"
+              href={foundingApplicationMailto(lang)}
+              className={`inline-flex w-full sm:w-auto items-center justify-center text-center font-mono uppercase transition-all hover:brightness-110 tracking-[0.12em] sm:tracking-[0.22em] ${focus}`}
               style={{
                 background: ACCENT,
                 color: "#0a0a0a",
-                letterSpacing: "0.22em",
                 fontSize: 12,
-                padding: "14px 22px",
+                lineHeight: 1.35,
+                padding: "8px 18px",
+                minHeight: 48,
                 borderRadius: 0,
                 border: `1px solid ${ACCENT}`,
                 boxShadow: `0 0 32px -6px ${ACCENT}`,
               }}
             >
-              {t("spartan.btnRequestPremium")}
+              {t("pricing.proButton")}
             </a>
+            <p className="mt-3 text-[12.5px] leading-[1.6]" style={{ color: MUTED }}>{t("pricing.proUnder")}</p>
           </div>
         </div>
       </div>
-      <p
-        className="mt-10 text-[12px] leading-[1.7]"
-        style={{ color: MUTED, letterSpacing: "0.02em", maxWidth: 820 }}
-      >
-        {t("spartan.systemNotice")}
+      <p className="mt-10 text-[13.5px] leading-[1.7]" style={{ color: INK, maxWidth: 820 }}>
+        {t("pricing.eventsText")}{" "}
+        <a href={eventLicenceMailto(lang)} className={`underline underline-offset-4 ${focus}`} style={{ color: ACCENT }}>
+          {t("pricing.eventsLink")}
+        </a>
+      </p>
+      <p className="mt-3 text-[12px] leading-[1.7]" style={{ color: MUTED, letterSpacing: "0.02em", maxWidth: 820 }}>
+        {t("pricing.beta")}
       </p>
     </SectionShell>
   );
