@@ -364,7 +364,6 @@ function AdminPage() {
   const { lang } = useLang();
   const en = lang === "en";
   const t = useT();
-  const { isPremium } = usePremium();
   const search = useSearch({ from: "/admin-pregled" }) as { edit?: string };
   const navigate = useNavigate();
   const [section, setSection] = useState<MainSection>("fields");
