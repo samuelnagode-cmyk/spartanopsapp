@@ -103,6 +103,11 @@ function JoinPage() {
         <h1 style={{ fontFamily: "'Michroma', monospace", fontSize: 22, letterSpacing: "0.12em", textAlign: "center", textTransform: "uppercase", marginBottom: 22 }}>
           {en ? "Join a game" : "Vstopi v igro"}
         </h1>
+        <p style={{ textAlign: "center", marginTop: -12, marginBottom: 18 }}>
+          <Link to="/events" style={{ color: ACCENT, fontFamily: "monospace", fontSize: 12, opacity: 0.75 }}>
+            {en ? "Upcoming events →" : "Prihajajoči dogodki →"}
+          </Link>
+        </p>
 
         <button
           type="button"

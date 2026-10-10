@@ -1,4 +1,4 @@
-import { createFileRoute, redirect } from "@tanstack/react-router";
+import { createFileRoute, Link, redirect } from "@tanstack/react-router";
 import { useEffect, useRef, useState, type CSSProperties, type FormEvent } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { supabase } from "@/integrations/supabase/client";
@@ -254,6 +254,11 @@ function FieldPage() {
         <button type="submit" style={btnStyle} disabled={busy}>
           {busy ? "…" : en ? "Enter field" : "Vstopi na poligon"}
         </button>
+        <p style={{ textAlign: "center", marginTop: 18 }}>
+          <Link to="/events" search={{ field: info.accountId }} style={{ color: ACCENT, fontFamily: "monospace", fontSize: 11.5, opacity: 0.8 }}>
+            {en ? "Upcoming events at this field →" : "Prihajajoči dogodki na tem poligonu →"}
+          </Link>
+        </p>
       </form>
     );
   }

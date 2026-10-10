@@ -299,6 +299,9 @@ function LoggedIn({ user, en }: { user: User; en: boolean }) {
       <Link to="/admin-pregled" style={{ ...btnStyle, display: "block", textAlign: "center", textDecoration: "none", marginBottom: 22 }}>
         {en ? "Missions" : "Misije"}
       </Link>
+      <Link to="/events/manage" style={{ ...btnStyle, display: "block", textAlign: "center", textDecoration: "none", marginTop: -12, marginBottom: 22, background: "transparent", color: ACCENT, border: `1px solid ${ACCENT}` }}>
+        {en ? "Events" : "Dogodki"}
+      </Link>
 
 
       <h2 style={sectionTitle}>{en ? "Account" : "Račun"}</h2>

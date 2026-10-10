@@ -21,7 +21,7 @@ function checkMaster(pw: unknown): boolean {
   return timingSafeEqual(a, b);
 }
 
-const LIST_COLS = "id, title, kind, starts_at, ends_at, tz, location_text, price_text, capacity, min_age, status, updated_at, visibility";
+const LIST_COLS = "id, title, description, kind, starts_at, ends_at, tz, location_text, price_text, capacity, min_age, status, updated_at, visibility";
 const FULL_COLS = "id, series_id, title, kind, starts_at, ends_at, tz, description, rules_text, location_text, maps_url, price_text, capacity, min_age, signup_url, contact_text, visibility, status, cancel_reason, created_at, updated_at";
 const FIELD_JOIN = "account:spartanops_accounts!inner(id, business_name, city, country, listed_publicly, listing_blocked)";
 
@@ -55,7 +55,7 @@ function toListItem(r: Row): EventListItem {
  * Public, listable events (not hidden, public visibility, field listed and not blocked).
  * Shared by the list, the calendar feed and the sitemap.
  */
-export async function queryPublicEvents(opts: { past?: boolean; sinceMs?: number; limit?: number }): Promise<(EventListItem & { updated_at: string })[]> {
+export async function queryPublicEvents(opts: { past?: boolean; sinceMs?: number; limit?: number }): Promise<(EventListItem & { updated_at: string; description: string })[]> {
   const db = await admin();
   const now = Date.now();
   let q = db.from("spartanops_events").select(`${LIST_COLS}, ${FIELD_JOIN}`)
@@ -68,7 +68,7 @@ export async function queryPublicEvents(opts: { past?: boolean; sinceMs?: number
   const rows = (data ?? []) as unknown as Row[];
   return rows
     .filter((r) => (opts.sinceMs !== undefined ? true : opts.past ? !isOngoingOrUpcoming(r as never) : isOngoingOrUpcoming(r as never)))
-    .map((r) => ({ ...toListItem(r), updated_at: r.updated_at as string }));
+    .map((r) => ({ ...toListItem(r), updated_at: r.updated_at as string, description: (r.description as string) ?? "" }));
 }
 
 /* ---------- public ---------- */
@@ -101,7 +101,7 @@ export const eventsList = createServerFn({ method: "POST" })
       fieldName = acc && !acc.listing_blocked ? acc.business_name : null;
     }
     return {
-      events: filtered.slice(data.offset, data.offset + data.limit).map(({ updated_at: _u, ...e }) => e),
+      events: filtered.slice(data.offset, data.offset + data.limit).map(({ updated_at: _u, description: _d, ...e }) => e),
       total: filtered.length,
       countries,
       fieldName,
