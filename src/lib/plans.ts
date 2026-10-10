@@ -6,7 +6,7 @@ export const PLAN_LIMITS = {
 } as const;
 
 export const FOUNDING_OFFER = {
-  until: "2027-05-31", // ISO date: last day of free Pro for founding fields
+  until: "2027-03-31", // ISO date: last day of free Pro for founding fields
   discountPercent: 40, // discount for founding fields once billing starts, for as long as they stay
   spots: 20, // "first N fields"
 };
@@ -66,7 +66,7 @@ const SL_MONTHS_GENITIVE = [
   "julija", "avgusta", "septembra", "oktobra", "novembra", "decembra",
 ] as const;
 
-/** Founding offer end date, e.g. "31 May 2027" / "31. maja 2027". */
+/** Founding offer end date, e.g. "31 March 2027" / "31. marca 2027". */
 export function formatFoundingDate(lang: "en" | "sl"): string {
   const d = new Date(`${FOUNDING_OFFER.until}T12:00:00Z`);
   if (lang === "sl") return `${d.getUTCDate()}. ${SL_MONTHS_GENITIVE[d.getUTCMonth()]} ${d.getUTCFullYear()}`;
