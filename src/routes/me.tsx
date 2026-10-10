@@ -6,6 +6,7 @@ import { useLang } from "@/lib/i18n";
 import { playerGetMine } from "@/lib/player.functions";
 import { safeNext } from "@/lib/player-validation";
 import { PlayerAuth } from "@/components/PlayerAuth";
+import { MyEvents } from "@/components/events/MyEvents";
 import { PlayerProfileForm, ProfilePreview, type PlayerProfile } from "@/components/PlayerProfileForm";
 
 export const Route = createFileRoute("/me")({
@@ -87,6 +88,7 @@ function MePage() {
                 <Link to="/marshal-account" style={{ color: ACCENT }}>{en ? "Field settings →" : "Nastavitve poligona →"}</Link>
               </p>
             )}
+            {mine.profile && <MyEvents lang={en ? "en" : "sl"} />}
             {mine.profile && !mine.needsReconsent && <ProfilePreview p={mine.profile} en={en} />}
             {mine.needsReconsent && (
               <p style={{ fontFamily: "monospace", fontSize: 12.5, color: ACCENT, textAlign: "center", marginBottom: 14 }}>
@@ -98,7 +100,7 @@ function MePage() {
               en={en}
               initial={mine.profile}
               needsConsent={!mine.profile || mine.needsReconsent}
-              onSaved={(p) => setMine({ ...mine, profile: p, needsReconsent: false })}
+              onSaved={(p) => { setMine({ ...mine, profile: p, needsReconsent: false }); const n = safeNext(next); if (n) navigate({ to: n as never }); }}
               onDeleted={(kept) => {
                 setNotice(kept
                   ? (en ? "Your profile was deleted. Your field login was kept." : "Tvoj profil je izbrisan. Prijava za poligon je ohranjena.")
