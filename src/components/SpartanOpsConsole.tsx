@@ -132,6 +132,7 @@ export function SpartanOpsConsole({ fieldId, password }: { fieldId: string; pass
 
   const [state, setState] = useState<GameState | null>(null);
   const [roster, setRoster] = useState<Checkin[]>([]);
+  const [rosterPlan, setRosterPlan] = useState<RosterPlan>(null);
   const [captures, setCaptures] = useState<Capture[]>([]);
   const [polygonName, setPolygonName] = useState("");
   const [eventName, setEventName] = useState("");
@@ -231,6 +232,7 @@ export function SpartanOpsConsole({ fieldId, password }: { fieldId: string; pass
     const load = async () => {
       const res = await getRoster({ data: { fieldId, password } });
       if (alive) setRoster((res?.ok ? res.rows : []) as unknown as Checkin[]);
+      if (alive) setRosterPlan(res?.ok ? (res.plan ?? null) : null);
     };
     load();
     const ch = supabase.channel(`checkins:${fieldId}`)
@@ -436,17 +438,8 @@ export function SpartanOpsConsole({ fieldId, password }: { fieldId: string; pass
 
 
 
-        <div style={{ marginTop: 14, fontSize: 10, color: MUTED, fontFamily: "monospace", lineHeight: 1.7 }}>
-          <p>
-            {en ? "Registered" : "Prijavljenih"}:{" "}
-            <strong style={{ color: roster.length > 30 ? "#ff6b6b" : INK }}>{roster.length}/30</strong>{" "}
-            <span style={{ color: MUTED }}>{en ? "(Core tier cap)" : "(omejitev Core tier)"}</span>
-          </p>
-          {roster.length > 30 && (
-            <p style={{ color: "#ff6b6b", marginTop: 4 }}>
-              {en ? "⚠ Core tier supports up to 30 players." : "⚠ Core tier podpira največ 30 igralcev."}
-            </p>
-          )}
+        <div style={{ marginTop: 14 }}>
+          <PlayerLimitInfo count={roster.length} plan={rosterPlan} en={en} />
         </div>
 
       </Pane>
