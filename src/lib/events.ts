@@ -112,7 +112,7 @@ export function dateTileParts(iso: string, tz: string, lang: Lang) {
 
 /** Short date like "Sob 11. jul" / "Sat 11 Jul". */
 export function shortDate(iso: string, tz: string, lang: Lang): string {
-  return cap(new Intl.DateTimeFormat(locale(lang), { timeZone: tz, weekday: "short", day: "numeric", month: "short" }).format(new Date(iso))).replace(/,/g, "");
+  return cap(new Intl.DateTimeFormat(locale(lang), { timeZone: tz, weekday: "short", day: "numeric", month: "short" }).format(new Date(iso))).replace(/,/g, "").replace(/(\p{L})\./gu, "$1");
 }
 
 /** "this_week", "next_week" or "YYYY-MM" (Monday-start weeks, Ljubljana calendar). */
