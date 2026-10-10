@@ -21,7 +21,7 @@ import { spartanopsAdminGetRoster, spartanopsGetServerTime } from "@/lib/spartan
 import { spartanopsTickScores } from "@/lib/spartanops-game.functions";
 import { spartanopsSpartacusReview, spartanopsListSuspiciousCaptures } from "@/lib/spartanops-spartacus.functions";
 import { useLang } from "@/lib/i18n";
-import { usePremium } from "@/lib/premium";
+import { AutoBalanceSoon } from "@/components/AutoBalanceSoon";
 import { formatFoundingDate, foundingApplicationMailto } from "@/lib/plans";
 
 const BG = "#0b0d09";
@@ -155,7 +155,6 @@ function RankIcon({ level, size = 16 }: { level: Checkin["experience_level"]; si
 export function SpartanOpsConsole({ fieldId, password }: { fieldId: string; password: string }) {
   const { lang } = useLang();
   const en = lang === "en";
-  const { isPremium, openPremiumModal } = usePremium();
   const patchState = useServerFn(spartanopsAdminPatchState);
   const reassign = useServerFn(spartanopsAdminReassignTeam);
   const removePlayer = useServerFn(spartanopsAdminRemovePlayer);
@@ -545,15 +544,15 @@ export function SpartanOpsConsole({ fieldId, password }: { fieldId: string; pass
                 }}>
                 ● Domination<br /><span style={{ fontSize: 9, color: MUTED }}>{en ? "Point capture" : "Zavzemanje točk"}</span>
               </button>
-              <button type="button" onClick={() => { if (!isPremium) openPremiumModal(); }}
+              <div aria-disabled="true"
                 style={{
                   background: "rgba(255,255,255,0.03)", color: MUTED,
                   border: `1px dashed rgba(236,227,196,0.18)`,
                   padding: "10px 8px", fontFamily: "monospace", fontSize: 11, letterSpacing: "0.12em",
-                  textTransform: "uppercase", cursor: "pointer", textAlign: "left", opacity: 0.75,
+                  textTransform: "uppercase", cursor: "default", textAlign: "left", opacity: 0.75,
                 }}>
-                🔒 Search & Destroy<br /><span style={{ fontSize: 9 }}>{en ? "Coming soon" : "Prihaja kmalu"}</span>
-              </button>
+                Search & Destroy<br /><span style={{ fontSize: 9 }}>{en ? "Coming soon" : "Prihaja kmalu"}</span>
+              </div>
             </div>
           </Field>
           <MapUploader fieldId={fieldId} password={password} currentUrl={state.compressed_map_url} onUploaded={(u) => setMapUrl(u)} en={en} />
@@ -702,56 +701,12 @@ export function LiveMatchView({ state, captures, now, en, mapUrl }: { state: Gam
 }
 
 const RosterBoard = memo(function RosterBoard({ roster, settings, onReassign, onRemove, en }: { roster: Checkin[]; settings?: GameSettings | null; onReassign: (id: string, t: "modra" | "rdeca" | "rumena" | "none") => void; onRemove: (id: string) => void; en: boolean }) {
-  const { isPremium, openPremiumModal } = usePremium();
   const activeTeams = configuredTeams(settings, roster);
   const cols: ("none" | "modra" | "rdeca" | "rumena")[] = ["none", ...activeTeams];
   const [switching, setSwitching] = useState<Checkin | null>(null);
   return (
     <div className="space-y-3">
-      <div>
-        <button
-          type="button"
-          onClick={() => { if (!isPremium) openPremiumModal(); }}
-          style={{
-            position: "relative",
-            width: "100%",
-            padding: "12px 12px",
-            background: "linear-gradient(135deg, rgba(224,176,78,0.14), rgba(224,176,78,0.03))",
-            border: `1px dashed ${ACCENT}`,
-            color: ACCENT,
-            fontFamily: "'Michroma', monospace",
-            fontSize: 10,
-            letterSpacing: "0.16em",
-            textTransform: "uppercase",
-            cursor: "pointer",
-            opacity: 0.9,
-            boxShadow: `0 0 22px ${ACCENT}22`,
-          }}
-        >
-          🔒 Auto balance teams
-          <span
-            style={{
-              position: "absolute",
-              top: -8,
-              right: -6,
-              background: ACCENT,
-              color: "#0b0d09",
-              padding: "2px 6px",
-              fontSize: 8.5,
-              letterSpacing: "0.14em",
-              fontWeight: 700,
-              boxShadow: `0 0 10px ${ACCENT}66`,
-            }}
-          >
-            {en ? "NEW PRO FEATURE" : "NOVA FUNKCIJA PRO"}
-          </span>
-        </button>
-        <p style={{ marginTop: 8, fontSize: 10.5, color: MUTED, fontFamily: "monospace", lineHeight: 1.55, textAlign: "center", letterSpacing: "0.04em" }}>
-          {en
-            ? "Balance the players among teams based on their skill level."
-            : "Uravnotežite igralce med ekipami glede na njihovo raven veščin."}
-        </p>
-      </div>
+      <AutoBalanceSoon en={en} />
       {cols.map((c) => {
         const players = roster.filter((r) => r.assigned_team === c);
         return (
