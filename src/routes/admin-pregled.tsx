@@ -32,6 +32,7 @@ import { CountrySearchInput } from "@/components/CountrySearchInput";
 import { flagFor } from "@/lib/countries";
 import { usePremium, usePlan } from "@/lib/premium";
 import { useMasterAdmin } from "@/lib/master-admin";
+import { AdminFieldsPlans } from "@/components/AdminFieldsPlans";
 import { supabase } from "@/integrations/supabase/client";
 import {
   listAllLobbies,
