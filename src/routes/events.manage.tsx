@@ -171,7 +171,7 @@ function EventList({ mine, lang, onChange, onNew, onEdit, onDuplicate }: {
   const upcoming = mine.events.filter((e) => eventEndMs(e) >= now);
   const past = mine.events.filter((e) => eventEndMs(e) < now).reverse();
   const rows = tab === "upcoming" ? upcoming : past;
-  const tabBtn = (id: "upcoming" | "past", label: string, n: number): JSX.Element => (
+  const tabBtn = (id: "upcoming" | "past", label: string, n: number) => (
     <button type="button" className="ev-focus" role="tab" aria-selected={tab === id} onClick={() => setTab(id)}
       style={{ flex: 1, minHeight: 40, background: tab === id ? `${ACCENT}22` : "transparent", color: tab === id ? ACCENT : INK, border: `1px solid ${tab === id ? ACCENT : `${ACCENT}33`}`, fontFamily: MICHROMA, fontSize: 10, letterSpacing: "0.14em", textTransform: "uppercase", cursor: "pointer" }}>
       {label} ({n})
