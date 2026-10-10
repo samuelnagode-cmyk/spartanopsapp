@@ -22,6 +22,7 @@ import { spartanopsTickScores } from "@/lib/spartanops-game.functions";
 import { spartanopsSpartacusReview, spartanopsListSuspiciousCaptures } from "@/lib/spartanops-spartacus.functions";
 import { useLang } from "@/lib/i18n";
 import { usePremium } from "@/lib/premium";
+import { formatFoundingDate, foundingApplicationMailto } from "@/lib/plans";
 
 const BG = "#0b0d09";
 const PANEL = "#13160f";
@@ -32,6 +33,40 @@ const TEAM_COLOR: Record<string, string> = { modra: "#3b82f6", rdeca: "#ef4444",
 const TEAM_LABEL: Record<string, string> = { modra: "MODRA", rdeca: "RDEČA", rumena: "RUMENA", none: "ČAKALNICA" };
 const TEAM_LABEL_EN: Record<string, string> = { modra: "BLUE", rdeca: "RED", rumena: "YELLOW", none: "LOBBY" };
 const FREE_NODES: Record<string, string | null> = { "1": null, "2": null, "3": null, "4": null, "5": null };
+
+export type RosterPlan = { plan: "free" | "founding" | "pro"; maxPlayers: number; fieldName: string | null; accountId: string } | null;
+
+/** "PLAYERS 27 / 30" counter with amber warning from 90% and a banner at the limit. Null plan = no limit. */
+export function PlayerLimitInfo({ count, plan, en, hideLimit = false }: { count: number; plan: RosterPlan; en: boolean; hideLimit?: boolean }) {
+  const lang = en ? "en" : "sl";
+  const limited = !!plan && !hideLimit;
+  const max = plan?.maxPlayers ?? 0;
+  const near = limited && count >= Math.ceil(max * 0.9);
+  const full = limited && count >= max;
+  return (
+    <div>
+      {full && plan && (
+        <div role="status" style={{ border: `1px solid ${ACCENT}`, background: "rgba(224,176,78,0.10)", color: ACCENT, padding: "10px 12px", marginBottom: 10, fontFamily: "monospace", fontSize: 12, lineHeight: 1.55 }}>
+          {plan.plan === "free"
+            ? (en
+              ? `Player limit reached (${max}/${max}) on the Free plan. New players can't check in. Founding fields get every Pro feature free until ${formatFoundingDate(lang)}.`
+              : `Dosežena omejitev igralcev (${max}/${max}) v brezplačnem paketu. Novi igralci se ne morejo prijaviti. Ustanovitveni poligoni dobijo vse funkcije Pro brezplačno do ${formatFoundingDate(lang)}.`)
+            : (en ? `Player limit reached (${max}/${max}).` : `Dosežena omejitev igralcev (${max}/${max}).`)}
+          {plan.plan === "free" && (
+            <a href={foundingApplicationMailto(lang, { fieldName: plan.fieldName ?? undefined, accountId: plan.accountId })}
+              style={{ display: "block", marginTop: 8, padding: "8px 10px", background: ACCENT, color: BG, textAlign: "center", textDecoration: "none", fontFamily: "'Michroma', monospace", fontSize: 10, letterSpacing: "0.14em", fontWeight: 700 }}>
+              {en ? "APPLY AS A FOUNDING FIELD" : "PRIJAVI SE KOT USTANOVITVENI POLIGON"}
+            </a>
+          )}
+        </div>
+      )}
+      <p style={{ fontFamily: "'Michroma', monospace", fontSize: 10.5, letterSpacing: "0.16em", color: MUTED, margin: 0 }}>
+        {en ? "PLAYERS" : "IGRALCI"}{" "}
+        <strong style={{ color: near ? ACCENT : INK }}>{limited ? `${count} / ${max}` : count}</strong>
+      </p>
+    </div>
+  );
+}
 
 export type GameSettings = {
   missionDescription?: string;
@@ -132,6 +167,7 @@ export function SpartanOpsConsole({ fieldId, password }: { fieldId: string; pass
 
   const [state, setState] = useState<GameState | null>(null);
   const [roster, setRoster] = useState<Checkin[]>([]);
+  const [rosterPlan, setRosterPlan] = useState<RosterPlan>(null);
   const [captures, setCaptures] = useState<Capture[]>([]);
   const [polygonName, setPolygonName] = useState("");
   const [eventName, setEventName] = useState("");
@@ -231,6 +267,7 @@ export function SpartanOpsConsole({ fieldId, password }: { fieldId: string; pass
     const load = async () => {
       const res = await getRoster({ data: { fieldId, password } });
       if (alive) setRoster((res?.ok ? res.rows : []) as unknown as Checkin[]);
+      if (alive) setRosterPlan(res?.ok ? (res.plan ?? null) : null);
     };
     load();
     const ch = supabase.channel(`checkins:${fieldId}`)
@@ -436,17 +473,8 @@ export function SpartanOpsConsole({ fieldId, password }: { fieldId: string; pass
 
 
 
-        <div style={{ marginTop: 14, fontSize: 10, color: MUTED, fontFamily: "monospace", lineHeight: 1.7 }}>
-          <p>
-            {en ? "Registered" : "Prijavljenih"}:{" "}
-            <strong style={{ color: roster.length > 30 ? "#ff6b6b" : INK }}>{roster.length}/30</strong>{" "}
-            <span style={{ color: MUTED }}>{en ? "(Core tier cap)" : "(omejitev Core tier)"}</span>
-          </p>
-          {roster.length > 30 && (
-            <p style={{ color: "#ff6b6b", marginTop: 4 }}>
-              {en ? "⚠ Core tier supports up to 30 players." : "⚠ Core tier podpira največ 30 igralcev."}
-            </p>
-          )}
+        <div style={{ marginTop: 14 }}>
+          <PlayerLimitInfo count={roster.length} plan={rosterPlan} en={en} />
         </div>
 
       </Pane>
