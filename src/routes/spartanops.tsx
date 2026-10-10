@@ -567,7 +567,7 @@ function OperationalPlans() {
           <div className="mt-8 lg:mt-0 lg:pt-8">
             <a
               href={foundingApplicationMailto(lang)}
-              className={`inline-flex w-full sm:w-auto items-center justify-center text-center font-mono uppercase transition-all hover:brightness-110 tracking-[0.12em] sm:tracking-[0.22em] ${focus}`}
+              className={`inline-flex w-full sm:w-auto items-center justify-center text-center text-balance font-mono uppercase transition-all hover:brightness-110 tracking-[0.12em] sm:tracking-[0.22em] ${focus}`}
               style={{
                 background: ACCENT,
                 color: "#0a0a0a",
@@ -582,7 +582,7 @@ function OperationalPlans() {
             >
               {t("pricing.proButton")}
             </a>
-            <p className="mt-3 text-[12.5px] leading-[1.6]" style={{ color: MUTED }}>{t("pricing.proUnder")}</p>
+            <p className="mt-3 text-balance text-[12.5px] leading-[1.6]" style={{ color: MUTED }}>{t("pricing.proUnder")}</p>
           </div>
         </div>
       </div>
