@@ -16,6 +16,7 @@ import { Route as SpartanopsRouteImport } from './routes/spartanops'
 import { Route as SitemapDotxmlRouteImport } from './routes/sitemap[.]xml'
 import { Route as ScanRouteImport } from './routes/scan'
 import { Route as SRouteImport } from './routes/s'
+import { Route as ResetPasswordRouteImport } from './routes/reset-password'
 import { Route as QrGeneratorRouteImport } from './routes/qr-generator'
 import { Route as PrivacyRouteImport } from './routes/privacy'
 import { Route as PrintRouteImport } from './routes/print'
@@ -72,6 +73,11 @@ const ScanRoute = ScanRouteImport.update({
 const SRoute = SRouteImport.update({
   id: '/s',
   path: '/s',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ResetPasswordRoute = ResetPasswordRouteImport.update({
+  id: '/reset-password',
+  path: '/reset-password',
   getParentRoute: () => rootRouteImport,
 } as any)
 const QrGeneratorRoute = QrGeneratorRouteImport.update({
@@ -206,6 +212,7 @@ export interface FileRoutesByFullPath {
   '/print': typeof PrintRoute
   '/privacy': typeof PrivacyRoute
   '/qr-generator': typeof QrGeneratorRoute
+  '/reset-password': typeof ResetPasswordRoute
   '/s': typeof SRoute
   '/scan': typeof ScanRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
@@ -237,6 +244,7 @@ export interface FileRoutesByTo {
   '/print': typeof PrintRoute
   '/privacy': typeof PrivacyRoute
   '/qr-generator': typeof QrGeneratorRoute
+  '/reset-password': typeof ResetPasswordRoute
   '/s': typeof SRoute
   '/scan': typeof ScanRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
@@ -269,6 +277,7 @@ export interface FileRoutesById {
   '/print': typeof PrintRoute
   '/privacy': typeof PrivacyRoute
   '/qr-generator': typeof QrGeneratorRoute
+  '/reset-password': typeof ResetPasswordRoute
   '/s': typeof SRoute
   '/scan': typeof ScanRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
@@ -302,6 +311,7 @@ export interface FileRouteTypes {
     | '/print'
     | '/privacy'
     | '/qr-generator'
+    | '/reset-password'
     | '/s'
     | '/scan'
     | '/sitemap.xml'
@@ -333,6 +343,7 @@ export interface FileRouteTypes {
     | '/print'
     | '/privacy'
     | '/qr-generator'
+    | '/reset-password'
     | '/s'
     | '/scan'
     | '/sitemap.xml'
@@ -364,6 +375,7 @@ export interface FileRouteTypes {
     | '/print'
     | '/privacy'
     | '/qr-generator'
+    | '/reset-password'
     | '/s'
     | '/scan'
     | '/sitemap.xml'
@@ -396,6 +408,7 @@ export interface RootRouteChildren {
   PrintRoute: typeof PrintRoute
   PrivacyRoute: typeof PrivacyRoute
   QrGeneratorRoute: typeof QrGeneratorRoute
+  ResetPasswordRoute: typeof ResetPasswordRoute
   SRoute: typeof SRoute
   ScanRoute: typeof ScanRoute
   SitemapDotxmlRoute: typeof SitemapDotxmlRoute
@@ -457,6 +470,13 @@ declare module '@tanstack/react-router' {
       path: '/s'
       fullPath: '/s'
       preLoaderRoute: typeof SRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/reset-password': {
+      id: '/reset-password'
+      path: '/reset-password'
+      fullPath: '/reset-password'
+      preLoaderRoute: typeof ResetPasswordRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/qr-generator': {
@@ -636,6 +656,7 @@ const rootRouteChildren: RootRouteChildren = {
   PrintRoute: PrintRoute,
   PrivacyRoute: PrivacyRoute,
   QrGeneratorRoute: QrGeneratorRoute,
+  ResetPasswordRoute: ResetPasswordRoute,
   SRoute: SRoute,
   ScanRoute: ScanRoute,
   SitemapDotxmlRoute: SitemapDotxmlRoute,
