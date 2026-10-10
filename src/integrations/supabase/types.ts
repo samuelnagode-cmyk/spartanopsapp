@@ -497,6 +497,92 @@ export type Database = {
         }
         Relationships: []
       }
+      spartanops_events: {
+        Row: {
+          account_id: string
+          cancel_reason: string | null
+          capacity: number | null
+          contact_text: string | null
+          created_at: string
+          description: string
+          ends_at: string | null
+          id: string
+          kind: string
+          location_text: string | null
+          maps_url: string | null
+          min_age: number | null
+          price_text: string | null
+          rules_text: string | null
+          series_id: string | null
+          signup_url: string | null
+          starts_at: string
+          status: string
+          title: string
+          title_fold: string | null
+          tz: string
+          updated_at: string
+          visibility: string
+        }
+        Insert: {
+          account_id: string
+          cancel_reason?: string | null
+          capacity?: number | null
+          contact_text?: string | null
+          created_at?: string
+          description?: string
+          ends_at?: string | null
+          id?: string
+          kind: string
+          location_text?: string | null
+          maps_url?: string | null
+          min_age?: number | null
+          price_text?: string | null
+          rules_text?: string | null
+          series_id?: string | null
+          signup_url?: string | null
+          starts_at: string
+          status?: string
+          title: string
+          title_fold?: string | null
+          tz?: string
+          updated_at?: string
+          visibility?: string
+        }
+        Update: {
+          account_id?: string
+          cancel_reason?: string | null
+          capacity?: number | null
+          contact_text?: string | null
+          created_at?: string
+          description?: string
+          ends_at?: string | null
+          id?: string
+          kind?: string
+          location_text?: string | null
+          maps_url?: string | null
+          min_age?: number | null
+          price_text?: string | null
+          rules_text?: string | null
+          series_id?: string | null
+          signup_url?: string | null
+          starts_at?: string
+          status?: string
+          title?: string
+          title_fold?: string | null
+          tz?: string
+          updated_at?: string
+          visibility?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "spartanops_events_account_id_fkey"
+            columns: ["account_id"]
+            isOneToOne: false
+            referencedRelation: "spartanops_accounts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       spartanops_field_attempts: {
         Row: {
           account_id: string
