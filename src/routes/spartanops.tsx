@@ -6,7 +6,7 @@ import { PLAN_LIMITS, FOUNDING_OFFER, foundingApplicationMailto, eventLicenceMai
 import { motion, useReducedMotion } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
 import FeatureShowcase from "@/components/FeatureShowcase";
-import { useSignedIn } from "@/lib/use-signed-in";
+import { useIsMarshal } from "@/lib/use-signed-in";
 
 
 const PAGE_TITLE = "SpartanOps — Live-scored airsoft games, no electronic props";
@@ -623,7 +623,7 @@ function SpartanOpsHome() {
 
 /* ---------- Signed-in aware "START FREE" target ---------- */
 function useStartFreeTarget(): string {
-  const signedIn = useSignedIn();
+  const signedIn = useIsMarshal();
   return signedIn ? "/admin-pregled" : "/marshal-account";
 }
 

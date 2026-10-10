@@ -1318,16 +1318,46 @@ function FieldsWelcome({
   const { lang } = useLang();
   const en = lang === "en";
   const [authed, setAuthed] = useState<boolean | null>(null);
+  // A player-only login has no field row; it must not see marshal tools.
+  const [hasField, setHasField] = useState<boolean | null>(null);
 
   useEffect(() => {
-    const { data: sub } = supabase.auth.onAuthStateChange((_e, session) => {
-      setAuthed(!!session?.user);
+    const check = async (userId: string | null) => {
+      if (!userId) { setAuthed(false); setHasField(null); return; }
+      const { data } = await supabase.from("spartanops_accounts").select("id").eq("id", userId).maybeSingle();
+      setHasField(!!data);
+      setAuthed(true);
+    };
+    const { data: sub } = supabase.auth.onAuthStateChange((event, session) => {
+      if (event !== "SIGNED_IN" && event !== "SIGNED_OUT" && event !== "USER_UPDATED") return;
+      void check(session?.user?.id ?? null);
     });
-    supabase.auth.getUser().then(({ data }) => setAuthed(!!data.user));
+    supabase.auth.getUser().then(({ data }) => check(data.user?.id ?? null));
     return () => sub.subscription.unsubscribe();
   }, []);
 
   if (authed === null) return null;
+
+  if (authed && hasField === false) {
+    return (
+      <div style={{ textAlign: "center", maxWidth: 480, margin: "60px auto" }}>
+        <p style={{ fontFamily: "monospace", fontSize: 11, letterSpacing: "0.30em", color: ACCENT, marginBottom: 14, textTransform: "uppercase" }}>
+          {en ? "// NO FIELD ON THIS LOGIN" : "// TA PRIJAVA NIMA POLIGONA"}
+        </p>
+        <p style={{ fontSize: 13, color: MUTED, lineHeight: 1.7, marginBottom: 20 }}>
+          {en ? "Missions belong to a field. Create your field first, or open your player profile." : "Misije pripadajo poligonu. Najprej ustvari poligon ali odpri igralski profil."}
+        </p>
+        <div style={{ display: "flex", gap: 14, justifyContent: "center", flexWrap: "wrap" }}>
+          <Link to="/marshal-account" style={{ display: "inline-block", background: ACCENT, color: BG, padding: "12px 20px", fontFamily: "'Michroma', monospace", fontSize: 11, letterSpacing: "0.18em", textTransform: "uppercase", fontWeight: 700, textDecoration: "none" }}>
+            {en ? "Create my field" : "Ustvari poligon"}
+          </Link>
+          <Link to="/me" style={{ display: "inline-block", color: ACCENT, padding: "12px 8px", fontFamily: "monospace", fontSize: 12, textDecoration: "underline" }}>
+            {en ? "I am a player →" : "Sem igralec →"}
+          </Link>
+        </div>
+      </div>
+    );
+  }
 
   if (!authed) {
     return (

@@ -2,7 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { Download } from "lucide-react";
 import { useLang, useT } from "@/lib/i18n";
-import { useSignedIn } from "@/lib/use-signed-in";
+import { useIsMarshal } from "@/lib/use-signed-in";
 import {
   PRINT_GROUPS_ORDER,
   PRINT_ITEMS,
@@ -275,7 +275,7 @@ function PlateCard({
 
 function PosterTile() {
   const t = useT();
-  const signedIn = useSignedIn();
+  const signedIn = useIsMarshal();
   return (
     <section
       className="mt-10 grid grid-cols-1 md:grid-cols-[1fr_minmax(0,320px)] overflow-hidden"

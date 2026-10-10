@@ -388,6 +388,7 @@ export default function Header() {
               {([
                 { label: lang === "en" ? "HOME" : "DOMOV", to: "/spartanops" as const },
                 { label: lang === "en" ? "JOIN A GAME" : "VSTOPI V IGRO", to: "/join" as const },
+                { label: lang === "en" ? "PLAYER PROFILE" : "IGRALSKI PROFIL", to: "/me" as const },
                 { label: lang === "en" ? "MARSHAL COMMAND CENTER" : "MARSHAL COMMAND CENTER", to: "/admin-pregled" as const },
                 { label: lang === "en" ? "SYSTEM UPDATES" : "SISTEMSKE POSODOBITVE", to: "/updates" as const },
                 { label: lang === "en" ? "PRICING" : "CENIK", to: "/spartanops" as const, hash: "pricing" },

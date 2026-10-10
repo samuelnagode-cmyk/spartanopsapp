@@ -36,6 +36,13 @@
       "when": 1791626783917,
       "tag": "0004_close_checkins_captures_writes",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1791632154539,
+      "tag": "0005_0005_players",
+      "breakpoints": true
     }
   ]
 }

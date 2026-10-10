@@ -116,6 +116,8 @@ export const dict: Dict = {
   "print.step3Title": { sl: "Postavi", en: "Place" },
   "print.step3Desc": { sl: "Laminiraj, postavi na poligon in preizkusi s telefonom.", en: "Laminate, place on the field, test with your phone." },
   "print.posterKicker": { sl: "ZA TVOJ POLIGON", en: "FOR YOUR FIELD" },
+  "legal.privacyLink": { sl: "Zasebnost", en: "Privacy" },
+  "legal.termsLink": { sl: "Pogoji", en: "Terms" },
   "print.posterTitle": { sl: "Plakat tvojega poligona", en: "Your field poster" },
   "print.posterDesc": { sl: "Igralci ga skenirajo in vstopijo na tvoj poligon. Izdelan z QR kodo tvojega poligona.", en: "Players scan it to join your field. Made with your field’s own QR code." },
   "print.posterCtaOpen": { sl: "Odpri plakat poligona", en: "Open your field poster" },

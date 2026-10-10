@@ -843,6 +843,69 @@ export type Database = {
           },
         ]
       }
+      spartanops_players: {
+        Row: {
+          age_group: string
+          club: string | null
+          created_at: string
+          experience_level: string
+          first_name: string
+          gear_notes: string | null
+          last_name: string | null
+          nickname: string
+          operator_type: string | null
+          phone: string | null
+          primary_weapon: string | null
+          privacy_accepted_at: string
+          privacy_version: string
+          secondary_weapon: string | null
+          show_full_last_name: boolean
+          sidearm: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          age_group: string
+          club?: string | null
+          created_at?: string
+          experience_level?: string
+          first_name: string
+          gear_notes?: string | null
+          last_name?: string | null
+          nickname: string
+          operator_type?: string | null
+          phone?: string | null
+          primary_weapon?: string | null
+          privacy_accepted_at?: string
+          privacy_version: string
+          secondary_weapon?: string | null
+          show_full_last_name?: boolean
+          sidearm?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          age_group?: string
+          club?: string | null
+          created_at?: string
+          experience_level?: string
+          first_name?: string
+          gear_notes?: string | null
+          last_name?: string | null
+          nickname?: string
+          operator_type?: string | null
+          phone?: string | null
+          primary_weapon?: string | null
+          privacy_accepted_at?: string
+          privacy_version?: string
+          secondary_weapon?: string | null
+          show_full_last_name?: boolean
+          sidearm?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       spartanops_qr_anchors: {
         Row: {
           anchor_accuracy_m: number | null
