@@ -176,29 +176,3 @@ function PremiumUpgradeModal({ onClose, planState }: { onClose: () => void; plan
   );
 }
 
-export function PremiumStatusBadge({ compact = false }: { compact?: boolean }) {
-  const { isPremium } = usePremium();
-  const t = useT();
-  const label = isPremium ? t("premium.statusPremium") : t("premium.statusFree");
-  const color = isPremium ? "#E0B04E" : "rgba(180,190,205,0.75)";
-  const glow = isPremium ? "0 0 10px rgba(224,176,78,0.55)" : "none";
-  return (
-    <span
-      title={label}
-      style={{
-        display: "inline-flex", alignItems: "center",
-        fontFamily: "'Michroma', monospace",
-        fontSize: compact ? 8.5 : 9.5,
-        letterSpacing: "0.14em",
-        color,
-        textShadow: glow,
-        border: `1px solid ${isPremium ? "rgba(224,176,78,0.55)" : "rgba(180,190,205,0.28)"}`,
-        padding: compact ? "3px 6px" : "4px 8px",
-        whiteSpace: "nowrap",
-        background: isPremium ? "rgba(224,176,78,0.08)" : "transparent",
-      }}
-    >
-      {label}
-    </span>
-  );
-}

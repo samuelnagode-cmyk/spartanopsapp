@@ -513,8 +513,6 @@ export const dict: Dict = {
     en: "This feature is part of the Pro plan. SpartanOps is free to start, and founding fields get every Pro feature free until {date}. Tell us about your field and we'll switch it on.",
   },
   "premium.modalBtn": { sl: "PRIJAVI SE KOT USTANOVITVENI POLIGON", en: "APPLY AS A FOUNDING FIELD" },
-  "premium.statusFree": { sl: "[ STATUS: OSNOVNI NIVO ]", en: "[ STATUS: CORE TIER ]" },
-  "premium.statusPremium": { sl: "[ STATUS: OPERATIVNI PREMIUM ]", en: "[ STATUS: OPERATIONAL PREMIUM ]" },
 
   // Marshal actions on Spartacus alert
   "action.warning": { sl: "OPOZORI", en: "SEND WARNING" },

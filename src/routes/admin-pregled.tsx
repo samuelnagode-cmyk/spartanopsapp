@@ -30,7 +30,8 @@ import { useLang, useT } from "@/lib/i18n";
 import { MissionSettingsTabs, GAME_MODES, GameModeButtons, TeamConfigSection, type GameModeKey, type MissionSettingsValue, type MissionTabKey } from "@/components/MissionSettings";
 import { CountrySearchInput } from "@/components/CountrySearchInput";
 import { flagFor } from "@/lib/countries";
-import { usePremium, usePlan } from "@/lib/premium";
+import { usePlan } from "@/lib/premium";
+import { AutoBalanceSoon } from "@/components/AutoBalanceSoon";
 import { useMasterAdmin } from "@/lib/master-admin";
 import { AdminFieldsPlans } from "@/components/AdminFieldsPlans";
 import { supabase } from "@/integrations/supabase/client";
@@ -2447,7 +2448,7 @@ function MarshalLobbyConsole({ lobby: initialLobby, marshalPassword, lobbyPasswo
       <div style={{ display: lobbyTab === "review" ? "block" : "none" }}>
       {/* ROSTER & TEAM BALANCING */}
       <Pane title={en ? "ROSTER & TEAM BALANCING" : "SEZNAM & URAVNOTEŽENJE EKIP"}>
-        <LockedAutoBalanceButton en={en} />
+        <AutoBalanceSoon en={en} />
         <RosterRow label="LOBBY"  color="rgba(236,227,196,0.35)" players={roster.lobby} teamKey="lobby" onSwap={handleSwap} />
         <RosterRow label="BLUE"   color="#3b82f6" players={roster.modra} teamKey="modra" onSwap={handleSwap} />
         <RosterRow label="RED"    color="#ef4444" players={roster.rdeca} teamKey="rdeca" onSwap={handleSwap} />
@@ -2644,62 +2645,6 @@ const EXP_LABEL: Record<"slabo" | "dobro" | "zelo_dobro", string> = {
   zelo_dobro: "VETERAN",
 };
 
-function LockedAutoBalanceButton({ en }: { en: boolean }) {
-  const { isPremium, openPremiumModal } = usePremium();
-  return (
-    <div style={{ marginBottom: 14 }}>
-      <button
-        type="button"
-        onClick={() => { if (!isPremium) openPremiumModal(); }}
-        style={{
-          position: "relative",
-          width: "100%",
-          padding: "14px 14px",
-          background: "linear-gradient(135deg, rgba(224,176,78,0.16), rgba(224,176,78,0.04))",
-          border: `1px dashed ${ACCENT}`,
-          color: ACCENT,
-          fontFamily: "'Michroma', monospace",
-          fontSize: 11,
-          letterSpacing: "0.16em",
-          textTransform: "uppercase",
-          cursor: "pointer",
-          opacity: 0.92,
-          boxShadow: `0 0 22px ${ACCENT}20`,
-        }}
-      >
-        🔒 {en ? "Auto balance teams" : "Auto balance teams"}
-        <span
-          style={{
-            position: "absolute",
-            top: -9,
-            right: 10,
-            background: ACCENT,
-            color: "#0b0d09",
-            padding: "3px 7px",
-            fontSize: 8,
-            letterSpacing: "0.12em",
-            fontFamily: "monospace",
-            fontWeight: 900,
-          }}
-        >
-          {en ? "NEW PRO FEATURE" : "NOVA FUNKCIJA PRO"}
-        </span>
-      </button>
-      <p style={{
-        marginTop: 8,
-        color: MUTED,
-        fontFamily: "monospace",
-        fontSize: 11,
-        lineHeight: 1.55,
-        letterSpacing: "0.04em",
-      }}>
-        {en
-          ? "Balance the players among teams based on their skill level."
-          : "Uravnoteži igralce med ekipami glede na njihovo stopnjo izkušenj."}
-      </p>
-    </div>
-  );
-}
 
 function RosterRow({
   label, color, players, teamKey, onSwap,

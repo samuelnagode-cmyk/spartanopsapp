@@ -155,7 +155,6 @@ function RankIcon({ level, size = 16 }: { level: Checkin["experience_level"]; si
 export function SpartanOpsConsole({ fieldId, password }: { fieldId: string; password: string }) {
   const { lang } = useLang();
   const en = lang === "en";
-  const { isPremium, openPremiumModal } = usePremium();
   const patchState = useServerFn(spartanopsAdminPatchState);
   const reassign = useServerFn(spartanopsAdminReassignTeam);
   const removePlayer = useServerFn(spartanopsAdminRemovePlayer);
