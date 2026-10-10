@@ -286,7 +286,7 @@ function IntelPage() {
 
         <div className="mt-12">
           <Link
-            to="/"
+            to="/spartanops"
             className="inline-flex items-center gap-2 font-mono uppercase"
             style={{
               fontSize: 11,
