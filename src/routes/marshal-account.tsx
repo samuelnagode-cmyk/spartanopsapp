@@ -4,6 +4,7 @@ import type { SupabaseClient, User } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
 import { useLang } from "@/lib/i18n";
 import { FieldPasswordPanel } from "@/components/FieldPasswordPanel";
+import { ForgotPassword } from "@/components/PlayerAuth";
 import { CountrySearchInput } from "@/components/CountrySearchInput";
 import { COUNTRIES, countryCodeFor } from "@/lib/countries";
 import {
@@ -200,6 +201,7 @@ function LoginForm({ en, onSwitch }: { en: boolean; onSwitch: () => void }) {
       <button type="button" onClick={onSwitch} style={linkBtn}>
         {en ? "No account yet? Sign up" : "Še nimaš računa? Registracija"}
       </button>
+      <ForgotPassword en={en} initialEmail={email} />
     </form>
   );
 }
@@ -287,6 +289,8 @@ function LoggedIn({ user, en }: { user: User; en: boolean }) {
 
   const section: CSSProperties = { borderTop: `1px solid ${ACCENT}33`, paddingTop: 18, marginTop: 22 };
   const sectionTitle: CSSProperties = { fontFamily: "'Michroma', monospace", fontSize: 11, letterSpacing: "0.18em", color: INK, textTransform: "uppercase", marginBottom: 12 };
+
+  if (business === "") return <NoFieldCard user={user} en={en} onCreated={(name) => { setBusiness(name); setListed(true); }} />;
 
   return (
     <div>
@@ -492,5 +496,34 @@ function MissionsBlock({ user, en }: { user: User; en: boolean }) {
         </ul>
       )}
     </div>
+  );
+}
+
+/** A login with no field row (e.g. a player account): offer to create a field, never show empty settings. */
+function NoFieldCard({ user, en, onCreated }: { user: User; en: boolean; onCreated: (name: string) => void }) {
+  const [name, setName] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState<string | null>(null);
+  const create = async (e: FormEvent) => {
+    e.preventDefault();
+    const n = name.trim();
+    if (!n) { setErr(en ? "Business / field name is required." : "Ime podjetja / poligona je obvezno."); return; }
+    setBusy(true); setErr(null);
+    const { error } = await db.from("spartanops_accounts").insert({ id: user.id, business_name: n });
+    setBusy(false);
+    if (error) setErr(error.message); else onCreated(n);
+  };
+  return (
+    <form onSubmit={create}>
+      <p style={{ fontFamily: "'Michroma', monospace", fontSize: 11, letterSpacing: "0.16em", textTransform: "uppercase", marginBottom: 10 }}>
+        {en ? "This login has no field yet" : "Ta prijava še nima poligona"}
+      </p>
+      <p style={{ fontFamily: "monospace", fontSize: 12, opacity: 0.8, lineHeight: 1.6, marginBottom: 14 }}>{user.email}</p>
+      <label style={labelStyle}>{en ? "Business / field name" : "Ime podjetja / poligona"}</label>
+      <input style={inputStyle} maxLength={120} value={name} onChange={(e) => setName(e.target.value)} />
+      {err && <p style={{ color: ERR, fontSize: 12, marginBottom: 10, textAlign: "center" }}>{err}</p>}
+      <button type="submit" disabled={busy} style={{ ...btnStyle, opacity: busy ? 0.6 : 1 }}>{en ? "Create my field" : "Ustvari poligon"}</button>
+      <Link to="/me" style={{ ...linkBtn, display: "block", textAlign: "center" }}>{en ? "I am a player →" : "Sem igralec →"}</Link>
+    </form>
   );
 }

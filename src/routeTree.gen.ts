@@ -16,11 +16,13 @@ import { Route as SpartanopsRouteImport } from './routes/spartanops'
 import { Route as SitemapDotxmlRouteImport } from './routes/sitemap[.]xml'
 import { Route as ScanRouteImport } from './routes/scan'
 import { Route as SRouteImport } from './routes/s'
+import { Route as ResetPasswordRouteImport } from './routes/reset-password'
 import { Route as QrGeneratorRouteImport } from './routes/qr-generator'
 import { Route as PrivacyRouteImport } from './routes/privacy'
 import { Route as PrintRouteImport } from './routes/print'
 import { Route as PricingRouteImport } from './routes/pricing'
 import { Route as MisijaRouteImport } from './routes/misija'
+import { Route as MeRouteImport } from './routes/me'
 import { Route as MarshalAccountRouteImport } from './routes/marshal-account'
 import { Route as LokacijaRouteImport } from './routes/lokacija'
 import { Route as KRouteImport } from './routes/k'
@@ -74,6 +76,11 @@ const SRoute = SRouteImport.update({
   path: '/s',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ResetPasswordRoute = ResetPasswordRouteImport.update({
+  id: '/reset-password',
+  path: '/reset-password',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const QrGeneratorRoute = QrGeneratorRouteImport.update({
   id: '/qr-generator',
   path: '/qr-generator',
@@ -97,6 +104,11 @@ const PricingRoute = PricingRouteImport.update({
 const MisijaRoute = MisijaRouteImport.update({
   id: '/misija',
   path: '/misija',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const MeRoute = MeRouteImport.update({
+  id: '/me',
+  path: '/me',
   getParentRoute: () => rootRouteImport,
 } as any)
 const MarshalAccountRoute = MarshalAccountRouteImport.update({
@@ -201,11 +213,13 @@ export interface FileRoutesByFullPath {
   '/k': typeof KRoute
   '/lokacija': typeof LokacijaRoute
   '/marshal-account': typeof MarshalAccountRoute
+  '/me': typeof MeRoute
   '/misija': typeof MisijaRoute
   '/pricing': typeof PricingRoute
   '/print': typeof PrintRoute
   '/privacy': typeof PrivacyRoute
   '/qr-generator': typeof QrGeneratorRoute
+  '/reset-password': typeof ResetPasswordRoute
   '/s': typeof SRoute
   '/scan': typeof ScanRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
@@ -232,11 +246,13 @@ export interface FileRoutesByTo {
   '/k': typeof KRoute
   '/lokacija': typeof LokacijaRoute
   '/marshal-account': typeof MarshalAccountRoute
+  '/me': typeof MeRoute
   '/misija': typeof MisijaRoute
   '/pricing': typeof PricingRoute
   '/print': typeof PrintRoute
   '/privacy': typeof PrivacyRoute
   '/qr-generator': typeof QrGeneratorRoute
+  '/reset-password': typeof ResetPasswordRoute
   '/s': typeof SRoute
   '/scan': typeof ScanRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
@@ -264,11 +280,13 @@ export interface FileRoutesById {
   '/k': typeof KRoute
   '/lokacija': typeof LokacijaRoute
   '/marshal-account': typeof MarshalAccountRoute
+  '/me': typeof MeRoute
   '/misija': typeof MisijaRoute
   '/pricing': typeof PricingRoute
   '/print': typeof PrintRoute
   '/privacy': typeof PrivacyRoute
   '/qr-generator': typeof QrGeneratorRoute
+  '/reset-password': typeof ResetPasswordRoute
   '/s': typeof SRoute
   '/scan': typeof ScanRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
@@ -297,11 +315,13 @@ export interface FileRouteTypes {
     | '/k'
     | '/lokacija'
     | '/marshal-account'
+    | '/me'
     | '/misija'
     | '/pricing'
     | '/print'
     | '/privacy'
     | '/qr-generator'
+    | '/reset-password'
     | '/s'
     | '/scan'
     | '/sitemap.xml'
@@ -328,11 +348,13 @@ export interface FileRouteTypes {
     | '/k'
     | '/lokacija'
     | '/marshal-account'
+    | '/me'
     | '/misija'
     | '/pricing'
     | '/print'
     | '/privacy'
     | '/qr-generator'
+    | '/reset-password'
     | '/s'
     | '/scan'
     | '/sitemap.xml'
@@ -359,11 +381,13 @@ export interface FileRouteTypes {
     | '/k'
     | '/lokacija'
     | '/marshal-account'
+    | '/me'
     | '/misija'
     | '/pricing'
     | '/print'
     | '/privacy'
     | '/qr-generator'
+    | '/reset-password'
     | '/s'
     | '/scan'
     | '/sitemap.xml'
@@ -391,11 +415,13 @@ export interface RootRouteChildren {
   KRoute: typeof KRoute
   LokacijaRoute: typeof LokacijaRoute
   MarshalAccountRoute: typeof MarshalAccountRoute
+  MeRoute: typeof MeRoute
   MisijaRoute: typeof MisijaRoute
   PricingRoute: typeof PricingRoute
   PrintRoute: typeof PrintRoute
   PrivacyRoute: typeof PrivacyRoute
   QrGeneratorRoute: typeof QrGeneratorRoute
+  ResetPasswordRoute: typeof ResetPasswordRoute
   SRoute: typeof SRoute
   ScanRoute: typeof ScanRoute
   SitemapDotxmlRoute: typeof SitemapDotxmlRoute
@@ -459,6 +485,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/reset-password': {
+      id: '/reset-password'
+      path: '/reset-password'
+      fullPath: '/reset-password'
+      preLoaderRoute: typeof ResetPasswordRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/qr-generator': {
       id: '/qr-generator'
       path: '/qr-generator'
@@ -492,6 +525,13 @@ declare module '@tanstack/react-router' {
       path: '/misija'
       fullPath: '/misija'
       preLoaderRoute: typeof MisijaRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/me': {
+      id: '/me'
+      path: '/me'
+      fullPath: '/me'
+      preLoaderRoute: typeof MeRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/marshal-account': {
@@ -631,11 +671,13 @@ const rootRouteChildren: RootRouteChildren = {
   KRoute: KRoute,
   LokacijaRoute: LokacijaRoute,
   MarshalAccountRoute: MarshalAccountRoute,
+  MeRoute: MeRoute,
   MisijaRoute: MisijaRoute,
   PricingRoute: PricingRoute,
   PrintRoute: PrintRoute,
   PrivacyRoute: PrivacyRoute,
   QrGeneratorRoute: QrGeneratorRoute,
+  ResetPasswordRoute: ResetPasswordRoute,
   SRoute: SRoute,
   ScanRoute: ScanRoute,
   SitemapDotxmlRoute: SitemapDotxmlRoute,
