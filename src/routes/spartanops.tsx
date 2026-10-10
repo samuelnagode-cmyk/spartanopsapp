@@ -319,7 +319,6 @@ function HowItWorks() {
                 display: "grid",
                 gridTemplateColumns: "auto 1fr",
                 gap: 20,
-                paddingBottom: isLast ? 0 : 36,
               }}
             >
               {/* Icon tile + vertical connector */}
@@ -346,6 +345,7 @@ function HowItWorks() {
                       flex: 1,
                       width: 0,
                       marginTop: 8,
+                      marginBottom: 8,
                       borderLeft: `1px dashed ${ACCENT_SOFT}`,
                       minHeight: 24,
                     }}
@@ -354,7 +354,7 @@ function HowItWorks() {
               </div>
 
               {/* Text */}
-              <div style={{ paddingTop: 2 }}>
+              <div style={{ paddingTop: 2, paddingBottom: isLast ? 0 : 36 }}>
                 <p
                   className="font-mono uppercase"
                   style={{ fontSize: 10, letterSpacing: "0.28em", color: MUTED, marginBottom: 6 }}
@@ -384,7 +384,7 @@ function HowItWorks() {
 
       <div className="mt-10 flex justify-center">
         <BtnOutline to="/intel">
-          Read Field Manual <ArrowRight size={14} />
+          {t("spartan.btnFieldManual")} <ArrowRight size={14} />
         </BtnOutline>
       </div>
     </SectionShell>
