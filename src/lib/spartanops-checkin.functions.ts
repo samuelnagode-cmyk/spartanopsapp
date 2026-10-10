@@ -159,6 +159,12 @@ export const spartanopsUpsertCheckin = createServerFn({ method: "POST" })
         .eq("id", checkinId);
       if (uErr) throw new Error(uErr.message);
     } else {
+      // Plan player cap: only new check-ins count. The verified mission owner is exempt.
+      const { isVerifiedLobbyOwner } = await import("./spartanops-owner-auth");
+      if (!(await isVerifiedLobbyOwner(data.fieldId, data.accessToken))) {
+        const { enforcePlayerCap } = await import("./spartanops-plan-limits");
+        await enforcePlayerCap(data.fieldId);
+      }
       const { data: inserted, error: iErr } = await supabaseAdmin
         .from("spartanops_checkins")
         .insert({

@@ -526,6 +526,38 @@ export type Database = {
           },
         ]
       }
+      spartanops_field_plans: {
+        Row: {
+          account_id: string
+          note: string | null
+          plan: string
+          plan_until: string | null
+          updated_at: string
+        }
+        Insert: {
+          account_id: string
+          note?: string | null
+          plan?: string
+          plan_until?: string | null
+          updated_at?: string
+        }
+        Update: {
+          account_id?: string
+          note?: string | null
+          plan?: string
+          plan_until?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "spartanops_field_plans_account_id_fkey"
+            columns: ["account_id"]
+            isOneToOne: true
+            referencedRelation: "spartanops_accounts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       spartanops_field_secrets: {
         Row: {
           field_id: string
@@ -769,6 +801,41 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "spartanops_match_results_account_id_fkey"
+            columns: ["account_id"]
+            isOneToOne: false
+            referencedRelation: "spartanops_accounts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      spartanops_plan_events: {
+        Row: {
+          account_id: string
+          created_at: string
+          detail: Json
+          id: string
+          kind: string
+          lobby_id: string | null
+        }
+        Insert: {
+          account_id: string
+          created_at?: string
+          detail?: Json
+          id?: string
+          kind: string
+          lobby_id?: string | null
+        }
+        Update: {
+          account_id?: string
+          created_at?: string
+          detail?: Json
+          id?: string
+          kind?: string
+          lobby_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "spartanops_plan_events_account_id_fkey"
             columns: ["account_id"]
             isOneToOne: false
             referencedRelation: "spartanops_accounts"

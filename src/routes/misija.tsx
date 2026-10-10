@@ -1,3 +1,4 @@
+import { PLAN_LIMITS } from "@/lib/plans";
 import { saveActiveSession } from "@/lib/active-session";
 import { bumpTelemetryClient } from "@/lib/telemetry-client";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
@@ -1853,6 +1854,15 @@ function CheckinForm({ sessionId, fieldId, preview, onGhost, fieldLabel }: { ses
         } catch { /* fall through to the error message */ }
         setSubmitting(false);
         setErr(en ? "Enter the field password to join." : "Za vstop vnesi geslo poligona.");
+        return;
+      }
+      const capMatch = /player_cap_reached:(\d+)/.exec(String(e?.message ?? ""));
+      if (capMatch) {
+        const n = Number(capMatch[1]);
+        setSubmitting(false);
+        setErr(n === PLAN_LIMITS.free.maxPlayers
+          ? (en ? `This game is full. The field is on the Free plan, which allows ${n} players per game. Ask your marshal.` : `Ta igra je polna. Poligon uporablja brezplačni paket, ki dovoli ${n} igralcev na igro. Vprašaj maršala.`)
+          : (en ? `This game has reached its player limit (${n}). Ask your marshal.` : `Ta igra je dosegla omejitev igralcev (${n}). Vprašaj maršala.`));
         return;
       }
       setSubmitting(false);
