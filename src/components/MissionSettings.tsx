@@ -454,8 +454,8 @@ export function MissionSettingsTabs({
           <SwitchCard
             title={en ? "Spartacus anti-cheat" : "Spartacus proti goljufanju"}
             desc={en
-              ? "Locks each QR code to its spot using GPS. Scans from the wrong place are flagged for you to approve or dismiss."
-              : "Z GPS-om zaklene vsako QR kodo na njeno mesto. Skeni z napačnega mesta so označeni, da jih odobriš ali zavrneš."}
+              ? "Locks each QR code to its spot using GPS. Scans from the wrong place are flagged for you to approve or dismiss. Players are asked to allow location when they check in, so switch it on before they join."
+              : "Z GPS-om zaklene vsako QR kodo na njeno mesto. Skeni z napačnega mesta so označeni, da jih odobriš ali zavrneš. Igralci ob prijavi dovolijo lokacijo, zato to vklopi, preden se pridružijo."}
             on={!!s.spartacusEnabled}
             onToggle={() => patchSettings({ ...s, spartacusEnabled: !s.spartacusEnabled })}
           >

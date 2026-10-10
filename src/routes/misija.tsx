@@ -28,6 +28,7 @@ import { useAmbientAudio } from "@/components/AmbientAudio";
 import { DebriefShareButton } from "@/components/DebriefShareCard";
 
 import landingView from "@/assets/landing-view.webp.asset.json";
+import { setLocationCheckOn } from "@/lib/location-check";
 
 export const Route = createFileRoute("/misija")({
   head: () => ({
@@ -95,6 +96,7 @@ type RespawnSettings = {
   publicDeaths: boolean;
 };
 type GameSettings = {
+  spartacusEnabled?: boolean;
   missionDescription?: string;
   missionName?: string;
   marshalName?: string;
@@ -481,6 +483,8 @@ function MisijaPageInner() {
 
   const [sessionId, setSessionId] = useState("");
   const [state, setState] = useState<GameState | null>(null);
+  const locationCheckOn = !!state?.settings?.spartacusEnabled;
+  useEffect(() => { setLocationCheckOn(locationCheckOn); return () => setLocationCheckOn(false); }, [locationCheckOn]);
   // True once a live game_state row has been read for this field. Until then a
   // stale cached snapshot must not decide which phase renders.
   const [stateFresh, setStateFresh] = useState(false);
@@ -1034,7 +1038,7 @@ function MisijaPageInner() {
     return (
       <>
         <OfflineBanner />
-        <CheckinForm sessionId={sessionId} fieldId={field} preview={preview} onGhost={(g) => setGhostMe(g)} fieldLabel={`${missionTitleFromState(state, field)} · ${fieldTitleFromState(state, field)}`} />
+        <CheckinForm locationCheck={!!state.settings?.spartacusEnabled} sessionId={sessionId} fieldId={field} preview={preview} onGhost={(g) => setGhostMe(g)} fieldLabel={`${missionTitleFromState(state, field)} · ${fieldTitleFromState(state, field)}`} />
         {preview && <PreviewReturnButton />}
       </>
     );
@@ -1598,8 +1602,8 @@ function SpartacusConsentBlock({ en, onClearedChange }: { en: boolean; onCleared
         <>
           <p style={{ fontFamily: "monospace", color: MUTED, fontSize: 13, lineHeight: 1.6, marginBottom: 12 }}>
             {en
-              ? "Scan at the sector. Location is required to play. Allow your phone's location so SpartanOps can check scans when location checks are enabled. Your position is read at check-in and while the capture screen is open. The marshal can review flagged scans. By tapping Allow you agree to this."
-              : "Skeniraj pri sektorju. Za igranje je lokacija obvezna. Dovoli lokacijo telefona, da SpartanOps preveri skene, ko je preverjanje lokacije vključeno. Položaj se prebere ob vstopu v igro in med odprtim zaslonom za zavzetje. Maršal lahko pregleda sporne skene. S pritiskom na Dovoli se s tem strinjaš."}
+              ? "This mission checks your location when you scan. Location is required to play. Allow your phone's location so SpartanOps can check your scans. Your position is read at check-in and while the capture screen is open. The marshal can review flagged scans. By tapping Allow you agree to this."
+              : "Ta misija preverja tvojo lokacijo, ko skeniraš. Za igranje je lokacija obvezna. Dovoli lokacijo telefona, da SpartanOps preveri tvoje skene. Položaj se prebere ob vstopu v igro in med odprtim zaslonom za zavzetje. Maršal lahko pregleda sporne skene. S pritiskom na Dovoli se s tem strinjaš."}
           </p>
       <button
         type="button"
@@ -1723,7 +1727,7 @@ function readFieldEntryToken(): string | undefined {
   } catch { return undefined; }
 }
 
-function CheckinForm({ sessionId, fieldId, preview, onGhost, fieldLabel }: { sessionId: string; fieldId: string; preview?: boolean; onGhost?: (m: Checkin) => void; fieldLabel?: string | null }) {
+function CheckinForm({ locationCheck, sessionId, fieldId, preview, onGhost, fieldLabel }: { locationCheck: boolean; sessionId: string; fieldId: string; preview?: boolean; onGhost?: (m: Checkin) => void; fieldLabel?: string | null }) {
   const { lang } = useLang();
   const en = lang === "en";
   const upsertCheckinFn = useServerFn(spartanopsUpsertCheckin);
@@ -1739,6 +1743,8 @@ function CheckinForm({ sessionId, fieldId, preview, onGhost, fieldLabel }: { ses
   const [err, setErr] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [spartacusCleared, setSpartacusCleared] = useState(false);
+  const locationOk = !locationCheck || spartacusCleared;
+  useEffect(() => { if (!locationCheck) setSpartacusCleared(false); }, [locationCheck]);
 
   // Global "remember me": pre-fill from the last successful registration.
   useEffect(() => {
@@ -1779,8 +1785,8 @@ function CheckinForm({ sessionId, fieldId, preview, onGhost, fieldLabel }: { ses
       setErr(t.needCallsign);
       return;
     }
-    if (!spartacusCleared) {
-      setErr(en ? "Activate and accept the Spartacus anti-cheat protocol before registering." : "Pred prijavo aktivirajte in potrdite Spartacus anti-cheat protokol.");
+    if (!locationOk) {
+      setErr(en ? "Allow location access before entering the game." : "Pred vstopom v igro dovoli dostop do lokacije.");
       return;
     }
     setSubmitting(true);
@@ -2032,7 +2038,7 @@ function CheckinForm({ sessionId, fieldId, preview, onGhost, fieldLabel }: { ses
             </div>
           </div>
 
-          <SpartacusConsentBlock en={en} onClearedChange={setSpartacusCleared} />
+          {locationCheck && <SpartacusConsentBlock en={en} onClearedChange={setSpartacusCleared} />}
 
           <AudioSettingsBlock en={en} />
 
@@ -2040,18 +2046,18 @@ function CheckinForm({ sessionId, fieldId, preview, onGhost, fieldLabel }: { ses
 
           <button
             type="submit"
-            disabled={submitting || !spartacusCleared}
+            disabled={submitting || !locationOk}
             style={{
               width: "100%",
-              background: spartacusCleared ? ACCENT : "rgba(224,176,78,0.18)",
-              color: spartacusCleared ? BG : "rgba(236,227,196,0.55)",
+              background: locationOk ? ACCENT : "rgba(224,176,78,0.18)",
+              color: locationOk ? BG : "rgba(236,227,196,0.55)",
               padding: "14px",
               border: "none",
               fontWeight: 700,
               letterSpacing: "0.2em",
               textTransform: "uppercase",
               fontSize: 13,
-              cursor: submitting || !spartacusCleared ? "not-allowed" : "pointer",
+              cursor: submitting || !locationOk ? "not-allowed" : "pointer",
               fontFamily: "monospace",
             }}
           >

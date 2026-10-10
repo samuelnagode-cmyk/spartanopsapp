@@ -1,5 +1,6 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { setLocationCheckOn } from "@/lib/location-check";
 import { useServerFn } from "@tanstack/react-start";
 import { CheckCircle2, AlertTriangle } from "lucide-react";
 import { spartanopsSpartacusCapture } from "@/lib/spartanops-spartacus.functions";
@@ -257,6 +258,7 @@ function CapturePage() {
   const [resolvedRouteField, setResolvedRouteField] = useState<string>(resolvedField);
   const [acquiringGps, setAcquiringGps] = useState(false);
   const [retryNonce, setRetryNonce] = useState(0);
+  const warmStarted = useRef(false);
 
 
   // If the match ends while this screen is open (success popup, error, GPS
@@ -300,12 +302,11 @@ function CapturePage() {
   useEffect(() => {
     const onAcq = () => setAcquiringGps(true);
     window.addEventListener("spartanops:gps-acquiring", onAcq);
-    // Warm-up: start the eager GPS watcher the moment this view mounts so the
-    // sensor is already streaming coordinates by the time the QR scan runs.
-    startWarmGpsWatcher();
+    // Warm-up starts in run() only once the preflight confirms this mission checks location.
     return () => {
       window.removeEventListener("spartanops:gps-acquiring", onAcq);
-      stopWarmGpsWatcher();
+      if (warmStarted.current) { stopWarmGpsWatcher(); warmStarted.current = false; }
+      setLocationCheckOn(false);
     };
   }, []);
 
@@ -403,6 +404,8 @@ function CapturePage() {
         }
         spartacusOn = !!(gs as any)?.settings?.spartacusEnabled;
       } catch { /* fall through to server-side validation; assume GPS may be needed */ }
+      setLocationCheckOn(spartacusOn);
+      if (spartacusOn && !warmStarted.current) { warmStarted.current = true; startWarmGpsWatcher(); }
       // Back-button / history-navigation guard: if the browser re-loads this
       // route with the exact same scan payload we just processed, redirect
       // silently to /misija instead of re-submitting the capture. The token
