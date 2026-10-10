@@ -66,11 +66,33 @@ const SL_MONTHS_GENITIVE = [
   "julija", "avgusta", "septembra", "oktobra", "novembra", "decembra",
 ] as const;
 
-/** Founding offer end date, e.g. "31 March 2027" / "31. marca 2027". */
-export function formatFoundingDate(lang: "en" | "sl"): string {
-  const d = new Date(`${FOUNDING_OFFER.until}T12:00:00Z`);
+/** A plan end date (default: the founding offer's), e.g. "31 March 2027" / "31. marca 2027". */
+export function formatFoundingDate(lang: "en" | "sl", iso: string = FOUNDING_OFFER.until): string {
+  const d = new Date(`${iso}T12:00:00Z`);
   if (lang === "sl") return `${d.getUTCDate()}. ${SL_MONTHS_GENITIVE[d.getUTCMonth()]} ${d.getUTCFullYear()}`;
   return new Intl.DateTimeFormat("en-GB", { day: "numeric", month: "long", year: "numeric", timeZone: "UTC" }).format(d);
+}
+
+/** mailto for a founding field that wants to keep Pro after its own end date. */
+export function foundingContinueMailto(
+  lang: "en" | "sl",
+  extra: { fieldName?: string; accountId?: string; until?: string },
+): string {
+  const date = formatFoundingDate(lang, extra.until ?? FOUNDING_OFFER.until);
+  const lines: string[] = [];
+  if (extra.fieldName) lines.push(`Field: ${extra.fieldName}`);
+  if (extra.accountId) lines.push(`Account: ${extra.accountId}`);
+  return mailto(
+    lang === "en" ? `Founding field: continuing after ${date}` : `Ustanovitveni poligon: nadaljevanje po ${date}`,
+    lines,
+  );
+}
+
+/** Whole days from today (Ljubljana) to an ISO date; negative once it has passed. */
+export function daysUntil(iso: string, now = new Date()): number {
+  const a = Date.parse(`${todayLjubljana(now)}T00:00:00Z`);
+  const b = Date.parse(`${iso}T00:00:00Z`);
+  return Math.round((b - a) / 86400000);
 }
 
 export type PlanId = "free" | "founding" | "pro";

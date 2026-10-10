@@ -398,7 +398,7 @@ export const spartanopsAdminGetRoster = createServerFn({ method: "POST" })
     if (!isField(data.fieldId)) throw new Error("Invalid field");
     const authorized = await verifyMarshalAccess(data.fieldId, data.password, data.accessToken);
     if (!authorized) {
-      return { ok: false as const, rows: [] };
+      return { ok: false as const, rows: [], plan: null };
     }
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { data: rows, error } = await supabaseAdmin
@@ -430,7 +430,22 @@ export const spartanopsAdminGetRoster = createServerFn({ method: "POST" })
         respawn_unlock_at: s?.respawn_unlock_at ?? null,
       };
     });
-    return { ok: true as const, rows: merged };
+    // Plan of the mission's owner, read with service role after the marshal check above
+    // (a password-only marshal cannot read the plan row under RLS). Null = no limit.
+    let plan: { plan: "free" | "founding" | "pro"; maxPlayers: number; fieldName: string | null; accountId: string } | null = null;
+    try {
+      const { lobbyAccountId, getAccountLimits } = await import("@/lib/spartanops-plan-limits");
+      const accountId = await lobbyAccountId(data.fieldId);
+      if (accountId) {
+        const { data: acct } = await supabaseAdmin
+          .from("spartanops_accounts").select("business_name, is_platform_showcase").eq("id", accountId).maybeSingle();
+        if (acct && !acct.is_platform_showcase) {
+          const l = await getAccountLimits(accountId);
+          plan = { plan: l.plan, maxPlayers: l.maxPlayers, fieldName: acct.business_name ?? null, accountId };
+        }
+      }
+    } catch { plan = null; }
+    return { ok: true as const, rows: merged, plan };
   });
 
 /**
