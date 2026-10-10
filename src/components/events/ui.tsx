@@ -1,6 +1,7 @@
 import { useState, type CSSProperties } from "react";
 import { Link } from "@tanstack/react-router";
-import { CalendarPlus, Share2 } from "lucide-react";
+import { CalendarPlus, Car, Share2 } from "lucide-react";
+import { CapacityBar } from "./CapacityBar";
 import { flagFor } from "@/lib/countries";
 import {
   buildIcs, dateTileParts, formatTimeRange, googleCalendarUrl, kindInfo, shortDate, slugify, type IcsEvent, type Lang,
