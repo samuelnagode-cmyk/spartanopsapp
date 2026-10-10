@@ -22,6 +22,7 @@ import { Route as PrivacyRouteImport } from './routes/privacy'
 import { Route as PrintRouteImport } from './routes/print'
 import { Route as PricingRouteImport } from './routes/pricing'
 import { Route as MisijaRouteImport } from './routes/misija'
+import { Route as MeRouteImport } from './routes/me'
 import { Route as MarshalAccountRouteImport } from './routes/marshal-account'
 import { Route as LokacijaRouteImport } from './routes/lokacija'
 import { Route as KRouteImport } from './routes/k'
@@ -103,6 +104,11 @@ const PricingRoute = PricingRouteImport.update({
 const MisijaRoute = MisijaRouteImport.update({
   id: '/misija',
   path: '/misija',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const MeRoute = MeRouteImport.update({
+  id: '/me',
+  path: '/me',
   getParentRoute: () => rootRouteImport,
 } as any)
 const MarshalAccountRoute = MarshalAccountRouteImport.update({
@@ -207,6 +213,7 @@ export interface FileRoutesByFullPath {
   '/k': typeof KRoute
   '/lokacija': typeof LokacijaRoute
   '/marshal-account': typeof MarshalAccountRoute
+  '/me': typeof MeRoute
   '/misija': typeof MisijaRoute
   '/pricing': typeof PricingRoute
   '/print': typeof PrintRoute
@@ -239,6 +246,7 @@ export interface FileRoutesByTo {
   '/k': typeof KRoute
   '/lokacija': typeof LokacijaRoute
   '/marshal-account': typeof MarshalAccountRoute
+  '/me': typeof MeRoute
   '/misija': typeof MisijaRoute
   '/pricing': typeof PricingRoute
   '/print': typeof PrintRoute
@@ -272,6 +280,7 @@ export interface FileRoutesById {
   '/k': typeof KRoute
   '/lokacija': typeof LokacijaRoute
   '/marshal-account': typeof MarshalAccountRoute
+  '/me': typeof MeRoute
   '/misija': typeof MisijaRoute
   '/pricing': typeof PricingRoute
   '/print': typeof PrintRoute
@@ -306,6 +315,7 @@ export interface FileRouteTypes {
     | '/k'
     | '/lokacija'
     | '/marshal-account'
+    | '/me'
     | '/misija'
     | '/pricing'
     | '/print'
@@ -338,6 +348,7 @@ export interface FileRouteTypes {
     | '/k'
     | '/lokacija'
     | '/marshal-account'
+    | '/me'
     | '/misija'
     | '/pricing'
     | '/print'
@@ -370,6 +381,7 @@ export interface FileRouteTypes {
     | '/k'
     | '/lokacija'
     | '/marshal-account'
+    | '/me'
     | '/misija'
     | '/pricing'
     | '/print'
@@ -403,6 +415,7 @@ export interface RootRouteChildren {
   KRoute: typeof KRoute
   LokacijaRoute: typeof LokacijaRoute
   MarshalAccountRoute: typeof MarshalAccountRoute
+  MeRoute: typeof MeRoute
   MisijaRoute: typeof MisijaRoute
   PricingRoute: typeof PricingRoute
   PrintRoute: typeof PrintRoute
@@ -512,6 +525,13 @@ declare module '@tanstack/react-router' {
       path: '/misija'
       fullPath: '/misija'
       preLoaderRoute: typeof MisijaRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/me': {
+      id: '/me'
+      path: '/me'
+      fullPath: '/me'
+      preLoaderRoute: typeof MeRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/marshal-account': {
@@ -651,6 +671,7 @@ const rootRouteChildren: RootRouteChildren = {
   KRoute: KRoute,
   LokacijaRoute: LokacijaRoute,
   MarshalAccountRoute: MarshalAccountRoute,
+  MeRoute: MeRoute,
   MisijaRoute: MisijaRoute,
   PricingRoute: PricingRoute,
   PrintRoute: PrintRoute,
