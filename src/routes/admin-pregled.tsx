@@ -737,6 +737,9 @@ function AdminPage() {
             <p>{en ? "Cross-field analytics are under construction." : "Analitika je še v pripravi."}</p>
           </div>
         )}
+
+        {/* Master-admin launch dashboard: only rendered after the master unlock. */}
+        {isEditMode && getMasterPw() && <AdminFieldsPlans masterPassword={getMasterPw()!} />}
       </div>
 
       {editModalOpen && (
