@@ -4,6 +4,7 @@ import {
   EVENT_TZ, KIND_IDS, MAX_REPEAT, MAX_UPCOMING_PER_FIELD, addDaysYmd, fold, isOngoingOrUpcoming,
   safeUrl, weekendRange, zonedToUtc,
 } from "./events";
+import { countsFor } from "./event-rsvps.functions";
 
 /* ---------- shared ---------- */
 
@@ -22,7 +23,7 @@ function checkMaster(pw: unknown): boolean {
 }
 
 const LIST_COLS = "id, title, description, kind, starts_at, ends_at, tz, location_text, price_text, capacity, min_age, status, updated_at, visibility";
-const FULL_COLS = "id, series_id, title, kind, starts_at, ends_at, tz, description, rules_text, location_text, maps_url, price_text, capacity, min_age, signup_url, contact_text, visibility, status, cancel_reason, created_at, updated_at";
+const FULL_COLS = "id, series_id, title, kind, starts_at, ends_at, tz, description, rules_text, location_text, maps_url, price_text, capacity, min_age, signup_url, contact_text, visibility, status, cancel_reason, created_at, updated_at, schedule_changed_at";
 const FIELD_JOIN = "account:spartanops_accounts!inner(id, business_name, city, country, listed_publicly, listing_blocked)";
 
 type AccountJoin = { id: string; business_name: string; city: string | null; country: string | null; listed_publicly: boolean; listing_blocked: boolean };
@@ -31,11 +32,12 @@ export type EventListItem = {
   id: string; title: string; kind: string; starts_at: string; ends_at: string | null; tz: string;
   location_text: string | null; price_text: string | null; capacity: number | null; min_age: number | null;
   status: string; field: EventField;
+  going?: number; maybe?: number; seatsOffered?: number;
 };
 export type EventFull = EventListItem & {
   series_id: string | null; description: string; rules_text: string | null; maps_url: string | null;
   signup_url: string | null; contact_text: string | null; visibility: string; cancel_reason: string | null;
-  created_at: string; updated_at: string;
+  created_at: string; updated_at: string; schedule_changed_at: string | null;
 };
 
 const toField = (a: AccountJoin): EventField => ({ id: a.id, name: a.business_name, city: a.city, country: a.country });
@@ -100,8 +102,10 @@ export const eventsList = createServerFn({ method: "POST" })
       const { data: acc } = await db.from("spartanops_accounts").select("business_name, listing_blocked").eq("id", data.accountId).maybeSingle();
       fieldName = acc && !acc.listing_blocked ? acc.business_name : null;
     }
+    const page = filtered.slice(data.offset, data.offset + data.limit);
+    const counts = await countsFor(page.map((e) => e.id));
     return {
-      events: filtered.slice(data.offset, data.offset + data.limit).map(({ updated_at: _u, description: _d, ...e }) => e),
+      events: page.map(({ updated_at: _u, description: _d, ...e }) => ({ ...e, going: counts[e.id]?.going ?? 0, seatsOffered: counts[e.id]?.seatsOffered ?? 0 })),
       total: filtered.length,
       countries,
       fieldName,
@@ -162,8 +166,10 @@ export const eventsMine = createServerFn({ method: "POST" })
     const { data: rows } = await db.from("spartanops_events").select(FULL_COLS).eq("account_id", m.userId).order("starts_at", { ascending: true }).limit(500);
     const r = readiness(m.account);
     const field: EventField = { id: m.userId, name: m.account.business_name, city: m.account.city, country: m.account.country };
+    const list = (rows ?? []) as unknown as Omit<EventFull, "field">[];
+    const counts = await countsFor(list.map((e) => e.id));
     return {
-      events: ((rows ?? []) as unknown as Omit<EventFull, "field">[]).map((e) => ({ ...e, field })),
+      events: list.map((e) => ({ ...e, field, going: counts[e.id]?.going ?? 0, maybe: counts[e.id]?.maybe ?? 0 })),
       fieldReady: r.ready, missing: r.missing, field, listedPublicly: m.account.listed_publicly !== false,
     };
   });
@@ -238,8 +244,15 @@ export const eventsSave = createServerFn({ method: "POST" })
 
     if (data.id) {
       await ownEvent(m.userId, data.id);
+      const built = v.build(data.event.date);
+      const { data: prev } = await db.from("spartanops_events").select("starts_at").eq("id", data.id).single();
+      let scheduleChanged = {};
+      if (prev && Date.parse(prev.starts_at) !== Date.parse(built.starts_at as string)) {
+        const { count } = await db.from("spartanops_event_rsvps").select("event_id", { count: "exact", head: true }).eq("event_id", data.id);
+        if ((count ?? 0) > 0) scheduleChanged = { schedule_changed_at: now };
+      }
       const { data: row, error } = await db.from("spartanops_events")
-        .update({ ...v.build(data.event.date), updated_at: now } as never)
+        .update({ ...built, ...scheduleChanged, updated_at: now } as never)
         .eq("id", data.id).eq("account_id", m.userId).select("id").single();
       if (error || !row) throw new Error("save_failed");
       return { ids: [row.id as string] };
@@ -293,8 +306,9 @@ export const eventsDelete = createServerFn({ method: "POST" })
   .handler(async ({ data }) => {
     const m = await requireMarshal(data.accessToken);
     await ownEvent(m.userId, data.id);
-    // STEP 3: refuse here (e.g. throw "has_answers") when players have answered this event.
     const db = await admin();
+    const { count } = await db.from("spartanops_event_rsvps").select("event_id", { count: "exact", head: true }).eq("event_id", data.id);
+    if ((count ?? 0) > 0) throw new Error("has_answers");
     await db.from("spartanops_events").delete().eq("id", data.id).eq("account_id", m.userId);
     return { ok: true };
   });

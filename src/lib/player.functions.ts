@@ -1,6 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { PRIVACY_VERSION, validatePlayer, type PlayerInput } from "./player-validation";
 import { requireUser, isMarshal } from "./player-auth.server";
+import { exportRsvpsFor } from "./event-rsvps.functions";
 
 type TokenIn = { accessToken: string };
 const tokenOnly = (d: unknown): TokenIn => ({ accessToken: String((d as TokenIn)?.accessToken ?? "") });
@@ -63,7 +64,8 @@ export const playerExportMine = createServerFn({ method: "POST" })
     const user = await requireUser(data.accessToken);
     const db = await admin();
     const { data: profile } = await db.from("spartanops_players").select(COLS).eq("user_id", user.id).maybeSingle();
-    return { exported_at: new Date().toISOString(), account: { email: user.email }, profile: profile ?? null };
+    const event_answers = await exportRsvpsFor(user.id);
+    return { exported_at: new Date().toISOString(), account: { email: user.email }, profile: profile ?? null, event_answers };
   });
 
 export const playerDeleteMine = createServerFn({ method: "POST" })
