@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useLocation } from "@tanstack/react-router";
 import { AlertTriangle } from "lucide-react";
 import { useLang } from "@/lib/i18n";
+import { useLocationCheckOn } from "@/lib/location-check";
 
 const OK_KEY = "spartanops:gps_authorized";
 const DISMISS_KEY = "spartanops:gps_denied_dismiss_at";
@@ -49,7 +50,8 @@ export default function SpartacusGpsGate() {
   const { pathname } = useLocation();
   const { lang } = useLang();
   const en = lang === "en";
-  const active = pathname.startsWith("/misija") || pathname.startsWith("/capture");
+  const locationCheckOn = useLocationCheckOn();
+  const active = (pathname.startsWith("/misija") || pathname.startsWith("/capture")) && locationCheckOn;
   const [perm, setPerm] = useState<Perm>("unknown");
   const [permChecked, setPermChecked] = useState(false);
   const [dismissedBanner, setDismissedBanner] = useState(false);
@@ -164,8 +166,8 @@ export default function SpartacusGpsGate() {
             ) : (
               <p style={{ margin: 0 }}>
                 {en
-                  ? "You will not be able to capture objectives or appear on the team map until GPS is enabled in your browser settings."
-                  : "Dokler v nastavitvah brskalnika ne odobriš dostopa do lokacije, ne moreš skenirati točk ali se prikazati na zemljevidu ekipe."}
+                  ? "This mission checks your location when you scan. You can't capture sectors until location is allowed in your browser settings."
+                  : "Ta misija preverja tvojo lokacijo, ko skeniraš. Dokler v nastavitvah brskalnika ne dovoliš lokacije, ne moreš zavzemati sektorjev."}
               </p>
             )}
           </div>
