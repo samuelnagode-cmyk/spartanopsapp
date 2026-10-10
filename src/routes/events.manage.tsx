@@ -4,7 +4,7 @@ import { useCallback, useEffect, useState, type CSSProperties } from "react";
 import { Check, MoreVertical, X } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useLang } from "@/lib/i18n";
-import { SITE, eventEndMs, type Lang } from "@/lib/events";
+import { SITE, eventEndMs, zonedToUtc, type Lang } from "@/lib/events";
 import {
   eventsCancel, eventsDelete, eventsMine, eventsReopen, eventsSave, type EventField, type EventFull, type EventInput,
 } from "@/lib/events.functions";
