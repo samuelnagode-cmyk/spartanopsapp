@@ -29,6 +29,13 @@
       "when": 1791617254067,
       "tag": "0003_field_plans",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1791626783917,
+      "tag": "0004_close_checkins_captures_writes",
+      "breakpoints": true
     }
   ]
 }
