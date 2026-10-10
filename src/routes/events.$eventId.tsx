@@ -1,6 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
-import { useState, type CSSProperties, type ReactNode } from "react";
+import { useCallback, useState, type CSSProperties, type ReactNode } from "react";
 import { ExternalLink, MapPin } from "lucide-react";
 import { useLang } from "@/lib/i18n";
 import { COUNTRIES, flagFor } from "@/lib/countries";
@@ -14,6 +14,7 @@ import {
   ACCENT, AddToCalendar, BG, CancelledBadge, DateTile, ERR, EventStyles, INK, KindBadge, MICHROMA, MUTED, PANEL,
   ShareButton, btnOutline, btnPrimary, shareLine,
 } from "@/components/events/ui";
+import { RsvpPanel } from "@/components/events/RsvpPanel";
 
 const DEFAULT_IMAGE = "https://storage.googleapis.com/gpt-engineer-file-uploads/pnuEeej0s2fuaeyJ1j4H7JsWP8j1/social-images/social-1784618784760-social_m,edia_(lovable)_red_logo-27.webp";
 
@@ -103,6 +104,8 @@ function EventPage() {
   const isAdmin = useMasterAdmin();
   const hide = useServerFn(eventsAdminHide);
   const [adminState, setAdminState] = useState<"idle" | "hidden" | "shown" | "error">("idle");
+  const [going, setGoing] = useState<number | null>(null);
+  const onCounts = useCallback((n: number) => setGoing(n), []);
 
   if (!e) {
     return (
@@ -198,7 +201,7 @@ function EventPage() {
 
         <div style={{ display: "flex", gap: 10, flexWrap: "wrap", marginTop: 20 }}>
           <AddToCalendar event={e} lang={lang} />
-          <ShareButton url={url} title={e.title} text={shareLine(e, lang)} lang={lang} />
+          <ShareButton url={url} title={e.title} text={shareLine(e, lang) + (going ? ` · ${going} ${lang === "en" ? "going" : "gre"}` : "")} lang={lang} />
           {signup && (
             <a href={signup} target="_blank" rel="noopener noreferrer nofollow" className="ev-focus" style={btnPrimary}>
               <ExternalLink size={14} /> {en ? "Sign up on the organiser's page" : "Prijava na strani organizatorja"}
@@ -207,7 +210,7 @@ function EventPage() {
           )}
         </div>
 
-        {/* STEP 3: attendance and car pool go here */}
+        <RsvpPanel event={e} lang={lang} onCounts={onCounts} />
 
         <footer style={{ marginTop: 32, paddingTop: 14, borderTop: `1px solid ${ACCENT}22`, display: "flex", justifyContent: "space-between", gap: 12, flexWrap: "wrap", fontFamily: "monospace", fontSize: 12, color: MUTED }}>
           <span>{en ? "Organised by" : "Organizator:"} {e.field.name} · {en ? k.en : k.sl}</span>
