@@ -1,3 +1,4 @@
+import { PLAN_LIMITS } from "@/lib/plans";
 import { createFileRoute, Link, useSearch, useNavigate } from "@tanstack/react-router";
 import { getMasterPw, setMasterPw, clearMasterPw } from "@/lib/master-admin";
 import { missionTitle } from "@/lib/mission-title";
@@ -895,7 +896,9 @@ function CreateFieldForm({ onCreated, initialEventName = "" }: { onCreated: (rec
       onCreated(rec, { password: "", marshalPassword: "" });
     } catch (e: any) {
       console.error("[admin] createLobby failed", { error: e, message: e?.message, cause: e?.cause, stack: e?.stack });
-      setErr(e?.message ? `Error: ${e.message}` : "Failed to create lobby.");
+      setErr(String(e?.message ?? "").includes("team_limit")
+        ? teamLimitMessage(en)
+        : e?.message ? `Error: ${e.message}` : "Failed to create lobby.");
     } finally {
       setBusy(false);
     }
@@ -1708,7 +1711,12 @@ function MarshalLobbyConsole({ lobby: initialLobby, marshalPassword, lobbyPasswo
     if (p.marshalPassword) dbPatch.marshalPassword = p.marshalPassword;
     (ownerAccessToken ? getFreshOwnerAccessToken() : Promise.resolve(undefined))
       .then((accessToken) => updateFn({ data: { id: lobby.id, patch: dbPatch, authPassword: marshalPassword || getMasterPw(), accessToken } }))
-      .catch((e) => console.error("[marshal] update failed", e));
+      .catch((e) => {
+        console.error("[marshal] update failed", e);
+        if (String(e?.message ?? "").includes("team_limit") && typeof window !== "undefined") {
+          window.alert(teamLimitMessage(en));
+        }
+      });
   };
 
   const startMission = async () => {
@@ -2665,7 +2673,7 @@ function LockedAutoBalanceButton({ en }: { en: boolean }) {
             fontWeight: 900,
           }}
         >
-          {en ? "NEW PREMIUM FEATURE" : "NOVA PREMIUM FUNKCIJA"}
+          {en ? "NEW PRO FEATURE" : "NOVA FUNKCIJA PRO"}
         </span>
       </button>
       <p style={{
@@ -2814,4 +2822,10 @@ function LeaderRow({ label, color, score, target }: { label: string; color: stri
       </span>
     </div>
   );
+}
+
+/** Shown when the server refuses more teams than the plan allows. */
+function teamLimitMessage(en: boolean): string {
+  const n = PLAN_LIMITS.free.maxTeams;
+  return en ? `Your plan allows up to ${n} teams.` : `Tvoj paket dovoli do ${n} ekip.`;
 }

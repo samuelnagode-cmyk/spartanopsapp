@@ -1,81 +1,94 @@
 import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from "react";
-import { useServerFn } from "@tanstack/react-start";
-import { useT } from "@/lib/i18n";
-import { verifyPremiumKey } from "@/lib/premium.functions";
+import { useT, useLang } from "@/lib/i18n";
+import { supabase } from "@/integrations/supabase/client";
+import { useMasterAdmin } from "@/lib/master-admin";
+import {
+  foundingApplicationMailto, formatFoundingDate, limitsFor, resolveEffectivePlan,
+  type PlanId, type PlanRow,
+} from "@/lib/plans";
 
 /**
- * Premium Access Framework — key validation happens server-side against a
- * secret env var. Premium state lives only for the current browser session.
+ * Plan-aware access. The signed-in marshal's own plan row is read under RLS;
+ * limits are enforced on the server, this only drives the UI.
  */
-const PREMIUM_STORAGE_KEY = "spartanops:premium";
-const CONTACT_EMAIL = "info@spartanopsapp.com";
-const REQUEST_SUBJECT = "SpartanOps Premium Access Request";
+type PlanState = { plan: PlanId; planUntil: string | null; loading: boolean; accountId: string | null; fieldName: string | null };
 
 type PremiumContextValue = {
   isPremium: boolean;
-  activatePremium: (key: string) => Promise<boolean>;
-  deactivatePremium: () => void;
   openPremiumModal: () => void;
   closePremiumModal: () => void;
+  planState: PlanState;
 };
+
+const FREE_STATE: PlanState = { plan: "free", planUntil: null, loading: false, accountId: null, fieldName: null };
 
 const PremiumContext = createContext<PremiumContextValue>({
   isPremium: false,
-  activatePremium: async () => false,
-  deactivatePremium: () => {},
   openPremiumModal: () => {},
   closePremiumModal: () => {},
+  planState: FREE_STATE,
 });
 
 export function PremiumProvider({ children }: { children: ReactNode }) {
-  const [isPremium, setIsPremium] = useState(false);
   const [modalOpen, setModalOpen] = useState(false);
-  const verifyFn = useServerFn(verifyPremiumKey);
+  const [planState, setPlanState] = useState<PlanState>({ ...FREE_STATE, loading: true });
+  const master = useMasterAdmin();
 
   useEffect(() => {
-    try {
-      if (sessionStorage.getItem(PREMIUM_STORAGE_KEY) === "1") setIsPremium(true);
-    } catch {}
+    let cancelled = false;
+    const load = async (userId: string | null) => {
+      if (!userId) { if (!cancelled) setPlanState(FREE_STATE); return; }
+      const [{ data: row }, { data: acct }] = await Promise.all([
+        supabase.from("spartanops_field_plans").select("plan, plan_until").eq("account_id", userId).maybeSingle(),
+        supabase.from("spartanops_accounts").select("business_name, is_platform_showcase").eq("id", userId).maybeSingle(),
+      ]);
+      if (cancelled) return;
+      const plan: PlanId = acct?.is_platform_showcase ? "pro" : resolveEffectivePlan((row as PlanRow) ?? null);
+      setPlanState({
+        plan,
+        planUntil: row?.plan_until ?? null,
+        loading: false,
+        accountId: acct ? userId : null,
+        fieldName: acct?.business_name ?? null,
+      });
+    };
+    supabase.auth.getSession().then(({ data }) => load(data.session?.user?.id ?? null)).catch(() => load(null));
+    const { data: sub } = supabase.auth.onAuthStateChange((event, session) => {
+      if (event !== "SIGNED_IN" && event !== "SIGNED_OUT" && event !== "USER_UPDATED") return;
+      void load(session?.user?.id ?? null);
+    });
+    return () => { cancelled = true; sub.subscription.unsubscribe(); };
   }, []);
 
-  const activatePremium = useCallback(async (key: string) => {
-    try {
-      const res = await verifyFn({ data: { key: key.trim() } });
-      if (res?.ok) {
-        setIsPremium(true);
-        try { sessionStorage.setItem(PREMIUM_STORAGE_KEY, "1"); } catch {}
-        return true;
-      }
-    } catch {}
-    return false;
-  }, [verifyFn]);
-
-  const deactivatePremium = useCallback(() => {
-    setIsPremium(false);
-    try { sessionStorage.removeItem(PREMIUM_STORAGE_KEY); } catch {}
-  }, []);
-
+  const isPremium = master || planState.plan === "founding" || planState.plan === "pro";
   const openPremiumModal = useCallback(() => setModalOpen(true), []);
   const closePremiumModal = useCallback(() => setModalOpen(false), []);
 
   return (
-    <PremiumContext.Provider
-      value={{ isPremium, activatePremium, deactivatePremium, openPremiumModal, closePremiumModal }}
-    >
+    <PremiumContext.Provider value={{ isPremium, openPremiumModal, closePremiumModal, planState }}>
       {children}
-      {modalOpen && <PremiumUpgradeModal onClose={closePremiumModal} />}
+      {modalOpen && <PremiumUpgradeModal onClose={closePremiumModal} planState={planState} />}
     </PremiumContext.Provider>
   );
 }
 
 export function usePremium() {
-  return useContext(PremiumContext);
+  const { isPremium, openPremiumModal, closePremiumModal } = useContext(PremiumContext);
+  return { isPremium, openPremiumModal, closePremiumModal };
 }
 
+export function usePlan() {
+  const { planState } = useContext(PremiumContext);
+  return { plan: planState.plan, limits: limitsFor(planState.plan), planUntil: planState.planUntil, loading: planState.loading };
+}
 
-function PremiumUpgradeModal({ onClose }: { onClose: () => void }) {
+function PremiumUpgradeModal({ onClose, planState }: { onClose: () => void; planState: PlanState }) {
   const t = useT();
-  const mailto = `mailto:${CONTACT_EMAIL}?subject=${encodeURIComponent(REQUEST_SUBJECT)}`;
+  const { lang } = useLang();
+  const mailto = foundingApplicationMailto(lang, {
+    fieldName: planState.fieldName ?? undefined,
+    accountId: planState.accountId ?? undefined,
+  });
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") onClose(); };
     document.addEventListener("keydown", onKey);
@@ -141,7 +154,7 @@ function PremiumUpgradeModal({ onClose }: { onClose: () => void }) {
             marginBottom: 22,
           }}
         >
-          {t("premium.modalDesc")}
+          {t("premium.modalDesc").replace("{date}", formatFoundingDate(lang))}
         </p>
         <a
           href={mailto}

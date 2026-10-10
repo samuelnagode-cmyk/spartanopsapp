@@ -178,7 +178,11 @@ export const spartanopsAdminPatchState = createServerFn({ method: "POST" })
     if (error) throw new Error(error.message);
     // Cleanup follows the state broadcast so player clients never remain in
     // lobby while the Marshal is already displaying the pre-start countdown.
-    if (isFreshStart) await clearMissionRuntimeForStart(supabaseAdmin, data.fieldId);
+    if (isFreshStart) {
+      await clearMissionRuntimeForStart(supabaseAdmin, data.fieldId);
+      const { recordGameStarted } = await import("./spartanops-plan-limits");
+      await recordGameStarted(data.fieldId);
+    }
     if ("compressed_map_url" in patch) {
       await supabaseAdmin
         .from("spartanops_lobbies" as any)

@@ -72,3 +72,27 @@ export function formatFoundingDate(lang: "en" | "sl"): string {
   if (lang === "sl") return `${d.getUTCDate()}. ${SL_MONTHS_GENITIVE[d.getUTCMonth()]} ${d.getUTCFullYear()}`;
   return new Intl.DateTimeFormat("en-GB", { day: "numeric", month: "long", year: "numeric", timeZone: "UTC" }).format(d);
 }
+
+export type PlanId = "free" | "founding" | "pro";
+/** plan_until is an ISO date "YYYY-MM-DD": the last day of the plan, inclusive. */
+export type PlanRow = { plan: PlanId; plan_until: string | null } | null;
+
+/** Today's date in Slovenia as "YYYY-MM-DD", so "until 31 March" lasts through the end of that day. */
+export function todayLjubljana(now = new Date()): string {
+  const parts = new Intl.DateTimeFormat("en-GB", {
+    timeZone: "Europe/Ljubljana", year: "numeric", month: "2-digit", day: "2-digit",
+  }).formatToParts(now);
+  const get = (t: string) => parts.find((p) => p.type === t)?.value ?? "";
+  return `${get("year")}-${get("month")}-${get("day")}`;
+}
+
+/** Effective plan today. No row = free; an expired plan falls back to free. */
+export function resolveEffectivePlan(row: PlanRow, now = new Date()): PlanId {
+  if (!row) return "free";
+  if (row.plan === "free") return "free";
+  const until = row.plan_until ?? (row.plan === "founding" ? FOUNDING_OFFER.until : null);
+  if (until === null) return row.plan;
+  return todayLjubljana(now) <= until ? row.plan : "free";
+}
+
+export const limitsFor = (plan: PlanId) => PLAN_LIMITS[plan];

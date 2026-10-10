@@ -715,7 +715,7 @@ const RosterBoard = memo(function RosterBoard({ roster, settings, onReassign, on
               boxShadow: `0 0 10px ${ACCENT}66`,
             }}
           >
-            {en ? "NEW PREMIUM FEATURE" : "NOVA PREMIUM FUNKCIJA"}
+            {en ? "NEW PRO FEATURE" : "NOVA FUNKCIJA PRO"}
           </span>
         </button>
         <p style={{ marginTop: 8, fontSize: 10.5, color: MUTED, fontFamily: "monospace", lineHeight: 1.55, textAlign: "center", letterSpacing: "0.04em" }}>

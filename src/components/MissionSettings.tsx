@@ -149,9 +149,7 @@ export function TeamConfigSection({ settings, onPatch, en, hideHeading = false }
           }}
         >
           <option value={2}>2</option>
-          <option value={3}>3 — 🔒 {en ? "Premium feature" : "Premium funkcija"}</option>
-          <option value={4}>4 — 🔒 {en ? "Premium feature" : "Premium funkcija"}</option>
-          <option value={5}>5 — 🔒 {en ? "Premium feature" : "Premium funkcija"}</option>
+          <option value={3}>3 — 🔒 {en ? "Pro feature" : "Funkcija Pro"}</option>
         </select>
       </div>
       <div className="grid grid-cols-2 gap-3">

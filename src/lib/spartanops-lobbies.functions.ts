@@ -252,6 +252,10 @@ export const createLobby = createServerFn({ method: "POST" })
     // Any marshal can create their own lobby (they set their own passwords).
     // Master password is not required for lobby creation — only for admin edit/delete.
     if (!fieldName) throw new Error("Field name required");
+    if (!checkMaster(String(data.masterPassword ?? ""))) {
+      const { enforceTeamLimit } = await import("./spartanops-plan-limits");
+      await enforceTeamLimit(user.id, (data.settings as any)?.teamCount);
+    }
     // Per-mission passwords are optional: players join with the account's field
     // password. Missing values get a random 20-char secret so DB constraints and
     // the "must differ" rule still hold.
@@ -337,6 +341,14 @@ export const updateLobbyServer = createServerFn({ method: "POST" })
     if (!authorized) throw new Error("Unauthorized");
     // supabaseAdmin already imported above
     const p = data.patch;
+    if (p.settings !== undefined && !checkMaster(data.authPassword)) {
+      const { data: cur } = await supabaseAdmin
+        .from("spartanops_lobbies").select("account_id, settings").eq("id", data.id).maybeSingle();
+      if (cur?.account_id) {
+        const { enforceTeamLimit } = await import("./spartanops-plan-limits");
+        await enforceTeamLimit(cur.account_id as string, (p.settings as any)?.teamCount, (cur.settings as any)?.teamCount ?? 2);
+      }
+    }
     const serverNowMs = Date.now();
     const serverNowIso = new Date(serverNowMs).toISOString();
     const isResumePatch = p.state === "active" && p.startedAt !== undefined && p.countdownSeconds === undefined;
@@ -429,6 +441,8 @@ export const updateLobbyServer = createServerFn({ method: "POST" })
 
     if (p.state === "active" && !isResumePatch) {
       await clearMissionRuntimeForStart(supabaseAdmin, data.id);
+      const { recordGameStarted } = await import("./spartanops-plan-limits");
+      await recordGameStarted(data.id);
     }
 
     const { data: updated, error } = await supabaseAdmin

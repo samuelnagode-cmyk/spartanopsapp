@@ -507,13 +507,12 @@ export const dict: Dict = {
   },
 
   // Premium access framework
-  "premium.enterKeyPlaceholder": { sl: "VNESI PREMIUM DOSTOPNI KLJUČ", en: "ENTER PREMIUM ACCESS KEY" },
-  "premium.modalTitle": { sl: "// PREMIUM FUNKCIJE", en: "// PREMIUM FEATURES" },
+  "premium.modalTitle": { sl: "// FUNKCIJA PRO", en: "// PRO FEATURE" },
   "premium.modalDesc": {
-    sl: "Hvala za zanimanje! Trenutno pripravljamo plačilni sistem (Stripe) za premium funkcije. Ko bo na voljo, te bomo obvestili.",
-    en: "Thank you for your inquiry — we're currently working on a Stripe payment method for premium features. We'll notify you as soon as it's ready.",
+    sl: "Ta funkcija je del paketa Pro. SpartanOps je za začetek brezplačen, ustanovitveni poligoni pa dobijo vse funkcije Pro brezplačno do {date}. Povej nam o svojem poligonu in jih vklopimo.",
+    en: "This feature is part of the Pro plan. SpartanOps is free to start, and founding fields get every Pro feature free until {date}. Tell us about your field and we'll switch it on.",
   },
-  "premium.modalBtn": { sl: "Obvesti me, ko bo na voljo", en: "Notify me when it's ready" },
+  "premium.modalBtn": { sl: "PRIJAVI SE KOT USTANOVITVENI POLIGON", en: "APPLY AS A FOUNDING FIELD" },
   "premium.statusFree": { sl: "[ STATUS: OSNOVNI NIVO ]", en: "[ STATUS: CORE TIER ]" },
   "premium.statusPremium": { sl: "[ STATUS: OPERATIVNI PREMIUM ]", en: "[ STATUS: OPERATIONAL PREMIUM ]" },
 
