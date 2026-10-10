@@ -9,7 +9,7 @@ import { PlayerAuth } from "@/components/PlayerAuth";
 import { PlayerProfileForm, ProfilePreview, type PlayerProfile } from "@/components/PlayerProfileForm";
 
 export const Route = createFileRoute("/me")({
-  validateSearch: (s: Record<string, unknown>) => ({ next: typeof s.next === "string" ? s.next : undefined }),
+  validateSearch: (s: Record<string, unknown>): { next?: string } => (typeof s.next === "string" ? { next: s.next } : {}),
   head: () => ({
     meta: [
       { title: "Player profile — SpartanOps" },
