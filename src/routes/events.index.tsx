@@ -7,6 +7,8 @@ import { COUNTRIES, flagFor } from "@/lib/countries";
 import { EVENT_KINDS, bucketLabel, weekBucket, type Lang } from "@/lib/events";
 import { eventsList, type EventListItem } from "@/lib/events.functions";
 import { useIsMarshal } from "@/lib/use-signed-in";
+import { supabase } from "@/integrations/supabase/client";
+import { eventsMyRsvps } from "@/lib/event-rsvps.functions";
 import {
   ACCENT, BG, ERR, EventCard, EventStyles, INK, MICHROMA, MUTED, PANEL, SkeletonCard, btnOutline, chipStyle,
 } from "@/components/events/ui";
@@ -72,6 +74,18 @@ function EventsPage() {
   const [loading, setLoading] = useState(!initial);
   const [error, setError] = useState(false);
   const [loadingMore, setLoadingMore] = useState(false);
+  const myFn = useServerFn(eventsMyRsvps);
+  const [mine, setMine] = useState<Record<string, "going" | "maybe">>({});
+  useEffect(() => {
+    void (async () => {
+      const { data: s } = await supabase.auth.getSession();
+      if (!s.session) return;
+      try {
+        const r = await myFn({ data: { accessToken: s.session.access_token } });
+        setMine(Object.fromEntries([...r.upcoming, ...r.past].map((a) => [a.event_id, a.status])));
+      } catch { /* signed in without answers or expired session */ }
+    })();
+  }, [myFn]);
   const first = useRef(true);
 
   useEffect(() => { const t = setTimeout(() => setDebouncedQ(q.trim()), 250); return () => clearTimeout(t); }, [q]);
@@ -210,7 +224,7 @@ function EventsPage() {
                   <h2 style={{ fontFamily: "monospace", fontSize: 11, letterSpacing: "0.22em", color: MUTED, textTransform: "uppercase", marginBottom: 10 }}>{bucketLabel(g.key, lang)}</h2>
                 )}
                 <div className="grid grid-cols-1 md:grid-cols-2" style={{ gap: 12 }}>
-                  {g.items.map((e) => <EventCard key={e.id} e={e} lang={lang} />)}
+                  {g.items.map((e) => <EventCard key={e.id} e={e} lang={lang} myStatus={mine[e.id] ?? null} />)}
                 </div>
               </section>
             ))}
