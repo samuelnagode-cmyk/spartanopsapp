@@ -6,6 +6,10 @@ import { useLang } from "@/lib/i18n";
 import { FieldPasswordPanel } from "@/components/FieldPasswordPanel";
 import { CountrySearchInput } from "@/components/CountrySearchInput";
 import { COUNTRIES, countryCodeFor } from "@/lib/countries";
+import {
+  CONTACT_EMAIL, FOUNDING_OFFER, daysUntil, formatFoundingDate, foundingApplicationMailto, foundingContinueMailto,
+  limitsFor, resolveEffectivePlan, todayLjubljana, type PlanId, type PlanRow,
+} from "@/lib/plans";
 
 // Same shared client; untyped view because the generated types do not yet include spartanops_accounts.
 const db = supabase as unknown as SupabaseClient;
@@ -286,9 +290,12 @@ function LoggedIn({ user, en }: { user: User; en: boolean }) {
 
   return (
     <div>
+      <YourPlanCard user={user} en={en} business={business} />
+
       <Link to="/admin-pregled" style={{ ...btnStyle, display: "block", textAlign: "center", textDecoration: "none", marginBottom: 22 }}>
         {en ? "Missions" : "Misije"}
       </Link>
+
 
       <h2 style={sectionTitle}>{en ? "Account" : "Račun"}</h2>
       <p style={labelStyle}>Email</p>
@@ -341,6 +348,82 @@ function LoggedIn({ user, en }: { user: User; en: boolean }) {
       <button type="button" onClick={() => supabase.auth.signOut()} style={{ ...btnStyle, background: "transparent", color: ACCENT, border: `1px solid ${ACCENT}88`, marginTop: 28 }}>
         {en ? "Log out" : "Odjava"}
       </button>
+    </div>
+  );
+}
+
+const MUTED_C = "rgba(180,190,205,0.75)";
+
+/** Read-only "Your plan" panel. Own plan row is readable under RLS by the signed-in owner. */
+function YourPlanCard({ user, en, business }: { user: User; en: boolean; business: string | null }) {
+  const lang = en ? "en" : "sl";
+  const [state, setState] = useState<{ row: PlanRow; showcase: boolean } | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      const [{ data: row }, { data: acct }] = await Promise.all([
+        db.from("spartanops_field_plans").select("plan, plan_until").eq("account_id", user.id).maybeSingle(),
+        db.from("spartanops_accounts").select("is_platform_showcase").eq("id", user.id).maybeSingle(),
+      ]);
+      if (!cancelled) setState({ row: (row as PlanRow) ?? null, showcase: !!acct?.is_platform_showcase });
+    })();
+    return () => { cancelled = true; };
+  }, [user.id]);
+
+  if (!state) return null;
+  const plan: PlanId = state.showcase ? "pro" : resolveEffectivePlan(state.row);
+  const limits = limitsFor(plan);
+  const ownUntil = state.row?.plan === "founding" ? (state.row.plan_until ?? FOUNDING_OFFER.until) : null;
+  const expired = !state.showcase && ownUntil !== null && ownUntil < todayLjubljana();
+  const endingSoon = plan === "founding" && ownUntil !== null && !expired && daysUntil(ownUntil) <= 30;
+  const ownDate = ownUntil ? formatFoundingDate(lang, ownUntil) : "";
+  const offerDate = formatFoundingDate(lang);
+  const fieldName = business || undefined;
+
+  const badge = plan === "pro" ? "PRO" : plan === "founding" ? (en ? "FOUNDING FIELD" : "USTANOVITVENI POLIGON") : (en ? "FREE" : "BREZPLAČNO");
+  const amber = plan !== "free";
+
+  let line: string;
+  let action: { href: string; label: string } | null = null;
+  if (expired) {
+    line = en ? `Your founding period ended on ${ownDate}. You are on the Free plan.` : `Ustanovitveno obdobje se je končalo ${ownDate}. Uporabljaš brezplačni paket.`;
+  } else if (plan === "founding" && endingSoon) {
+    line = en ? `Your free Pro period ends on ${ownDate}. Write to us before then to keep Pro.` : `Brezplačno obdobje Pro se konča ${ownDate}. Piši nam pred tem, da obdržiš Pro.`;
+    action = { href: foundingContinueMailto(lang, { fieldName, accountId: user.id, until: ownUntil! }), label: en ? "WRITE TO US" : "PIŠI NAM" };
+  } else if (plan === "founding") {
+    line = en ? `All Pro features are free until ${ownDate}.` : `Vse funkcije Pro so brezplačne do ${ownDate}.`;
+  } else if (plan === "pro") {
+    line = en ? "Questions about your plan? Write to us." : "Vprašanja o paketu? Piši nam.";
+  } else {
+    line = en ? `Need more? Founding fields get every Pro feature free until ${offerDate}.` : `Potrebuješ več? Ustanovitveni poligoni dobijo vse funkcije Pro brezplačno do ${offerDate}.`;
+  }
+  if (plan === "free") {
+    action = { href: foundingApplicationMailto(lang, { fieldName, accountId: user.id }), label: en ? "APPLY AS A FOUNDING FIELD" : "PRIJAVI SE KOT USTANOVITVENI POLIGON" };
+  }
+
+  return (
+    <div style={{ border: `1px solid ${ACCENT}44`, background: "rgba(0,0,0,0.25)", padding: "12px 14px", marginBottom: 22 }}>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, marginBottom: 8 }}>
+        <span style={{ ...labelStyle, marginBottom: 0 }}>{en ? "Your plan" : "Tvoj paket"}</span>
+        <span style={{
+          fontFamily: "'Michroma', monospace", fontSize: 9.5, letterSpacing: "0.14em",
+          color: amber ? ACCENT : MUTED_C, border: `1px solid ${amber ? ACCENT + "88" : "rgba(180,190,205,0.3)"}`,
+          padding: "3px 7px", textAlign: "right",
+        }}>{badge}</span>
+      </div>
+      <p style={{ fontFamily: "monospace", fontSize: 12.5, margin: 0, lineHeight: 1.6 }}>
+        {en ? "Players per game" : "Igralcev na igro"}: <strong>{limits.maxPlayers}</strong> · {en ? "Teams" : "Ekip"}: <strong>{limits.maxTeams}</strong>
+      </p>
+      <p style={{ fontFamily: "monospace", fontSize: 11.5, opacity: 0.8, lineHeight: 1.5, margin: "6px 0 0" }}>
+        {line}
+        {plan === "pro" && <> <a href={`mailto:${CONTACT_EMAIL}`} style={{ color: ACCENT }}>{CONTACT_EMAIL}</a></>}
+      </p>
+      {action && (
+        <a href={action.href} style={{ ...btnStyle, display: "block", textAlign: "center", textDecoration: "none", marginTop: 10, padding: 10, fontSize: 10, textWrap: "balance" as any }}>
+          {action.label}
+        </a>
+      )}
     </div>
   );
 }
