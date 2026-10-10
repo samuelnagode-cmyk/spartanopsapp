@@ -1,14 +1,22 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState, type ReactNode } from "react";
 import { ArrowLeft } from "lucide-react";
+import { useLang } from "@/lib/i18n";
+import { PLAN_LIMITS } from "@/lib/plans";
+
+type Audience = "marshals" | "players";
 
 export const Route = createFileRoute("/intel")({
+  validateSearch: (search: Record<string, unknown>): { for?: Audience } =>
+    search.for === "players" ? { for: "players" } : {},
   head: () => ({
     meta: [
-      { title: "Tactical Briefing — SpartanOps" },
-      { name: "description", content: "SpartanOps tactical briefing and full field manual for marshals and players." },
-      { property: "og:title", content: "Tactical Briefing — SpartanOps" },
-      { property: "og:description", content: "Complete operational manual for marshals and player HUD guide." },
+      { title: "Field manual — SpartanOps" },
+      { name: "description", content: "How to set up a field and run a game with SpartanOps, and how players join and play." },
+      { property: "og:title", content: "Field manual — SpartanOps" },
+      { property: "og:description", content: "How to set up a field and run a game with SpartanOps, and how players join and play." },
+      { property: "og:type", content: "article" },
+      { name: "twitter:card", content: "summary" },
     ],
   }),
   component: IntelPage,
@@ -86,82 +94,137 @@ function BriefingContent({ blocks }: { blocks: BriefingBlock[] }) {
   );
 }
 
+const COPY = {
+  en: {
+    eyebrow: "// INTEL / FIELD MANUAL",
+    title: "FIELD MANUAL",
+    tabMarshals: "FOR MARSHALS",
+    tabPlayers: "FOR PLAYERS",
+    panelMarshals: "// MARSHAL MANUAL",
+    panelPlayers: "// PLAYER MANUAL",
+    back: "Back to home",
+    marshals: [
+      { eyebrow: "[01] ONE-TIME SETUP", title: "Set up your field", bullets: [
+        "Create a free marshal account with your field's name. Add your city and country, so players can tell fields apart on the Join page.",
+        "Set your field password. Players enter it the first time they join, and you can change it whenever you like.",
+        "Download the print kit: one QR plate for each sector, plus the respawn plate. Print on A4 or A3, laminate with a matte film, and place the plates at chest height, out of direct sun.",
+        "Test every code with your phone before the first game.",
+        "Print your field poster (Marshal account → Player QR). Players scan it to find your field.",
+      ] },
+      { eyebrow: "[02] BEFORE EACH GAME", title: "Create the mission", bullets: [
+        "Tap Create Mission and fill in the tabs: Mission, Gamemode, Rules, Extras and Map.",
+        "Choose Domination, the match length, the pre-start countdown and the points needed to win. Free fields play with 2 teams; Pro and founding fields can use 3.",
+        "Set the respawn rules.",
+        "Upload your map and place the sectors and respawn points on it.",
+        { note: "Optional: switch on the location check. Scans from the wrong place are flagged for you to approve or dismiss. Switch it on before players join, because they allow location when they check in." },
+        { note: "Prepared missions stay saved. On game day you switch between them with one tap." },
+      ] },
+      { eyebrow: "[03] GAME DAY", title: "Run the game", bullets: [
+        "Give players today's field password. They scan your poster, enter the password and check in.",
+        "Watch the roster fill up. If the teams look uneven, move players between teams in Game review.",
+        "Press Start Match. Players get a countdown to reach their spawn.",
+        "During the game you can pause and resume the match, and follow the live leaderboard, map and event log.",
+        "When the game ends, every player sees the results screen.",
+        { note: `Free fields allow up to ${PLAN_LIMITS.free.maxPlayers} players per game, Pro and founding fields up to ${PLAN_LIMITS.pro.maxPlayers}.` },
+      ] },
+    ],
+    players: [
+      { eyebrow: "[01] JOIN", title: "Get into the game", bullets: [
+        "Scan the marshal's poster QR with your phone, or open Join a game and pick your field from the list.",
+        { note: "The first time, enter today's field password. Ask your marshal." },
+        "Enter your callsign. Only the callsign is required. Your phone number is visible only to the marshal.",
+        "If the mission uses the location check, tap Allow location. Then tap Enter the game.",
+        "Pick your team, then wait for the countdown. The screen shows the rules and the map.",
+      ] },
+      { eyebrow: "[02] CAPTURE", title: "Take the sectors", bullets: [
+        "When the game starts, find the QR plates placed around the field. Use the scanner inside the app, not your phone's camera app.",
+        "Tap Scan code in the app and point the camera at a plate. Your team gets the sector and the score updates for everyone.",
+        "If your team already holds the sector, the app tells you so.",
+        { note: "If the mission uses the location check, scan while standing at the plate. Scans from somewhere else are flagged for the marshal to review." },
+      ] },
+      { eyebrow: "[03] DURING THE GAME", title: "Stay in the game", bullets: [
+        "Keep the app open to follow the scoreboard, the capture log and the map.",
+        "If you are hit, go to your respawn point and wait for the respawn timer, if the marshal turned it on.",
+        "If the marshal pauses the game, scanning stops until the game resumes.",
+        { note: "The marshal may move you to another team. A full-screen notice asks you to confirm." },
+        { note: "Sound is off by default. You can switch music and sound effects on at check-in, and mute them with the speaker button, bottom left." },
+      ] },
+    ],
+  },
+  sl: {
+    eyebrow: "// INTEL / FIELD MANUAL",
+    title: "TERENSKI PRIROČNIK",
+    tabMarshals: "ZA MARŠALE",
+    tabPlayers: "ZA IGRALCE",
+    panelMarshals: "// PRIROČNIK ZA MARŠALE",
+    panelPlayers: "// PRIROČNIK ZA IGRALCE",
+    back: "Nazaj na domov",
+    marshals: [
+      { eyebrow: "[01] ENKRATNA PRIPRAVA", title: "Pripravi svoj poligon", bullets: [
+        "Ustvari brezplačen račun maršala z imenom svojega poligona. Dodaj mesto in državo, da igralci na strani za vstop ločijo poligone.",
+        "Nastavi geslo poligona. Igralci ga vnesejo ob prvem vstopu, spremeniš ga lahko kadarkoli.",
+        "Prenesi print kit: po eno QR ploščo za vsak sektor in ploščo za respawn. Natisni na A4 ali A3, laminiraj z mat folijo in plošče postavi v višino prsi, stran od neposredne sončne svetlobe.",
+        "Pred prvo igro vsako kodo preizkusi s telefonom.",
+        "Natisni plakat svojega poligona (Račun maršala → QR za igralce). Igralci ga skenirajo in najdejo tvoj poligon.",
+      ] },
+      { eyebrow: "[02] PRED VSAKO IGRO", title: "Ustvari misijo", bullets: [
+        "Tapni Ustvari misijo in izpolni zavihke: Misija, Način igre, Pravila, Dodatki in Zemljevid.",
+        "Izberi Dominacijo, dolžino tekme, odštevanje pred začetkom in točke za zmago. Brezplačni poligoni igrajo z 2 ekipama, Pro in ustanovitveni poligoni lahko uporabijo 3.",
+        "Nastavi pravila za respawn.",
+        "Naloži zemljevid in na njem označi sektorje in točke za respawn.",
+        { note: "Po želji vklopi preverjanje lokacije. Skeni z napačnega mesta so označeni, da jih odobriš ali zavrneš. Vklopi ga, preden se igralci pridružijo, ker lokacijo dovolijo ob prijavi." },
+        { note: "Pripravljene misije ostanejo shranjene. Na dan igre preklapljaš med njimi z enim dotikom." },
+      ] },
+      { eyebrow: "[03] DAN IGRE", title: "Vodi igro", bullets: [
+        "Igralcem povej današnje geslo poligona. Skenirajo tvoj plakat, vnesejo geslo in se prijavijo.",
+        "Spremljaj seznam igralcev. Če sta ekipi neuravnoteženi, igralce prestavljaš med ekipama v Pregledu igre.",
+        "Pritisni Začni tekmo. Igralci dobijo odštevanje, da pridejo do svojega spawna.",
+        "Med igro lahko tekmo pavziraš in nadaljuješ ter spremljaš lestvico, zemljevid in dnevnik dogodkov v živo.",
+        "Ko se igra konča, vsak igralec vidi zaslon z rezultati.",
+        { note: `Brezplačni poligoni dovolijo do ${PLAN_LIMITS.free.maxPlayers} igralcev na igro, Pro in ustanovitveni do ${PLAN_LIMITS.pro.maxPlayers}.` },
+      ] },
+    ],
+    players: [
+      { eyebrow: "[01] VSTOP", title: "Vstopi v igro", bullets: [
+        "Skeniraj QR s plakata maršala ali odpri Vstopi v igro in s seznama izberi svoj poligon.",
+        { note: "Prvič vnesi današnje geslo poligona. Vprašaj maršala." },
+        "Vpiši svoj callsign. Obvezen je samo callsign. Telefonska številka je vidna samo maršalu.",
+        "Če misija uporablja preverjanje lokacije, tapni Dovoli lokacijo. Nato tapni Vstopi v igro.",
+        "Izberi ekipo in počakaj na odštevanje. Zaslon prikazuje pravila in zemljevid.",
+      ] },
+      { eyebrow: "[02] ZAVZEMANJE", title: "Zavzemi sektorje", bullets: [
+        "Ko se igra začne, poišči QR plošče, postavljene po terenu. Uporabi skener v aplikaciji, ne kamere telefona.",
+        "V aplikaciji tapni Skeniraj točko in usmeri kamero v ploščo. Tvoja ekipa dobi sektor in rezultat se takoj posodobi za vse.",
+        "Če ima tvoja ekipa sektor že v lasti, ti aplikacija to sporoči.",
+        { note: "Če misija uporablja preverjanje lokacije, skeniraj, ko stojiš ob plošči. Skene od drugje maršal pregleda." },
+      ] },
+      { eyebrow: "[03] MED IGRO", title: "Ostani v igri", bullets: [
+        "Aplikacijo imej odprto, da spremljaš rezultat, dnevnik zavzetij in zemljevid.",
+        "Če te zadenejo, pojdi na svojo točko za respawn in počakaj na odštevanje, če ga je maršal vklopil.",
+        "Če maršal igro pavzira, je skeniranje onemogočeno, dokler se igra ne nadaljuje.",
+        { note: "Maršal te lahko premesti v drugo ekipo. Celozaslonsko obvestilo te prosi za potrditev." },
+        { note: "Zvok je privzeto izklopljen. Glasbo in zvočne efekte lahko vklopiš ob prijavi, utišaš pa jih z gumbom z zvočnikom spodaj levo." },
+      ] },
+    ],
+  },
+} satisfies Record<"en" | "sl", { marshals: BriefingBlock[]; players: BriefingBlock[]; [k: string]: unknown }>;
+
 function IntelPage() {
-  const [tab, setTab] = useState<"marshal" | "player">("marshal");
-
-  const marshalBlocks: BriefingBlock[] = [
-    {
-      eyebrow: "[01] PRE-GAME SETUP",
-      title: "COMMAND CENTER INITIALIZATION",
-      bullets: [
-        "Click 'Create Operation' to open the Marshal Command Center and select 'New Field' — or an existing one if your field is already registered.",
-        "Set up your active field name, marshal password and game password, choose the desired gamemode (e.g., Domination), and define the total match countdown duration and respawn times.",
-        { note: "Import your map illustration and add the desired number of points, spawns, and accessories to custom positions." },
-        "Click 'Initialize Lobby' to generate your dynamic session QR code and direct-join URL.",
-      ],
-    },
-    {
-      eyebrow: "[02] BRIEFING & DEPLOYMENT",
-      title: "STAGE THE OPERATORS",
-      bullets: [
-        "Share the generated direct URL into your community chat or display the Quick Join QR code on your screen for players to scan at the staging area.",
-        { note: "The easiest way for players to join and rejoin during the match is to print the 'Player HUD cards' available for download." },
-        "Instruct arriving players to submit their callsigns and choose their faction (Blue or Red team).",
-        "Monitor the live roster panel to ensure team balancing looks correct before initiating combat.",
-      ],
-    },
-    {
-      eyebrow: "[03] IN-GAME COMMAND",
-      title: "EXECUTE THE MATCH",
-      bullets: [
-        "Once all operators are deployed, press 'Start Mission' to trigger the selected synchronized real-time countdown.",
-        { note: "During this countdown players have time to get ready and move to their designated spawn positions." },
-        "Use the Live Map and Event Log to oversee objectives and scoreboards.",
-        "In case of field emergencies or rule changes, use the global override controls to pause or prematurely secure the operation.",
-      ],
-    },
-  ];
-
-  const playerBlocks: BriefingBlock[] = [
-    {
-      eyebrow: "[01] DEPLOYMENT REGISTRATION",
-      title: "ENTER THE OPERATION",
-      bullets: [
-        "Enter your field's active operation via: (1) the Marshal's Quick Join QR code on their phone, (2) tapping the Marshal's shared direct session URL, (3) scanning the Player HUD card QR code, or (4) manually finding it in the 'Active Operation' section on our website.",
-        { note: "If it's your first time entering the active operation (field), you must input the game password set up by the Marshal." },
-        "Enter your Call Sign (tactical moniker), select your faction (team), and choose your experience level.",
-        "Stand by at the staging area and monitor the Pre-Start Countdown Screen for rules, map configurations, and vital operational data.",
-      ],
-    },
-    {
-      eyebrow: "[02] SECTOR CAPTURE MECHANICS",
-      title: "SECURE THE OBJECTIVES",
-      bullets: [
-        "After the game starts, locate the physical high-visibility QR plates mounted across the tactical zones on the field (Alpha, Beta, Gamma, Delta).",
-        "To capture an objective for your team, open your phone's Camera and scan the QR code.",
-        "The system instantly registers the point, logs the event, and credits it to your team based on the gamemode and settings.",
-      ],
-    },
-    {
-      eyebrow: "[03] HUD RESPONSES & RE-ENGAGEMENT",
-      title: "STAY IN THE FIGHT",
-      bullets: [
-        "Keep your Player HUD active to monitor real-time scoreboards, live capture logs, and the tactical map.",
-        "If eliminated, return immediately to your designated Faction HQ (Blue or Red Spawn) and follow your Marshal's respawn timers to safely re-enter the operational area.",
-      ],
-    },
-  ];
-
+  const { lang } = useLang();
+  const c = lang === "en" ? COPY.en : COPY.sl;
+  const search = Route.useSearch();
+  const [tab, setTab] = useState<Audience>(search.for === "players" ? "players" : "marshals");
+  const blocks = tab === "marshals" ? c.marshals : c.players;
   const tabs = [
-    { id: "marshal" as const, label: "FOR MARSHALS", sub: "// MARSHAL CONTROL CENTER" },
-    { id: "player" as const, label: "FOR PLAYERS", sub: "// PLAYER HUD" },
+    { id: "marshals" as const, label: c.tabMarshals },
+    { id: "players" as const, label: c.tabPlayers },
   ];
 
   return (
     <div style={{ background: BG, color: INK, minHeight: "100dvh", paddingTop: 80 }}>
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12 md:py-16">
         <p className="font-mono uppercase mb-3" style={{ fontSize: 11, letterSpacing: "0.32em", color: ACCENT }}>
-          // INTEL / FIELD MANUAL
+          {c.eyebrow}
         </p>
         <h1 style={{
           fontFamily: "'Michroma', monospace",
@@ -170,14 +233,14 @@ function IntelPage() {
           color: ACCENT,
           lineHeight: 1.1,
         }}>
-          TACTICAL BRIEFING
+          {c.title}
         </h1>
         <div style={{ width: 56, height: 1, background: ACCENT, marginTop: 18 }} />
 
         {/* Tab bar */}
         <div
           role="tablist"
-          aria-label="Tactical briefing audience"
+          aria-label={c.title}
           className="grid grid-cols-2 mt-10 mb-8"
           style={{ borderBottom: `1px solid ${HAIRLINE}` }}
         >
@@ -186,6 +249,8 @@ function IntelPage() {
             return (
               <button
                 key={t.id}
+                id={`intel-tab-${t.id}`}
+                aria-controls="intel-panel"
                 role="tab"
                 aria-selected={active}
                 onClick={() => setTab(t.id)}
@@ -204,27 +269,24 @@ function IntelPage() {
                 }}
               >
                 <span className="block text-[13px] md:text-[15px]">{t.label}</span>
-                <span className="block font-mono"
-                  style={{ fontSize: 10, letterSpacing: "0.24em", color: active ? ACCENT_SOFT : "rgba(231,227,214,0.35)", marginTop: 4 }}
-                >
-                  {t.sub}
-                </span>
               </button>
             );
           })}
         </div>
 
+        <div role="tabpanel" id="intel-panel" aria-labelledby={`intel-tab-${tab}`}>
         <HudCard className="p-5 md:p-8">
           <p className="font-mono uppercase mb-6"
             style={{ fontSize: 10, letterSpacing: "0.28em", color: ACCENT_SOFT }}>
-            {tab === "marshal" ? "// MARSHAL OPERATIONAL MANUAL //" : "// OPERATOR FIELD MANUAL //"}
+            {tab === "marshals" ? c.panelMarshals : c.panelPlayers}
           </p>
-          <BriefingContent blocks={tab === "marshal" ? marshalBlocks : playerBlocks} />
+          <BriefingContent blocks={blocks} />
         </HudCard>
+        </div>
 
         <div className="mt-12">
           <Link
-            to="/spartanops"
+            to="/"
             className="inline-flex items-center gap-2 font-mono uppercase"
             style={{
               fontSize: 11,
@@ -235,7 +297,7 @@ function IntelPage() {
               background: "transparent",
             }}
           >
-            <ArrowLeft size={14} /> Back to Command
+            <ArrowLeft size={14} /> {c.back}
           </Link>
         </div>
       </div>
