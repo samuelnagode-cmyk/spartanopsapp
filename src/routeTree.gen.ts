@@ -30,6 +30,7 @@ import { Route as JoinRouteImport } from './routes/join'
 import { Route as IntelRouteImport } from './routes/intel'
 import { Route as FieldQrRouteImport } from './routes/field-qr'
 import { Route as FieldRouteImport } from './routes/field'
+import { Route as EventsDoticsRouteImport } from './routes/events[.]ics'
 import { Route as DogodkiRouteImport } from './routes/dogodki'
 import { Route as DevPreviewRouteImport } from './routes/dev-preview'
 import { Route as CaptureRouteImport } from './routes/capture'
@@ -37,6 +38,9 @@ import { Route as ArhivRouteImport } from './routes/arhiv'
 import { Route as ArchiveRouteImport } from './routes/archive'
 import { Route as AdminPregledRouteImport } from './routes/admin-pregled'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as EventsIndexRouteImport } from './routes/events.index'
+import { Route as EventsManageRouteImport } from './routes/events.manage'
+import { Route as EventsEventIdRouteImport } from './routes/events.$eventId'
 import { Route as ApiSendReservationRouteImport } from './routes/api/send-reservation'
 import { Route as ApiSendInquiryRouteImport } from './routes/api/send-inquiry'
 import { Route as ApiPublicSpartanopsCronTickRouteImport } from './routes/api/public/spartanops-cron-tick'
@@ -146,6 +150,11 @@ const FieldRoute = FieldRouteImport.update({
   path: '/field',
   getParentRoute: () => rootRouteImport,
 } as any)
+const EventsDoticsRoute = EventsDoticsRouteImport.update({
+  id: '/events.ics',
+  path: '/events.ics',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const DogodkiRoute = DogodkiRouteImport.update({
   id: '/dogodki',
   path: '/dogodki',
@@ -181,6 +190,21 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const EventsIndexRoute = EventsIndexRouteImport.update({
+  id: '/events/',
+  path: '/events/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const EventsManageRoute = EventsManageRouteImport.update({
+  id: '/events/manage',
+  path: '/events/manage',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const EventsEventIdRoute = EventsEventIdRouteImport.update({
+  id: '/events/$eventId',
+  path: '/events/$eventId',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiSendReservationRoute = ApiSendReservationRouteImport.update({
   id: '/api/send-reservation',
   path: '/api/send-reservation',
@@ -206,6 +230,7 @@ export interface FileRoutesByFullPath {
   '/capture': typeof CaptureRoute
   '/dev-preview': typeof DevPreviewRoute
   '/dogodki': typeof DogodkiRoute
+  '/events.ics': typeof EventsDoticsRoute
   '/field': typeof FieldRoute
   '/field-qr': typeof FieldQrRoute
   '/intel': typeof IntelRoute
@@ -229,6 +254,9 @@ export interface FileRoutesByFullPath {
   '/updates': typeof UpdatesRoute
   '/api/send-inquiry': typeof ApiSendInquiryRoute
   '/api/send-reservation': typeof ApiSendReservationRoute
+  '/events/$eventId': typeof EventsEventIdRoute
+  '/events/manage': typeof EventsManageRoute
+  '/events/': typeof EventsIndexRoute
   '/api/public/spartanops-cron-tick': typeof ApiPublicSpartanopsCronTickRoute
 }
 export interface FileRoutesByTo {
@@ -239,6 +267,7 @@ export interface FileRoutesByTo {
   '/capture': typeof CaptureRoute
   '/dev-preview': typeof DevPreviewRoute
   '/dogodki': typeof DogodkiRoute
+  '/events.ics': typeof EventsDoticsRoute
   '/field': typeof FieldRoute
   '/field-qr': typeof FieldQrRoute
   '/intel': typeof IntelRoute
@@ -262,6 +291,9 @@ export interface FileRoutesByTo {
   '/updates': typeof UpdatesRoute
   '/api/send-inquiry': typeof ApiSendInquiryRoute
   '/api/send-reservation': typeof ApiSendReservationRoute
+  '/events/$eventId': typeof EventsEventIdRoute
+  '/events/manage': typeof EventsManageRoute
+  '/events': typeof EventsIndexRoute
   '/api/public/spartanops-cron-tick': typeof ApiPublicSpartanopsCronTickRoute
 }
 export interface FileRoutesById {
@@ -273,6 +305,7 @@ export interface FileRoutesById {
   '/capture': typeof CaptureRoute
   '/dev-preview': typeof DevPreviewRoute
   '/dogodki': typeof DogodkiRoute
+  '/events.ics': typeof EventsDoticsRoute
   '/field': typeof FieldRoute
   '/field-qr': typeof FieldQrRoute
   '/intel': typeof IntelRoute
@@ -296,6 +329,9 @@ export interface FileRoutesById {
   '/updates': typeof UpdatesRoute
   '/api/send-inquiry': typeof ApiSendInquiryRoute
   '/api/send-reservation': typeof ApiSendReservationRoute
+  '/events/$eventId': typeof EventsEventIdRoute
+  '/events/manage': typeof EventsManageRoute
+  '/events/': typeof EventsIndexRoute
   '/api/public/spartanops-cron-tick': typeof ApiPublicSpartanopsCronTickRoute
 }
 export interface FileRouteTypes {
@@ -308,6 +344,7 @@ export interface FileRouteTypes {
     | '/capture'
     | '/dev-preview'
     | '/dogodki'
+    | '/events.ics'
     | '/field'
     | '/field-qr'
     | '/intel'
@@ -331,6 +368,9 @@ export interface FileRouteTypes {
     | '/updates'
     | '/api/send-inquiry'
     | '/api/send-reservation'
+    | '/events/$eventId'
+    | '/events/manage'
+    | '/events/'
     | '/api/public/spartanops-cron-tick'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -341,6 +381,7 @@ export interface FileRouteTypes {
     | '/capture'
     | '/dev-preview'
     | '/dogodki'
+    | '/events.ics'
     | '/field'
     | '/field-qr'
     | '/intel'
@@ -364,6 +405,9 @@ export interface FileRouteTypes {
     | '/updates'
     | '/api/send-inquiry'
     | '/api/send-reservation'
+    | '/events/$eventId'
+    | '/events/manage'
+    | '/events'
     | '/api/public/spartanops-cron-tick'
   id:
     | '__root__'
@@ -374,6 +418,7 @@ export interface FileRouteTypes {
     | '/capture'
     | '/dev-preview'
     | '/dogodki'
+    | '/events.ics'
     | '/field'
     | '/field-qr'
     | '/intel'
@@ -397,6 +442,9 @@ export interface FileRouteTypes {
     | '/updates'
     | '/api/send-inquiry'
     | '/api/send-reservation'
+    | '/events/$eventId'
+    | '/events/manage'
+    | '/events/'
     | '/api/public/spartanops-cron-tick'
   fileRoutesById: FileRoutesById
 }
@@ -408,6 +456,7 @@ export interface RootRouteChildren {
   CaptureRoute: typeof CaptureRoute
   DevPreviewRoute: typeof DevPreviewRoute
   DogodkiRoute: typeof DogodkiRoute
+  EventsDoticsRoute: typeof EventsDoticsRoute
   FieldRoute: typeof FieldRoute
   FieldQrRoute: typeof FieldQrRoute
   IntelRoute: typeof IntelRoute
@@ -431,6 +480,9 @@ export interface RootRouteChildren {
   UpdatesRoute: typeof UpdatesRoute
   ApiSendInquiryRoute: typeof ApiSendInquiryRoute
   ApiSendReservationRoute: typeof ApiSendReservationRoute
+  EventsEventIdRoute: typeof EventsEventIdRoute
+  EventsManageRoute: typeof EventsManageRoute
+  EventsIndexRoute: typeof EventsIndexRoute
   ApiPublicSpartanopsCronTickRoute: typeof ApiPublicSpartanopsCronTickRoute
 }
 
@@ -583,6 +635,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof FieldRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/events.ics': {
+      id: '/events.ics'
+      path: '/events.ics'
+      fullPath: '/events.ics'
+      preLoaderRoute: typeof EventsDoticsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/dogodki': {
       id: '/dogodki'
       path: '/dogodki'
@@ -632,6 +691,27 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/events/': {
+      id: '/events/'
+      path: '/events'
+      fullPath: '/events/'
+      preLoaderRoute: typeof EventsIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/events/manage': {
+      id: '/events/manage'
+      path: '/events/manage'
+      fullPath: '/events/manage'
+      preLoaderRoute: typeof EventsManageRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/events/$eventId': {
+      id: '/events/$eventId'
+      path: '/events/$eventId'
+      fullPath: '/events/$eventId'
+      preLoaderRoute: typeof EventsEventIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/send-reservation': {
       id: '/api/send-reservation'
       path: '/api/send-reservation'
@@ -664,6 +744,7 @@ const rootRouteChildren: RootRouteChildren = {
   CaptureRoute: CaptureRoute,
   DevPreviewRoute: DevPreviewRoute,
   DogodkiRoute: DogodkiRoute,
+  EventsDoticsRoute: EventsDoticsRoute,
   FieldRoute: FieldRoute,
   FieldQrRoute: FieldQrRoute,
   IntelRoute: IntelRoute,
@@ -687,6 +768,9 @@ const rootRouteChildren: RootRouteChildren = {
   UpdatesRoute: UpdatesRoute,
   ApiSendInquiryRoute: ApiSendInquiryRoute,
   ApiSendReservationRoute: ApiSendReservationRoute,
+  EventsEventIdRoute: EventsEventIdRoute,
+  EventsManageRoute: EventsManageRoute,
+  EventsIndexRoute: EventsIndexRoute,
   ApiPublicSpartanopsCronTickRoute: ApiPublicSpartanopsCronTickRoute,
 }
 export const routeTree = rootRouteImport
