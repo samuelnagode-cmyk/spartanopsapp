@@ -32,4 +32,10 @@ describe("plan resolution", () => {
     expect(resolveEffectivePlan(row, at("2027-03-31T22:00:00Z"))).toBe("free");
     expect(todayLjubljana(at("2027-03-31T22:00:00Z"))).toBe("2027-04-01");
   });
+  it("30 days before the end counts as ending soon", () => {
+    expect(daysUntil("2027-03-31", at("2027-03-01T10:00:00Z"))).toBe(30);
+    expect(daysUntil("2027-03-31", at("2027-02-28T10:00:00Z"))).toBe(31);
+  });
+  it("account's own date formats in Slovenian", () =>
+    expect(formatFoundingDate("sl", "2027-06-30")).toBe("30. junija 2027"));
 });
