@@ -32,6 +32,7 @@ import { CountrySearchInput } from "@/components/CountrySearchInput";
 import { flagFor } from "@/lib/countries";
 import { usePremium, usePlan } from "@/lib/premium";
 import { useMasterAdmin } from "@/lib/master-admin";
+import { AdminFieldsPlans } from "@/components/AdminFieldsPlans";
 import { supabase } from "@/integrations/supabase/client";
 import {
   listAllLobbies,
@@ -737,6 +738,9 @@ function AdminPage() {
             <p>{en ? "Cross-field analytics are under construction." : "Analitika je še v pripravi."}</p>
           </div>
         )}
+
+        {/* Master-admin launch dashboard: only rendered after the master unlock. */}
+        {isEditMode && getMasterPw() && <AdminFieldsPlans masterPassword={getMasterPw()!} />}
       </div>
 
       {editModalOpen && (
