@@ -30,7 +30,6 @@ export type GameModeKey = "domination" | "search_destroy";
 export const GAME_MODES: { key: string; label: string; subEn?: string; subSl?: string; locked?: boolean }[] = [
   { key: "domination", label: "Domination", subEn: "Point capture", subSl: "Zavzemanje točk" },
   { key: "search_destroy", label: "Search & Destroy", locked: true },
-  { key: "infection", label: "Infection", locked: true },
   { key: "king_of_the_hill", label: "King of the Hill", locked: true },
 ];
 
@@ -64,10 +63,8 @@ function foldEvent(s: string | null | undefined): string {
   return (s ?? "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim().replace(/\s+/g, " ").toLowerCase();
 }
 
-export function GameModeButtons({ active, isPremium, openPremiumModal, en, onPick }: {
+export function GameModeButtons({ active, en, onPick }: {
   active: GameModeKey;
-  isPremium: boolean;
-  openPremiumModal: () => void;
   en: boolean;
   onPick: (key: GameModeKey) => void;
 }) {
@@ -76,17 +73,17 @@ export function GameModeButtons({ active, isPremium, openPremiumModal, en, onPic
       {GAME_MODES.map((m) => {
         if (m.locked) {
           return (
-            <button key={m.key} type="button" onClick={() => { if (!isPremium) openPremiumModal(); }}
+            <div key={m.key} aria-disabled="true"
               style={{
                 background: "rgba(255,255,255,0.03)", color: MUTED,
                 border: "1px dashed rgba(236,227,196,0.18)",
                 padding: "10px 8px", fontFamily: "monospace", fontSize: 11,
                 letterSpacing: "0.08em", textTransform: "uppercase",
-                cursor: "pointer", textAlign: "left", opacity: 0.75,
+                cursor: "default", textAlign: "left", opacity: 0.75,
               }}>
-              <span style={{ whiteSpace: "nowrap" }}>🔒 {m.label}</span>
+              <span style={{ whiteSpace: "nowrap" }}>{m.label}</span>
               <br /><span style={{ fontSize: 9 }}>{en ? "Coming soon" : "Prihaja kmalu"}</span>
-            </button>
+            </div>
           );
         }
         const isActive = active === m.key;
@@ -238,7 +235,6 @@ export function MissionSettingsTabs({
   hideTabBar?: boolean;
 }) {
   void mode;
-  const { isPremium, openPremiumModal } = usePremium();
   const [innerTab, setTab] = useState<MissionTabKey>("mission");
   const tab = tabProp ?? innerTab;
   const [mapErr, setMapErr] = useState("");
@@ -361,7 +357,7 @@ export function MissionSettingsTabs({
       {/* ── GAMEMODE ────────────────────────────────────────── */}
       {tab === "gamemode" && (
         <Pane title={en ? "GAMEMODE" : "NAČIN IGRE"}>
-          <GameModeButtons active={value.gamemode} isPremium={isPremium} openPremiumModal={openPremiumModal} en={en} onPick={(k) => onChange({ gamemode: k })} />
+          <GameModeButtons active={value.gamemode} en={en} onPick={(k) => onChange({ gamemode: k })} />
           <div className="grid grid-cols-2 gap-3" style={{ marginTop: 14 }}>
             <FieldRow label={en ? "Duration (min)" : "Trajanje (min)"}>
               <select value={value.duration} onChange={(e) => onChange({ duration: Number(e.target.value) })} style={selectStyle}>
