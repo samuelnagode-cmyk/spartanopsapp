@@ -23,12 +23,15 @@ import {
   selectStyle as consoleSelectStyle,
   unlockSpartacusAudio,
   type GameState,
+  PlayerLimitInfo,
+  type RosterPlan,
 } from "@/components/SpartanOpsConsole";
 import { useLang, useT } from "@/lib/i18n";
 import { MissionSettingsTabs, GAME_MODES, GameModeButtons, TeamConfigSection, type GameModeKey, type MissionSettingsValue, type MissionTabKey } from "@/components/MissionSettings";
 import { CountrySearchInput } from "@/components/CountrySearchInput";
 import { flagFor } from "@/lib/countries";
-import { usePremium } from "@/lib/premium";
+import { usePremium, usePlan } from "@/lib/premium";
+import { useMasterAdmin } from "@/lib/master-admin";
 import { supabase } from "@/integrations/supabase/client";
 import {
   listAllLobbies,
@@ -613,10 +616,7 @@ function AdminPage() {
           <div style={{ width: 48, height: 1, background: ACCENT, margin: "12px auto 0", opacity: 0.7 }} />
 
           {/* Premium status indicator — static badge */}
-          <PremiumStatusToggle
-            isPremium={isPremium}
-            t={t}
-          />
+          <PremiumStatusToggle en={en} />
 
         </div>
 
