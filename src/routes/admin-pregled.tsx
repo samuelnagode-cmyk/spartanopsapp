@@ -329,15 +329,18 @@ function upsertAllTimeField(rec: AllTimeFieldRecord) {
   saveAllTimeFields(filtered);
 }
 
-function PremiumStatusToggle({
-  isPremium, t,
-}: {
-  isPremium: boolean;
-  t: (k: string) => string;
-}) {
-  const label = isPremium ? t("premium.statusPremium") : t("premium.statusFree");
-  const color = isPremium ? ACCENT : "rgba(180,190,205,0.75)";
-  const glow = isPremium ? `0 0 10px ${ACCENT}88` : "none";
+function PremiumStatusToggle({ en }: { en: boolean }) {
+  const { plan, loading } = usePlan();
+  const master = useMasterAdmin();
+  if (loading && !master) return null;
+  const label = master
+    ? "[ ADMIN ]"
+    : plan === "pro" ? (en ? "[ PLAN: PRO ]" : "[ PAKET: PRO ]")
+    : plan === "founding" ? (en ? "[ PLAN: FOUNDING FIELD ]" : "[ PAKET: USTANOVITVENI POLIGON ]")
+    : (en ? "[ PLAN: FREE ]" : "[ PAKET: BREZPLAČNO ]");
+  const amber = master || plan !== "free";
+  const color = amber ? ACCENT : "rgba(180,190,205,0.75)";
+  const glow = amber ? `0 0 10px ${ACCENT}88` : "none";
   return (
     <div style={{ maxWidth: 360, margin: "14px auto 0", textAlign: "center" }}>
       <span
@@ -1650,6 +1653,8 @@ function MarshalLobbyConsole({ lobby: initialLobby, marshalPassword, lobbyPasswo
     operatorType: string | null;
   };
   const [registered, setRegistered] = useState<RegisteredPlayer[]>([]);
+  const [rosterPlan, setRosterPlan] = useState<RosterPlan>(null);
+  const isMasterAdmin = useMasterAdmin();
   const lobbyState: LobbyState = lobby.state ?? "pending";
   const state: LobbyState = gameStatusToLobbyState(gameState?.status) ?? lobbyState;
 
@@ -1840,6 +1845,7 @@ function MarshalLobbyConsole({ lobby: initialLobby, marshalPassword, lobbyPasswo
         const accessToken = ownerAccessToken ? await getFreshOwnerAccessToken() : undefined;
         const res = await getAdminRoster({ data: { fieldId: lobby.id, password: marshalPassword, accessToken } });
         if (!alive || !res?.ok) return;
+        setRosterPlan(res.plan ?? null);
         setRegistered((res.rows ?? []).map((r: any) => ({
           id: r.id,
           callsign: r.callsign,
@@ -2417,9 +2423,9 @@ function MarshalLobbyConsole({ lobby: initialLobby, marshalPassword, lobbyPasswo
 
 
 
-        <p style={{ fontFamily: "monospace", fontSize: 11, color: MUTED, marginTop: 12 }}>
-          {en ? "Registered:" : "Prijavljeni:"} <strong style={{ color: INK }}>{registered.length}</strong>
-        </p>
+        <div style={{ marginTop: 12 }}>
+          <PlayerLimitInfo count={registered.length} plan={rosterPlan} en={en} hideLimit={isMasterAdmin} />
+        </div>
       </Pane>
 
       {/* Decommission */}
