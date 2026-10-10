@@ -125,6 +125,13 @@ function ManagePage() {
     if (!isCreate && !source) return notice(en ? "Event not found" : "Dogodka ni", SERVER_ERRORS.not_found[en ? 0 : 1], "/events/manage", en ? "Back" : "Nazaj");
     if (isCreate && !mine.fieldReady) { navigate({ search: {} }); return null; }
     const submit = async (input: EventInput, repeatWeeks: number) => {
+      const answers = (source?.going ?? 0) + (source?.maybe ?? 0);
+      if (!isCreate && source && answers > 0 && Date.parse(zonedToUtc(input.date, input.startTime)) !== Date.parse(source.starts_at)) {
+        const msg = en
+          ? `${answers} players have answered. They are not notified automatically, please tell them the new time.`
+          : `Odgovorilo je ${answers} igralcev. Samodejno niso obveščeni, zato jim sporoči novi čas.`;
+        if (!window.confirm(msg)) return;
+      }
       setBusy(true); setServerError(null);
       try {
         const r = await saveFn({ data: { accessToken: await token(), id: isCreate ? undefined : editing, event: input, repeatWeeks } });
@@ -241,7 +248,7 @@ function Row({ e, lang, onChange, onEdit, onDuplicate }: { e: EventFull; lang: L
   const run = async (fn: () => Promise<unknown>) => {
     setBusy(true); setErr(null);
     try { await fn(); setMode("none"); setOpen(false); onChange(); }
-    catch (x) { const m = String((x as Error)?.message ?? ""); const k = Object.keys(SERVER_ERRORS).find((key) => m.startsWith(key)); setErr(k ? SERVER_ERRORS[k][en ? 0 : 1] : en ? "Action failed." : "Dejanje ni uspelo."); }
+    catch (x) { const m = String((x as Error)?.message ?? ""); if (m.includes("has_answers")) { setErr(en ? "Players have answered this event. Cancel it instead." : "Igralci so se odzvali. Dogodek raje odpovej."); setMode("delete"); return; } const k = Object.keys(SERVER_ERRORS).find((key) => m.startsWith(key)); setErr(k ? SERVER_ERRORS[k][en ? 0 : 1] : en ? "Action failed." : "Dejanje ni uspelo."); }
     finally { setBusy(false); }
   };
   const item: CSSProperties = { display: "block", width: "100%", textAlign: "left", padding: "11px 14px", background: "transparent", color: INK, border: "none", borderTop: `1px solid ${ACCENT}1f`, fontFamily: "monospace", fontSize: 13, cursor: "pointer", textDecoration: "none" };
@@ -253,6 +260,11 @@ function Row({ e, lang, onChange, onEdit, onDuplicate }: { e: EventFull; lang: L
         <div style={{ flex: 1, minWidth: 0 }}>
           <span style={{ fontFamily: "monospace", fontSize: 10.5, letterSpacing: "0.12em", textTransform: "uppercase", color: status.c }}>{status.t}</span>
           <p style={{ fontFamily: MICHROMA, fontSize: 13, lineHeight: 1.4, margin: "4px 0", wordBreak: "break-word", textDecoration: e.status === "cancelled" ? "line-through" : "none" }}>{e.title}</p>
+          {(e.status === "published" || e.status === "cancelled") && (
+            <p style={{ fontFamily: "monospace", fontSize: 11.5, color: MUTED, margin: "0 0 2px" }}>
+              {en ? `${e.going ?? 0} going · ${e.maybe ?? 0} maybe` : `${e.going ?? 0} pride · ${e.maybe ?? 0} morda`}
+            </p>
+          )}
           {e.status === "cancelled" && e.cancel_reason && <p style={{ fontFamily: "monospace", fontSize: 11.5, color: MUTED }}>{e.cancel_reason}</p>}
         </div>
         <div style={{ position: "relative" }}>
@@ -286,7 +298,15 @@ function Row({ e, lang, onChange, onEdit, onDuplicate }: { e: EventFull; lang: L
           </div>
         </div>
       )}
-      {mode === "delete" && (
+      {mode === "delete" && ((e.going ?? 0) + (e.maybe ?? 0) > 0 ? (
+        <div style={{ marginTop: 12, borderTop: `1px solid ${ACCENT}22`, paddingTop: 12 }}>
+          <p style={{ fontFamily: "monospace", fontSize: 12.5, marginBottom: 10 }}>{en ? "Players have already answered this event, so it cannot be deleted. Cancel it instead: their answers stay and everyone sees the cancelled notice." : "Igralci so se na ta dogodek že odzvali, zato ga ni mogoče izbrisati. Raje ga odpovej: odgovori ostanejo, vsi pa vidijo obvestilo o odpovedi."}</p>
+          <div style={{ display: "flex", gap: 8 }}>
+            <button type="button" className="ev-focus" style={{ ...btnOutline, flex: 1 }} onClick={() => setMode("none")}>{en ? "Back" : "Nazaj"}</button>
+            {e.status === "published" && <button type="button" className="ev-focus" style={{ ...btnPrimary, flex: 1, background: ERR }} onClick={() => setMode("cancel")}>{en ? "Cancel instead" : "Raje odpovej"}</button>}
+          </div>
+        </div>
+      ) : (
         <div style={{ marginTop: 12, borderTop: `1px solid ${ACCENT}22`, paddingTop: 12 }}>
           <p style={{ fontFamily: "monospace", fontSize: 12.5, marginBottom: 10 }}>{en ? "Delete this event for good? Players with the link will see “not found”. Cancelling keeps it visible with a notice." : "Dokončno izbrišem ta dogodek? Kdor ima povezavo, bo videl »ni najden«. Odpoved ga pusti vidnega z obvestilom."}</p>
           <div style={{ display: "flex", gap: 8 }}>
@@ -294,7 +314,7 @@ function Row({ e, lang, onChange, onEdit, onDuplicate }: { e: EventFull; lang: L
             <button type="button" className="ev-focus" style={{ ...btnPrimary, flex: 1, background: ERR }} disabled={busy} onClick={() => run(async () => deleteFn({ data: { accessToken: await token(), id: e.id } }))}>{en ? "Delete" : "Izbriši"}</button>
           </div>
         </div>
-      )}
+      ))}
       {err && <p role="alert" style={{ color: ERR, fontFamily: "monospace", fontSize: 12, marginTop: 8 }}>{err}</p>}
     </div>
   );
