@@ -43,6 +43,13 @@
       "when": 1791632154539,
       "tag": "0005_0005_players",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1791632941295,
+      "tag": "0006_0006_events",
+      "breakpoints": true
     }
   ]
 }
