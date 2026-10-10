@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { resolveEffectivePlan, todayLjubljana, FOUNDING_OFFER, PLAN_LIMITS } from "../src/lib/plans";
+import { resolveEffectivePlan, todayLjubljana, FOUNDING_OFFER, PLAN_LIMITS, daysUntil, formatFoundingDate } from "../src/lib/plans";
 
 const at = (iso: string) => new Date(iso);
 
