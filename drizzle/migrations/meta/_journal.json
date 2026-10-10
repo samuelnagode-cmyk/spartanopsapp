@@ -50,6 +50,13 @@
       "when": 1791632941295,
       "tag": "0006_0006_events",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1791633935889,
+      "tag": "0007_0007_event_rsvps",
+      "breakpoints": true
     }
   ]
 }

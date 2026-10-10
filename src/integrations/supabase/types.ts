@@ -497,6 +497,60 @@ export type Database = {
         }
         Relationships: []
       }
+      spartanops_event_rsvps: {
+        Row: {
+          created_at: string
+          event_id: string
+          phone_share: string
+          ride_from: string | null
+          ride_note: string | null
+          ride_role: string
+          ride_seats: number | null
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          event_id: string
+          phone_share?: string
+          ride_from?: string | null
+          ride_note?: string | null
+          ride_role?: string
+          ride_seats?: number | null
+          status: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          event_id?: string
+          phone_share?: string
+          ride_from?: string | null
+          ride_note?: string | null
+          ride_role?: string
+          ride_seats?: number | null
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "spartanops_event_rsvps_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "spartanops_events"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "spartanops_event_rsvps_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "spartanops_players"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
       spartanops_events: {
         Row: {
           account_id: string
@@ -513,6 +567,7 @@ export type Database = {
           min_age: number | null
           price_text: string | null
           rules_text: string | null
+          schedule_changed_at: string | null
           series_id: string | null
           signup_url: string | null
           starts_at: string
@@ -538,6 +593,7 @@ export type Database = {
           min_age?: number | null
           price_text?: string | null
           rules_text?: string | null
+          schedule_changed_at?: string | null
           series_id?: string | null
           signup_url?: string | null
           starts_at: string
@@ -563,6 +619,7 @@ export type Database = {
           min_age?: number | null
           price_text?: string | null
           rules_text?: string | null
+          schedule_changed_at?: string | null
           series_id?: string | null
           signup_url?: string | null
           starts_at?: string
@@ -1239,6 +1296,19 @@ export type Database = {
       spartanops_reset_match_runtime: {
         Args: { p_field_id: string }
         Returns: undefined
+      }
+      spartanops_rsvp_set: {
+        Args: {
+          p_event: string
+          p_phone_share: string
+          p_ride_from: string
+          p_ride_note: string
+          p_ride_role: string
+          p_ride_seats: number
+          p_status: string
+          p_user: string
+        }
+        Returns: string
       }
       spartanops_set_field_password: {
         Args: { p_password: string }
