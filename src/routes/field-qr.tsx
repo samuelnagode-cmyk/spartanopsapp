@@ -61,6 +61,7 @@ function FieldQrPage() {
         .eq("id", data.user.id)
         .maybeSingle();
       if (row) setAcct({ id: data.user.id, name: (row as any).business_name ?? "", code: (row as any).field_code ?? "", listed: (row as any).listed_publicly !== false });
+      else navigate({ to: "/marshal-account" }); // player-only login: no field yet
     });
   }, [navigate]);
 

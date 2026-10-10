@@ -209,6 +209,12 @@ export default function Footer() {
             <MapPin size={14} style={{ color: v.accent, flexShrink: 0 }} strokeWidth={1.5} />
             <span>Vače, Slovenija</span>
           </a>
+          <Link to="/privacy" className="text-[13.5px] leading-none opacity-90 hover:opacity-100" style={{ color: v.ivory }}>
+            {t("legal.privacyLink")}
+          </Link>
+          <Link to="/terms" className="text-[13.5px] leading-none opacity-90 hover:opacity-100" style={{ color: v.ivory }}>
+            {t("legal.termsLink")}
+          </Link>
         </div>
 
         {/* Social */}
