@@ -43,6 +43,7 @@ import { Route as EventsManageRouteImport } from './routes/events.manage'
 import { Route as EventsEventIdRouteImport } from './routes/events.$eventId'
 import { Route as ApiSendReservationRouteImport } from './routes/api/send-reservation'
 import { Route as ApiSendInquiryRouteImport } from './routes/api/send-inquiry'
+import { Route as ApiPublicSpartanopsEventsCleanupRouteImport } from './routes/api/public/spartanops-events-cleanup'
 import { Route as ApiPublicSpartanopsCronTickRouteImport } from './routes/api/public/spartanops-cron-tick'
 
 const UpdatesRoute = UpdatesRouteImport.update({
@@ -215,6 +216,12 @@ const ApiSendInquiryRoute = ApiSendInquiryRouteImport.update({
   path: '/api/send-inquiry',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiPublicSpartanopsEventsCleanupRoute =
+  ApiPublicSpartanopsEventsCleanupRouteImport.update({
+    id: '/api/public/spartanops-events-cleanup',
+    path: '/api/public/spartanops-events-cleanup',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const ApiPublicSpartanopsCronTickRoute =
   ApiPublicSpartanopsCronTickRouteImport.update({
     id: '/api/public/spartanops-cron-tick',
@@ -258,6 +265,7 @@ export interface FileRoutesByFullPath {
   '/events/manage': typeof EventsManageRoute
   '/events/': typeof EventsIndexRoute
   '/api/public/spartanops-cron-tick': typeof ApiPublicSpartanopsCronTickRoute
+  '/api/public/spartanops-events-cleanup': typeof ApiPublicSpartanopsEventsCleanupRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -295,6 +303,7 @@ export interface FileRoutesByTo {
   '/events/manage': typeof EventsManageRoute
   '/events': typeof EventsIndexRoute
   '/api/public/spartanops-cron-tick': typeof ApiPublicSpartanopsCronTickRoute
+  '/api/public/spartanops-events-cleanup': typeof ApiPublicSpartanopsEventsCleanupRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -333,6 +342,7 @@ export interface FileRoutesById {
   '/events/manage': typeof EventsManageRoute
   '/events/': typeof EventsIndexRoute
   '/api/public/spartanops-cron-tick': typeof ApiPublicSpartanopsCronTickRoute
+  '/api/public/spartanops-events-cleanup': typeof ApiPublicSpartanopsEventsCleanupRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -372,6 +382,7 @@ export interface FileRouteTypes {
     | '/events/manage'
     | '/events/'
     | '/api/public/spartanops-cron-tick'
+    | '/api/public/spartanops-events-cleanup'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -409,6 +420,7 @@ export interface FileRouteTypes {
     | '/events/manage'
     | '/events'
     | '/api/public/spartanops-cron-tick'
+    | '/api/public/spartanops-events-cleanup'
   id:
     | '__root__'
     | '/'
@@ -446,6 +458,7 @@ export interface FileRouteTypes {
     | '/events/manage'
     | '/events/'
     | '/api/public/spartanops-cron-tick'
+    | '/api/public/spartanops-events-cleanup'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -484,6 +497,7 @@ export interface RootRouteChildren {
   EventsManageRoute: typeof EventsManageRoute
   EventsIndexRoute: typeof EventsIndexRoute
   ApiPublicSpartanopsCronTickRoute: typeof ApiPublicSpartanopsCronTickRoute
+  ApiPublicSpartanopsEventsCleanupRoute: typeof ApiPublicSpartanopsEventsCleanupRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -726,6 +740,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiSendInquiryRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/spartanops-events-cleanup': {
+      id: '/api/public/spartanops-events-cleanup'
+      path: '/api/public/spartanops-events-cleanup'
+      fullPath: '/api/public/spartanops-events-cleanup'
+      preLoaderRoute: typeof ApiPublicSpartanopsEventsCleanupRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/spartanops-cron-tick': {
       id: '/api/public/spartanops-cron-tick'
       path: '/api/public/spartanops-cron-tick'
@@ -772,6 +793,7 @@ const rootRouteChildren: RootRouteChildren = {
   EventsManageRoute: EventsManageRoute,
   EventsIndexRoute: EventsIndexRoute,
   ApiPublicSpartanopsCronTickRoute: ApiPublicSpartanopsCronTickRoute,
+  ApiPublicSpartanopsEventsCleanupRoute: ApiPublicSpartanopsEventsCleanupRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
