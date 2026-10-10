@@ -10,12 +10,14 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as UpdatesRouteImport } from './routes/updates'
+import { Route as TermsRouteImport } from './routes/terms'
 import { Route as SpawnRouteImport } from './routes/spawn'
 import { Route as SpartanopsRouteImport } from './routes/spartanops'
 import { Route as SitemapDotxmlRouteImport } from './routes/sitemap[.]xml'
 import { Route as ScanRouteImport } from './routes/scan'
 import { Route as SRouteImport } from './routes/s'
 import { Route as QrGeneratorRouteImport } from './routes/qr-generator'
+import { Route as PrivacyRouteImport } from './routes/privacy'
 import { Route as PrintRouteImport } from './routes/print'
 import { Route as PricingRouteImport } from './routes/pricing'
 import { Route as MisijaRouteImport } from './routes/misija'
@@ -40,6 +42,11 @@ import { Route as ApiPublicSpartanopsCronTickRouteImport } from './routes/api/pu
 const UpdatesRoute = UpdatesRouteImport.update({
   id: '/updates',
   path: '/updates',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const TermsRoute = TermsRouteImport.update({
+  id: '/terms',
+  path: '/terms',
   getParentRoute: () => rootRouteImport,
 } as any)
 const SpawnRoute = SpawnRouteImport.update({
@@ -70,6 +77,11 @@ const SRoute = SRouteImport.update({
 const QrGeneratorRoute = QrGeneratorRouteImport.update({
   id: '/qr-generator',
   path: '/qr-generator',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PrivacyRoute = PrivacyRouteImport.update({
+  id: '/privacy',
+  path: '/privacy',
   getParentRoute: () => rootRouteImport,
 } as any)
 const PrintRoute = PrintRouteImport.update({
@@ -192,12 +204,14 @@ export interface FileRoutesByFullPath {
   '/misija': typeof MisijaRoute
   '/pricing': typeof PricingRoute
   '/print': typeof PrintRoute
+  '/privacy': typeof PrivacyRoute
   '/qr-generator': typeof QrGeneratorRoute
   '/s': typeof SRoute
   '/scan': typeof ScanRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/spartanops': typeof SpartanopsRoute
   '/spawn': typeof SpawnRoute
+  '/terms': typeof TermsRoute
   '/updates': typeof UpdatesRoute
   '/api/send-inquiry': typeof ApiSendInquiryRoute
   '/api/send-reservation': typeof ApiSendReservationRoute
@@ -221,12 +235,14 @@ export interface FileRoutesByTo {
   '/misija': typeof MisijaRoute
   '/pricing': typeof PricingRoute
   '/print': typeof PrintRoute
+  '/privacy': typeof PrivacyRoute
   '/qr-generator': typeof QrGeneratorRoute
   '/s': typeof SRoute
   '/scan': typeof ScanRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/spartanops': typeof SpartanopsRoute
   '/spawn': typeof SpawnRoute
+  '/terms': typeof TermsRoute
   '/updates': typeof UpdatesRoute
   '/api/send-inquiry': typeof ApiSendInquiryRoute
   '/api/send-reservation': typeof ApiSendReservationRoute
@@ -251,12 +267,14 @@ export interface FileRoutesById {
   '/misija': typeof MisijaRoute
   '/pricing': typeof PricingRoute
   '/print': typeof PrintRoute
+  '/privacy': typeof PrivacyRoute
   '/qr-generator': typeof QrGeneratorRoute
   '/s': typeof SRoute
   '/scan': typeof ScanRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/spartanops': typeof SpartanopsRoute
   '/spawn': typeof SpawnRoute
+  '/terms': typeof TermsRoute
   '/updates': typeof UpdatesRoute
   '/api/send-inquiry': typeof ApiSendInquiryRoute
   '/api/send-reservation': typeof ApiSendReservationRoute
@@ -282,12 +300,14 @@ export interface FileRouteTypes {
     | '/misija'
     | '/pricing'
     | '/print'
+    | '/privacy'
     | '/qr-generator'
     | '/s'
     | '/scan'
     | '/sitemap.xml'
     | '/spartanops'
     | '/spawn'
+    | '/terms'
     | '/updates'
     | '/api/send-inquiry'
     | '/api/send-reservation'
@@ -311,12 +331,14 @@ export interface FileRouteTypes {
     | '/misija'
     | '/pricing'
     | '/print'
+    | '/privacy'
     | '/qr-generator'
     | '/s'
     | '/scan'
     | '/sitemap.xml'
     | '/spartanops'
     | '/spawn'
+    | '/terms'
     | '/updates'
     | '/api/send-inquiry'
     | '/api/send-reservation'
@@ -340,12 +362,14 @@ export interface FileRouteTypes {
     | '/misija'
     | '/pricing'
     | '/print'
+    | '/privacy'
     | '/qr-generator'
     | '/s'
     | '/scan'
     | '/sitemap.xml'
     | '/spartanops'
     | '/spawn'
+    | '/terms'
     | '/updates'
     | '/api/send-inquiry'
     | '/api/send-reservation'
@@ -370,12 +394,14 @@ export interface RootRouteChildren {
   MisijaRoute: typeof MisijaRoute
   PricingRoute: typeof PricingRoute
   PrintRoute: typeof PrintRoute
+  PrivacyRoute: typeof PrivacyRoute
   QrGeneratorRoute: typeof QrGeneratorRoute
   SRoute: typeof SRoute
   ScanRoute: typeof ScanRoute
   SitemapDotxmlRoute: typeof SitemapDotxmlRoute
   SpartanopsRoute: typeof SpartanopsRoute
   SpawnRoute: typeof SpawnRoute
+  TermsRoute: typeof TermsRoute
   UpdatesRoute: typeof UpdatesRoute
   ApiSendInquiryRoute: typeof ApiSendInquiryRoute
   ApiSendReservationRoute: typeof ApiSendReservationRoute
@@ -389,6 +415,13 @@ declare module '@tanstack/react-router' {
       path: '/updates'
       fullPath: '/updates'
       preLoaderRoute: typeof UpdatesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/terms': {
+      id: '/terms'
+      path: '/terms'
+      fullPath: '/terms'
+      preLoaderRoute: typeof TermsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/spawn': {
@@ -431,6 +464,13 @@ declare module '@tanstack/react-router' {
       path: '/qr-generator'
       fullPath: '/qr-generator'
       preLoaderRoute: typeof QrGeneratorRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/privacy': {
+      id: '/privacy'
+      path: '/privacy'
+      fullPath: '/privacy'
+      preLoaderRoute: typeof PrivacyRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/print': {
@@ -594,12 +634,14 @@ const rootRouteChildren: RootRouteChildren = {
   MisijaRoute: MisijaRoute,
   PricingRoute: PricingRoute,
   PrintRoute: PrintRoute,
+  PrivacyRoute: PrivacyRoute,
   QrGeneratorRoute: QrGeneratorRoute,
   SRoute: SRoute,
   ScanRoute: ScanRoute,
   SitemapDotxmlRoute: SitemapDotxmlRoute,
   SpartanopsRoute: SpartanopsRoute,
   SpawnRoute: SpawnRoute,
+  TermsRoute: TermsRoute,
   UpdatesRoute: UpdatesRoute,
   ApiSendInquiryRoute: ApiSendInquiryRoute,
   ApiSendReservationRoute: ApiSendReservationRoute,
