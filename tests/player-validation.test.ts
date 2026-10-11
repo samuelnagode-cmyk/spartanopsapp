@@ -24,3 +24,10 @@ describe("player validation", () => {
     expect(safeNext("https://evil.com")).toBeNull();
   });
 });
+
+import { playerKeyFor } from "../src/lib/player.functions";
+describe("playerKeyFor", () => {
+  it("matches SQL encode(digest('test-session-123','sha256'),'hex')", async () => {
+    expect(await playerKeyFor("test-session-123")).toBe("SQLVALUE");
+  });
+});
