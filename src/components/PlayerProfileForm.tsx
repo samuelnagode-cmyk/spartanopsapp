@@ -68,18 +68,20 @@ export function ProfilePreview({ p, en }: { p: PlayerProfile; en: boolean }) {
   );
 }
 
-export function PlayerProfileForm({ en, initial, needsConsent, onSaved, onDeleted }: {
-  en: boolean; initial: PlayerProfile | null; needsConsent: boolean;
+export type ProfilePrefill = { nickname?: string; first_name?: string; last_initial?: string; club?: string; phone?: string; experience_level?: string; operator_type?: string };
+
+export function PlayerProfileForm({ en, initial, needsConsent, onSaved, onDeleted, prefill }: {
+  en: boolean; initial: PlayerProfile | null; needsConsent: boolean; prefill?: ProfilePrefill | null;
   onSaved: (p: PlayerProfile) => void; onDeleted: (keptLogin: boolean) => void;
 }) {
   const save = useServerFn(playerSaveMine);
   const exportFn = useServerFn(playerExportMine);
   const del = useServerFn(playerDeleteMine);
   const [f, setF] = useState({
-    nickname: initial?.nickname ?? "", first_name: initial?.first_name ?? "", last_name: initial?.last_name ?? "",
+    nickname: initial?.nickname ?? prefill?.nickname ?? "", first_name: initial?.first_name ?? prefill?.first_name ?? "", last_name: initial?.last_name ?? "",
     show_full_last_name: initial?.show_full_last_name ?? false, age: (initial?.age_group ?? "") as AgeChoice | "",
-    phone: initial?.phone ?? "", club: initial?.club ?? "", experience_level: initial?.experience_level ?? "dobro",
-    operator_type: initial?.operator_type ?? "", primary_weapon: initial?.primary_weapon ?? "",
+    phone: initial?.phone ?? prefill?.phone ?? "", club: initial?.club ?? prefill?.club ?? "", experience_level: initial?.experience_level ?? prefill?.experience_level ?? "dobro",
+    operator_type: initial?.operator_type ?? prefill?.operator_type ?? "", primary_weapon: initial?.primary_weapon ?? "",
     secondary_weapon: initial?.secondary_weapon ?? "", sidearm: initial?.sidearm ?? "", gear_notes: initial?.gear_notes ?? "",
     link_games: initial?.link_games ?? true,
   });
@@ -134,6 +136,9 @@ export function PlayerProfileForm({ en, initial, needsConsent, onSaved, onDelete
 
   return (
     <div style={{ paddingBottom: 90 }}>
+      {!initial && prefill && (
+        <p style={{ ...help, marginTop: 0, color: ACCENT, textAlign: "center" }}>{en ? "We filled in what you already told us. Check it and add your email." : "Izpolnili smo, kar si že vpisal. Preveri in dodaj e-pošto."}</p>
+      )}
       <Card title={en ? "Identity" : "Identiteta"}>
         <label style={label}>{en ? "Callsign *" : "Vzdevek (callsign) *"}</label>
         <input style={input} maxLength={24} value={f.nickname} onChange={(e) => set("nickname", e.target.value)} />
@@ -147,7 +152,7 @@ export function PlayerProfileForm({ en, initial, needsConsent, onSaved, onDelete
         {adult && (
           <>
             <label style={{ ...label, marginTop: 10 }}>{en ? "Surname (optional)" : "Priimek (neobvezno)"}</label>
-            <input style={input} maxLength={40} autoComplete="family-name" value={f.last_name} onChange={(e) => set("last_name", e.target.value)} />
+            <input style={input} maxLength={40} autoComplete="family-name" value={f.last_name} placeholder={prefill?.last_initial ? `${prefill.last_initial}…` : undefined} onChange={(e) => set("last_name", e.target.value)} />
             <p style={help}>{en ? "Organisers of events you join can see it. Other players only see your initial." : "Vidijo ga organizatorji dogodkov, na katere se prijaviš. Drugi igralci vidijo le začetnico."}</p>
             <label style={{ display: "flex", gap: 10, alignItems: "center", fontFamily: "monospace", fontSize: 13, cursor: "pointer" }}>
               <input type="checkbox" checked={f.show_full_last_name} onChange={(e) => set("show_full_last_name", e.target.checked)} style={{ width: 18, height: 18, accentColor: ACCENT }} />
