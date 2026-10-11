@@ -29,6 +29,19 @@ export const btnPrimary: CSSProperties = {
 };
 export const btnOutline: CSSProperties = { ...btnPrimary, background: "transparent", color: ACCENT, border: `1px solid ${ACCENT}` };
 
+/** Field logo, or an initials tile so fields without a logo still look intentional (fixed size, no layout shift). */
+export function FieldLogo({ url, name, size }: { url: string | null | undefined; name: string; size: number }) {
+  const radius = size < 32 ? "50%" : Math.round(size * 0.18);
+  const box: CSSProperties = { width: size, height: size, flexShrink: 0, borderRadius: radius, border: `1px solid ${ACCENT}88`, boxSizing: "border-box", overflow: "hidden", display: "inline-block", verticalAlign: "middle" };
+  if (url) return <img src={url} alt={name} width={size} height={size} loading="lazy" decoding="async" style={{ ...box, objectFit: "cover", background: PANEL }} />;
+  const initials = name.trim().split(/\s+/).filter(Boolean).slice(0, 2).map((w) => w[0]!.toUpperCase()).join("") || "?";
+  return (
+    <span role="img" aria-label={name} style={{ ...box, background: PANEL, color: ACCENT, fontFamily: MICHROMA, fontSize: Math.max(8, Math.round(size * 0.36)), lineHeight: `${size - 2}px`, textAlign: "center", letterSpacing: 0 }}>
+      {initials}
+    </span>
+  );
+}
+
 export function KindBadge({ kind, lang }: { kind: string; lang: Lang }) {
   const k = kindInfo(kind);
   return (
@@ -71,8 +84,9 @@ export function EventCard({ e, lang, myStatus }: { e: EventListItem; lang: Lang;
         <h3 style={{ fontFamily: MICHROMA, fontSize: 14, lineHeight: 1.4, letterSpacing: "0.04em", margin: 0, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden", textDecoration: cancelled ? "line-through" : "none", opacity: cancelled ? 0.65 : 1 }}>
           {e.title}
         </h3>
-        <p style={{ fontFamily: "monospace", fontSize: 12, color: MUTED, margin: "5px 0 2px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-          {e.field.country ? `${flagFor(e.field.country)} ` : ""}{e.field.name}{e.field.city ? ` · ${e.field.city}` : ""}
+        <p style={{ fontFamily: "monospace", fontSize: 12, color: MUTED, margin: "5px 0 2px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", display: "flex", alignItems: "center", gap: 6 }}>
+          <FieldLogo url={e.field.logoUrl} name={e.field.name} size={22} />
+          <span style={{ overflow: "hidden", textOverflow: "ellipsis" }}>{e.field.country ? `${flagFor(e.field.country)} ` : ""}{e.field.name}{e.field.city ? ` · ${e.field.city}` : ""}</span>
         </p>
         <p style={{ fontFamily: "monospace", fontSize: 12, margin: "0 0 6px" }}>{formatTimeRange(e.starts_at, e.ends_at, e.tz)}</p>
         <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>

@@ -1,7 +1,9 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useCallback, useEffect, useState, type CSSProperties, type ReactNode } from "react";
-import { Copy, ExternalLink, Lock, MapPin } from "lucide-react";
+import { Copy, ExternalLink, Lock, Map as MapIcon, MapPin } from "lucide-react";
+import { FieldMapViewer } from "@/components/events/FieldMapViewer";
+import { fieldMediaAdminRemove } from "@/lib/field-profile.functions";
 import { supabase } from "@/integrations/supabase/client";
 import { useLang } from "@/lib/i18n";
 import { COUNTRIES, flagFor } from "@/lib/countries";
@@ -13,7 +15,7 @@ import {
 } from "@/lib/events";
 import { eventLocationForViewer, eventsAdminHide, eventsGet, type EventFull } from "@/lib/events.functions";
 import {
-  ACCENT, AddToCalendar, BG, CancelledBadge, DateTile, ERR, EventStyles, INK, KindBadge, MICHROMA, MUTED, PANEL,
+  ACCENT, AddToCalendar, BG, CancelledBadge, DateTile, ERR, EventStyles, FieldLogo, INK, KindBadge, MICHROMA, MUTED, PANEL,
   ShareButton, btnOutline, btnPrimary, shareLine,
 } from "@/components/events/ui";
 import { RsvpPanel } from "@/components/events/RsvpPanel";
@@ -114,6 +116,10 @@ function EventPage() {
   const locFn = useServerFn(eventLocationForViewer);
   const [viewerLoc, setViewerLoc] = useState<LatLng | null>(null);
   const [copied, setCopied] = useState(false);
+  const [mapOpen, setMapOpen] = useState(false);
+  const [mediaAdmin, setMediaAdmin] = useState<"idle" | "done" | "error">("idle");
+  const removeMedia = useServerFn(fieldMediaAdminRemove);
+  const prefetchMap = () => { if (e?.field.mapUrl) { const i = new Image(); i.src = e.field.mapUrl; } };
   const restricted = !!e?.locationRestricted;
   const eventId = e?.id;
   // Restricted locations are fetched only for the organiser or a player who answered "going";
@@ -180,6 +186,7 @@ function EventPage() {
         <section style={{ background: PANEL, border: `1px solid ${ACCENT}44`, padding: "20px 18px", display: "flex", gap: 16 }}>
           <DateTile iso={e.starts_at} tz={e.tz} kind={e.kind} lang={lang} size="lg" />
           <div style={{ minWidth: 0, flex: 1 }}>
+            <div style={{ float: "right", marginLeft: 10 }}><FieldLogo url={e.field.logoUrl} name={e.field.name} size={56} /></div>
             <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap", marginBottom: 6 }}>
               <KindBadge kind={e.kind} lang={lang} />
               {cancelled && <CancelledBadge lang={lang} />}
@@ -196,7 +203,7 @@ function EventPage() {
 
         <div className="grid grid-cols-2" style={{ gap: 8, marginTop: 12 }}>
           <div style={{ gridColumn: "1 / -1" }}><Fact label={en ? "When" : "Kdaj"}>{formatEventWhen(e.starts_at, e.ends_at, e.tz, lang)}</Fact></div>
-          {(e.location_text || maps || point || restricted) && (
+          {(e.location_text || maps || point || restricted || e.field.mapUrl) && (
             <div style={{ gridColumn: "1 / -1" }}>
               <Fact label={en ? "Where" : "Kje"}>
                 {e.location_text && <div>{e.location_text}</div>}
@@ -219,6 +226,12 @@ function EventPage() {
                   <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 6, color: MUTED }}>
                     <Lock size={13} /> {en ? "Exact location is shared with players who are going." : "Natančna lokacija je vidna igralcem, ki pridejo."}
                   </div>
+                )}
+                {e.field.mapUrl && (
+                  <button type="button" className="ev-focus" onClick={() => setMapOpen(true)} onPointerEnter={prefetchMap} onFocus={prefetchMap}
+                    style={{ display: "flex", alignItems: "center", gap: 6, minHeight: 44, marginTop: 4, background: "none", border: "none", padding: 0, color: ACCENT, fontFamily: "monospace", fontSize: 13, cursor: "pointer" }}>
+                    <MapIcon size={14} /> {en ? "Field outline: tap to view" : "Obris poligona: tapni za ogled"}
+                  </button>
                 )}
                 {maps && <a href={maps} target="_blank" rel="noopener noreferrer nofollow" className="ev-focus" style={{ color: ACCENT, display: "inline-flex", alignItems: "center", gap: 5, marginTop: 4 }}><MapPin size={13} />{en ? "Open in Maps" : "Odpri v zemljevidih"}</a>}
               </Fact>
@@ -279,6 +292,17 @@ function EventPage() {
             {adminState === "hidden" ? "ADMIN: unhide event (hidden now)" : adminState === "error" ? "ADMIN: failed, retry" : "ADMIN: hide event"}
           </button>
         )}
+        {isAdmin && (
+          <button type="button" className="ev-focus" style={{ ...btnOutline, marginTop: 16, marginLeft: 8, minHeight: 32, fontSize: 9.5, opacity: 0.7 }}
+            onClick={async () => {
+              if (!window.confirm("Remove this field's logo and outline image?")) return;
+              try { await removeMedia({ data: { masterPassword: getMasterPw(), accountId: e.field.id } }); setMediaAdmin("done"); }
+              catch { setMediaAdmin("error"); }
+            }}>
+            {mediaAdmin === "done" ? "ADMIN: field images removed" : mediaAdmin === "error" ? "ADMIN: failed, retry" : "ADMIN: remove field images"}
+          </button>
+        )}
+        {mapOpen && e.field.mapUrl && <FieldMapViewer url={e.field.mapUrl} name={e.field.name} onClose={() => setMapOpen(false)} />}
       </div>
     </main>
   );

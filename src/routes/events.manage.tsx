@@ -10,7 +10,7 @@ import {
 } from "@/lib/events.functions";
 import { EventForm, SERVER_ERRORS, initialForm } from "@/components/events/EventForm";
 import {
-  ACCENT, BG, DateTile, ERR, EventStyles, INK, MICHROMA, MUTED, OK, PANEL, ShareButton, btnOutline, btnPrimary,
+  ACCENT, BG, DateTile, ERR, EventStyles, FieldLogo, INK, MICHROMA, MUTED, OK, PANEL, ShareButton, btnOutline, btnPrimary,
 } from "@/components/events/ui";
 
 type Search = { edit?: string; from?: string };
@@ -206,7 +206,7 @@ function EventList({ mine, lang, onChange, onNew, onEdit, onDuplicate }: {
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, marginBottom: 16, flexWrap: "wrap" }}>
         <div>
           <p style={{ fontFamily: "monospace", fontSize: 11, letterSpacing: "0.24em", color: ACCENT, marginBottom: 4 }}>{en ? "EVENTS" : "DOGODKI"}</p>
-          <h1 style={{ fontFamily: MICHROMA, fontSize: 18, letterSpacing: "0.08em", textTransform: "uppercase", margin: 0, wordBreak: "break-word" }}>{mine.field.name}</h1>
+          <h1 style={{ fontFamily: MICHROMA, fontSize: 18, letterSpacing: "0.08em", textTransform: "uppercase", margin: 0, wordBreak: "break-word", display: "flex", alignItems: "center", gap: 10 }}><FieldLogo url={mine.field.logoUrl} name={mine.field.name} size={40} />{mine.field.name}</h1>
         </div>
         <div style={{ textAlign: "right" }}>
           <button type="button" className="ev-focus" style={{ ...btnPrimary, opacity: mine.fieldReady ? 1 : 0.45 }} disabled={!mine.fieldReady} onClick={onNew}>+ {en ? "New event" : "Nov dogodek"}</button>
