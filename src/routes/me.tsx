@@ -42,7 +42,6 @@ function MePage() {
   const { next, from } = Route.useSearch();
   const claim = useServerFn(playerClaimDevice);
   const [prefill, setPrefill] = useState<ProfilePrefill | null>(null);
-  const [savedOnce, setSavedOnce] = useState(false);
   const backToMission = safeNext(next)?.startsWith("/misija") ? safeNext(next) : null;
   useEffect(() => {
     try {
@@ -128,7 +127,6 @@ function MePage() {
               onSaved={async (p) => {
                 const wasNew = !mine.profile;
                 setMine({ ...mine, profile: p, needsReconsent: false });
-                setSavedOnce(true);
                 if (wasNew) {
                   try { localStorage.removeItem("spartanops:profile-offer-dismissed"); } catch { /* ignore */ }
                   const { data: s2 } = await supabase.auth.getSession();
