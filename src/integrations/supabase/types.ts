@@ -425,6 +425,7 @@ export type Database = {
           respawn_unlock_at: string | null
           session_id: string
           updated_at: string
+          user_id: string | null
         }
         Insert: {
           checkin_id: string
@@ -436,6 +437,7 @@ export type Database = {
           respawn_unlock_at?: string | null
           session_id: string
           updated_at?: string
+          user_id?: string | null
         }
         Update: {
           checkin_id?: string
@@ -447,6 +449,7 @@ export type Database = {
           respawn_unlock_at?: string | null
           session_id?: string
           updated_at?: string
+          user_id?: string | null
         }
         Relationships: [
           {
@@ -1054,6 +1057,7 @@ export type Database = {
           first_name: string
           gear_notes: string | null
           last_name: string | null
+          link_games: boolean
           nickname: string
           operator_type: string | null
           phone: string | null
@@ -1074,6 +1078,7 @@ export type Database = {
           first_name: string
           gear_notes?: string | null
           last_name?: string | null
+          link_games?: boolean
           nickname: string
           operator_type?: string | null
           phone?: string | null
@@ -1094,6 +1099,7 @@ export type Database = {
           first_name?: string
           gear_notes?: string | null
           last_name?: string | null
+          link_games?: boolean
           nickname?: string
           operator_type?: string | null
           phone?: string | null

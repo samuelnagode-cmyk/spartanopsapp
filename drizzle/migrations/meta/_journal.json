@@ -71,6 +71,13 @@
       "when": 1791735088672,
       "tag": "0009_0009_field_media",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1791736147163,
+      "tag": "0010_link_games_to_profile",
+      "breakpoints": true
     }
   ]
 }
