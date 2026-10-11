@@ -57,6 +57,13 @@
       "when": 1791633935889,
       "tag": "0007_0007_event_rsvps",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1791734736972,
+      "tag": "0008_0008_event_price_location",
+      "breakpoints": true
     }
   ]
 }

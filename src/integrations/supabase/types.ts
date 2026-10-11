@@ -562,9 +562,15 @@ export type Database = {
           ends_at: string | null
           id: string
           kind: string
+          lat: number | null
+          lng: number | null
           location_text: string | null
+          location_visibility: string
           maps_url: string | null
           min_age: number | null
+          price_amount: number | null
+          price_currency: string | null
+          price_note: string | null
           price_text: string | null
           rules_text: string | null
           schedule_changed_at: string | null
@@ -588,9 +594,15 @@ export type Database = {
           ends_at?: string | null
           id?: string
           kind: string
+          lat?: number | null
+          lng?: number | null
           location_text?: string | null
+          location_visibility?: string
           maps_url?: string | null
           min_age?: number | null
+          price_amount?: number | null
+          price_currency?: string | null
+          price_note?: string | null
           price_text?: string | null
           rules_text?: string | null
           schedule_changed_at?: string | null
@@ -614,9 +626,15 @@ export type Database = {
           ends_at?: string | null
           id?: string
           kind?: string
+          lat?: number | null
+          lng?: number | null
           location_text?: string | null
+          location_visibility?: string
           maps_url?: string | null
           min_age?: number | null
+          price_amount?: number | null
+          price_currency?: string | null
+          price_note?: string | null
           price_text?: string | null
           rules_text?: string | null
           schedule_changed_at?: string | null
@@ -694,6 +712,35 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "spartanops_field_plans_account_id_fkey"
+            columns: ["account_id"]
+            isOneToOne: true
+            referencedRelation: "spartanops_accounts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      spartanops_field_profiles: {
+        Row: {
+          account_id: string
+          lat: number | null
+          lng: number | null
+          updated_at: string
+        }
+        Insert: {
+          account_id: string
+          lat?: number | null
+          lng?: number | null
+          updated_at?: string
+        }
+        Update: {
+          account_id?: string
+          lat?: number | null
+          lng?: number | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "spartanops_field_profiles_account_id_fkey"
             columns: ["account_id"]
             isOneToOne: true
             referencedRelation: "spartanops_accounts"
