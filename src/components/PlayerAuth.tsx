@@ -69,10 +69,10 @@ export function ForgotPassword({ en, initialEmail = "" }: { en: boolean; initial
   );
 }
 
-export function PlayerAuth({ next, onDone }: { next?: string | null; onDone?: () => void }) {
+export function PlayerAuth({ next, onDone, initialTab = "signin" }: { next?: string | null; onDone?: () => void; initialTab?: "signin" | "signup" }) {
   const { lang } = useLang();
   const en = lang === "en";
-  const [tab, setTab] = useState<"signin" | "signup">("signin");
+  const [tab, setTab] = useState<"signin" | "signup">(initialTab);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [show, setShow] = useState(false);

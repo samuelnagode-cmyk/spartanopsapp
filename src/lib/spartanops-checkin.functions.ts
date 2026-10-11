@@ -155,11 +155,15 @@ export const spartanopsUpsertCheckin = createServerFn({ method: "POST" })
       if (userId) {
         const { data: prof } = await supabaseAdmin
           .from("spartanops_players")
-          .select("nickname, first_name, last_name, age_group, phone, club, experience_level, operator_type, link_games")
+          .select("nickname, first_name, last_name, age_group, phone, club, experience_level, operator_type, link_games, privacy_version")
           .eq("user_id", userId)
           .maybeSingle();
         if (prof) {
-          if (prof.link_games) linkUserId = userId;
+          if (data.useProfile) {
+            const { PRIVACY_VERSION } = await import("./player-validation");
+            if (prof.privacy_version !== PRIVACY_VERSION) throw new Error("privacy_reconsent");
+          }
+          if (prof.link_games && prof.privacy_version) linkUserId = userId;
           if (data.useProfile) {
             const adult = prof.age_group === "18_plus";
             data.callsign = data.callsign || prof.nickname;

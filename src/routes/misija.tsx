@@ -7,6 +7,8 @@ import { Fragment, memo, useCallback, useEffect, useMemo, useRef, useState, type
 import { useServerFn } from "@tanstack/react-start";
 import { ExperienceBadge, EXPERIENCE_LEVELS } from "@/components/ExperienceBadge";
 import { supabase } from "@/integrations/supabase/client";
+import { PlayerAuthDialog } from "@/components/PlayerAuth";
+import { ProfileOfferCard, currentUrl, readSharePhone, useGateAuth, writeSharePhone } from "@/components/ProfileOfferCard";
 import { isStaleState } from "@/lib/game-state-sync";
 
 import { spartanopsAckTeamChange, spartanopsSelectTeam, spartanopsTickScores } from "@/lib/spartanops-game.functions";
@@ -1197,7 +1199,7 @@ function MisijaPageInner() {
           fieldName={fieldTitleFromState(state, field)}
           en={en}
         />
-
+        {!preview && <ProfileOfferCard en={en} />}
 
         {me.assigned_team === "none" ? (
           <div className="text-center mb-8">
@@ -1745,6 +1747,13 @@ function CheckinForm({ locationCheck, sessionId, fieldId, preview, onGhost, fiel
   const [spartacusCleared, setSpartacusCleared] = useState(false);
   const locationOk = !locationCheck || spartacusCleared;
   useEffect(() => { if (!locationCheck) setSpartacusCleared(false); }, [locationCheck]);
+  const [gate, refreshGate] = useGateAuth();
+  const profileMode = gate.status === "profile" && !preview;
+  const [sharePhone, setSharePhone] = useState(false);
+  useEffect(() => { setSharePhone(readSharePhone()); }, []);
+  const [altOpen, setAltOpen] = useState(false);
+  const [altCallsign, setAltCallsign] = useState("");
+  const [authOpen, setAuthOpen] = useState(false);
 
   // Global "remember me": pre-fill from the last successful registration.
   useEffect(() => {
@@ -1780,8 +1789,9 @@ function CheckinForm({ locationCheck, sessionId, fieldId, preview, onGhost, fiel
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
-    const cs = callsign.trim();
-    if (!cs) {
+    const cs = profileMode ? altCallsign.trim() : callsign.trim();
+    if (gate.status === "profile" && profileMode && gate.needsReconsent) return;
+    if (!cs && !profileMode) {
       setErr(t.needCallsign);
       return;
     }
@@ -1813,6 +1823,20 @@ function CheckinForm({ locationCheck, sessionId, fieldId, preview, onGhost, fiel
     // Upsert on session_id via a service-role server function so the client
     // never needs a broad UPDATE policy on spartanops_checkins.
     try {
+      if (gate.status === "profile" && profileMode) {
+        const share = gate.d.adult && gate.d.hasPhone && sharePhone;
+        if (gate.d.adult && gate.d.hasPhone) writeSharePhone(sharePhone);
+        const { data: sess } = await supabase.auth.getSession();
+        await upsertCheckinFn({
+          data: {
+            sessionId, fieldId, callsign: cs || "", experienceLevel: "dobro", operatorType: "",
+            entryToken: readFieldEntryToken(), accessToken: sess.session?.access_token ?? gate.token,
+            useProfile: true, sharePhone: share,
+          },
+        });
+        window.location.reload();
+        return;
+      }
       await upsertCheckinFn({
         data: {
           sessionId,
@@ -1872,6 +1896,8 @@ function CheckinForm({ locationCheck, sessionId, fieldId, preview, onGhost, fiel
         return;
       }
       setSubmitting(false);
+      if (String(e?.message ?? "").includes("privacy_reconsent")) { refreshGate(); return; }
+      if (String(e?.message ?? "").includes("login_required")) { setErr(en ? "Please sign in again." : "Ponovno se prijavi."); refreshGate(); return; }
       setErr(e?.message ?? "Napaka pri prijavi.");
     }
   };
@@ -1898,12 +1924,70 @@ function CheckinForm({ locationCheck, sessionId, fieldId, preview, onGhost, fiel
         <p className="text-center font-mono text-[11px] uppercase tracking-widest mb-8" style={{ color: MUTED }}>
           {t.subtitle}
         </p>
+        {!preview && (gate.status === "anon" || gate.status === "loading") && !submitting && (
+          <p className="text-center font-mono text-[12px] mb-4" style={{ color: MUTED, marginTop: -18 }}>
+            <button type="button" onClick={() => setAuthOpen(true)} style={{ background: "none", border: "none", color: ACCENT, textDecoration: "underline", cursor: "pointer", minHeight: 44, fontFamily: "monospace", fontSize: 12 }}>
+              {en ? "Have an account? Sign in to skip this form" : "Imaš račun? Prijavi se in preskoči obrazec"}
+            </button>
+          </p>
+        )}
+        {!preview && gate.status === "noprofile" && (
+          <p className="text-center font-mono text-[12px] mb-4" style={{ color: MUTED, marginTop: -18 }}>
+            {en ? "Make a player profile once and skip this form next time. " : "Enkrat ustvari igralski profil in naslednjič preskoči ta obrazec. "}
+            <a href={`/me?from=game&next=${encodeURIComponent(currentUrl())}`} style={{ color: ACCENT, display: "inline-block", minHeight: 44, lineHeight: "44px" }}>
+              {en ? "Make a player profile" : "Ustvari igralski profil"}
+            </a>
+          </p>
+        )}
+        {!preview && gate.status === "error" && (
+          <p className="text-center font-mono text-[12px] mb-4" style={{ color: MUTED, marginTop: -18 }}>
+            {en ? "Could not load your profile, you can still join with your callsign." : "Profila ni bilo mogoče naložiti, še vedno se lahko pridružiš s svojim vzdevkom."}
+          </p>
+        )}
+        <PlayerAuthDialog open={authOpen} onClose={() => setAuthOpen(false)} next={currentUrl()} onDone={() => window.location.reload()} />
 
         <form
           onSubmit={submit}
           style={{ background: PANEL, border: `1px solid ${ACCENT}40`, padding: 24 }}
           className="space-y-4"
         >
+          {gate.status === "profile" && profileMode && (
+            <div>
+              <p style={{ fontFamily: "'Michroma', monospace", fontSize: 20, letterSpacing: "0.08em", color: ACCENT, wordBreak: "break-word" }}>{altCallsign.trim() || gate.d.callsign}</p>
+              <p className="font-mono text-[12px] mt-1" style={{ color: INK }}>
+                {gate.d.firstName}{gate.d.lastInitial ? ` ${gate.d.lastInitial}.` : ""}{gate.d.club ? ` · ${gate.d.club}` : ""}
+              </p>
+              <a href={`/me?next=${encodeURIComponent(currentUrl())}`} className="font-mono text-[12px]" style={{ color: ACCENT, display: "inline-block", minHeight: 44, lineHeight: "44px" }}>
+                {en ? "Edit in my profile" : "Uredi v profilu"}
+              </a>
+              {gate.needsReconsent ? (
+                <div className="mt-2">
+                  <p className="font-mono text-[12px] mb-2" style={{ color: ACCENT }}>{en ? "Please accept the updated privacy notice first." : "Najprej sprejmi posodobljeno obvestilo o zasebnosti."}</p>
+                  <a href={`/me?next=${encodeURIComponent(currentUrl())}`} style={{ display: "block", textAlign: "center", background: ACCENT, color: BG, padding: 14, fontFamily: "monospace", fontWeight: 700, letterSpacing: "0.2em", textTransform: "uppercase", fontSize: 12, textDecoration: "none" }}>
+                    {en ? "Review privacy notice" : "Preglej obvestilo"}
+                  </a>
+                </div>
+              ) : (
+                <>
+                  {gate.d.adult && gate.d.hasPhone && (
+                    <label className="flex gap-3 items-start font-mono text-[12px] mt-2" style={{ color: INK, cursor: "pointer", minHeight: 44 }}>
+                      <input type="checkbox" checked={sharePhone} onChange={(e) => setSharePhone(e.target.checked)} style={{ width: 18, height: 18, accentColor: ACCENT, flexShrink: 0, marginTop: 2 }} />
+                      {en ? "Share my phone number with the marshal for this game (safety)" : "Deli mojo telefonsko številko z maršalom za to igro (varnost)"}
+                    </label>
+                  )}
+                  {altOpen ? (
+                    <input value={altCallsign} onChange={(e) => setAltCallsign(e.target.value)} maxLength={40} style={{ ...inputStyle, marginTop: 8 }}
+                      placeholder={gate.d.callsign} aria-label={en ? "Callsign for this game" : "Vzdevek za to igro"} />
+                  ) : (
+                    <button type="button" onClick={() => setAltOpen(true)} className="font-mono text-[12px]" style={{ background: "none", border: "none", color: MUTED, textDecoration: "underline", cursor: "pointer", minHeight: 44, padding: 0 }}>
+                      {en ? "Use a different callsign for this game" : "Za to igro uporabi drug vzdevek"}
+                    </button>
+                  )}
+                </>
+              )}
+            </div>
+          )}
+          {!profileMode && (<>
           <div>
             <label className="block font-mono text-[10px] uppercase tracking-widest mb-1" style={{ color: MUTED }}>
               {t.callsign}
@@ -2037,6 +2121,7 @@ function CheckinForm({ locationCheck, sessionId, fieldId, preview, onGhost, fiel
               ))}
             </div>
           </div>
+          </>)}
 
           {locationCheck && <SpartacusConsentBlock en={en} onClearedChange={setSpartacusCleared} />}
 
@@ -2044,6 +2129,7 @@ function CheckinForm({ locationCheck, sessionId, fieldId, preview, onGhost, fiel
 
           {err && <p style={{ color: "#ff8a8a", fontSize: 12 }}>{err}</p>}
 
+          {!(gate.status === "profile" && profileMode && gate.needsReconsent) && (<>
           <button
             type="submit"
             disabled={submitting || !locationOk}
@@ -2063,6 +2149,15 @@ function CheckinForm({ locationCheck, sessionId, fieldId, preview, onGhost, fiel
           >
             {submitting ? t.submitting : t.submit}
           </button>
+          {gate.status === "profile" && profileMode && (
+            <p className="text-center font-mono text-[11px]" style={{ color: MUTED }}>
+              {en ? "Signed in as " : "Prijavljen kot "}{gate.email}.{" "}{en ? "Not you? " : "Nisi ti? "}
+              <button type="button" onClick={async () => { await supabase.auth.signOut().catch(() => {}); refreshGate(); }} style={{ background: "none", border: "none", color: ACCENT, textDecoration: "underline", cursor: "pointer", minHeight: 44, fontFamily: "monospace", fontSize: 11 }}>
+                {en ? "Sign out" : "Odjava"}
+              </button>
+            </p>
+          )}
+          </>)}
 
           <div className="pt-4 flex flex-col items-center">
             <button
