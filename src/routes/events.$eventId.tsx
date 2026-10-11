@@ -8,7 +8,7 @@ import { COUNTRIES, flagFor } from "@/lib/countries";
 import { CONTACT_EMAIL } from "@/lib/plans";
 import { getMasterPw, useMasterAdmin } from "@/lib/master-admin";
 import {
-  SITE, appleMapsUrl, fmtLatLng, formatEventWhen, formatPrice, googleMapsUrl, isToday, kindInfo, linkify, looksLikePhone,
+  SITE, appleMapsUrl, fmtLatLng, formatEventWhen, googleMapsUrl, isToday, kindInfo, linkify, looksLikePhone,
   priceLabel, priceNumber, safeUrl, shortDate, wazeUrl, type LatLng, type Lang,
 } from "@/lib/events";
 import { eventLocationForViewer, eventsAdminHide, eventsGet, type EventFull } from "@/lib/events.functions";
