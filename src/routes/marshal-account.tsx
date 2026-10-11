@@ -6,6 +6,9 @@ import { useLang } from "@/lib/i18n";
 import { FieldPasswordPanel } from "@/components/FieldPasswordPanel";
 import { ForgotPassword } from "@/components/PlayerAuth";
 import { CountrySearchInput } from "@/components/CountrySearchInput";
+import { LocationInput } from "@/components/events/LocationInput";
+import { fieldProfileGetMine, fieldProfileSave } from "@/lib/field-profile.functions";
+import type { LatLng } from "@/lib/events";
 import { COUNTRIES, countryCodeFor } from "@/lib/countries";
 import {
   CONTACT_EMAIL, FOUNDING_OFFER, daysUntil, formatFoundingDate, foundingApplicationMailto, foundingContinueMailto,
@@ -228,6 +231,19 @@ function LoggedIn({ user, en }: { user: User; en: boolean }) {
   const [countryName, setCountryName] = useState("");
   const [locBusy, setLocBusy] = useState(false);
   const [locMsg, setLocMsg] = useState<{ ok: boolean; text: string } | null>(null);
+  const [point, setPoint] = useState<LatLng | null>(null);
+
+  useEffect(() => {
+    let off = false;
+    (async () => {
+      try {
+        const t = (await supabase.auth.getSession()).data.session?.access_token ?? "";
+        const r = await fieldProfileGetMine({ data: { accessToken: t } });
+        if (!off) setPoint(r.location);
+      } catch { /* no field yet */ }
+    })();
+    return () => { off = true; };
+  }, [user]);
 
   useEffect(() => {
     let cancelled = false;
@@ -277,7 +293,14 @@ function LoggedIn({ user, en }: { user: User; en: boolean }) {
     const code = cn ? countryCodeFor(cn) : null;
     if (cn && !code) { setLocMsg({ ok: false, text: en ? "Pick a country from the list." : "Izberi državo s seznama." }); return; }
     setLocBusy(true);
-    const { error } = await db.from("spartanops_accounts").update({ city: c || null, country: code } as any).eq("id", user.id);
+    const { error: accErr } = await db.from("spartanops_accounts").update({ city: c || null, country: code } as any).eq("id", user.id);
+    let error = accErr;
+    if (!accErr) {
+      try {
+        const t = (await supabase.auth.getSession()).data.session?.access_token ?? "";
+        await fieldProfileSave({ data: { accessToken: t, lat: point?.lat ?? null, lng: point?.lng ?? null } });
+      } catch { error = { message: en ? "Could not save the exact location." : "Natančne lokacije ni bilo mogoče shraniti." } as never; }
+    }
     setLocBusy(false);
     if (error) setLocMsg({ ok: false, text: error.message });
     else {
@@ -320,6 +343,11 @@ function LoggedIn({ user, en }: { user: User; en: boolean }) {
         <input value={city} maxLength={80} onChange={(e) => setCity(e.target.value)} style={{ ...inputStyle, marginBottom: 12 }} autoComplete="address-level2" />
         <p style={labelStyle}>{en ? "Country" : "Država"}</p>
         <CountrySearchInput value={countryName} onChange={setCountryName} inputStyle={inputStyle} accent={ACCENT} />
+        <div style={{ marginTop: 14 }}>
+          <LocationInput id="field-point" lang={en ? "en" : "sl"} value={point} onChange={setPoint}
+            label={en ? "Exact location of the field" : "Natančna lokacija poligona"}
+            helper={en ? "Used for \"Open in Google Maps\" on all your events, unless an event has its own meeting point." : "Uporabljeno za »Odpri v Google Zemljevidih« pri vseh tvojih dogodkih, razen če ima dogodek svoje zbirno mesto."} />
+        </div>
         <button type="button" onClick={saveLocation} disabled={locBusy} style={{ ...btnStyle, marginTop: 12, opacity: locBusy ? 0.6 : 1 }}>
           {locBusy ? "…" : en ? "Save" : "Shrani"}
         </button>

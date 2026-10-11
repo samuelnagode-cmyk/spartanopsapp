@@ -4,7 +4,7 @@ import { CalendarPlus, Car, Share2 } from "lucide-react";
 import { CapacityBar } from "./CapacityBar";
 import { flagFor } from "@/lib/countries";
 import {
-  buildIcs, dateTileParts, formatTimeRange, googleCalendarUrl, kindInfo, shortDate, slugify, type IcsEvent, type Lang,
+  buildIcs, dateTileParts, formatTimeRange, googleCalendarUrl, kindInfo, priceLabel, shortDate, slugify, type IcsEvent, type Lang,
 } from "@/lib/events";
 import type { EventListItem } from "@/lib/events.functions";
 
@@ -76,7 +76,7 @@ export function EventCard({ e, lang, myStatus }: { e: EventListItem; lang: Lang;
         </p>
         <p style={{ fontFamily: "monospace", fontSize: 12, margin: "0 0 6px" }}>{formatTimeRange(e.starts_at, e.ends_at, e.tz)}</p>
         <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
-          {e.price_text && <span style={smallChip}>{e.price_text}</span>}
+          {priceLabel(e, lang) && <span style={smallChip}>{priceLabel(e, lang)}</span>}
           {e.min_age && <span style={smallChip}>min. {e.min_age}</span>}
           {e.capacity && <span style={smallChip}>{e.capacity} {en ? "spots" : "mest"}</span>}
           {(e.going ?? 0) > 0 && <span style={smallChip}>{e.going} {en ? "going" : "pride"}</span>}
