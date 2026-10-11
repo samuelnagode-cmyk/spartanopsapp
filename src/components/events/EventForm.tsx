@@ -9,6 +9,7 @@ import {
 import type { EventField, EventFull, EventInput } from "@/lib/events.functions";
 import { fieldProfileGetMine, fieldProfileSave } from "@/lib/field-profile.functions";
 import { LocationInput, PointCard } from "./LocationInput";
+import { ImageUploader } from "@/components/ImageUploader";
 import { ACCENT, BG, ERR, INK, MICHROMA, MUTED, PANEL, btnOutline, btnPrimary, chipStyle } from "./ui";
 
 const card: CSSProperties = { background: PANEL, border: `1px solid ${ACCENT}44`, padding: "18px 16px", marginBottom: 12 };
@@ -23,7 +24,7 @@ type FormState = {
   description: string; capacity: string; min_age: string; rules_text: string; signup_url: string;
   contact_text: string; visibility: "public" | "link"; repeat: boolean; repeatCount: number;
   priceAmount: string; priceCurrency: string; priceFree: boolean; priceNote: string; oldPriceText: string;
-  point: LatLng | null; locMode: "field" | "custom"; locVis: "public" | "going";
+  point: LatLng | null; locMode: "field" | "custom"; locVis: "public" | "going"; showFieldMap: boolean;
 };
 
 type FormSource = EventFull & { lat?: number | null; lng?: number | null };
@@ -36,7 +37,7 @@ export function initialForm(field: EventField, source?: FormSource | null, mode:
       description: "", capacity: "", min_age: "", rules_text: "", signup_url: "", contact_text: "",
       visibility: "public", repeat: false, repeatCount: 4,
       priceAmount: "", priceCurrency: DEFAULT_CURRENCY, priceFree: false, priceNote: "", oldPriceText: "",
-      point: null, locMode: "field", locVis: "public",
+      point: null, locMode: "field", locVis: "public", showFieldMap: true,
     };
   }
   const s = zonedParts(source.starts_at, source.tz);
@@ -57,6 +58,7 @@ export function initialForm(field: EventField, source?: FormSource | null, mode:
     point: typeof source.lat === "number" && typeof source.lng === "number" ? { lat: source.lat, lng: source.lng } : null,
     locMode: typeof source.lat === "number" ? "custom" : "field",
     locVis: source.location_visibility === "going" ? "going" : "public",
+    showFieldMap: source.show_field_map !== false,
   };
 }
 
@@ -80,7 +82,7 @@ export function toInput(f: FormState, fieldLoc: LatLng | null = null): EventInpu
     // An exact point (event or field) replaces the old Maps link.
     rules_text: f.rules_text, location_text: f.location_text, maps_url: custom || fieldLoc ? null : f.maps_url || null,
     price_amount: amount || null, price_currency: amount ? f.priceCurrency : null, price_note: f.priceNote,
-    lat: custom?.lat ?? null, lng: custom?.lng ?? null, location_visibility: f.locVis,
+    lat: custom?.lat ?? null, lng: custom?.lng ?? null, location_visibility: f.locVis, show_field_map: f.showFieldMap,
     capacity: f.capacity || null, min_age: f.min_age || null, signup_url: f.signup_url, contact_text: f.contact_text, visibility: f.visibility,
   };
 }
@@ -138,12 +140,14 @@ export function EventForm({ lang, field, listedPublicly, initial, isCreate, busy
   const saveFieldLoc = useServerFn(fieldProfileSave);
   const [fieldLoc, setFieldLoc] = useState<LatLng | null>(null);
   const [fieldLocLoaded, setFieldLocLoaded] = useState(false);
+  const [logoUrl, setLogoUrl] = useState<string | null>(field.logoUrl ?? null);
+  const [mapUrl, setMapUrl] = useState<string | null>(field.mapUrl ?? null);
   const [fieldSaveMsg, setFieldSaveMsg] = useState<string | null>(null);
   const tok = async () => (await supabase.auth.getSession()).data.session?.access_token ?? "";
   useEffect(() => {
     let off = false;
     (async () => {
-      try { const r = await getFieldLoc({ data: { accessToken: await tok() } }); if (!off) setFieldLoc(r.location); }
+      try { const r = await getFieldLoc({ data: { accessToken: await tok() } }); if (!off) { setFieldLoc(r.location); setLogoUrl(r.logoUrl); setMapUrl(r.mapUrl); } }
       catch { /* treat as unset */ }
       finally { if (!off) setFieldLocLoaded(true); }
     })();
@@ -262,6 +266,20 @@ export function EventForm({ lang, field, listedPublicly, initial, isCreate, busy
           ))}
         </div>
         <p style={help}>{en ? "Some fields keep the exact spot private until players have answered." : "Nekateri poligoni natančno mesto skrijejo, dokler igralci ne odgovorijo."}</p>
+      </Card>
+
+      <Card title={en ? "Logo and field outline" : "Logo in obris poligona"}>
+        <p style={{ ...help, marginTop: 0, marginBottom: 10 }}>{en ? "Saved once and used for all your events." : "Shrani se enkrat in velja za vse tvoje dogodke."}</p>
+        <div style={{ display: "grid", gap: 10 }}>
+          <ImageUploader kind="logo" currentUrl={logoUrl} fieldName={field.name} onChange={setLogoUrl} />
+          <ImageUploader kind="map" currentUrl={mapUrl} fieldName={field.name} onChange={setMapUrl} />
+        </div>
+        {mapUrl && (
+          <label style={{ display: "flex", gap: 10, alignItems: "center", marginTop: 12, minHeight: 44, fontFamily: "monospace", fontSize: 13, cursor: "pointer" }}>
+            <input type="checkbox" className="ev-focus" checked={f.showFieldMap} onChange={(e) => set("showFieldMap", e.target.checked)} style={{ width: 18, height: 18, accentColor: ACCENT }} />
+            {en ? "Show the field outline on this event" : "Prikaži obris poligona pri tem dogodku"}
+          </label>
+        )}
       </Card>
 
       <Card title={en ? "Details" : "Podrobnosti"}>
