@@ -64,6 +64,13 @@
       "when": 1791734736972,
       "tag": "0008_0008_event_price_location",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1791735088672,
+      "tag": "0009_0009_field_media",
+      "breakpoints": true
     }
   ]
 }

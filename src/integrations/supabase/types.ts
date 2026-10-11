@@ -575,6 +575,7 @@ export type Database = {
           rules_text: string | null
           schedule_changed_at: string | null
           series_id: string | null
+          show_field_map: boolean
           signup_url: string | null
           starts_at: string
           status: string
@@ -607,6 +608,7 @@ export type Database = {
           rules_text?: string | null
           schedule_changed_at?: string | null
           series_id?: string | null
+          show_field_map?: boolean
           signup_url?: string | null
           starts_at: string
           status?: string
@@ -639,6 +641,7 @@ export type Database = {
           rules_text?: string | null
           schedule_changed_at?: string | null
           series_id?: string | null
+          show_field_map?: boolean
           signup_url?: string | null
           starts_at?: string
           status?: string
@@ -724,18 +727,27 @@ export type Database = {
           account_id: string
           lat: number | null
           lng: number | null
+          logo_path: string | null
+          map_path: string | null
+          media_updated_at: string | null
           updated_at: string
         }
         Insert: {
           account_id: string
           lat?: number | null
           lng?: number | null
+          logo_path?: string | null
+          map_path?: string | null
+          media_updated_at?: string | null
           updated_at?: string
         }
         Update: {
           account_id?: string
           lat?: number | null
           lng?: number | null
+          logo_path?: string | null
+          map_path?: string | null
+          media_updated_at?: string | null
           updated_at?: string
         }
         Relationships: [
