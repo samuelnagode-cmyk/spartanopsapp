@@ -7,6 +7,8 @@ import { Fragment, memo, useCallback, useEffect, useMemo, useRef, useState, type
 import { useServerFn } from "@tanstack/react-start";
 import { ExperienceBadge, EXPERIENCE_LEVELS } from "@/components/ExperienceBadge";
 import { supabase } from "@/integrations/supabase/client";
+import { PlayerAuthDialog } from "@/components/PlayerAuth";
+import { ProfileOfferCard, currentUrl, readSharePhone, useGateAuth, writeSharePhone } from "@/components/ProfileOfferCard";
 import { isStaleState } from "@/lib/game-state-sync";
 
 import { spartanopsAckTeamChange, spartanopsSelectTeam, spartanopsTickScores } from "@/lib/spartanops-game.functions";
