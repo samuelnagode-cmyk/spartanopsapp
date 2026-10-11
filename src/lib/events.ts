@@ -206,6 +206,8 @@ export function slugify(s: string): string {
 export type IcsEvent = {
   id: string; title: string; starts_at: string; ends_at: string | null; description?: string | null;
   location_text?: string | null; status?: string; field?: { name?: string | null; city?: string | null } | null;
+  /** Only set when the exact location is public. */
+  geo?: { lat: number; lng: number } | null;
 };
 
 const icsDate = (ms: number) => new Date(ms).toISOString().replace(/[-:]/g, "").replace(/\.\d{3}/, "");
@@ -252,6 +254,7 @@ export function buildIcs(events: IcsEvent[], opts: { name?: string; now?: Date }
     );
     const loc = eventLocation(e);
     if (loc) lines.push(`LOCATION:${icsEscape(loc)}`);
+    if (e.geo) lines.push(`GEO:${e.geo.lat};${e.geo.lng}`);
     lines.push(`DESCRIPTION:${icsEscape(desc)}`, `URL:${url}`);
     if (e.status === "cancelled") lines.push("STATUS:CANCELLED");
     lines.push("END:VEVENT");
@@ -269,4 +272,146 @@ export function googleCalendarUrl(e: IcsEvent): string {
     location: eventLocation(e),
   });
   return `https://calendar.google.com/calendar/render?${p.toString()}`;
+}
+
+/* ---------- price ---------- */
+
+export const CURRENCIES = ["EUR", "USD", "GBP", "CHF", "CZK", "PLN", "HUF", "RON", "RSD", "BAM", "SEK", "DKK", "NOK", "BGN"] as const;
+export type Currency = (typeof CURRENCIES)[number];
+export const DEFAULT_CURRENCY: Currency = "EUR";
+
+/** Currency symbol for a code in the given language, e.g. EUR -> "€". */
+export function currencySymbol(code: string, lang: Lang = "en"): string {
+  try {
+    return new Intl.NumberFormat(locale(lang), { style: "currency", currency: code, currencyDisplay: "narrowSymbol" })
+      .formatToParts(0).find((p) => p.type === "currency")?.value ?? code;
+  } catch { return code; }
+}
+
+/** "25 €" (sl) / "€25" (en); 0 is "Brezplačno" / "Free". No decimals for whole amounts. */
+export function formatPrice(amount: number, currency: string, lang: Lang): string {
+  if (amount === 0) return lang === "en" ? "Free" : "Brezplačno";
+  const whole = Number.isInteger(amount);
+  return new Intl.NumberFormat(locale(lang), {
+    style: "currency", currency, minimumFractionDigits: whole ? 0 : 2, maximumFractionDigits: whole ? 0 : 2,
+  }).format(amount);
+}
+
+/** Price label for cards: structured price first, else the old free text. */
+export function priceLabel(e: { price_amount?: number | string | null; price_currency?: string | null; price_text?: string | null }, lang: Lang): string | null {
+  if (e.price_amount !== null && e.price_amount !== undefined && e.price_currency) return formatPrice(Number(e.price_amount), e.price_currency, lang);
+  return e.price_text || null;
+}
+
+/* ---------- exact location ---------- */
+
+export type LatLng = { lat: number; lng: number };
+export type ParsedLocation = { kind: "point"; lat: number; lng: number } | { kind: "resolve"; url: string } | { kind: "error"; error: "invalid" | "range" };
+
+const round6 = (n: number) => Math.round(n * 1e6) / 1e6;
+
+export function validLatLng(lat: number, lng: number): boolean {
+  return Number.isFinite(lat) && Number.isFinite(lng) && lat >= -90 && lat <= 90 && lng >= -180 && lng <= 180 && !(lat === 0 && lng === 0);
+}
+
+function point(lat: number, lng: number): ParsedLocation {
+  return validLatLng(lat, lng) ? { kind: "point", lat: round6(lat), lng: round6(lng) } : { kind: "error", error: "range" };
+}
+
+const NUM = String.raw`-?\d{1,3}(?:\.\d+)?`;
+
+/** Coordinates found in a Google Maps URL (`!3d…!4d…`, `@lat,lng`, or q/query/ll/center/destination params). */
+export function latLngFromMapsUrl(raw: string): LatLng | null {
+  let s = raw;
+  try { s = decodeURIComponent(raw); } catch { /* keep raw */ }
+  const d34 = s.match(new RegExp(`!3d(${NUM})!4d(${NUM})`));
+  if (d34) return { lat: Number(d34[1]), lng: Number(d34[2]) };
+  const at = s.match(new RegExp(`@(${NUM}),(${NUM})`));
+  if (at) return { lat: Number(at[1]), lng: Number(at[2]) };
+  try {
+    const u = new URL(raw);
+    for (const k of ["q", "query", "ll", "center", "destination", "daddr"]) {
+      const v = u.searchParams.get(k);
+      const m = v?.trim().match(new RegExp(`^(?:loc:)?\\s*(${NUM})\\s*,\\s*(${NUM})$`));
+      if (m) return { lat: Number(m[1]), lng: Number(m[2]) };
+    }
+  } catch { /* not a URL */ }
+  return null;
+}
+
+/** Hosts we may fetch while resolving a Maps short link. */
+export function mapsHostAllowed(raw: string): boolean {
+  let u: URL;
+  try { u = new URL(raw); } catch { return false; }
+  if (u.protocol !== "https:" || u.username || u.password || u.port) return false;
+  const h = u.hostname.toLowerCase();
+  if (h === "goo.gl") return u.pathname.startsWith("/maps");
+  return ["maps.app.goo.gl", "google.com", "www.google.com", "maps.google.com", "www.google.si"].includes(h);
+}
+
+function isShortLink(raw: string): boolean {
+  try {
+    const u = new URL(raw);
+    const h = u.hostname.toLowerCase();
+    return h === "maps.app.goo.gl" || (h === "goo.gl" && u.pathname.startsWith("/maps"));
+  } catch { return false; }
+}
+
+/**
+ * Parses pasted text into a point. Accepts decimal coordinates (comma, space or semicolon separated,
+ * decimal comma when unambiguous), degrees/minutes/seconds, and Google Maps links. Short links need resolving.
+ */
+export function parseLocationInput(text: string): ParsedLocation {
+  const t = (text ?? "").trim();
+  if (!t || t.length > 2000) return { kind: "error", error: "invalid" };
+  const urlText = /^https?:\/\//i.test(t) ? t : /^(maps\.app\.goo\.gl|goo\.gl\/maps|(www\.)?google\.[a-z.]+\/maps|maps\.google\.)/i.test(t) ? `https://${t}` : null;
+  if (urlText) {
+    if (isShortLink(urlText)) return { kind: "resolve", url: urlText.replace(/^http:/i, "https:") };
+    const p = latLngFromMapsUrl(urlText);
+    return p ? point(p.lat, p.lng) : { kind: "error", error: "invalid" };
+  }
+  const dms = t.match(/^(\d{1,3})\s*°\s*(\d{1,2})\s*['′’]\s*(\d{1,2}(?:[.,]\d+)?)\s*(?:["″”]|'')?\s*([NS])[\s,;]*(\d{1,3})\s*°\s*(\d{1,2})\s*['′’]\s*(\d{1,2}(?:[.,]\d+)?)\s*(?:["″”]|'')?\s*([EW])$/i);
+  if (dms) {
+    const conv = (d: string, m: string, s: string, h: string) => (Number(d) + Number(m) / 60 + Number(s.replace(",", ".")) / 3600) * (/[SW]/i.test(h) ? -1 : 1);
+    return point(conv(dms[1], dms[2], dms[3], dms[4]), conv(dms[5], dms[6], dms[7], dms[8]));
+  }
+  const dec = t.match(/^(-?\d{1,3}(?:\.\d+)?)\s*[,;\s]\s*(-?\d{1,3}(?:\.\d+)?)$/);
+  if (dec) return point(Number(dec[1]), Number(dec[2]));
+  const comma = t.match(/^(-?\d{1,3},\d+)\s*(?:;|\s)\s*(-?\d{1,3},\d+)$/);
+  if (comma) return point(Number(comma[1].replace(",", ".")), Number(comma[2].replace(",", ".")));
+  return { kind: "error", error: "invalid" };
+}
+
+export const fmtLatLng = (p: LatLng) => `${p.lat.toFixed(5)}, ${p.lng.toFixed(5)}`;
+export const googleMapsUrl = (p: LatLng) => `https://www.google.com/maps/search/?api=1&query=${p.lat},${p.lng}`;
+export const wazeUrl = (p: LatLng) => `https://waze.com/ul?ll=${p.lat},${p.lng}&navigate=yes`;
+export const appleMapsUrl = (p: LatLng, name: string) => `https://maps.apple.com/?ll=${p.lat},${p.lng}&q=${encodeURIComponent(name)}`;
+
+/**
+ * Follows a Maps short link with manual redirects (max 4 hops), checking every hop's host.
+ * Reads only Location headers and the final URL; never returns page content.
+ */
+export async function resolveMapsChain(url: string, fetchFn: typeof fetch = fetch): Promise<LatLng | null> {
+  let cur = url;
+  for (let hop = 0; hop <= 4; hop++) {
+    if (!mapsHostAllowed(cur)) return null;
+    const direct = latLngFromMapsUrl(cur);
+    if (direct && validLatLng(direct.lat, direct.lng)) return direct;
+    if (hop === 4) return null;
+    let res: Response;
+    try {
+      res = await fetchFn(cur, { redirect: "manual", signal: AbortSignal.timeout(4000), headers: { "User-Agent": "Mozilla/5.0 (SpartanOps link check)" } });
+    } catch { return null; }
+    try { await res.body?.cancel(); } catch { /* ignore */ }
+    const loc = res.headers.get("location");
+    if (!loc) return null;
+    let next: URL;
+    try { next = new URL(loc, cur); } catch { return null; }
+    if (next.hostname.toLowerCase() === "consent.google.com") {
+      const cont = next.searchParams.get("continue");
+      if (!cont) return null;
+      cur = cont;
+    } else cur = next.toString();
+  }
+  return null;
 }

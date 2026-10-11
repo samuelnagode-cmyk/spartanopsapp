@@ -1,8 +1,8 @@
 import { createServerFn } from "@tanstack/react-start";
 import { createHash, timingSafeEqual } from "node:crypto";
 import {
-  EVENT_TZ, KIND_IDS, MAX_REPEAT, MAX_UPCOMING_PER_FIELD, addDaysYmd, fold, isOngoingOrUpcoming,
-  safeUrl, weekendRange, zonedToUtc,
+  CURRENCIES, EVENT_TZ, KIND_IDS, MAX_REPEAT, MAX_UPCOMING_PER_FIELD, addDaysYmd, fold, isOngoingOrUpcoming,
+  parseLocationInput, resolveMapsChain, safeUrl, validLatLng, weekendRange, zonedToUtc, type LatLng,
 } from "./events";
 import { countsFor } from "./event-rsvps.functions";
 
@@ -22,8 +22,8 @@ function checkMaster(pw: unknown): boolean {
   return timingSafeEqual(a, b);
 }
 
-const LIST_COLS = "id, title, description, kind, starts_at, ends_at, tz, location_text, price_text, capacity, min_age, status, updated_at, visibility";
-const FULL_COLS = "id, series_id, title, kind, starts_at, ends_at, tz, description, rules_text, location_text, maps_url, price_text, capacity, min_age, signup_url, contact_text, visibility, status, cancel_reason, created_at, updated_at, schedule_changed_at";
+const LIST_COLS = "id, title, description, kind, starts_at, ends_at, tz, location_text, price_text, price_amount, price_currency, price_note, capacity, min_age, status, updated_at, visibility, lat, lng, location_visibility";
+const FULL_COLS = "id, series_id, title, kind, starts_at, ends_at, tz, description, rules_text, location_text, maps_url, price_text, price_amount, price_currency, price_note, lat, lng, location_visibility, capacity, min_age, signup_url, contact_text, visibility, status, cancel_reason, created_at, updated_at, schedule_changed_at";
 const FIELD_JOIN = "account:spartanops_accounts!inner(id, business_name, city, country, listed_publicly, listing_blocked)";
 
 type AccountJoin = { id: string; business_name: string; city: string | null; country: string | null; listed_publicly: boolean; listing_blocked: boolean };
@@ -31,6 +31,7 @@ export type EventField = { id: string; name: string; city: string | null; countr
 export type EventListItem = {
   id: string; title: string; kind: string; starts_at: string; ends_at: string | null; tz: string;
   location_text: string | null; price_text: string | null; capacity: number | null; min_age: number | null;
+  price_amount: number | null; price_currency: string | null; price_note: string | null;
   status: string; field: EventField;
   going?: number; maybe?: number; seatsOffered?: number;
 };
@@ -38,7 +39,13 @@ export type EventFull = EventListItem & {
   series_id: string | null; description: string; rules_text: string | null; maps_url: string | null;
   signup_url: string | null; contact_text: string | null; visibility: string; cancel_reason: string | null;
   created_at: string; updated_at: string; schedule_changed_at: string | null;
+  location_visibility: string;
+  /** Effective exact location (event point, else the field's). Null when restricted or unset. */
+  location: LatLng | null;
+  locationRestricted: boolean;
 };
+/** Organiser's view: also carries the event's own stored point (null = use the field's). */
+export type EventMine = EventFull & { lat: number | null; lng: number | null };
 
 const toField = (a: AccountJoin): EventField => ({ id: a.id, name: a.business_name, city: a.city, country: a.country });
 
@@ -48,16 +55,34 @@ function toListItem(r: Row): EventListItem {
   return {
     id: r.id as string, title: r.title as string, kind: r.kind as string, starts_at: r.starts_at as string,
     ends_at: (r.ends_at as string) ?? null, tz: r.tz as string, location_text: (r.location_text as string) ?? null,
-    price_text: (r.price_text as string) ?? null, capacity: (r.capacity as number) ?? null, min_age: (r.min_age as number) ?? null,
+    price_text: (r.price_text as string) ?? null,
+    price_amount: r.price_amount === null || r.price_amount === undefined ? null : Number(r.price_amount),
+    price_currency: (r.price_currency as string) ?? null, price_note: (r.price_note as string) ?? null, capacity: (r.capacity as number) ?? null, min_age: (r.min_age as number) ?? null,
     status: r.status as string, field: toField(r.account),
   };
+}
+
+/** Saved field locations by account id. */
+async function fieldPoints(ids: string[]): Promise<Record<string, LatLng>> {
+  const uniq = [...new Set(ids)];
+  if (!uniq.length) return {};
+  const db = await admin();
+  const { data } = await db.from("spartanops_field_profiles").select("account_id, lat, lng").in("account_id", uniq);
+  const out: Record<string, LatLng> = {};
+  for (const p of data ?? []) if (p.lat !== null && p.lng !== null) out[p.account_id] = { lat: p.lat, lng: p.lng };
+  return out;
+}
+
+function effectivePoint(r: Record<string, unknown>, field: LatLng | undefined): LatLng | null {
+  if (typeof r.lat === "number" && typeof r.lng === "number") return { lat: r.lat, lng: r.lng };
+  return field ?? null;
 }
 
 /**
  * Public, listable events (not hidden, public visibility, field listed and not blocked).
  * Shared by the list, the calendar feed and the sitemap.
  */
-export async function queryPublicEvents(opts: { past?: boolean; sinceMs?: number; limit?: number }): Promise<(EventListItem & { updated_at: string; description: string })[]> {
+export async function queryPublicEvents(opts: { past?: boolean; sinceMs?: number; limit?: number }): Promise<(EventListItem & { updated_at: string; description: string; geo: LatLng | null })[]> {
   const db = await admin();
   const now = Date.now();
   let q = db.from("spartanops_events").select(`${LIST_COLS}, ${FIELD_JOIN}`)
@@ -67,10 +92,14 @@ export async function queryPublicEvents(opts: { past?: boolean; sinceMs?: number
   else q = q.gte("starts_at", new Date(opts.sinceMs ?? now - 14 * 86400000).toISOString()).order("starts_at", { ascending: true });
   const { data, error } = await q.limit(opts.limit ?? 500);
   if (error) throw new Error("query_failed");
-  const rows = (data ?? []) as unknown as Row[];
-  return rows
-    .filter((r) => (opts.sinceMs !== undefined ? true : opts.past ? !isOngoingOrUpcoming(r as never) : isOngoingOrUpcoming(r as never)))
-    .map((r) => ({ ...toListItem(r), updated_at: r.updated_at as string, description: (r.description as string) ?? "" }));
+  const rows = ((data ?? []) as unknown as Row[])
+    .filter((r) => (opts.sinceMs !== undefined ? true : opts.past ? !isOngoingOrUpcoming(r as never) : isOngoingOrUpcoming(r as never)));
+  const pts = await fieldPoints(rows.filter((r) => r.location_visibility === "public").map((r) => r.account.id));
+  return rows.map((r) => ({
+    ...toListItem(r), updated_at: r.updated_at as string, description: (r.description as string) ?? "",
+    // Never expose a restricted point.
+    geo: r.location_visibility === "public" ? effectivePoint(r, pts[r.account.id]) : null,
+  }));
 }
 
 /* ---------- public ---------- */
@@ -105,7 +134,7 @@ export const eventsList = createServerFn({ method: "POST" })
     const page = filtered.slice(data.offset, data.offset + data.limit);
     const counts = await countsFor(page.map((e) => e.id));
     return {
-      events: page.map(({ updated_at: _u, description: _d, ...e }) => ({ ...e, going: counts[e.id]?.going ?? 0, seatsOffered: counts[e.id]?.seatsOffered ?? 0 })),
+      events: page.map(({ updated_at: _u, description: _d, geo: _g, ...e }) => ({ ...e, going: counts[e.id]?.going ?? 0, seatsOffered: counts[e.id]?.seatsOffered ?? 0 })),
       total: filtered.length,
       countries,
       fieldName,
@@ -120,8 +149,39 @@ export const eventsGet = createServerFn({ method: "POST" })
     const { data: r } = await db.from("spartanops_events").select(`${FULL_COLS}, ${FIELD_JOIN}`).eq("id", data.id).maybeSingle();
     const row = r as unknown as Row | null;
     if (!row || row.status === "hidden" || row.account.listing_blocked) return { event: null };
-    const { account, ...rest } = row;
-    return { event: { ...(rest as unknown as EventFull), field: toField(account) } };
+    const { account, lat: _lat, lng: _lng, ...rest } = row;
+    const restricted = row.location_visibility === "going";
+    let location: LatLng | null = null;
+    if (!restricted) location = effectivePoint(row, (await fieldPoints([account.id]))[account.id]);
+    return {
+      event: {
+        ...(rest as unknown as EventFull),
+        price_amount: row.price_amount === null || row.price_amount === undefined ? null : Number(row.price_amount),
+        field: toField(account), location, locationRestricted: restricted,
+      },
+    };
+  });
+
+/** Exact location for the event's organiser or a player who answered "going"; otherwise restricted. */
+export const eventLocationForViewer = createServerFn({ method: "POST" })
+  .inputValidator((d: unknown) => {
+    const o = (d ?? {}) as { eventId?: unknown; accessToken?: unknown };
+    return { eventId: String(o.eventId ?? "").slice(0, 40), accessToken: String(o.accessToken ?? "") };
+  })
+  .handler(async ({ data }): Promise<{ location: LatLng | null } | { restricted: true }> => {
+    if (!/^[0-9a-f-]{36}$/i.test(data.eventId)) return { restricted: true };
+    const db = await admin();
+    const { data: ev } = await db.from("spartanops_events").select("id, account_id, status, lat, lng").eq("id", data.eventId).maybeSingle();
+    if (!ev || ev.status === "hidden" || !data.accessToken) return { restricted: true };
+    const { data: u, error } = await db.auth.getUser(data.accessToken);
+    if (error || !u?.user) return { restricted: true };
+    let allowed = ev.account_id === u.user.id;
+    if (!allowed) {
+      const { data: rsvp } = await db.from("spartanops_event_rsvps").select("status").eq("event_id", ev.id).eq("user_id", u.user.id).maybeSingle();
+      allowed = rsvp?.status === "going";
+    }
+    if (!allowed) return { restricted: true };
+    return { location: effectivePoint(ev as Record<string, unknown>, (await fieldPoints([ev.account_id]))[ev.account_id]) };
   });
 
 /* ---------- marshal ---------- */
@@ -166,10 +226,15 @@ export const eventsMine = createServerFn({ method: "POST" })
     const { data: rows } = await db.from("spartanops_events").select(FULL_COLS).eq("account_id", m.userId).order("starts_at", { ascending: true }).limit(500);
     const r = readiness(m.account);
     const field: EventField = { id: m.userId, name: m.account.business_name, city: m.account.city, country: m.account.country };
-    const list = (rows ?? []) as unknown as Omit<EventFull, "field">[];
+    const list = (rows ?? []) as unknown as Omit<EventMine, "field" | "location" | "locationRestricted">[];
     const counts = await countsFor(list.map((e) => e.id));
+    const fp = (await fieldPoints([m.userId]))[m.userId];
     return {
-      events: list.map((e) => ({ ...e, field, going: counts[e.id]?.going ?? 0, maybe: counts[e.id]?.maybe ?? 0 })),
+      events: list.map((e): EventMine => ({
+        ...e, price_amount: e.price_amount === null ? null : Number(e.price_amount), field,
+        location: effectivePoint(e as Record<string, unknown>, fp), locationRestricted: false,
+        going: counts[e.id]?.going ?? 0, maybe: counts[e.id]?.maybe ?? 0,
+      })),
       fieldReady: r.ready, missing: r.missing, field, listedPublicly: m.account.listed_publicly !== false,
     };
   });
@@ -179,6 +244,8 @@ export type EventInput = {
   description?: string; rules_text?: string | null; location_text?: string | null; maps_url?: string | null;
   price_text?: string | null; capacity?: number | string | null; min_age?: number | string | null;
   signup_url?: string | null; contact_text?: string | null; visibility?: string;
+  price_amount?: number | string | null; price_currency?: string | null; price_note?: string | null;
+  lat?: number | null; lng?: number | null; location_visibility?: string;
 };
 
 const clean = (v: unknown, max: number) => (typeof v === "string" ? v.replace(/\r\n/g, "\n").trim().slice(0, max) : "");
@@ -203,11 +270,27 @@ export function validateEventInput(e: EventInput): { ok: true; build: (dateYmd: 
   const ageRaw = e.min_age === null || e.min_age === undefined || e.min_age === "" ? null : Number(e.min_age);
   if (ageRaw !== null && (!Number.isInteger(ageRaw) || ageRaw < 10 || ageRaw > 21)) return { ok: false, error: "validation:min_age" };
   const visibility = e.visibility === "link" ? "link" : "public";
+  // Structured price: amount and currency together, or neither.
+  const amtRaw = e.price_amount === null || e.price_amount === undefined || e.price_amount === "" ? null : String(e.price_amount).replace(",", ".");
+  const cur = e.price_currency ? String(e.price_currency) : null;
+  if (amtRaw !== null && !/^\d{1,4}(\.\d{1,2})?$/.test(amtRaw)) return { ok: false, error: "validation:price" };
+  const amount = amtRaw === null ? null : Number(amtRaw);
+  if (amount !== null && (amount < 0 || amount > 9999.99)) return { ok: false, error: "validation:price" };
+  if ((amount === null) !== (cur === null)) return { ok: false, error: "validation:price" };
+  if (cur !== null && !CURRENCIES.includes(cur as never)) return { ok: false, error: "validation:price" };
+  const hasLat = e.lat !== null && e.lat !== undefined;
+  const hasLng = e.lng !== null && e.lng !== undefined;
+  if (hasLat !== hasLng || (hasLat && !validLatLng(Number(e.lat), Number(e.lng)))) return { ok: false, error: "validation:location" };
+  const lat = hasLat ? Number(e.lat) : null;
+  const lng = hasLng ? Number(e.lng) : null;
   const description = clean(e.description, 4000);
   const fields = {
     title, kind: e.kind, tz: EVENT_TZ, description,
     rules_text: clean(e.rules_text, 1500) || null, location_text: clean(e.location_text, 160) || null,
-    maps_url: maps, price_text: clean(e.price_text, 80) || null, capacity: capRaw, min_age: ageRaw,
+    // The old free-text price is replaced on every save.
+    maps_url: maps, price_text: null, price_amount: amount, price_currency: cur, price_note: clean(e.price_note, 60) || null,
+    lat, lng, location_visibility: e.location_visibility === "going" ? "going" : "public",
+    capacity: capRaw, min_age: ageRaw,
     signup_url: signup, contact_text: clean(e.contact_text, 120) || null, visibility,
   };
   // Validate the end against the first date; later dates in a series keep the same wall clock.
@@ -326,4 +409,20 @@ export const eventsAdminHide = createServerFn({ method: "POST" })
     const { error } = await db.from("spartanops_events").update({ status: data.hidden ? "hidden" : "published", updated_at: new Date().toISOString() } as never).eq("id", data.id);
     if (error) throw new Error("save_failed");
     return { ok: true };
+  });
+
+/* ---------- maps short links ---------- */
+
+export const resolveMapsLink = createServerFn({ method: "POST" })
+  .inputValidator((d: unknown) => {
+    const o = (d ?? {}) as { accessToken?: unknown; url?: unknown };
+    return { accessToken: String(o.accessToken ?? ""), url: String(o.url ?? "").trim().slice(0, 500) };
+  })
+  .handler(async ({ data }): Promise<LatLng | { error: "not_found" }> => {
+    await requireMarshal(data.accessToken);
+    const parsed = parseLocationInput(data.url);
+    if (parsed.kind === "point") return { lat: parsed.lat, lng: parsed.lng };
+    if (parsed.kind !== "resolve") return { error: "not_found" };
+    const p = await resolveMapsChain(parsed.url);
+    return p && validLatLng(p.lat, p.lng) ? { lat: p.lat, lng: p.lng } : { error: "not_found" };
   });

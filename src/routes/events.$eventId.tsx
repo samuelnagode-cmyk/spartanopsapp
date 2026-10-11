@@ -1,15 +1,17 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
-import { useCallback, useState, type CSSProperties, type ReactNode } from "react";
-import { ExternalLink, MapPin } from "lucide-react";
+import { useCallback, useEffect, useState, type CSSProperties, type ReactNode } from "react";
+import { Copy, ExternalLink, Lock, MapPin } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
 import { useLang } from "@/lib/i18n";
 import { COUNTRIES, flagFor } from "@/lib/countries";
 import { CONTACT_EMAIL } from "@/lib/plans";
 import { getMasterPw, useMasterAdmin } from "@/lib/master-admin";
 import {
-  SITE, formatEventWhen, isToday, kindInfo, linkify, looksLikePhone, priceNumber, safeUrl, shortDate, type Lang,
+  SITE, appleMapsUrl, fmtLatLng, formatEventWhen, googleMapsUrl, isToday, kindInfo, linkify, looksLikePhone,
+  priceLabel, priceNumber, safeUrl, shortDate, wazeUrl, type LatLng, type Lang,
 } from "@/lib/events";
-import { eventsAdminHide, eventsGet, type EventFull } from "@/lib/events.functions";
+import { eventLocationForViewer, eventsAdminHide, eventsGet, type EventFull } from "@/lib/events.functions";
 import {
   ACCENT, AddToCalendar, BG, CancelledBadge, DateTile, ERR, EventStyles, INK, KindBadge, MICHROMA, MUTED, PANEL,
   ShareButton, btnOutline, btnPrimary, shareLine,
@@ -35,7 +37,9 @@ function countryName(c: string | null) {
 }
 
 function jsonLd(e: EventFull): string {
-  const price = priceNumber(e.price_text);
+  const structured = e.price_amount !== null && !!e.price_currency;
+  const price = structured ? null : priceNumber(e.price_text);
+  const geo = !e.locationRestricted && e.location ? { geo: { "@type": "GeoCoordinates", latitude: e.location.lat, longitude: e.location.lng } } : {};
   const obj: Record<string, unknown> = {
     "@context": "https://schema.org",
     "@type": "Event",
@@ -44,11 +48,12 @@ function jsonLd(e: EventFull): string {
     ...(e.ends_at ? { endDate: isoWithOffset(e.ends_at, e.tz) } : {}),
     eventStatus: e.status === "cancelled" ? "https://schema.org/EventCancelled" : "https://schema.org/EventScheduled",
     eventAttendanceMode: "https://schema.org/OfflineEventAttendanceMode",
-    location: { "@type": "Place", name: e.field.name, address: e.location_text || [e.field.city, countryName(e.field.country)].filter(Boolean).join(", ") },
+    location: { "@type": "Place", name: e.field.name, address: e.location_text || [e.field.city, countryName(e.field.country)].filter(Boolean).join(", "), ...geo },
     organizer: { "@type": "Organization", name: e.field.name },
     url: `${SITE}/events/${e.id}`,
     image: [DEFAULT_IMAGE],
     ...(e.description ? { description: e.description.slice(0, 500) } : {}),
+    ...(structured ? { offers: { "@type": "Offer", price: e.price_amount, priceCurrency: e.price_currency, availability: "https://schema.org/InStock", url: `${SITE}/events/${e.id}` } } : {}),
     ...(price !== null ? { offers: { "@type": "Offer", price, priceCurrency: "EUR", url: `${SITE}/events/${e.id}` } } : {}),
   };
   return JSON.stringify(obj).replace(/</g, "\\u003c");
@@ -106,6 +111,26 @@ function EventPage() {
   const [adminState, setAdminState] = useState<"idle" | "hidden" | "shown" | "error">("idle");
   const [going, setGoing] = useState<number | null>(null);
   const onCounts = useCallback((n: number) => setGoing(n), []);
+  const locFn = useServerFn(eventLocationForViewer);
+  const [viewerLoc, setViewerLoc] = useState<LatLng | null>(null);
+  const [copied, setCopied] = useState(false);
+  const restricted = !!e?.locationRestricted;
+  const eventId = e?.id;
+  // Restricted locations are fetched only for the organiser or a player who answered "going";
+  // re-checked whenever the going count changes so the buttons appear without a reload.
+  useEffect(() => {
+    if (!restricted || !eventId) return;
+    let off = false;
+    (async () => {
+      const t = (await supabase.auth.getSession()).data.session?.access_token;
+      if (!t) { setViewerLoc(null); return; }
+      try {
+        const r = await locFn({ data: { eventId, accessToken: t } });
+        if (!off) setViewerLoc("location" in r ? r.location : null);
+      } catch { if (!off) setViewerLoc(null); }
+    })();
+    return () => { off = true; };
+  }, [restricted, eventId, going, locFn]);
 
   if (!e) {
     return (
@@ -122,7 +147,9 @@ function EventPage() {
   const cancelled = e.status === "cancelled";
   const gameDay = !cancelled && isToday(e.starts_at, e.tz);
   const url = `${SITE}/events/${e.id}`;
-  const maps = safeUrl(e.maps_url);
+  const point = restricted ? viewerLoc : e.location;
+  const maps = point ? null : safeUrl(e.maps_url);
+  const priceMain = priceLabel(e, lang);
   const signup = safeUrl(e.signup_url);
   const phone = e.contact_text ? looksLikePhone(e.contact_text) : null;
   const k = kindInfo(e.kind);
@@ -169,15 +196,40 @@ function EventPage() {
 
         <div className="grid grid-cols-2" style={{ gap: 8, marginTop: 12 }}>
           <div style={{ gridColumn: "1 / -1" }}><Fact label={en ? "When" : "Kdaj"}>{formatEventWhen(e.starts_at, e.ends_at, e.tz, lang)}</Fact></div>
-          {(e.location_text || maps) && (
+          {(e.location_text || maps || point || restricted) && (
             <div style={{ gridColumn: "1 / -1" }}>
               <Fact label={en ? "Where" : "Kje"}>
                 {e.location_text && <div>{e.location_text}</div>}
+                {point && (
+                  <div style={{ marginTop: 8 }}>
+                    <a href={googleMapsUrl(point)} target="_blank" rel="noopener noreferrer" className="ev-focus" style={{ ...btnPrimary, minHeight: 40 }}>
+                      <MapPin size={14} /> {en ? "Open in Google Maps" : "Odpri v Google Zemljevidih"}
+                    </a>
+                    <div style={{ display: "flex", gap: 14, alignItems: "center", flexWrap: "wrap", marginTop: 8 }}>
+                      <a href={wazeUrl(point)} target="_blank" rel="noopener noreferrer" className="ev-focus" style={{ color: ACCENT }}>Waze</a>
+                      <a href={appleMapsUrl(point, e.field.name)} target="_blank" rel="noopener noreferrer" className="ev-focus" style={{ color: ACCENT }}>Apple Maps</a>
+                      <button type="button" className="ev-focus" style={{ background: "none", border: "none", color: ACCENT, fontFamily: "monospace", fontSize: 13, cursor: "pointer", padding: 0, display: "inline-flex", alignItems: "center", gap: 5, minHeight: 32 }}
+                        onClick={async () => { try { await navigator.clipboard.writeText(fmtLatLng(point)); setCopied(true); setTimeout(() => setCopied(false), 2000); } catch { /* ignore */ } }}>
+                        <Copy size={13} /> {copied ? (en ? "Copied" : "Kopirano") : (en ? "Copy coordinates" : "Kopiraj koordinate")}
+                      </button>
+                    </div>
+                  </div>
+                )}
+                {restricted && !point && (
+                  <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 6, color: MUTED }}>
+                    <Lock size={13} /> {en ? "Exact location is shared with players who are going." : "Natančna lokacija je vidna igralcem, ki pridejo."}
+                  </div>
+                )}
                 {maps && <a href={maps} target="_blank" rel="noopener noreferrer nofollow" className="ev-focus" style={{ color: ACCENT, display: "inline-flex", alignItems: "center", gap: 5, marginTop: 4 }}><MapPin size={13} />{en ? "Open in Maps" : "Odpri v zemljevidih"}</a>}
               </Fact>
             </div>
           )}
-          {e.price_text && <Fact label={en ? "Price" : "Cena"}>{e.price_text}</Fact>}
+          {(priceMain || e.price_note) && (
+            <Fact label={en ? "Price" : "Cena"}>
+              {priceMain && <div>{priceMain}</div>}
+              {e.price_note && <div style={{ color: MUTED, fontSize: 12 }}>{e.price_note}</div>}
+            </Fact>
+          )}
           <Fact label={en ? "Spots" : "Mesta"}>{e.capacity ?? (en ? "No limit" : "Brez omejitve")}</Fact>
           {e.min_age && <Fact label={en ? "Minimum age" : "Najnižja starost"}>{e.min_age}+</Fact>}
           {e.contact_text && (
@@ -200,7 +252,7 @@ function EventPage() {
         )}
 
         <div style={{ display: "flex", gap: 10, flexWrap: "wrap", marginTop: 20 }}>
-          <AddToCalendar event={e} lang={lang} />
+          <AddToCalendar event={{ ...e, geo: restricted ? null : e.location }} lang={lang} />
           <ShareButton url={url} title={e.title} text={shareLine(e, lang) + (going ? ` · ${going} ${lang === "en" ? "going" : "gre"}` : "")} lang={lang} />
           {signup && (
             <a href={signup} target="_blank" rel="noopener noreferrer nofollow" className="ev-focus" style={btnPrimary}>
