@@ -1350,6 +1350,16 @@ export type Database = {
         Returns: string
       }
       spartanops_leader_team: { Args: { p_scores: Json }; Returns: string }
+      spartanops_player_game_totals: {
+        Args: { p_user: string }
+        Returns: {
+          captures: number
+          deaths: number
+          games: number
+          mvps: number
+          wins: number
+        }[]
+      }
       spartanops_record_results: {
         Args: { p_field_id: string; p_reason?: string }
         Returns: number
