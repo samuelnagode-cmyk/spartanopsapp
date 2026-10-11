@@ -5,6 +5,7 @@ import {
   parseLocationInput, resolveMapsChain, safeUrl, validLatLng, weekendRange, zonedToUtc, type LatLng,
 } from "./events";
 import { countsFor } from "./event-rsvps.functions";
+import { fieldMediaUrl } from "./field-media";
 
 /* ---------- shared ---------- */
 
@@ -23,11 +24,11 @@ function checkMaster(pw: unknown): boolean {
 }
 
 const LIST_COLS = "id, title, description, kind, starts_at, ends_at, tz, location_text, price_text, price_amount, price_currency, price_note, capacity, min_age, status, updated_at, visibility, lat, lng, location_visibility";
-const FULL_COLS = "id, series_id, title, kind, starts_at, ends_at, tz, description, rules_text, location_text, maps_url, price_text, price_amount, price_currency, price_note, lat, lng, location_visibility, capacity, min_age, signup_url, contact_text, visibility, status, cancel_reason, created_at, updated_at, schedule_changed_at";
+const FULL_COLS = "id, series_id, title, kind, starts_at, ends_at, tz, description, rules_text, location_text, maps_url, price_text, price_amount, price_currency, price_note, lat, lng, location_visibility, show_field_map, capacity, min_age, signup_url, contact_text, visibility, status, cancel_reason, created_at, updated_at, schedule_changed_at";
 const FIELD_JOIN = "account:spartanops_accounts!inner(id, business_name, city, country, listed_publicly, listing_blocked)";
 
 type AccountJoin = { id: string; business_name: string; city: string | null; country: string | null; listed_publicly: boolean; listing_blocked: boolean };
-export type EventField = { id: string; name: string; city: string | null; country: string | null };
+export type EventField = { id: string; name: string; city: string | null; country: string | null; logoUrl?: string | null; mapUrl?: string | null };
 export type EventListItem = {
   id: string; title: string; kind: string; starts_at: string; ends_at: string | null; tz: string;
   location_text: string | null; price_text: string | null; capacity: number | null; min_age: number | null;
@@ -40,6 +41,7 @@ export type EventFull = EventListItem & {
   signup_url: string | null; contact_text: string | null; visibility: string; cancel_reason: string | null;
   created_at: string; updated_at: string; schedule_changed_at: string | null;
   location_visibility: string;
+  show_field_map: boolean;
   /** Effective exact location (event point, else the field's). Null when restricted or unset. */
   location: LatLng | null;
   locationRestricted: boolean;
@@ -70,6 +72,17 @@ async function fieldPoints(ids: string[]): Promise<Record<string, LatLng>> {
   const { data } = await db.from("spartanops_field_profiles").select("account_id, lat, lng").in("account_id", uniq);
   const out: Record<string, LatLng> = {};
   for (const p of data ?? []) if (p.lat !== null && p.lng !== null) out[p.account_id] = { lat: p.lat, lng: p.lng };
+  return out;
+}
+
+/** Public URLs of field logos / outline images by account id (never paths). */
+async function fieldMedia(ids: string[]): Promise<Record<string, { logoUrl: string | null; mapUrl: string | null }>> {
+  const uniq = [...new Set(ids)];
+  if (!uniq.length) return {};
+  const db = await admin();
+  const { data } = await db.from("spartanops_field_profiles").select("account_id, logo_path, map_path").in("account_id", uniq);
+  const out: Record<string, { logoUrl: string | null; mapUrl: string | null }> = {};
+  for (const p of data ?? []) out[p.account_id] = { logoUrl: fieldMediaUrl(p.logo_path), mapUrl: fieldMediaUrl(p.map_path) };
   return out;
 }
 
@@ -133,8 +146,9 @@ export const eventsList = createServerFn({ method: "POST" })
     }
     const page = filtered.slice(data.offset, data.offset + data.limit);
     const counts = await countsFor(page.map((e) => e.id));
+    const media = await fieldMedia(page.map((e) => e.field.id));
     return {
-      events: page.map(({ updated_at: _u, description: _d, geo: _g, ...e }) => ({ ...e, going: counts[e.id]?.going ?? 0, seatsOffered: counts[e.id]?.seatsOffered ?? 0 })),
+      events: page.map(({ updated_at: _u, description: _d, geo: _g, ...e }) => ({ ...e, field: { ...e.field, logoUrl: media[e.field.id]?.logoUrl ?? null }, going: counts[e.id]?.going ?? 0, seatsOffered: counts[e.id]?.seatsOffered ?? 0 })),
       total: filtered.length,
       countries,
       fieldName,
@@ -153,11 +167,13 @@ export const eventsGet = createServerFn({ method: "POST" })
     const restricted = row.location_visibility === "going";
     let location: LatLng | null = null;
     if (!restricted) location = effectivePoint(row, (await fieldPoints([account.id]))[account.id]);
+    const med = (await fieldMedia([account.id]))[account.id];
     return {
       event: {
         ...(rest as unknown as EventFull),
         price_amount: row.price_amount === null || row.price_amount === undefined ? null : Number(row.price_amount),
-        field: toField(account), location, locationRestricted: restricted,
+        field: { ...toField(account), logoUrl: med?.logoUrl ?? null, mapUrl: row.show_field_map !== false ? med?.mapUrl ?? null : null },
+        location, locationRestricted: restricted,
       },
     };
   });
@@ -225,7 +241,8 @@ export const eventsMine = createServerFn({ method: "POST" })
     const db = await admin();
     const { data: rows } = await db.from("spartanops_events").select(FULL_COLS).eq("account_id", m.userId).order("starts_at", { ascending: true }).limit(500);
     const r = readiness(m.account);
-    const field: EventField = { id: m.userId, name: m.account.business_name, city: m.account.city, country: m.account.country };
+    const med = (await fieldMedia([m.userId]))[m.userId];
+    const field: EventField = { id: m.userId, name: m.account.business_name, city: m.account.city, country: m.account.country, logoUrl: med?.logoUrl ?? null, mapUrl: med?.mapUrl ?? null };
     const list = (rows ?? []) as unknown as Omit<EventMine, "field" | "location" | "locationRestricted">[];
     const counts = await countsFor(list.map((e) => e.id));
     const fp = (await fieldPoints([m.userId]))[m.userId];
@@ -245,7 +262,7 @@ export type EventInput = {
   price_text?: string | null; capacity?: number | string | null; min_age?: number | string | null;
   signup_url?: string | null; contact_text?: string | null; visibility?: string;
   price_amount?: number | string | null; price_currency?: string | null; price_note?: string | null;
-  lat?: number | null; lng?: number | null; location_visibility?: string;
+  lat?: number | null; lng?: number | null; location_visibility?: string; show_field_map?: boolean;
 };
 
 const clean = (v: unknown, max: number) => (typeof v === "string" ? v.replace(/\r\n/g, "\n").trim().slice(0, max) : "");
@@ -290,6 +307,7 @@ export function validateEventInput(e: EventInput): { ok: true; build: (dateYmd: 
     // The old free-text price is replaced on every save.
     maps_url: maps, price_text: null, price_amount: amount, price_currency: cur, price_note: clean(e.price_note, 60) || null,
     lat, lng, location_visibility: e.location_visibility === "going" ? "going" : "public",
+    show_field_map: e.show_field_map !== false,
     capacity: capRaw, min_age: ageRaw,
     signup_url: signup, contact_text: clean(e.contact_text, 120) || null, visibility,
   };

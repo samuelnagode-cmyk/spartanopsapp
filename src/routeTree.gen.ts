@@ -45,6 +45,7 @@ import { Route as ApiSendReservationRouteImport } from './routes/api/send-reserv
 import { Route as ApiSendInquiryRouteImport } from './routes/api/send-inquiry'
 import { Route as ApiPublicSpartanopsEventsCleanupRouteImport } from './routes/api/public/spartanops-events-cleanup'
 import { Route as ApiPublicSpartanopsCronTickRouteImport } from './routes/api/public/spartanops-cron-tick'
+import { Route as ApiPublicFieldMediaSplatRouteImport } from './routes/api/public/field-media.$'
 
 const UpdatesRoute = UpdatesRouteImport.update({
   id: '/updates',
@@ -228,6 +229,12 @@ const ApiPublicSpartanopsCronTickRoute =
     path: '/api/public/spartanops-cron-tick',
     getParentRoute: () => rootRouteImport,
   } as any)
+const ApiPublicFieldMediaSplatRoute =
+  ApiPublicFieldMediaSplatRouteImport.update({
+    id: '/api/public/field-media/$',
+    path: '/api/public/field-media/$',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -266,6 +273,7 @@ export interface FileRoutesByFullPath {
   '/events/': typeof EventsIndexRoute
   '/api/public/spartanops-cron-tick': typeof ApiPublicSpartanopsCronTickRoute
   '/api/public/spartanops-events-cleanup': typeof ApiPublicSpartanopsEventsCleanupRoute
+  '/api/public/field-media/$': typeof ApiPublicFieldMediaSplatRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -304,6 +312,7 @@ export interface FileRoutesByTo {
   '/events': typeof EventsIndexRoute
   '/api/public/spartanops-cron-tick': typeof ApiPublicSpartanopsCronTickRoute
   '/api/public/spartanops-events-cleanup': typeof ApiPublicSpartanopsEventsCleanupRoute
+  '/api/public/field-media/$': typeof ApiPublicFieldMediaSplatRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -343,6 +352,7 @@ export interface FileRoutesById {
   '/events/': typeof EventsIndexRoute
   '/api/public/spartanops-cron-tick': typeof ApiPublicSpartanopsCronTickRoute
   '/api/public/spartanops-events-cleanup': typeof ApiPublicSpartanopsEventsCleanupRoute
+  '/api/public/field-media/$': typeof ApiPublicFieldMediaSplatRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -383,6 +393,7 @@ export interface FileRouteTypes {
     | '/events/'
     | '/api/public/spartanops-cron-tick'
     | '/api/public/spartanops-events-cleanup'
+    | '/api/public/field-media/$'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -421,6 +432,7 @@ export interface FileRouteTypes {
     | '/events'
     | '/api/public/spartanops-cron-tick'
     | '/api/public/spartanops-events-cleanup'
+    | '/api/public/field-media/$'
   id:
     | '__root__'
     | '/'
@@ -459,6 +471,7 @@ export interface FileRouteTypes {
     | '/events/'
     | '/api/public/spartanops-cron-tick'
     | '/api/public/spartanops-events-cleanup'
+    | '/api/public/field-media/$'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -498,6 +511,7 @@ export interface RootRouteChildren {
   EventsIndexRoute: typeof EventsIndexRoute
   ApiPublicSpartanopsCronTickRoute: typeof ApiPublicSpartanopsCronTickRoute
   ApiPublicSpartanopsEventsCleanupRoute: typeof ApiPublicSpartanopsEventsCleanupRoute
+  ApiPublicFieldMediaSplatRoute: typeof ApiPublicFieldMediaSplatRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -754,6 +768,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicSpartanopsCronTickRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/field-media/$': {
+      id: '/api/public/field-media/$'
+      path: '/api/public/field-media/$'
+      fullPath: '/api/public/field-media/$'
+      preLoaderRoute: typeof ApiPublicFieldMediaSplatRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -794,6 +815,7 @@ const rootRouteChildren: RootRouteChildren = {
   EventsIndexRoute: EventsIndexRoute,
   ApiPublicSpartanopsCronTickRoute: ApiPublicSpartanopsCronTickRoute,
   ApiPublicSpartanopsEventsCleanupRoute: ApiPublicSpartanopsEventsCleanupRoute,
+  ApiPublicFieldMediaSplatRoute: ApiPublicFieldMediaSplatRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
