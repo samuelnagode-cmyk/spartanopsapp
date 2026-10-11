@@ -26,7 +26,7 @@ export type PlayerProfile = {
   nickname: string; first_name: string; last_name: string | null; show_full_last_name: boolean;
   age_group: "16_17" | "18_plus"; phone: string | null; club: string | null; experience_level: string;
   operator_type: string | null; primary_weapon: string | null; secondary_weapon: string | null;
-  sidearm: string | null; gear_notes: string | null;
+  sidearm: string | null; gear_notes: string | null; link_games?: boolean;
 };
 
 const ERRORS: Record<string, [string, string]> = {
@@ -81,6 +81,7 @@ export function PlayerProfileForm({ en, initial, needsConsent, onSaved, onDelete
     phone: initial?.phone ?? "", club: initial?.club ?? "", experience_level: initial?.experience_level ?? "dobro",
     operator_type: initial?.operator_type ?? "", primary_weapon: initial?.primary_weapon ?? "",
     secondary_weapon: initial?.secondary_weapon ?? "", sidearm: initial?.sidearm ?? "", gear_notes: initial?.gear_notes ?? "",
+    link_games: initial?.link_games ?? true,
   });
   const [consent, setConsent] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -95,7 +96,7 @@ export function PlayerProfileForm({ en, initial, needsConsent, onSaved, onDelete
     const profile = {
       nickname: f.nickname, first_name: f.first_name, age_group: f.age, club: f.club, experience_level: f.experience_level,
       operator_type: f.operator_type || null, primary_weapon: f.primary_weapon, secondary_weapon: f.secondary_weapon,
-      sidearm: f.sidearm, gear_notes: f.gear_notes,
+      sidearm: f.sidearm, gear_notes: f.gear_notes, link_games: f.link_games,
       ...(adult ? { last_name: f.last_name, phone: f.phone, show_full_last_name: f.show_full_last_name } : {}),
     };
     const v = validatePlayer(profile);
@@ -201,6 +202,14 @@ export function PlayerProfileForm({ en, initial, needsConsent, onSaved, onDelete
           <p style={help}>{en ? "Numbers starting with 0 are treated as Slovenian (+386)." : "Številke, ki se začnejo z 0, štejemo za slovenske (+386)."}</p>
         </Card>
       )}
+
+      <Card title={en ? "Game history" : "Zgodovina iger"}>
+        <label style={{ display: "flex", gap: 10, alignItems: "center", fontFamily: "monospace", fontSize: 13, cursor: "pointer" }}>
+          <input type="checkbox" role="switch" aria-checked={f.link_games} checked={f.link_games} onChange={(e) => set("link_games", e.target.checked)} style={{ width: 18, height: 18, accentColor: ACCENT }} />
+          {en ? "Save my games to my profile" : "Shrani moje igre v profil"}
+        </label>
+        <p style={{ ...help, marginTop: 8, marginBottom: 0 }}>{en ? "Your results (team, captures, deaths) appear in 'My games'. Marshals never see this history." : "Tvoji rezultati (ekipa, zavzetja, smrti) se prikažejo v 'Moje igre'. Maršali te zgodovine ne vidijo."}</p>
+      </Card>
 
       {needsConsent && (
         <Card title={en ? "Privacy consent" : "Privolitev"}>

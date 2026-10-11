@@ -1,0 +1,1 @@
+REVOKE ALL ON public.spartanops_checkin_secrets FROM anon, authenticated;

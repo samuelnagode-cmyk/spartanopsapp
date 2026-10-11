@@ -52,6 +52,8 @@ type CheckinInput = {
   assignedTeam?: string;
   entryToken?: string;
   accessToken?: string;
+  useProfile?: boolean;
+  sharePhone?: boolean;
 };
 
 // Field-entry guessing limits (per account + caller IP).
@@ -101,12 +103,14 @@ export const spartanopsUpsertCheckin = createServerFn({ method: "POST" })
     if (!isField(String(d?.fieldId ?? ""))) throw new Error("Invalid field");
     const sid = String(d?.sessionId ?? "");
     if (!sid || sid.length > 100) throw new Error("Invalid session");
+    const useProfile = d?.useProfile === true;
     const cs = String(d?.callsign ?? "").trim();
-    if (!cs || cs.length > 40) throw new Error("Invalid callsign");
+    if (cs.length > 40 || (!cs && !useProfile)) throw new Error("Invalid callsign");
     const exp = String(d?.experienceLevel ?? "dobro");
     if (!EXP.has(exp)) throw new Error("Invalid experience");
-    const operatorType = String(d?.operatorType ?? "").toUpperCase();
-    if (!OPERATOR_TYPES.has(operatorType)) throw new Error("Invalid operator type");
+    const rawOp = String(d?.operatorType ?? "").toUpperCase();
+    if (!OPERATOR_TYPES.has(rawOp) && !(useProfile && !rawOp)) throw new Error("Invalid operator type");
+    const operatorType = OPERATOR_TYPES.has(rawOp) ? rawOp : "AEG";
     const team = String(d?.assignedTeam ?? "none");
     if (!TEAMS.has(team)) throw new Error("Invalid team");
     const clip = (v: unknown, max: number) => {
@@ -129,10 +133,47 @@ export const spartanopsUpsertCheckin = createServerFn({ method: "POST" })
       assignedTeam: team,
       entryToken: typeof d.entryToken === "string" ? d.entryToken.slice(0, 1000) : undefined,
       accessToken: typeof d.accessToken === "string" ? d.accessToken.slice(0, 4000) : undefined,
+      useProfile,
+      sharePhone: d?.sharePhone === true,
+      clientOperatorSent: OPERATOR_TYPES.has(rawOp),
     };
   })
-  .handler(async ({ data }) => {
+  .handler(async ({ data: input }) => {
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const data = { ...input };
+    // Profile link: user id comes only from a verified token, never from the client.
+    let linkUserId: string | null = null;
+    if (data.useProfile || data.accessToken) {
+      let userId: string | null = null;
+      if (data.useProfile) {
+        const { requireUser } = await import("./player-auth.server");
+        userId = (await requireUser(data.accessToken)).id; // throws login_required on a bad token
+      } else {
+        const { data: u } = await supabaseAdmin.auth.getUser(data.accessToken!);
+        userId = u?.user?.id ?? null;
+      }
+      if (userId) {
+        const { data: prof } = await supabaseAdmin
+          .from("spartanops_players")
+          .select("nickname, first_name, last_name, age_group, phone, club, experience_level, operator_type, link_games")
+          .eq("user_id", userId)
+          .maybeSingle();
+        if (prof) {
+          if (prof.link_games) linkUserId = userId;
+          if (data.useProfile) {
+            const adult = prof.age_group === "18_plus";
+            data.callsign = data.callsign || prof.nickname;
+            data.firstName = prof.first_name;
+            data.lastInitial = adult && prof.last_name ? prof.last_name.charAt(0).toUpperCase() : null;
+            data.club = prof.club;
+            data.experienceLevel = prof.experience_level;
+            data.operatorType = prof.operator_type && OPERATOR_TYPES.has(prof.operator_type) ? prof.operator_type : data.clientOperatorSent ? data.operatorType : "AEG";
+            data.phoneNumber = data.sharePhone && adult ? prof.phone : null;
+          }
+        }
+      }
+    }
+    if (!data.callsign) throw new Error("Invalid callsign");
     if (!(await canRegister(supabaseAdmin, data.fieldId, data.sessionId, data.entryToken, data.accessToken))) {
       throw new Error("field_entry_required");
     }
@@ -192,6 +233,7 @@ export const spartanopsUpsertCheckin = createServerFn({ method: "POST" })
           club: data.club,
           phone_number: data.phoneNumber,
           updated_at: new Date().toISOString(),
+          ...(linkUserId ? { user_id: linkUserId } : {}),
         } as any,
         { onConflict: "checkin_id" },
       );

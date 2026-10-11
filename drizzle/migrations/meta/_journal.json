@@ -71,6 +71,27 @@
       "when": 1791735088672,
       "tag": "0009_0009_field_media",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1791736147163,
+      "tag": "0010_link_games_to_profile",
+      "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1791736187662,
+      "tag": "0011_player_game_totals",
+      "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "7",
+      "when": 1791736304374,
+      "tag": "0012_revoke_checkin_secrets_browser",
+      "breakpoints": true
     }
   ]
 }
