@@ -3,14 +3,18 @@ import { useCallback, useEffect, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { supabase } from "@/integrations/supabase/client";
 import { useLang } from "@/lib/i18n";
-import { playerGamesForget, playerGamesMine, playerGetMine } from "@/lib/player.functions";
+import { playerClaimDevice, playerGamesForget, playerGamesMine, playerGetMine } from "@/lib/player.functions";
+import { claimDeviceOnce } from "@/components/ProfileOfferCard";
 import { safeNext } from "@/lib/player-validation";
 import { PlayerAuth } from "@/components/PlayerAuth";
 import { MyEvents } from "@/components/events/MyEvents";
-import { PlayerProfileForm, ProfilePreview, type PlayerProfile } from "@/components/PlayerProfileForm";
+import { PlayerProfileForm, ProfilePreview, type PlayerProfile, type ProfilePrefill } from "@/components/PlayerProfileForm";
 
 export const Route = createFileRoute("/me")({
-  validateSearch: (s: Record<string, unknown>): { next?: string } => (typeof s.next === "string" ? { next: s.next } : {}),
+  validateSearch: (s: Record<string, unknown>): { next?: string; from?: string } => ({
+    ...(typeof s.next === "string" ? { next: s.next } : {}),
+    ...(s.from === "game" ? { from: "game" } : {}),
+  }),
   head: () => ({
     meta: [
       { title: "Player profile — SpartanOps" },
@@ -35,7 +39,20 @@ type Mine = { profile: PlayerProfile | null; needsReconsent: boolean; isMarshal:
 function MePage() {
   const { lang } = useLang();
   const en = lang === "en";
-  const { next } = Route.useSearch();
+  const { next, from } = Route.useSearch();
+  const claim = useServerFn(playerClaimDevice);
+  const [prefill, setPrefill] = useState<ProfilePrefill | null>(null);
+  const [savedOnce, setSavedOnce] = useState(false);
+  const backToMission = safeNext(next)?.startsWith("/misija") ? safeNext(next) : null;
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem("spartanops:player-profile");
+      if (!raw) return;
+      const g = JSON.parse(raw) as Record<string, string>;
+      setPrefill({ nickname: g.callsign || undefined, first_name: g.firstName || undefined, last_initial: g.lastInitial || undefined,
+        club: g.club || undefined, phone: g.phone || undefined, experience_level: g.experience || undefined, operator_type: g.operatorType || undefined });
+    } catch { /* ignore */ }
+  }, []);
   const navigate = useNavigate();
   const getMine = useServerFn(playerGetMine);
   const [signedIn, setSignedIn] = useState<boolean | null>(null);
@@ -49,8 +66,10 @@ function MePage() {
     try {
       const r = await getMine({ data: { accessToken: data.session.access_token } });
       setMine({ profile: r.profile as PlayerProfile | null, needsReconsent: r.needsReconsent, isMarshal: r.isMarshal });
+      const prof = r.profile as PlayerProfile | null;
+      if (prof?.link_games && !r.needsReconsent) void claimDeviceOnce(claim, data.session.user.id, data.session.access_token);
     } catch { setSignedIn(false); }
-  }, [getMine]);
+  }, [getMine, claim]);
 
   useEffect(() => {
     void load();
@@ -74,7 +93,12 @@ function MePage() {
             <p style={{ fontFamily: "monospace", fontSize: 13.5, lineHeight: 1.7, marginBottom: 20, textAlign: "center" }}>
               {en ? "Join events, see who is going, share a ride. You do not need an account to play a game." : "Prijavi se na dogodke, poglej, kdo pride, in deli prevoz. Za igranje igre računa ne potrebuješ."}
             </p>
-            <PlayerAuth next={next} onDone={() => { const n = safeNext(next); if (n) navigate({ to: n as never }); }} />
+            {from === "game" && (
+              <p style={{ fontFamily: "monospace", fontSize: 12.5, color: ACCENT, textAlign: "center", marginBottom: 14 }}>
+                {en ? "We filled in what you already told us. Check it and add your email." : "Izpolnili smo, kar si že vpisal. Preveri in dodaj e-pošto."}
+              </p>
+            )}
+            <PlayerAuth initialTab={from === "game" ? "signup" : "signin"} next={next} onDone={() => { const n = safeNext(next); if (n) navigate({ to: n as never }); }} />
             <p style={{ textAlign: "center", marginTop: 18, fontFamily: "monospace", fontSize: 12 }}>
               <Link to="/privacy" style={{ color: ACCENT }}>{en ? "Privacy" : "Zasebnost"}</Link>{"  ·  "}
               <Link to="/terms" style={{ color: ACCENT }}>{en ? "Terms" : "Pogoji"}</Link>
@@ -99,8 +123,23 @@ function MePage() {
               key={mine.profile ? "edit" : "new"}
               en={en}
               initial={mine.profile}
+              prefill={mine.profile ? null : prefill}
               needsConsent={!mine.profile || mine.needsReconsent}
-              onSaved={(p) => { setMine({ ...mine, profile: p, needsReconsent: false }); const n = safeNext(next); if (n) navigate({ to: n as never }); }}
+              onSaved={async (p) => {
+                const wasNew = !mine.profile;
+                setMine({ ...mine, profile: p, needsReconsent: false });
+                setSavedOnce(true);
+                if (wasNew) {
+                  try { localStorage.removeItem("spartanops:profile-offer-dismissed"); } catch { /* ignore */ }
+                  const { data: s2 } = await supabase.auth.getSession();
+                  if (p.link_games !== false && s2.session) {
+                    const n = await claimDeviceOnce(claim, s2.session.user.id, s2.session.access_token, true);
+                    setNotice(en ? `Saved.${n ? ` ${n} earlier games on this phone were added to My games.` : ""}` : `Shranjeno.${n ? ` ${n} prejšnjih iger na tem telefonu je dodanih v Moje igre.` : ""}`);
+                  }
+                }
+                const n = safeNext(next);
+                if (n && !backToMission) navigate({ to: n as never });
+              }}
               onDeleted={(kept) => {
                 setNotice(kept
                   ? (en ? "Your profile was deleted. Your field login was kept." : "Tvoj profil je izbrisan. Prijava za poligon je ohranjena.")
@@ -108,6 +147,11 @@ function MePage() {
                 void load();
               }}
             />
+            {backToMission && mine.profile && !mine.needsReconsent && (
+              <a href={backToMission} style={{ display: "block", textAlign: "center", background: ACCENT, color: BG, padding: 14, minHeight: 44, fontFamily: "'Michroma', monospace", fontSize: 11, letterSpacing: "0.2em", textTransform: "uppercase", fontWeight: 700, textDecoration: "none", marginTop: 14 }}>
+                {en ? "Back to mission" : "Nazaj na misijo"}
+              </a>
+            )}
             {mine.profile && !mine.needsReconsent && <MyGames en={en} />}
           </>
         )}
