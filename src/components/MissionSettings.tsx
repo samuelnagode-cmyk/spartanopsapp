@@ -3,7 +3,9 @@
  * Used by the create-mission form; the live console adopts it next.
  * The value shape mirrors the stored lobby settings; no keys are renamed.
  */
-import { useId, useRef, useState, type CSSProperties } from "react";
+import { useEffect, useId, useRef, useState, type CSSProperties } from "react";
+import { supabase } from "@/integrations/supabase/client";
+import { fieldProfileGetMine } from "@/lib/field-profile.functions";
 import { Upload, X, ChevronDown } from "lucide-react";
 import {
   Pane,
@@ -502,6 +504,7 @@ export function MissionSettingsTabs({
             >
               <Upload size={14} /> [ {en ? "UPLOAD IMAGE FROM DEVICE" : "NALOŽI SLIKO Z NAPRAVE"} ]
             </button>
+            <UseFieldOutline en={en} onUse={(u) => onChange({ mapUrl: u })} />
             <input
               value={value.mapUrl.startsWith("data:") ? "" : value.mapUrl}
               onChange={(e) => onChange({ mapUrl: e.target.value })}
@@ -545,3 +548,27 @@ export function MissionSettingsTabs({
 }
 
 export default MissionSettingsTabs;
+
+/** "Use my field outline": fills the existing map URL with the field's outline image when one is saved. */
+function UseFieldOutline({ en, onUse }: { en: boolean; onUse: (url: string) => void }) {
+  const [url, setUrl] = useState<string | null>(null);
+  useEffect(() => {
+    let off = false;
+    (async () => {
+      try {
+        const t = (await supabase.auth.getSession()).data.session?.access_token;
+        if (!t) return;
+        const r = await fieldProfileGetMine({ data: { accessToken: t } });
+        if (!off && r.mapUrl) setUrl(new URL(r.mapUrl, window.location.origin).toString());
+      } catch { /* no field image */ }
+    })();
+    return () => { off = true; };
+  }, []);
+  if (!url) return null;
+  return (
+    <button type="button" onClick={() => onUse(url)}
+      style={{ background: "transparent", color: ACCENT, border: `1px solid ${ACCENT}66`, padding: "8px 12px", fontFamily: "monospace", fontSize: 12, cursor: "pointer", minHeight: 40 }}>
+      {en ? "Use my field outline" : "Uporabi obris poligona"}
+    </button>
+  );
+}

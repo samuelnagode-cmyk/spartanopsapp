@@ -7,6 +7,8 @@ import { FieldPasswordPanel } from "@/components/FieldPasswordPanel";
 import { ForgotPassword } from "@/components/PlayerAuth";
 import { CountrySearchInput } from "@/components/CountrySearchInput";
 import { LocationInput } from "@/components/events/LocationInput";
+import { ImageUploader } from "@/components/ImageUploader";
+import { FieldLogo } from "@/components/events/ui";
 import { fieldProfileGetMine, fieldProfileSave } from "@/lib/field-profile.functions";
 import type { LatLng } from "@/lib/events";
 import { COUNTRIES, countryCodeFor } from "@/lib/countries";
@@ -232,6 +234,8 @@ function LoggedIn({ user, en }: { user: User; en: boolean }) {
   const [locBusy, setLocBusy] = useState(false);
   const [locMsg, setLocMsg] = useState<{ ok: boolean; text: string } | null>(null);
   const [point, setPoint] = useState<LatLng | null>(null);
+  const [logoUrl, setLogoUrl] = useState<string | null>(null);
+  const [mapUrl, setMapUrl] = useState<string | null>(null);
 
   useEffect(() => {
     let off = false;
@@ -239,7 +243,7 @@ function LoggedIn({ user, en }: { user: User; en: boolean }) {
       try {
         const t = (await supabase.auth.getSession()).data.session?.access_token ?? "";
         const r = await fieldProfileGetMine({ data: { accessToken: t } });
-        if (!off) setPoint(r.location);
+        if (!off) { setPoint(r.location); setLogoUrl(r.logoUrl); setMapUrl(r.mapUrl); }
       } catch { /* no field yet */ }
     })();
     return () => { off = true; };
@@ -352,6 +356,16 @@ function LoggedIn({ user, en }: { user: User; en: boolean }) {
           {locBusy ? "…" : en ? "Save" : "Shrani"}
         </button>
         {locMsg && <p style={{ color: locMsg.ok ? ACCENT : ERR, fontSize: 12, marginTop: 8, textAlign: "center" }}>{locMsg.text}</p>}
+      </div>
+
+      <div style={section} id="field-profile">
+        <h2 style={{ ...sectionTitle, display: "flex", alignItems: "center", gap: 10 }}>
+          <FieldLogo url={logoUrl} name={business || "?"} size={40} />{en ? "Field profile" : "Profil poligona"}
+        </h2>
+        <div style={{ display: "grid", gap: 10 }}>
+          <ImageUploader kind="logo" currentUrl={logoUrl} fieldName={business || ""} onChange={setLogoUrl} />
+          <ImageUploader kind="map" currentUrl={mapUrl} fieldName={business || ""} onChange={setMapUrl} />
+        </div>
       </div>
 
       <div style={section}>
