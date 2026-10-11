@@ -16,8 +16,7 @@ export const Route = createFileRoute("/events.ics")({
         } catch { /* empty calendar on failure */ }
         const filtered = events
           .filter((e) => (!country || e.field.country === country) && (!field || e.field.id === field))
-          .slice(0, 200)
-          .map((e) => ({ ...e, geo: e.geo }));
+          .slice(0, 200);
         return new Response(buildIcs(filtered, { name: "SpartanOps — airsoft events" }), {
           headers: { "Content-Type": "text/calendar; charset=utf-8", "Cache-Control": "public, max-age=900" },
         });
