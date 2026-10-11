@@ -28,6 +28,6 @@ describe("player validation", () => {
 import { playerKeyFor } from "../src/lib/player.functions";
 describe("playerKeyFor", () => {
   it("matches SQL encode(digest('test-session-123','sha256'),'hex')", async () => {
-    expect(await playerKeyFor("test-session-123")).toBe("SQLVALUE");
+    expect(await playerKeyFor("test-session-123")).toBe("bd7065173b6ba0b1c30b65779119747b3710fac4d3bbb1520311cf5332b2df51");
   });
 });
