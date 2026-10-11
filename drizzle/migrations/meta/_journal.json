@@ -85,6 +85,13 @@
       "when": 1791736187662,
       "tag": "0011_player_game_totals",
       "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "7",
+      "when": 1791736304374,
+      "tag": "0012_revoke_checkin_secrets_browser",
+      "breakpoints": true
     }
   ]
 }
