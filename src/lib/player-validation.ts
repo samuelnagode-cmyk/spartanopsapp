@@ -1,5 +1,5 @@
 /** Shared player-profile rules: used by the form and the server, so they cannot drift. */
-export const PRIVACY_VERSION = "2026-10";
+export const PRIVACY_VERSION = "2026-10b";
 
 export const OPERATOR_TYPES = ["AEG", "SNIPER", "DMR", "PUMP"] as const;
 export const EXPERIENCE_VALUES = ["slabo", "dobro", "zelo_dobro"] as const;
