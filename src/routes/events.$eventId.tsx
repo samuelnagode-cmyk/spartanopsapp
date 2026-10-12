@@ -109,6 +109,7 @@ function EventPage() {
   const en = lang === "en";
   const { event: e } = Route.useLoaderData();
   const isAdmin = useMasterAdmin();
+  const viewerTz = useViewerTz();
   const hide = useServerFn(eventsAdminHide);
   const [adminState, setAdminState] = useState<"idle" | "hidden" | "shown" | "error">("idle");
   const [going, setGoing] = useState<number | null>(null);
