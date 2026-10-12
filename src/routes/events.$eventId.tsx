@@ -10,7 +10,7 @@ import { COUNTRIES, flagFor } from "@/lib/countries";
 import { CONTACT_EMAIL } from "@/lib/plans";
 import { getMasterPw, useMasterAdmin } from "@/lib/master-admin";
 import {
-  SITE, appleMapsUrl, fmtLatLng, formatEventWhen, googleMapsUrl, isToday, kindInfo, linkify, looksLikePhone,
+  SITE, appleMapsUrl, fmtLatLng, formatEventWhen, googleMapsUrl, isToday, kindInfo, useViewerTz, linkify, looksLikePhone,
   priceLabel, priceNumber, safeUrl, shortDate, wazeUrl, type LatLng, type Lang,
 } from "@/lib/events";
 import { eventLocationForViewer, eventsAdminHide, eventsGet, type EventFull } from "@/lib/events.functions";
@@ -109,6 +109,7 @@ function EventPage() {
   const en = lang === "en";
   const { event: e } = Route.useLoaderData();
   const isAdmin = useMasterAdmin();
+  const viewerTz = useViewerTz();
   const hide = useServerFn(eventsAdminHide);
   const [adminState, setAdminState] = useState<"idle" | "hidden" | "shown" | "error">("idle");
   const [going, setGoing] = useState<number | null>(null);
@@ -202,7 +203,7 @@ function EventPage() {
         </section>
 
         <div className="grid grid-cols-2" style={{ gap: 8, marginTop: 12 }}>
-          <div style={{ gridColumn: "1 / -1" }}><Fact label={en ? "When" : "Kdaj"}>{formatEventWhen(e.starts_at, e.ends_at, e.tz, lang)}</Fact></div>
+          <div style={{ gridColumn: "1 / -1" }}><Fact label={en ? "When" : "Kdaj"}>{formatEventWhen(e.starts_at, e.ends_at, e.tz, lang, viewerTz)}</Fact></div>
           {(e.location_text || maps || point || restricted || e.field.mapUrl) && (
             <div style={{ gridColumn: "1 / -1" }}>
               <Fact label={en ? "Where" : "Kje"}>
