@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react";
 /** Pure helpers for the airsoft events calendar. No server imports: used by pages and server functions. */
 import { createElement, Fragment, type ReactNode } from "react";
 
@@ -91,13 +92,21 @@ export function formatEventWhen(startsAt: string, endsAt: string | null, tz: str
     const sameDay = zonedParts(endsAt, tz).ymd === zonedParts(startsAt, tz).ymd;
     out += sameDay ? `–${time(endsAt)}` : ` – ${new Intl.DateTimeFormat(locale(lang), { timeZone: tz, day: "numeric", month: "short" }).format(new Date(endsAt))} ${time(endsAt)}`;
   }
-  const vtz = viewerTz ?? (typeof Intl !== "undefined" ? Intl.DateTimeFormat().resolvedOptions().timeZone : tz);
+  // Only add the zone label when the caller passes the viewer's zone (after mount),
+  // so server HTML and the first browser render always match.
   const ms = Date.parse(startsAt);
-  if (vtz && tzOffsetMs(ms, vtz) !== tzOffsetMs(ms, tz)) {
+  if (viewerTz && tzOffsetMs(ms, viewerTz) !== tzOffsetMs(ms, tz)) {
     const abbr = new Intl.DateTimeFormat("en-GB", { timeZone: tz, timeZoneName: "short" }).formatToParts(new Date(startsAt)).find((p) => p.type === "timeZoneName")?.value;
     if (abbr) out += ` ${abbr}`;
   }
   return out;
+}
+
+/** Viewer's timezone, available only after mount (undefined on server and first client render). */
+export function useViewerTz(): string | undefined {
+  const [tz, setTz] = useState<string | undefined>(undefined);
+  useEffect(() => { try { setTz(Intl.DateTimeFormat().resolvedOptions().timeZone); } catch { /* ignore */ } }, []);
+  return tz;
 }
 
 export function formatTimeRange(startsAt: string, endsAt: string | null, tz: string): string {
