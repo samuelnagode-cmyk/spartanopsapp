@@ -1051,6 +1051,8 @@ export type Database = {
       spartanops_players: {
         Row: {
           age_group: string
+          avatar_color: string | null
+          avatar_icon: string | null
           club: string | null
           created_at: string
           experience_level: string
@@ -1072,6 +1074,8 @@ export type Database = {
         }
         Insert: {
           age_group: string
+          avatar_color?: string | null
+          avatar_icon?: string | null
           club?: string | null
           created_at?: string
           experience_level?: string
@@ -1093,6 +1097,8 @@ export type Database = {
         }
         Update: {
           age_group?: string
+          avatar_color?: string | null
+          avatar_icon?: string | null
           club?: string | null
           created_at?: string
           experience_level?: string

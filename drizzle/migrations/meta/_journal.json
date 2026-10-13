@@ -92,6 +92,13 @@
       "when": 1791736304374,
       "tag": "0012_revoke_checkin_secrets_browser",
       "breakpoints": true
+    },
+    {
+      "idx": 13,
+      "version": "7",
+      "when": 1791924292593,
+      "tag": "0013_0013_player_avatar",
+      "breakpoints": true
     }
   ]
 }
