@@ -68,11 +68,11 @@ export const playerSaveMine = createServerFn({ method: "POST" })
       updated_at: now,
       ...(needsConsent ? { privacy_version: PRIVACY_VERSION, privacy_accepted_at: now } : {}),
     };
-    const { data: saved, error } = await db
-      .from("spartanops_players")
-      .upsert(row as never, { onConflict: "user_id" })
-      .select(COLS)
-      .single();
+    // Existing profiles: plain UPDATE. An upsert's INSERT half lacks privacy_version
+    // when consent is not re-asked, which Postgres rejects as NOT NULL (23502).
+    const { data: saved, error } = existing
+      ? await db.from("spartanops_players").update(row as never).eq("user_id", user.id).select(COLS).single()
+      : await db.from("spartanops_players").insert(row as never).select(COLS).single();
     if (error) { console.error("[playerSaveMine]", error.code); throw new Error("save_failed"); }
     if (existing?.link_games && !linkGames) {
       await db.from("spartanops_checkin_secrets").update({ user_id: null }).eq("user_id", user.id);
