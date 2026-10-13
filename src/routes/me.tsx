@@ -3,6 +3,7 @@ import { useCallback, useEffect, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { supabase } from "@/integrations/supabase/client";
 import { useLang } from "@/lib/i18n";
+import { eventRsvpSet } from "@/lib/event-rsvps.functions";
 import { playerClaimDevice, playerGamesForget, playerGamesMine, playerGetMine } from "@/lib/player.functions";
 import { claimDeviceOnce } from "@/components/ProfileOfferCard";
 import { safeNext } from "@/lib/player-validation";
@@ -11,8 +12,9 @@ import { MyEvents } from "@/components/events/MyEvents";
 import { PlayerProfileForm, ProfilePreview, type PlayerProfile, type ProfilePrefill } from "@/components/PlayerProfileForm";
 
 export const Route = createFileRoute("/me")({
-  validateSearch: (s: Record<string, unknown>): { next?: string; from?: string } => ({
+  validateSearch: (s: Record<string, unknown>): { next?: string; from?: string; rsvp?: "going" | "maybe" } => ({
     ...(typeof s.next === "string" ? { next: s.next } : {}),
+    ...(s.rsvp === "going" || s.rsvp === "maybe" ? { rsvp: s.rsvp } : {}),
     ...(s.from === "game" ? { from: "game" } : {}),
   }),
   head: () => ({
@@ -39,7 +41,10 @@ type Mine = { profile: PlayerProfile | null; needsReconsent: boolean; isMarshal:
 function MePage() {
   const { lang } = useLang();
   const en = lang === "en";
-  const { next, from } = Route.useSearch();
+  const { next, from, rsvp } = Route.useSearch();
+  const setRsvp = useServerFn(eventRsvpSet);
+  // Only an exact event path may receive a deferred answer from the URL.
+  const rsvpEventId = rsvp && typeof next === "string" ? (/^\/events\/([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})$/i.exec(next)?.[1] ?? null) : null;
   const claim = useServerFn(playerClaimDevice);
   const [prefill, setPrefill] = useState<ProfilePrefill | null>(null);
   const backToMission = safeNext(next)?.startsWith("/misija") ? safeNext(next) : null;
@@ -97,7 +102,7 @@ function MePage() {
                 {en ? "We filled in what you already told us. Check it and add your email." : "Izpolnili smo, kar si že vpisal. Preveri in dodaj e-pošto."}
               </p>
             )}
-            <PlayerAuth initialTab={from === "game" ? "signup" : "signin"} next={next} onDone={() => { const n = safeNext(next); if (n) navigate({ to: n as never }); }} />
+            <PlayerAuth initialTab={from === "game" ? "signup" : "signin"} next={next} rsvp={rsvpEventId ? rsvp : undefined} onDone={() => { const n = safeNext(next); if (n) navigate({ to: n as never }); }} />
             <p style={{ textAlign: "center", marginTop: 18, fontFamily: "monospace", fontSize: 12 }}>
               <Link to="/privacy" style={{ color: ACCENT }}>{en ? "Privacy" : "Zasebnost"}</Link>{"  ·  "}
               <Link to="/terms" style={{ color: ACCENT }}>{en ? "Terms" : "Pogoji"}</Link>
@@ -118,6 +123,11 @@ function MePage() {
                 {en ? "Our Privacy notice changed. Please confirm it below to keep your profile." : "Obvestilo o zasebnosti se je spremenilo. Za ohranitev profila ga spodaj potrdi."}
               </p>
             )}
+            {rsvpEventId && rsvp && (!mine.profile || mine.needsReconsent) && (
+              <p role="status" style={{ fontFamily: "monospace", fontSize: 13, color: ACCENT, textAlign: "center", marginBottom: 14, border: `1px solid ${ACCENT}55`, padding: "10px 12px" }}>
+                {en ? `After you save, you'll be marked as: ${rsvp === "going" ? "Going" : "Maybe"} for this event.` : `Po shranjevanju boš označen kot: ${rsvp === "going" ? "Pridem" : "Morda"} za ta dogodek.`}
+              </p>
+            )}
             <PlayerProfileForm
               key={mine.profile ? "edit" : "new"}
               en={en}
@@ -134,6 +144,18 @@ function MePage() {
                     const n = await claimDeviceOnce(claim, s2.session.user.id, s2.session.access_token, true);
                     setNotice(en ? `Saved.${n ? ` ${n} earlier games on this phone were added to My games.` : ""}` : `Shranjeno.${n ? ` ${n} prejšnjih iger na tem telefonu je dodanih v Moje igre.` : ""}`);
                   }
+                }
+                if (rsvpEventId && rsvp) {
+                  let code: string | null = null;
+                  try {
+                    const { data: s3 } = await supabase.auth.getSession();
+                    await setRsvp({ data: { accessToken: s3.session?.access_token ?? "", eventId: rsvpEventId, status: rsvp, phoneShare: "none", rideRole: "none" } });
+                  } catch (e) {
+                    const m = e instanceof Error ? e.message : "";
+                    code = ["full", "event_closed", "event_over", "not_found"].includes(m) ? m : m.startsWith("minor") ? "minor" : "failed";
+                  }
+                  navigate({ to: next as never, search: (code ? { rsvpError: code } : {}) as never });
+                  return;
                 }
                 const n = safeNext(next);
                 if (n && !backToMission) navigate({ to: n as never });

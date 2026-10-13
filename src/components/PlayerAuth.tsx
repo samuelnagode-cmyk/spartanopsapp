@@ -69,7 +69,7 @@ export function ForgotPassword({ en, initialEmail = "" }: { en: boolean; initial
   );
 }
 
-export function PlayerAuth({ next, onDone, initialTab = "signin" }: { next?: string | null; onDone?: () => void; initialTab?: "signin" | "signup" }) {
+export function PlayerAuth({ next, onDone, initialTab = "signin", rsvp }: { next?: string | null; onDone?: () => void; initialTab?: "signin" | "signup"; rsvp?: "going" | "maybe" }) {
   const { lang } = useLang();
   const en = lang === "en";
   const [tab, setTab] = useState<"signin" | "signup">(initialTab);
@@ -92,10 +92,14 @@ export function PlayerAuth({ next, onDone, initialTab = "signin" }: { next?: str
         onDone?.();
       } else {
         const n = safeNext(next);
+        const qs = new URLSearchParams();
+        if (n) qs.set("next", n);
+        if (rsvp === "going" || rsvp === "maybe") qs.set("rsvp", rsvp);
+        const q = qs.toString();
         // No business_name in metadata: a player sign-up never creates a field.
         const { data, error } = await supabase.auth.signUp({
           email: email.trim(), password,
-          options: { emailRedirectTo: `${window.location.origin}/me${n ? `?next=${encodeURIComponent(n)}` : ""}` },
+          options: { emailRedirectTo: `${window.location.origin}/me${q ? `?${q}` : ""}` },
         });
         if (error) { setErr(error.message); return; }
         if (data.session) onDone?.();
@@ -140,13 +144,13 @@ export function PlayerAuth({ next, onDone, initialTab = "signin" }: { next?: str
   );
 }
 
-export function PlayerAuthDialog({ open, onClose, onDone, next }: { open: boolean; onClose: () => void; onDone?: () => void; next?: string | null }) {
+export function PlayerAuthDialog({ open, onClose, onDone, next, rsvp }: { open: boolean; onClose: () => void; onDone?: () => void; next?: string | null; rsvp?: "going" | "maybe" }) {
   if (!open) return null;
   return (
     <div role="dialog" aria-modal="true" onClick={onClose}
       style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.8)", zIndex: 1300, display: "flex", alignItems: "center", justifyContent: "center", padding: 16 }}>
       <div onClick={(e) => e.stopPropagation()} style={{ background: PANEL, color: INK, border: `1px solid ${ACCENT}44`, padding: "26px 20px", width: "100%", maxWidth: 420, maxHeight: "92vh", overflowY: "auto" }}>
-        <PlayerAuth next={next} onDone={() => { onDone?.(); onClose(); }} />
+        <PlayerAuth next={next} rsvp={rsvp} onDone={() => { onDone?.(); onClose(); }} />
       </div>
     </div>
   );

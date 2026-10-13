@@ -84,7 +84,7 @@ export function RsvpPanel({ event, lang, onCounts }: { event: RsvpEvent; lang: L
   const [seats, setSeats] = useState(3);
   const [note, setNote] = useState("");
   const [phone, setPhone] = useState("");
-  const [forcedLine, setForcedLine] = useState(false);
+  const [, setForcedLine] = useState(false);
   const [saved, setSaved] = useState(false);
   const applying = useRef(false);
   const [pendingRsvp, setPendingRsvp] = useState<Status | null>(null);
