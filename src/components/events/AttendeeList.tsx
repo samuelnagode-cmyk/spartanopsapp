@@ -5,14 +5,10 @@ import type { Lang } from "@/lib/events";
 import { ExperienceBadge, type ExperienceLevel } from "@/components/ExperienceBadge";
 import { ACCENT, INK, MICHROMA, MUTED, PANEL, btnPrimary, smallChip } from "./ui";
 import { ContactButtons } from "./ContactButtons";
+import { PlayerAvatar } from "@/components/PlayerAvatar";
 
 const h2 = { fontFamily: MICHROMA, fontSize: 11, letterSpacing: "0.16em", color: ACCENT, textTransform: "uppercase" as const, margin: "0 0 10px" };
 
-function colourFor(s: string) {
-  let h = 0;
-  for (const ch of s) h = (h * 31 + ch.charCodeAt(0)) % 360;
-  return `hsl(${h} 45% 38%)`;
-}
 
 function Card({ a, lang, organiser }: { a: AttendeeView; lang: Lang; organiser: boolean }) {
   const [open, setOpen] = useState(false);
@@ -24,9 +20,7 @@ function Card({ a, lang, organiser }: { a: AttendeeView; lang: Lang; organiser: 
     <li style={{ background: "rgba(0,0,0,0.3)", border: `1px solid ${a.self ? ACCENT : `${ACCENT}22`}`, padding: 10 }}>
       <button type="button" className="ev-focus" aria-expanded={open} onClick={() => hasMore && setOpen((v) => !v)}
         style={{ display: "flex", gap: 10, alignItems: "center", width: "100%", background: "none", border: "none", color: INK, textAlign: "left", padding: 0, cursor: hasMore ? "pointer" : "default", minHeight: 44 }}>
-        <span aria-hidden style={{ width: 36, height: 36, borderRadius: "50%", background: colourFor(a.callsign), display: "flex", alignItems: "center", justifyContent: "center", fontFamily: MICHROMA, fontSize: 13, flexShrink: 0, color: INK }}>
-          {a.callsign.charAt(0).toUpperCase()}
-        </span>
+        <PlayerAvatar icon={a.avatar_icon} color={a.avatar_color} name={a.callsign} size={36} ink={INK} />
         <span style={{ minWidth: 0, flex: 1 }}>
           <strong style={{ fontFamily: "monospace", fontSize: 14, display: "block", wordBreak: "break-word" }}>{a.callsign}{a.self && <span style={{ color: ACCENT, fontWeight: 400 }}> · {en ? "you" : "ti"}</span>}</strong>
           <span style={{ fontFamily: "monospace", fontSize: 12, color: MUTED }}>{name}</span>
