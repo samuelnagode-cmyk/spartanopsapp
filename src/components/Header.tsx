@@ -2,6 +2,9 @@ import { Link, useLocation } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
 import { Menu, X, ChevronLeft, ChevronDown, Globe, User } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { useServerFn } from "@tanstack/react-start";
+import { playerGetMine } from "@/lib/player.functions";
+import { PlayerAvatar } from "@/components/PlayerAvatar";
 import { useSignedIn, useIsMarshal, useAccountLabel } from "@/lib/use-signed-in";
 import logoImg from "@/assets/logo-glamping.png";
 const AIRSOFT_LOGO = "https://res.cloudinary.com/dfifiytid/image/upload/v1783765381/SpartanOps%20app%20v1.0/LOGO/SpartanOps_app_LOGO_NO_BACKROUND-05.webp";
@@ -26,6 +29,27 @@ export default function Header() {
   const accountLabel = useAccountLabel();
   const accountInitial = accountLabel ? Array.from(accountLabel.trim())[0]?.toUpperCase() ?? null : null;
   const en = lang === "en";
+  const getMine = useServerFn(playerGetMine);
+  const [avatar, setAvatar] = useState<{ icon: string; color: string } | null>(null);
+  useEffect(() => {
+    let cancelled = false;
+    const load = async () => {
+      const { data } = await supabase.auth.getSession();
+      const s = data.session;
+      if (!s) { if (!cancelled) setAvatar(null); return; }
+      try {
+        const r = await getMine({ data: { accessToken: s.access_token } });
+        const p = r.profile as { avatar_icon?: string | null; avatar_color?: string | null } | null;
+        if (!cancelled) setAvatar(p?.avatar_icon && p.avatar_color ? { icon: p.avatar_icon, color: p.avatar_color } : null);
+      } catch { /* keep initial */ }
+    };
+    void load();
+    const { data: sub } = supabase.auth.onAuthStateChange((event) => {
+      if (event === "SIGNED_IN" || event === "SIGNED_OUT" || event === "USER_UPDATED") void load();
+    });
+    window.addEventListener("spartanops:profile-saved", load);
+    return () => { cancelled = true; sub.subscription.unsubscribe(); window.removeEventListener("spartanops:profile-saved", load); };
+  }, [getMine]);
 
   // Smooth menu open/close
   useEffect(() => {
@@ -295,11 +319,11 @@ export default function Header() {
                     width: 40, height: 40, borderRadius: 999,
                     display: "inline-flex", alignItems: "center", justifyContent: "center",
                     border: "1px solid rgba(224,176,78,0.6)",
-                    background: signedIn && accountInitial ? avatarTint(accountLabel ?? "") : "transparent",
+                    background: signedIn && accountInitial && !avatar ? avatarTint(accountLabel ?? "") : "transparent",
                     fontFamily: "'Michroma', monospace", fontSize: 13, lineHeight: 1,
                   }}
                 >
-                  {signedIn && accountInitial ? accountInitial : <User size={20} strokeWidth={1.6} />}
+                  {signedIn && avatar ? <PlayerAvatar icon={avatar.icon} color={avatar.color} name={accountLabel ?? "?"} size={34} /> : signedIn && accountInitial ? accountInitial : <User size={20} strokeWidth={1.6} />}
                 </span>
               </Link>
             </div>

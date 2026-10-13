@@ -25,7 +25,7 @@ export const PRIVACY: Record<Lang, { title: string; description: string; section
       { title: "Who is responsible", blocks: [{ kind: "controller" }, { kind: "p", text: "For anything about your data, write to info@spartanopsapp.com." }] },
       { title: "What we collect and why", blocks: [{ kind: "table", head: ["Data", "Purpose", "Legal basis (GDPR)"], rows: [
         ["Email and password (the password is stored hashed by our sign-in provider)", "Create and secure your account", "Contract (Art. 6(1)(b))"],
-        ["Callsign, first name", "Show who is going to an event", "Contract (Art. 6(1)(b))"],
+        ["Callsign, first name, an avatar (a picture you choose from our set)", "Show who is going to an event", "Contract (Art. 6(1)(b))"],
         ["Age group (16–17 / 18+)", "Decide which features are available to you", "Legitimate interest: protecting minors (Art. 6(1)(f))"],
         ["Surname (optional)", "Helps organisers know who is coming; other players see it only if you allow", "Consent (Art. 6(1)(a))"],
         ["Phone number (optional)", "Contact for the organiser or other players going, only as you choose for each event", "Consent (Art. 6(1)(a))"],
@@ -37,7 +37,7 @@ export const PRIVACY: Record<Lang, { title: string; description: string; section
       ] }] },
       { title: "Who can see what", blocks: [{ kind: "list", items: [
         "Visitors who are not signed in: only how many people are going.",
-        "Signed-in players with a profile: callsign, first name and surname initial, club, experience, operator type and loadout of the players going to an event. A full surname only if that player allowed it. Phone and car pool details only if that player chose to share them with other players, and only for adults.",
+        "Signed-in players with a profile: callsign, avatar (a picture you choose from our set), first name and surname initial, club, experience, operator type and loadout of the players going to an event. A full surname only if that player allowed it. Phone and car pool details only if that player chose to share them with other players, and only for adults.",
         "The organiser of the event (the field): everything above, plus the full surname if entered, and the phone number if it was shared with the organiser or with players.",
         "The marshal of a field you play a game at: the check-in details of that game (callsign, first name, club, and your phone only if you chose to share it), as before. Marshals never see your game history.",
         "Nobody else. We do not sell personal data and do not use it for advertising.",
@@ -58,7 +58,7 @@ export const PRIVACY: Record<Lang, { title: string; description: string; section
       { title: "Kdo je odgovoren", blocks: [{ kind: "controller" }, { kind: "p", text: "Za vsa vprašanja o tvojih podatkih piši na info@spartanopsapp.com." }] },
       { title: "Katere podatke zbiramo in zakaj", blocks: [{ kind: "table", head: ["Podatek", "Namen", "Pravna podlaga (GDPR)"], rows: [
         ["E-pošta in geslo (geslo ponudnik prijave shrani zgoščeno)", "Ustvarjanje in zaščita računa", "Izvajanje pogodbe (6(1)(b))"],
-        ["Vzdevek, ime", "Prikaz, kdo pride na dogodek", "Izvajanje pogodbe (6(1)(b))"],
+        ["Vzdevek, ime, avatar (sličica, ki jo izbereš iz našega nabora)", "Prikaz, kdo pride na dogodek", "Izvajanje pogodbe (6(1)(b))"],
         ["Starostna skupina (16–17 / 18+)", "Določa, katere funkcije so ti na voljo", "Zakoniti interes: varstvo mladoletnikov (6(1)(f))"],
         ["Priimek (neobvezno)", "Organizatorju pomaga vedeti, kdo pride; drugim igralcem je viden le, če dovoliš", "Privolitev (6(1)(a))"],
         ["Telefonska številka (neobvezno)", "Stik z organizatorjem ali drugimi igralci, le kot izbereš pri vsakem dogodku", "Privolitev (6(1)(a))"],
@@ -70,7 +70,7 @@ export const PRIVACY: Record<Lang, { title: string; description: string; section
       ] }] },
       { title: "Kdo kaj vidi", blocks: [{ kind: "list", items: [
         "Obiskovalci brez prijave: samo število prijavljenih.",
-        "Prijavljeni igralci s profilom: vzdevek, ime in začetnico priimka, klub, izkušnje, vrsto orožja in opis opreme igralcev, ki pridejo na dogodek. Celoten priimek le, če ga je igralec dovolil. Telefon in podatke o prevozu le, če jih je igralec izbral za deljenje z drugimi igralci, in to le polnoletnim.",
+        "Prijavljeni igralci s profilom: vzdevek, avatar (sličica, ki jo izbereš iz našega nabora), ime in začetnico priimka, klub, izkušnje, vrsto orožja in opis opreme igralcev, ki pridejo na dogodek. Celoten priimek le, če ga je igralec dovolil. Telefon in podatke o prevozu le, če jih je igralec izbral za deljenje z drugimi igralci, in to le polnoletnim.",
         "Organizator dogodka (poligon): vse zgoraj, poleg tega celoten priimek, če je vnesen, in telefon, če je deljen z organizatorjem ali z igralci.",
         "Maršal poligona, na katerem igraš igro: podatki ob prijavi v to igro (vzdevek, ime, klub in telefon le, če si ga izbral deliti), kot doslej. Maršali tvoje zgodovine iger nikoli ne vidijo.",
         "Nihče drug. Osebnih podatkov ne prodajamo in jih ne uporabljamo za oglaševanje.",
