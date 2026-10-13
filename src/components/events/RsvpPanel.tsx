@@ -87,6 +87,7 @@ export function RsvpPanel({ event, lang, onCounts }: { event: RsvpEvent; lang: L
   const [forcedLine, setForcedLine] = useState(false);
   const [saved, setSaved] = useState(false);
   const applying = useRef(false);
+  const [pendingRsvp, setPendingRsvp] = useState<Status | null>(null);
 
   const cancelled = event.status === "cancelled";
   const over = eventEndMs(event) < Date.now();
@@ -140,8 +141,9 @@ export function RsvpPanel({ event, lang, onCounts }: { event: RsvpEvent; lang: L
 
   const start = (status: Status) => {
     sessionStorage.setItem(INTENT_KEY, JSON.stringify({ eventId: event.id, status }));
+    setPendingRsvp(status);
     if (!v.signedIn) setAuthOpen(true);
-    else navigate({ to: "/me", search: { next } as never });
+    else navigate({ to: "/me", search: { next, rsvp: status } as never });
   };
 
   const answer = async (status: Status | "not") => {
@@ -244,45 +246,20 @@ export function RsvpPanel({ event, lang, onCounts }: { event: RsvpEvent; lang: L
                 <div style={{ marginTop: 14, borderTop: `1px solid ${ACCENT}22`, paddingTop: 10 }}>
                   <button type="button" className="ev-focus" aria-expanded={showContact} onClick={() => setContactOpenUi(!showContact)}
                     style={{ width: "100%", minHeight: 44, background: "none", border: "none", color: ACCENT, fontFamily: MICHROMA, fontSize: 10, letterSpacing: "0.14em", textTransform: "uppercase", display: "flex", justifyContent: "space-between", alignItems: "center", cursor: "pointer", padding: 0 }}>
-                    {en ? "Contact and car pool" : "Stik in skupni prevoz"} <ChevronDown size={16} style={{ transform: showContact ? "rotate(180deg)" : "none" }} />
+                    {en ? "Car pool and contact" : "Skupni prevoz in kontakt"} <ChevronDown size={16} style={{ transform: showContact ? "rotate(180deg)" : "none" }} />
                   </button>
                   {showContact && (!v.adult ? (
                     <p style={{ fontFamily: "monospace", fontSize: 12.5, color: MUTED, lineHeight: 1.6 }}>{en ? "Contact sharing and car pool are for players 18 and older." : "Deljenje kontakta in skupni prevoz sta za igralce, stare 18 let in več."}</p>
                   ) : (
                     <div style={{ display: "grid", gap: 10, marginTop: 6 }}>
-                      <div role="radiogroup" aria-label={en ? "Phone sharing" : "Deljenje številke"} style={{ display: "grid", gap: 6 }}>
-                        {([
-                          ["none", en ? "Don't share my phone" : "Ne deli moje številke"],
-                          ["organiser", en ? "Share with the organiser" : "Deli z organizatorjem"],
-                          ["attendees", en ? "Share with the organiser and the other players going" : "Deli z organizatorjem in drugimi igralci, ki pridejo"],
-                        ] as [Share, string][]).map(([val, txt]) => (
-                          <label key={val} style={{ display: "flex", gap: 10, alignItems: "center", minHeight: 44, padding: "8px 12px", border: `1px solid ${share === val ? ACCENT : `${ACCENT}33`}`, background: share === val ? `${ACCENT}14` : "transparent", fontFamily: "monospace", fontSize: 13, cursor: "pointer" }}>
-                            <input type="radio" name={`share-${event.id}`} checked={share === val} onChange={() => { setShare(val); setSaved(false); setForcedLine(false); if (val !== "attendees") setRide("none"); }} style={{ accentColor: ACCENT, width: 18, height: 18 }} />
-                            {txt}
-                          </label>
-                        ))}
-                      </div>
-                      {share && share !== "none" && (
-                        <p style={{ fontFamily: "monospace", fontSize: 12, color: MUTED, lineHeight: 1.6 }}>
-                          {en ? `Your phone number will be visible to ${shareTarget} until 3 days after the event. You can change this at any time.` : `Tvoja telefonska številka bo vidna ${shareTarget} do 3 dni po dogodku. To lahko kadar koli spremeniš.`}
-                        </p>
-                      )}
-                      {share && share !== "none" && !v.hasPhone && (
-                        <div>
-                          <label style={label} htmlFor={`ph-${event.id}`}>{en ? "Phone number" : "Telefonska številka"}</label>
-                          <input id={`ph-${event.id}`} className="ev-focus" type="tel" inputMode="tel" autoComplete="tel" value={phone} onChange={(x) => setPhone(x.target.value)} placeholder="041 123 456" style={input} />
-                        </div>
-                      )}
-
-                      {(share === "attendees" || ride !== "none") && (
-                        <div style={{ borderTop: `1px solid ${ACCENT}22`, paddingTop: 10, display: "grid", gap: 10 }}>
+                        <div style={{ display: "grid", gap: 10 }}>
                           <span style={label}>{en ? "Car pool" : "Skupni prevoz"}</span>
                           <div style={{ display: "flex", gap: 6 }}>
                             <button type="button" className="ev-focus" style={segBtn(ride === "none")} onClick={() => pickRide("none")}>{en ? "No ride needed" : "Ne potrebujem"}</button>
                             <button type="button" className="ev-focus" style={segBtn(ride === "driver")} onClick={() => pickRide("driver")}>{en ? "I can drive" : "Lahko peljem"}</button>
                             <button type="button" className="ev-focus" style={segBtn(ride === "rider")} onClick={() => pickRide("rider")}>{en ? "I need a ride" : "Rabim prevoz"}</button>
                           </div>
-                          {forcedLine && <p style={{ fontFamily: "monospace", fontSize: 12, color: ACCENT }}>{en ? "To arrange a ride your phone must be visible to the other players going." : "Za dogovor o prevozu mora biti tvoja številka vidna drugim igralcem, ki pridejo."}</p>}
+                          
                           {ride !== "none" && (
                             <>
                               <div>
@@ -307,10 +284,42 @@ export function RsvpPanel({ event, lang, onCounts }: { event: RsvpEvent; lang: L
                                   placeholder={en ? "e.g. leaving Friday 17:00 from the Petrol in Kranj" : "npr. odhod v petek ob 17:00 s Petrola v Kranju"} style={input} />
                                 <p style={{ fontFamily: "monospace", fontSize: 11, color: MUTED, textAlign: "right", marginTop: 2 }}>{note.length}/120</p>
                               </div>
+                              {!v.hasPhone && (
+                                <div>
+                                  <label style={label} htmlFor={`ph-${event.id}`}>{en ? "Phone number" : "Telefonska številka"}</label>
+                                  <input id={`ph-${event.id}`} className="ev-focus" type="tel" inputMode="tel" autoComplete="tel" value={phone} onChange={(x) => setPhone(x.target.value)} placeholder="041 123 456" style={input} />
+                                </div>
+                              )}
+                              <p style={{ fontFamily: "monospace", fontSize: 12, color: ACCENT, lineHeight: 1.6 }}>{en ? "To arrange a ride, your phone number will be visible to the other players going." : "Za dogovor o prevozu bo tvoja številka vidna drugim igralcem, ki pridejo."}</p>
                             </>
                           )}
                         </div>
+                      <div role="radiogroup" aria-label={en ? "Who can see my phone" : "Kdo vidi mojo številko"} style={{ display: "grid", gap: 6, borderTop: `1px solid ${ACCENT}22`, paddingTop: 10 }}>
+                        <span style={label}>{en ? "Who can see my phone" : "Kdo vidi mojo številko"}</span>
+                        {([
+                          ["none", en ? "Don't share my phone" : "Ne deli moje številke"],
+                          ["organiser", en ? "Share with the organiser" : "Deli z organizatorjem"],
+                          ["attendees", en ? "Share with the organiser and the other players going" : "Deli z organizatorjem in drugimi igralci, ki pridejo"],
+                        ] as [Share, string][]).map(([val, txt]) => (
+                          <label key={val} style={{ display: "flex", gap: 10, alignItems: "center", minHeight: 44, padding: "8px 12px", border: `1px solid ${share === val ? ACCENT : `${ACCENT}33`}`, background: share === val ? `${ACCENT}14` : "transparent", fontFamily: "monospace", fontSize: 13, cursor: "pointer" }}>
+                            <input type="radio" name={`share-${event.id}`} checked={share === val} disabled={ride !== "none" && val !== "attendees"} onChange={() => { setShare(val); setSaved(false); setForcedLine(false); }} style={{ accentColor: ACCENT, width: 18, height: 18 }} />
+                            {txt}
+                          </label>
+                        ))}
+                      </div>
+                      {ride !== "none" && <p style={{ fontFamily: "monospace", fontSize: 12, color: MUTED }}>{en ? "Needed for the car pool." : "Potrebno za skupni prevoz."}</p>}
+                      {share && share !== "none" && (
+                        <p style={{ fontFamily: "monospace", fontSize: 12, color: MUTED, lineHeight: 1.6 }}>
+                          {en ? `Your phone number will be visible to ${shareTarget} until 3 days after the event. You can change this at any time.` : `Tvoja telefonska številka bo vidna ${shareTarget} do 3 dni po dogodku. To lahko kadar koli spremeniš.`}
+                        </p>
                       )}
+                      {share && share !== "none" && ride === "none" && !v.hasPhone && (
+                        <div>
+                          <label style={label} htmlFor={`ph-${event.id}`}>{en ? "Phone number" : "Telefonska številka"}</label>
+                          <input id={`ph-${event.id}`} className="ev-focus" type="tel" inputMode="tel" autoComplete="tel" value={phone} onChange={(x) => setPhone(x.target.value)} placeholder="041 123 456" style={input} />
+                        </div>
+                      )}
+
                       <p style={{ fontFamily: "monospace", fontSize: 11.5, color: MUTED, lineHeight: 1.6 }}>
                         {en ? "Share costs only. Rides are arranged between players, at their own responsibility. See the " : "Delite le stroške. Prevoze se dogovorijo igralci med seboj, na lastno odgovornost. Glej "}
                         <Link to="/terms" style={{ color: ACCENT }}>{en ? "Terms" : "pogoje"}</Link>.
@@ -341,7 +350,7 @@ export function RsvpPanel({ event, lang, onCounts }: { event: RsvpEvent; lang: L
         <p style={{ marginTop: 12, fontFamily: "monospace", fontSize: 12, color: MUTED }}>{en ? "Sign in (18+) to see rides." : "Prijavi se (18+), da vidiš prevoze."}</p>
       )}
 
-      <PlayerAuthDialog open={authOpen} onClose={() => setAuthOpen(false)} next={next} onDone={() => { void load().then(async (a) => { if (a?.viewer.signedIn && !a.viewer.hasProfile) navigate({ to: "/me", search: { next } as never }); else await applyIntent(a); }); }} />
+      <PlayerAuthDialog open={authOpen} onClose={() => setAuthOpen(false)} next={next} rsvp={pendingRsvp ?? undefined} onDone={() => { void load().then(async (a) => { if (a?.viewer.signedIn && !a.viewer.hasProfile) navigate({ to: "/me", search: { next, ...(pendingRsvp ? { rsvp: pendingRsvp } : {}) } as never }); else await applyIntent(a); }); }} />
     </div>
   );
 }
