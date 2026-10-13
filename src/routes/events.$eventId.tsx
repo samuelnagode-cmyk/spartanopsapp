@@ -119,6 +119,16 @@ function EventPage() {
   const [copied, setCopied] = useState(false);
   const [mapOpen, setMapOpen] = useState(false);
   const [mediaAdmin, setMediaAdmin] = useState<"idle" | "done" | "error">("idle");
+  const [rsvpError, setRsvpError] = useState<string | null>(null);
+  // One-time message after a deferred answer from /me failed; then drop it from the URL.
+  useEffect(() => {
+    const u = new URL(window.location.href);
+    const code = u.searchParams.get("rsvpError");
+    if (!code) return;
+    setRsvpError(code);
+    u.searchParams.delete("rsvpError");
+    window.history.replaceState(window.history.state, "", u.pathname + u.search + u.hash);
+  }, []);
   const removeMedia = useServerFn(fieldMediaAdminRemove);
   const prefetchMap = () => { if (e?.field.mapUrl) { const i = new Image(); i.src = e.field.mapUrl; } };
   const restricted = !!e?.locationRestricted;
@@ -276,6 +286,14 @@ function EventPage() {
           )}
         </div>
 
+        {rsvpError && (
+          <p role="alert" style={{ marginTop: 18, fontFamily: "monospace", fontSize: 13, color: "#d97a6c", border: "1px solid #d97a6c66", padding: "10px 12px" }}>
+            {rsvpError === "full" ? (en ? "The event is full, your answer was not saved." : "Dogodek je poln, tvoj odgovor ni bil shranjen.")
+              : rsvpError === "event_closed" ? (en ? "The event is cancelled, your answer was not saved." : "Dogodek je odpovedan, tvoj odgovor ni bil shranjen.")
+              : rsvpError === "event_over" ? (en ? "The event is over, your answer was not saved." : "Dogodek je že mimo, tvoj odgovor ni bil shranjen.")
+              : (en ? "Your answer was not saved. Please try again below." : "Tvoj odgovor ni bil shranjen. Poskusi znova spodaj.")}
+          </p>
+        )}
         <RsvpPanel event={e} lang={lang} onCounts={onCounts} />
 
         <footer style={{ marginTop: 32, paddingTop: 14, borderTop: `1px solid ${ACCENT}22`, display: "flex", justifyContent: "space-between", gap: 12, flexWrap: "wrap", fontFamily: "monospace", fontSize: 12, color: MUTED }}>
