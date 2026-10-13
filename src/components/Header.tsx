@@ -412,9 +412,8 @@ export default function Header() {
               ] as Array<{ label: string; to: string; hash?: string; sub?: string; gold?: boolean }>).map((link) => (
                 <Link
                   key={`${link.label}`}
-                  to={link.to as any}
-                  hash={(link as any).hash}
-                  search={(link as any).search}
+                  to={link.to as never}
+                  hash={link.hash}
                   onClick={() => setOpen(false)}
                   className="group block transition-colors"
                   style={{
