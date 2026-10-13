@@ -17,19 +17,19 @@ const svg = (children: ReactNode) => (size: number) => (
 /** Custom icons drawn in the Lucide style (24 grid, 2px round stroke). */
 const CUSTOM: Partial<Record<AvatarIconId, (size: number) => ReactNode>> = {
   helmet: svg(<><path d="M3 15a9 9 0 0 1 18 0" /><path d="M2 15h20" /><path d="M7 15v3h10v-3" /><path d="M12 6v4" /></>),
-  spartan: svg(<><path d="M12 2c-2 2-2 3-2 4" /><path d="M5 22V11a7 7 0 0 1 14 0v11" /><path d="M9 22v-6l-3-3" /><path d="M15 22v-6l3-3" /><path d="M12 11v6" /></>),
+  spartan: svg(<><path d="M7 5c3-3 7-3 10 0" /><path d="M5 21V11a7 7 0 0 1 14 0v10h-4v-6h-2v-4h-2v4H9v6z" /></>),
   nvg: svg(<><path d="M4 9h16v4H4z" /><circle cx="8" cy="17" r="3" /><circle cx="16" cy="17" r="3" /><path d="M12 9V4" /></>),
-  respirator: svg(<><path d="M5 9c2-3 12-3 14 0l-2 8c-1 3-9 3-10 0z" /><circle cx="12" cy="13" r="2.5" /><path d="M5 11H2" /><path d="M19 11h3" /></>),
+  respirator: svg(<><path d="M8 7h8l2 6-3 5H9l-3-5z" /><circle cx="4.5" cy="15" r="2.5" /><circle cx="19.5" cy="15" r="2.5" /><path d="M10 12h4" /><path d="M10 15h4" /></>),
   balaclava: svg(<><path d="M5 22v-11a7 7 0 0 1 14 0v11" /><path d="M7 11h10v3H7z" /><path d="M10 18h4" /></>),
   dogtags: svg(<><path d="M8 3l2 5" /><path d="M16 3l-2 5" /><rect x="5" y="8" width="7" height="12" rx="2.5" /><rect x="12" y="10" width="7" height="12" rx="2.5" /></>),
   chevron: svg(<path d="M4 16l8-6 8 6" />),
   chevrons: svg(<><path d="M4 13l8-6 8 6" /><path d="M4 19l8-6 8 6" /></>),
   wolf: svg(<><path d="M5 3l3 6h8l3-6v9l-7 9-7-9z" /><circle cx="9.5" cy="12" r="0.6" fill="currentColor" /><circle cx="14.5" cy="12" r="0.6" fill="currentColor" /></>),
-  eagle: svg(<><path d="M4 8c2-3 6-4 9-3l7 3-5 2" /><path d="M15 10l-3 11" /><path d="M4 8l8 2" /><circle cx="12" cy="7" r="0.6" fill="currentColor" /></>),
+  eagle: svg(<><path d="M5 21c0-7 2-12 8-14h3l5 3-2 2-3-1c-2 1-3 4-3 10" /><circle cx="14.5" cy="9" r="0.8" fill="currentColor" /></>),
   bear: svg(<><circle cx="6" cy="6" r="2.5" /><circle cx="18" cy="6" r="2.5" /><circle cx="12" cy="13" r="7.5" /><path d="M10.5 15.5h3l-1.5 1.5z" /></>),
   fox: svg(<><path d="M3 3l5 6h8l5-6-1 8-8 10-8-10z" /><path d="M8 13l4 3 4-3" /></>),
   boot: svg(<><path d="M7 3h6v10l6 3c1.5.7 2 2 2 3v1H3V3z" /><path d="M3 17h18" /><path d="M7 7h3" /><path d="M7 10h3" /></>),
-  smoke: svg(<><rect x="9" y="16" width="6" height="6" rx="1" /><path d="M12 16c-3-2 3-4 0-6s3-4 0-6" /><path d="M8 8c-2-1 0-3-1-4" /><path d="M16 8c2-1 0-3 1-4" /></>),
+  smoke: svg(<><rect x="9" y="15" width="6" height="7" rx="1" /><path d="M7 12a3 3 0 0 1 1-6 4 4 0 0 1 7.5 0A3 3 0 0 1 17 12z" /></>),
 };
 const LUCIDE: Partial<Record<AvatarIconId, typeof Crosshair>> = {
   crosshair: Crosshair, binoculars: Binoculars, compass: Compass, radio: Radio, shield: Shield, backpack: Backpack,
