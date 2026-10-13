@@ -1162,7 +1162,7 @@ function AccountMissionsSection({ en, onOpenMission, onCreateInEvent }: { en: bo
       <div style={{ maxWidth: 480, margin: "0 auto 28px", padding: "10px 12px", border: `1px dashed ${ACCENT}55`, fontFamily: "monospace", fontSize: 12, color: MUTED, textAlign: "center" }}>
         {en ? "Log in to see your missions from any device — " : "Prijavi se in svoje misije vidi na vsaki napravi — "}
         <Link to="/marshal-account" style={{ color: ACCENT, textDecoration: "underline" }}>
-          {en ? "Marshal account" : "Račun maršala"}
+          {en ? "Field settings" : "Nastavitve poligona"}
         </Link>
       </div>
     );
@@ -1345,7 +1345,7 @@ function FieldsWelcome({
           {en ? "// NO FIELD ON THIS LOGIN" : "// TA PRIJAVA NIMA POLIGONA"}
         </p>
         <p style={{ fontSize: 13, color: MUTED, lineHeight: 1.7, marginBottom: 20 }}>
-          {en ? "Missions belong to a field. Create your field first, or open your player profile." : "Misije pripadajo poligonu. Najprej ustvari poligon ali odpri igralski profil."}
+          {en ? "Missions belong to a field. Create your field first, or open your account." : "Misije pripadajo poligonu. Najprej ustvari poligon ali odpri svoj račun."}
         </p>
         <div style={{ display: "flex", gap: 14, justifyContent: "center", flexWrap: "wrap" }}>
           <Link to="/marshal-account" style={{ display: "inline-block", background: ACCENT, color: BG, padding: "12px 20px", fontFamily: "'Michroma', monospace", fontSize: 11, letterSpacing: "0.18em", textTransform: "uppercase", fontWeight: 700, textDecoration: "none" }}>
@@ -1367,8 +1367,8 @@ function FieldsWelcome({
         </p>
         <p style={{ fontSize: 13, color: MUTED, lineHeight: 1.7, marginBottom: 20 }}>
           {en
-            ? "Log in or create a marshal account to create and manage your missions."
-            : "Prijavi se ali ustvari račun maršala za ustvarjanje in upravljanje svojih misij."}
+            ? "Log in or create an account to create and manage your missions."
+            : "Prijavi se ali ustvari račun za ustvarjanje in upravljanje svojih misij."}
         </p>
         <Link
           to="/marshal-account"

@@ -26,7 +26,7 @@ const ERRORS: Record<string, [string, string]> = {
   event_closed: ["This event is not open for answers.", "Ta dogodek ne sprejema odgovorov."],
   event_over: ["This event is over.", "Dogodek je že mimo."],
   not_found: ["Event not found.", "Dogodka ni."],
-  needs_profile: ["Create your player profile first.", "Najprej ustvari igralski profil."],
+  needs_profile: ["Create your profile first.", "Najprej ustvari profil."],
   needs_reconsent: ["Please accept the updated privacy notice first.", "Najprej sprejmi posodobljeno obvestilo o zasebnosti."],
   needs_phone: ["Add your phone number to arrange a ride.", "Za dogovor o prevozu dodaj telefonsko številko."],
   "validation:ride_from": ["Enter the town you are leaving from.", "Vpiši kraj, od koder greš."],

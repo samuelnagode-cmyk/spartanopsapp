@@ -1933,9 +1933,9 @@ function CheckinForm({ locationCheck, sessionId, fieldId, preview, onGhost, fiel
         )}
         {!preview && gate.status === "noprofile" && (
           <p className="text-center font-mono text-[12px] mb-4" style={{ color: MUTED, marginTop: -18 }}>
-            {en ? "Make a player profile once and skip this form next time. " : "Enkrat ustvari igralski profil in naslednjič preskoči ta obrazec. "}
+            {en ? "Make a profile once and skip this form next time. " : "Enkrat ustvari profil in naslednjič preskoči ta obrazec. "}
             <a href={`/me?from=game&next=${encodeURIComponent(currentUrl())}`} style={{ color: ACCENT, display: "inline-block", minHeight: 44, lineHeight: "44px" }}>
-              {en ? "Make a player profile" : "Ustvari igralski profil"}
+              {en ? "Make a profile" : "Ustvari profil"}
             </a>
           </p>
         )}

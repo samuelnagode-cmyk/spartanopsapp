@@ -95,7 +95,7 @@ export function ProfileOfferCard({ en }: { en: boolean }) {
   return (
     <div style={{ background: PANEL, border: `1px solid ${ACCENT}44`, padding: "12px 14px", margin: "0 auto 18px", maxWidth: 520, display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
       <p style={{ flex: "1 1 220px", fontFamily: "monospace", fontSize: 12, lineHeight: 1.5, color: INK, margin: 0 }}>
-        {en ? "Join your next game or event in one tap. Save these details as your player profile." : "Pri naslednji igri ali dogodku se pridruži z enim dotikom. Shrani te podatke kot svoj igralski profil."}
+        {en ? "Join your next game or event in one tap. Save these details as your profile." : "Pri naslednji igri ali dogodku se pridruži z enim dotikom. Shrani te podatke kot svoj profil."}
       </p>
       <div style={{ display: "flex", gap: 8 }}>
         <a href={`/me?from=game&next=${encodeURIComponent(currentUrl())}`} style={{ ...btn, background: ACCENT, color: BG, textDecoration: "none", display: "inline-flex", alignItems: "center" }}>
