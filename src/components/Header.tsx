@@ -24,6 +24,7 @@ export default function Header() {
   const signedIn = useSignedIn();
   const isMarshal = useIsMarshal();
   const accountLabel = useAccountLabel();
+  const accountInitial = accountLabel ? Array.from(accountLabel.trim())[0]?.toUpperCase() ?? null : null;
   const en = lang === "en";
 
   // Smooth menu open/close
@@ -285,18 +286,21 @@ export default function Header() {
               <Link
                 to="/me"
                 aria-label={signedIn ? (en ? "My account" : "Moj račun") : (en ? "Sign in or create account" : "Prijava ali registracija")}
-                className={`relative inline-flex items-center justify-center transition-opacity hover:opacity-80 ${isHome ? "" : "ml-auto"}`}
-                style={{
-                  width: 44, height: 44, borderRadius: 999, flexShrink: 0,
-                  border: "1px solid rgba(224,176,78,0.6)",
-                  background: signedIn ? "#E0B04E" : "transparent",
-                  color: signedIn ? "#0a0c08" : "#E0B04E",
-                }}
+                className={`relative inline-flex items-center justify-center transition-opacity hover:opacity-80 focus-visible:opacity-80 ${isHome ? "" : "ml-auto"}`}
+                style={{ width: 44, height: 44, flexShrink: 0, color: "#E0B04E" }}
               >
-                <User size={20} strokeWidth={signedIn ? 2.2 : 1.6} fill={signedIn ? "currentColor" : "none"} />
-                {signedIn && (
-                  <span aria-hidden="true" style={{ position: "absolute", top: 4, right: 4, width: 8, height: 8, borderRadius: 999, background: "#9eff3d", border: "1.5px solid #0a0c08" }} />
-                )}
+                <span
+                  aria-hidden="true"
+                  style={{
+                    width: 40, height: 40, borderRadius: 999,
+                    display: "inline-flex", alignItems: "center", justifyContent: "center",
+                    border: "1px solid rgba(224,176,78,0.6)",
+                    background: signedIn && accountInitial ? avatarTint(accountLabel ?? "") : "transparent",
+                    fontFamily: "'Michroma', monospace", fontSize: 13, lineHeight: 1,
+                  }}
+                >
+                  {signedIn && accountInitial ? accountInitial : <User size={20} strokeWidth={1.6} />}
+                </span>
               </Link>
             </div>
 
@@ -485,4 +489,11 @@ export default function Header() {
       )}
     </>
   );
+}
+
+/** Same hue as the attendee avatars on events (AttendeeList), as a thin tint. */
+function avatarTint(s: string) {
+  let h = 0;
+  for (const ch of s) h = (h * 31 + ch.charCodeAt(0)) % 360;
+  return `hsl(${h} 45% 38% / 0.18)`;
 }
