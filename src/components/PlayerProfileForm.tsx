@@ -269,7 +269,7 @@ function DeleteDialog({ en, onClose, onConfirm }: { en: boolean; onClose: () => 
       <div onClick={(e) => e.stopPropagation()} style={{ ...card, maxWidth: 420, width: "100%", borderColor: ERR }}>
         <h2 style={{ ...cardTitle, color: ERR }}>{en ? "Delete my profile" : "Izbriši profil"}</h2>
         <p style={{ fontFamily: "monospace", fontSize: 13, lineHeight: 1.6, marginBottom: 14 }}>
-          {en ? "This removes your player profile and your event answers. It cannot be undone. Type DELETE to confirm." : "S tem izbrišeš igralski profil in odgovore na dogodke. Tega ni mogoče razveljaviti. Za potrditev vpiši DELETE."}
+          {en ? "This removes your profile and your event answers. It cannot be undone. Type DELETE to confirm." : "S tem izbrišeš profil in odgovore na dogodke. Tega ni mogoče razveljaviti. Za potrditev vpiši DELETE."}
         </p>
         <input style={input} value={text} onChange={(e) => setText(e.target.value)} autoCapitalize="characters" aria-label="DELETE" />
         {err && <p style={{ color: ERR, fontSize: 12, marginBottom: 10 }}>{en ? "Could not delete. Please try again." : "Brisanje ni uspelo. Poskusi znova."}</p>}

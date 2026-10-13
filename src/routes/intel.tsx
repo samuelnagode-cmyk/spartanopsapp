@@ -105,11 +105,11 @@ const COPY = {
     back: "Back to home",
     marshals: [
       { eyebrow: "[01] ONE-TIME SETUP", title: "Set up your field", bullets: [
-        "Create a free marshal account with your field's name. Add your city and country, so players can tell fields apart on the Join page.",
+        "Create a free account and register your field with your field's name. Add your city and country, so players can tell fields apart on the Join page.",
         "Set your field password. Players enter it the first time they join, and you can change it whenever you like.",
         "Download the print kit: one QR plate for each sector, plus the respawn plate. Print on A4 or A3, laminate with a matte film, and place the plates at chest height, out of direct sun.",
         "Test every code with your phone before the first game.",
-        "Print your field poster (Marshal account → Player QR). Players scan it to find your field.",
+        "Print your field poster (Field settings → Player QR). Players scan it to find your field.",
       ] },
       { eyebrow: "[02] BEFORE EACH GAME", title: "Create the mission", bullets: [
         "Tap Create Mission and fill in the tabs: Mission, Gamemode, Rules, Extras and Map.",
@@ -161,11 +161,11 @@ const COPY = {
     back: "Nazaj na domov",
     marshals: [
       { eyebrow: "[01] ENKRATNA PRIPRAVA", title: "Pripravi svoj poligon", bullets: [
-        "Ustvari brezplačen račun maršala z imenom svojega poligona. Dodaj mesto in državo, da igralci na strani za vstop ločijo poligone.",
+        "Ustvari brezplačen račun in registriraj poligon z njegovim imenom. Dodaj mesto in državo, da igralci na strani za vstop ločijo poligone.",
         "Nastavi geslo poligona. Igralci ga vnesejo ob prvem vstopu, spremeniš ga lahko kadarkoli.",
         "Prenesi print kit: po eno QR ploščo za vsak sektor in ploščo za respawn. Natisni na A4 ali A3, laminiraj z mat folijo in plošče postavi v višino prsi, stran od neposredne sončne svetlobe.",
         "Pred prvo igro vsako kodo preizkusi s telefonom.",
-        "Natisni plakat svojega poligona (Račun maršala → QR za igralce). Igralci ga skenirajo in najdejo tvoj poligon.",
+        "Natisni plakat svojega poligona (Nastavitve poligona → QR za igralce). Igralci ga skenirajo in najdejo tvoj poligon.",
       ] },
       { eyebrow: "[02] PRED VSAKO IGRO", title: "Ustvari misijo", bullets: [
         "Tapni Ustvari misijo in izpolni zavihke: Misija, Način igre, Pravila, Dodatki in Zemljevid.",

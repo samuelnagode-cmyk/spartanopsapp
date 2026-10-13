@@ -8,6 +8,8 @@ import { playerClaimDevice, playerGamesForget, playerGamesMine, playerGetMine } 
 import { claimDeviceOnce } from "@/components/ProfileOfferCard";
 import { safeNext } from "@/lib/player-validation";
 import { PlayerAuth } from "@/components/PlayerAuth";
+import { FieldCreateCard } from "@/components/FieldCreateCard";
+import type { User } from "@supabase/supabase-js";
 import { MyEvents } from "@/components/events/MyEvents";
 import { PlayerProfileForm, ProfilePreview, type PlayerProfile, type ProfilePrefill } from "@/components/PlayerProfileForm";
 
@@ -19,10 +21,10 @@ export const Route = createFileRoute("/me")({
   }),
   head: () => ({
     meta: [
-      { title: "Player profile — SpartanOps" },
-      { name: "description", content: "Your SpartanOps player profile: callsign, loadout and privacy tools for airsoft events." },
-      { property: "og:title", content: "Player profile — SpartanOps" },
-      { property: "og:description", content: "Your SpartanOps player profile: callsign, loadout and privacy tools for airsoft events." },
+      { title: "My account — SpartanOps" },
+      { name: "description", content: "Your SpartanOps account and profile: callsign, loadout and privacy tools for airsoft events." },
+      { property: "og:title", content: "My account — SpartanOps" },
+      { property: "og:description", content: "Your SpartanOps account and profile: callsign, loadout and privacy tools for airsoft events." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
     ],
@@ -83,7 +85,9 @@ function MePage() {
     return () => sub.subscription.unsubscribe();
   }, [load]);
 
-  const title = en ? "Player profile" : "Igralski profil";
+  const title = en ? "My account" : "Moj račun";
+  const [user, setUser] = useState<User | null>(null);
+  useEffect(() => { supabase.auth.getUser().then(({ data }) => setUser(data.user ?? null)); }, [signedIn]);
 
   return (
     <main style={{ minHeight: "100vh", background: BG, color: INK, padding: "110px 16px 48px" }}>
@@ -107,9 +111,15 @@ function MePage() {
               <Link to="/privacy" style={{ color: ACCENT }}>{en ? "Privacy" : "Zasebnost"}</Link>{"  ·  "}
               <Link to="/terms" style={{ color: ACCENT }}>{en ? "Terms" : "Pogoji"}</Link>
             </p>
+            <p style={{ textAlign: "center", marginTop: 12, fontFamily: "monospace", fontSize: 12, opacity: 0.85 }}>
+              <Link to="/marshal-account" style={{ color: ACCENT }}>{en ? "Do you run an airsoft field? Register your field here →" : "Vodiš airsoft poligon? Registriraj poligon tukaj →"}</Link>
+            </p>
           </div>
         ) : mine && (
           <>
+            {!mine.isMarshal && user && (
+              <FieldCreateCard collapsible user={user} en={en} onCreated={() => setMine({ ...mine, isMarshal: true })} />
+            )}
             {mine.isMarshal && (
               <p style={{ fontFamily: "monospace", fontSize: 12.5, textAlign: "center", marginBottom: 14 }}>
                 {en ? "You also run a field: " : "Vodiš tudi poligon: "}
