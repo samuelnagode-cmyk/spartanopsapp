@@ -4,7 +4,8 @@ import type { SupabaseClient, User } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
 import { useLang } from "@/lib/i18n";
 import { FieldPasswordPanel } from "@/components/FieldPasswordPanel";
-import { ForgotPassword } from "@/components/PlayerAuth";
+import { PlayerAuth } from "@/components/PlayerAuth";
+import { FieldCreateCard } from "@/components/FieldCreateCard";
 import { CountrySearchInput } from "@/components/CountrySearchInput";
 import { LocationInput } from "@/components/events/LocationInput";
 import { ImageUploader } from "@/components/ImageUploader";
@@ -23,10 +24,10 @@ const db = supabase as unknown as SupabaseClient;
 export const Route = createFileRoute("/marshal-account")({
   head: () => ({
     meta: [
-      { title: "Marshal Account — SpartanOps" },
-      { name: "description", content: "Sign up or log in to your SpartanOps field-operator account." },
-      { property: "og:title", content: "Marshal Account — SpartanOps" },
-      { property: "og:description", content: "Sign up or log in to your SpartanOps field-operator account." },
+      { title: "Field account — SpartanOps" },
+      { name: "description", content: "Sign up or log in to your SpartanOps field and run airsoft missions." },
+      { property: "og:title", content: "Field account — SpartanOps" },
+      { property: "og:description", content: "Sign up or log in to your SpartanOps field and run airsoft missions." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
     ],
@@ -66,7 +67,6 @@ function MarshalAccountPage() {
   const en = lang === "en";
   const [user, setUser] = useState<User | null>(null);
   const [ready, setReady] = useState(false);
-  const [mode, setMode] = useState<"signup" | "login">("signup");
 
   useEffect(() => {
     const { data: sub } = supabase.auth.onAuthStateChange((_e, session) => {
@@ -83,144 +83,22 @@ function MarshalAccountPage() {
     <main style={{ minHeight: "100vh", background: BG, color: INK, padding: "110px 16px 48px" }}>
       <div style={{ maxWidth: 420, margin: "0 auto", background: PANEL, border: `1px solid ${ACCENT}44`, padding: "28px 22px" }}>
         <h1 style={{ fontFamily: "'Michroma', monospace", fontSize: 15, letterSpacing: "0.18em", color: INK, textAlign: "center", textTransform: "uppercase", marginBottom: 22 }}>
-          {user ? (en ? "Field settings" : "Nastavitve poligona") : (en ? "Marshal Account" : "Račun maršala")}
+          {user ? (en ? "Field settings" : "Nastavitve poligona") : (en ? "Register your field" : "Registracija poligona")}
         </h1>
         {!ready ? (
           <p style={{ textAlign: "center", fontFamily: "monospace", fontSize: 12, opacity: 0.7 }}>…</p>
         ) : user ? (
           <LoggedIn user={user} en={en} />
-        ) : mode === "signup" ? (
-          <SignUpForm en={en} onSwitch={() => setMode("login")} />
         ) : (
-          <LoginForm en={en} onSwitch={() => setMode("signup")} />
+          <>
+            <PlayerAuth asMarshal initialTab="signup" />
+            <p style={{ textAlign: "center", marginTop: 18, fontFamily: "monospace", fontSize: 12 }}>
+              <Link to="/me" style={{ color: ACCENT }}>{en ? "Only want to join events? Create a normal account →" : "Želiš samo na dogodke? Ustvari navaden račun →"}</Link>
+            </p>
+          </>
         )}
       </div>
     </main>
-  );
-}
-
-function SignUpForm({ en, onSwitch }: { en: boolean; onSwitch: () => void }) {
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [confirm, setConfirm] = useState("");
-  const [showPassword, setShowPassword] = useState(false);
-  const [business, setBusiness] = useState("");
-  const [err, setErr] = useState<string | null>(null);
-  const [msg, setMsg] = useState<string | null>(null);
-  const [busy, setBusy] = useState(false);
-
-  const submit = async (e: FormEvent) => {
-    e.preventDefault();
-    setErr(null); setMsg(null);
-    if (password !== confirm) { setErr(en ? "Passwords do not match." : "Gesli se ne ujemata."); return; }
-    if (!business.trim()) { setErr(en ? "Business / field name is required." : "Ime podjetja / poligona je obvezno."); return; }
-    setBusy(true);
-    try {
-      const { data, error } = await supabase.auth.signUp({
-        email: email.trim(),
-        password,
-        options: {
-          emailRedirectTo: `${window.location.origin}/marshal-account`,
-          data: { business_name: business.trim() },
-        },
-      });
-      if (error) { setErr(error.message); return; }
-      if (data.session && data.user) {
-        const { error: insErr } = await db
-          .from("spartanops_accounts")
-          .insert({ id: data.user.id, business_name: business.trim() });
-        if (insErr) { setErr(insErr.message); return; }
-        setMsg(en ? "Account created." : "Račun ustvarjen.");
-      } else {
-        setMsg(en
-          ? "Account created. Check your email and click the confirmation link before logging in."
-          : "Račun ustvarjen. Preveri e-pošto in klikni potrditveno povezavo, preden se prijaviš.");
-      }
-    } finally {
-      setBusy(false);
-    }
-  };
-
-  return (
-    <form onSubmit={submit}>
-      <label style={labelStyle}>Email</label>
-      <input style={inputStyle} type="email" required autoComplete="email" value={email} onChange={(e) => setEmail(e.target.value)} />
-      <label style={labelStyle}>{en ? "Password" : "Geslo"}</label>
-      <input style={{ ...inputStyle, marginBottom: 6 }} type={showPassword ? "text" : "password"} required autoComplete="new-password" value={password} onChange={(e) => setPassword(e.target.value)} />
-      <label style={labelStyle}>{en ? "Confirm password" : "Potrdi geslo"}</label>
-      <input style={{ ...inputStyle, marginBottom: 6 }} type={showPassword ? "text" : "password"} required autoComplete="new-password" value={confirm} onChange={(e) => setConfirm(e.target.value)} />
-      <PasswordVisibilityToggle en={en} visible={showPassword} onToggle={() => setShowPassword((value) => !value)} />
-      <label style={labelStyle}>{en ? "Business / field name" : "Ime podjetja / poligona"}</label>
-      <input style={inputStyle} type="text" required maxLength={120} value={business} onChange={(e) => setBusiness(e.target.value)} />
-      {err && <p style={{ color: ERR, fontSize: 12, marginBottom: 10, textAlign: "center" }}>{err}</p>}
-      {msg && <p style={{ color: OK, fontSize: 12, marginBottom: 10, textAlign: "center", fontFamily: "monospace" }}>{msg}</p>}
-      <button type="submit" disabled={busy} style={{ ...btnStyle, opacity: busy ? 0.6 : 1 }}>
-        {en ? "Sign up" : "Registracija"}
-      </button>
-      <button type="button" onClick={onSwitch} style={linkBtn}>
-        {en ? "Already have an account? Log in" : "Že imaš račun? Prijava"}
-      </button>
-    </form>
-  );
-}
-
-function LoginForm({ en, onSwitch }: { en: boolean; onSwitch: () => void }) {
-  const navigate = useNavigate();
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [showPassword, setShowPassword] = useState(false);
-  const [err, setErr] = useState<string | null>(null);
-  const [busy, setBusy] = useState(false);
-
-  const submit = async (e: FormEvent) => {
-    e.preventDefault();
-    setErr(null);
-    setBusy(true);
-    try {
-      const { data, error } = await supabase.auth.signInWithPassword({ email: email.trim(), password });
-      if (error) { setErr(error.message); return; }
-      if (data.user) {
-        const { data: acct } = await db
-          .from("spartanops_accounts")
-          .select("field_password_changed_at")
-          .eq("id", data.user.id)
-          .maybeSingle();
-        if (acct?.field_password_changed_at) navigate({ to: "/admin-pregled" });
-      }
-    } finally {
-      setBusy(false);
-    }
-  };
-
-  return (
-    <form onSubmit={submit}>
-      <label style={labelStyle}>Email</label>
-      <input style={inputStyle} type="email" required autoComplete="email" value={email} onChange={(e) => setEmail(e.target.value)} />
-      <label style={labelStyle}>{en ? "Password" : "Geslo"}</label>
-      <input style={{ ...inputStyle, marginBottom: 6 }} type={showPassword ? "text" : "password"} required autoComplete="current-password" value={password} onChange={(e) => setPassword(e.target.value)} />
-      <PasswordVisibilityToggle en={en} visible={showPassword} onToggle={() => setShowPassword((value) => !value)} />
-      {err && <p style={{ color: ERR, fontSize: 12, marginBottom: 10, textAlign: "center" }}>{err}</p>}
-      <button type="submit" disabled={busy} style={{ ...btnStyle, opacity: busy ? 0.6 : 1 }}>
-        {en ? "Log in" : "Prijava"}
-      </button>
-      <button type="button" onClick={onSwitch} style={linkBtn}>
-        {en ? "No account yet? Sign up" : "Še nimaš računa? Registracija"}
-      </button>
-      <ForgotPassword en={en} initialEmail={email} />
-    </form>
-  );
-}
-
-function PasswordVisibilityToggle({ en, visible, onToggle }: { en: boolean; visible: boolean; onToggle: () => void }) {
-  return (
-    <button
-      type="button"
-      onClick={onToggle}
-      aria-pressed={visible}
-      style={{ ...linkBtn, marginTop: 0, marginBottom: 14, textAlign: "left", width: "auto" }}
-    >
-      {visible ? (en ? "Hide password" : "Skrij geslo") : (en ? "See password" : "Pokaži geslo")}
-    </button>
   );
 }
 
@@ -317,7 +195,7 @@ function LoggedIn({ user, en }: { user: User; en: boolean }) {
   const section: CSSProperties = { borderTop: `1px solid ${ACCENT}33`, paddingTop: 18, marginTop: 22 };
   const sectionTitle: CSSProperties = { fontFamily: "'Michroma', monospace", fontSize: 11, letterSpacing: "0.18em", color: INK, textTransform: "uppercase", marginBottom: 12 };
 
-  if (business === "") return <NoFieldCard user={user} en={en} onCreated={(name) => { setBusiness(name); setListed(true); }} />;
+  if (business === "") return <FieldCreateCard user={user} en={en} onCreated={(name) => { setBusiness(name); setListed(true); }} />;
 
   return (
     <div>
@@ -541,34 +419,5 @@ function MissionsBlock({ user, en }: { user: User; en: boolean }) {
         </ul>
       )}
     </div>
-  );
-}
-
-/** A login with no field row (e.g. a player account): offer to create a field, never show empty settings. */
-function NoFieldCard({ user, en, onCreated }: { user: User; en: boolean; onCreated: (name: string) => void }) {
-  const [name, setName] = useState("");
-  const [busy, setBusy] = useState(false);
-  const [err, setErr] = useState<string | null>(null);
-  const create = async (e: FormEvent) => {
-    e.preventDefault();
-    const n = name.trim();
-    if (!n) { setErr(en ? "Business / field name is required." : "Ime podjetja / poligona je obvezno."); return; }
-    setBusy(true); setErr(null);
-    const { error } = await db.from("spartanops_accounts").insert({ id: user.id, business_name: n });
-    setBusy(false);
-    if (error) setErr(error.message); else onCreated(n);
-  };
-  return (
-    <form onSubmit={create}>
-      <p style={{ fontFamily: "'Michroma', monospace", fontSize: 11, letterSpacing: "0.16em", textTransform: "uppercase", marginBottom: 10 }}>
-        {en ? "This login has no field yet" : "Ta prijava še nima poligona"}
-      </p>
-      <p style={{ fontFamily: "monospace", fontSize: 12, opacity: 0.8, lineHeight: 1.6, marginBottom: 14 }}>{user.email}</p>
-      <label style={labelStyle}>{en ? "Business / field name" : "Ime podjetja / poligona"}</label>
-      <input style={inputStyle} maxLength={120} value={name} onChange={(e) => setName(e.target.value)} />
-      {err && <p style={{ color: ERR, fontSize: 12, marginBottom: 10, textAlign: "center" }}>{err}</p>}
-      <button type="submit" disabled={busy} style={{ ...btnStyle, opacity: busy ? 0.6 : 1 }}>{en ? "Create my field" : "Ustvari poligon"}</button>
-      <Link to="/me" style={{ ...linkBtn, display: "block", textAlign: "center" }}>{en ? "I am a player →" : "Sem igralec →"}</Link>
-    </form>
   );
 }

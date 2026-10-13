@@ -56,9 +56,12 @@ function ResetPasswordPage() {
     const { error } = await supabase.auth.updateUser({ password: pw });
     if (error) { setBusy(false); setErr(error.message); return; }
     const { data } = await supabase.auth.getSession();
-    let hasProfile = false;
-    try { hasProfile = !!(await getMine({ data: { accessToken: data.session?.access_token ?? "" } })).profile; } catch { /* fall through */ }
-    navigate({ to: hasProfile ? "/me" : "/marshal-account" });
+    let fieldOnly = false;
+    try {
+      const r = await getMine({ data: { accessToken: data.session?.access_token ?? "" } });
+      fieldOnly = r.isMarshal && !r.profile;
+    } catch { /* fall through */ }
+    navigate({ to: fieldOnly ? "/marshal-account" : "/me" });
   };
 
   return (

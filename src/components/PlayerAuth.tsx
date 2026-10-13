@@ -1,4 +1,6 @@
 import { useState, type CSSProperties, type FormEvent } from "react";
+import { useNavigate } from "@tanstack/react-router";
+import type { SupabaseClient } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
 import { useLang } from "@/lib/i18n";
 import { safeNext } from "@/lib/player-validation";
@@ -69,8 +71,10 @@ export function ForgotPassword({ en, initialEmail = "" }: { en: boolean; initial
   );
 }
 
-export function PlayerAuth({ next, onDone, initialTab = "signin", rsvp }: { next?: string | null; onDone?: () => void; initialTab?: "signin" | "signup"; rsvp?: "going" | "maybe" }) {
+export function PlayerAuth({ next, onDone, initialTab = "signin", rsvp, asMarshal = false }: { next?: string | null; onDone?: () => void; initialTab?: "signin" | "signup"; rsvp?: "going" | "maybe"; asMarshal?: boolean }) {
   const { lang } = useLang();
+  const navigate = useNavigate();
+  const [business, setBusiness] = useState("");
   const en = lang === "en";
   const [tab, setTab] = useState<"signin" | "signup">(initialTab);
   const [email, setEmail] = useState("");
@@ -87,9 +91,30 @@ export function PlayerAuth({ next, onDone, initialTab = "signin", rsvp }: { next
     setBusy(true);
     try {
       if (tab === "signin") {
-        const { error } = await supabase.auth.signInWithPassword({ email: email.trim(), password });
+        const { data, error } = await supabase.auth.signInWithPassword({ email: email.trim(), password });
         if (error) { setErr(error.message); return; }
+        if (asMarshal && data.user) {
+          const { data: acct } = await (supabase as unknown as SupabaseClient)
+            .from("spartanops_accounts").select("field_password_changed_at").eq("id", data.user.id).maybeSingle();
+          if (acct?.field_password_changed_at) navigate({ to: "/admin-pregled" });
+        }
         onDone?.();
+      } else if (asMarshal) {
+        const b = business.trim();
+        if (!b) { setErr(en ? "Field / club name is required." : "Ime poligona / kluba je obvezno."); return; }
+        const { data, error } = await supabase.auth.signUp({
+          email: email.trim(), password,
+          options: { emailRedirectTo: `${window.location.origin}/marshal-account`, data: { business_name: b } },
+        });
+        if (error) { setErr(error.message); return; }
+        if (data.session && data.user) {
+          const { error: insErr } = await (supabase as unknown as SupabaseClient)
+            .from("spartanops_accounts").insert({ id: data.user.id, business_name: b });
+          if (insErr) { setErr(insErr.message); return; }
+          onDone?.();
+        } else setMsg(en
+          ? "Account created. Check your email and click the confirmation link before signing in."
+          : "Račun ustvarjen. Preveri e-pošto in klikni potrditveno povezavo, preden se prijaviš.");
       } else {
         const n = safeNext(next);
         const qs = new URLSearchParams();
@@ -133,6 +158,12 @@ export function PlayerAuth({ next, onDone, initialTab = "signin", rsvp }: { next
         <button type="button" onClick={() => setShow((v) => !v)} aria-pressed={show} style={{ ...linkBtn, marginBottom: 14 }}>
           {show ? (en ? "Hide password" : "Skrij geslo") : (en ? "See password" : "Pokaži geslo")}
         </button>
+        {asMarshal && tab === "signup" && (
+          <>
+            <label style={labelStyle}>{en ? "Field / club name" : "Ime poligona / kluba"}</label>
+            <input style={inputStyle} type="text" required maxLength={120} value={business} onChange={(e) => setBusiness(e.target.value)} />
+          </>
+        )}
         {err && <p style={{ color: ERR, fontSize: 12, marginBottom: 10, textAlign: "center" }}>{err}</p>}
         {msg && <p style={{ color: OK, fontSize: 12, marginBottom: 10, textAlign: "center", fontFamily: "monospace" }}>{msg}</p>}
         <button type="submit" disabled={busy} style={{ ...btnStyle, opacity: busy ? 0.6 : 1 }}>
