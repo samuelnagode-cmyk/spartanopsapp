@@ -27,7 +27,7 @@ export const AVATAR_ICONS = [
 export const AVATAR_COLORS = [
   { id: "olive", hex: "#9DAA5C", en: "Olive", sl: "Olivna" },
   { id: "gold", hex: "#E0B04E", en: "Gold", sl: "Zlata" },
-  { id: "steel", hex: "#7FA3C7", en: "Steel blue", sl: "Jeklено modra" },
+  { id: "steel", hex: "#7FA3C7", en: "Steel blue", sl: "Jekleno modra" },
   { id: "sand", hex: "#D2BF94", en: "Sand", sl: "Peščena" },
   { id: "rust", hex: "#D4825A", en: "Rust", sl: "Rja" },
   { id: "slate", hex: "#9AA3AE", en: "Slate", sl: "Skrilasta" },
