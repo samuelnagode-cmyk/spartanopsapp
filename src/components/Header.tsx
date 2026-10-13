@@ -1,6 +1,8 @@
 import { Link, useLocation } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
-import { Menu, X, ChevronLeft, ChevronDown, Globe } from "lucide-react";
+import { Menu, X, ChevronLeft, ChevronDown, Globe, User } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import { useSignedIn, useIsMarshal, useAccountLabel } from "@/lib/use-signed-in";
 import logoImg from "@/assets/logo-glamping.png";
 const AIRSOFT_LOGO = "https://res.cloudinary.com/dfifiytid/image/upload/v1783765381/SpartanOps%20app%20v1.0/LOGO/SpartanOps_app_LOGO_NO_BACKROUND-05.webp";
 import { useT, useLang, type Lang } from "@/lib/i18n";
@@ -19,6 +21,10 @@ export default function Header() {
   const logoTo = "/spartanops";
   const langRef = useRef<HTMLDivElement>(null);
   const menuRef = useRef<HTMLDivElement>(null);
+  const signedIn = useSignedIn();
+  const isMarshal = useIsMarshal();
+  const accountLabel = useAccountLabel();
+  const en = lang === "en";
 
   // Smooth menu open/close
   useEffect(() => {
@@ -276,23 +282,22 @@ export default function Header() {
                   <span className="hidden sm:inline">{t("nav.back")}</span>
                 </button>
               )}
-              <span
-                className={`font-mono uppercase select-none ${isHome ? "" : "ml-auto"}`}
+              <Link
+                to="/me"
+                aria-label={signedIn ? (en ? "My account" : "Moj račun") : (en ? "Sign in or create account" : "Prijava ali registracija")}
+                className={`relative inline-flex items-center justify-center transition-opacity hover:opacity-80 ${isHome ? "" : "ml-auto"}`}
                 style={{
-                  fontSize: 10,
-                  letterSpacing: "0.28em",
-                  fontWeight: 700,
-                  color: "#E0B04E",
-                  padding: "4px 8px 3px",
-                  borderRadius: 3,
-                  background: "linear-gradient(135deg, rgba(248,216,140,0.14) 0%, rgba(224,176,78,0.10) 100%)",
-                  border: "1px solid rgba(224,176,78,0.45)",
-                  boxShadow: "0 0 14px -4px rgba(224,176,78,0.35), inset 0 1px 0 rgba(255,255,255,0.12)",
-                  textShadow: "0 0 10px rgba(224,176,78,0.35)",
+                  width: 44, height: 44, borderRadius: 999, flexShrink: 0,
+                  border: "1px solid rgba(224,176,78,0.6)",
+                  background: signedIn ? "#E0B04E" : "transparent",
+                  color: signedIn ? "#0a0c08" : "#E0B04E",
                 }}
               >
-                BETA
-              </span>
+                <User size={20} strokeWidth={signedIn ? 2.2 : 1.6} fill={signedIn ? "currentColor" : "none"} />
+                {signedIn && (
+                  <span aria-hidden="true" style={{ position: "absolute", top: 4, right: 4, width: 8, height: 8, borderRadius: 999, background: "#9eff3d", border: "1.5px solid #0a0c08" }} />
+                )}
+              </Link>
             </div>
 
             <div className="flex items-center justify-center">
@@ -311,6 +316,13 @@ export default function Header() {
                   alt="SpartanOps"
                   className="h-10 sm:h-12 md:h-14 w-auto object-contain block"
                 />
+                <span
+                  aria-hidden="true"
+                  className="absolute select-none pointer-events-none"
+                  style={{ top: -2, left: "100%", marginLeft: 2, fontFamily: "'Michroma', monospace", fontSize: 8, letterSpacing: "0.2em", color: "#E0B04E", lineHeight: 1 }}
+                >
+                  BETA
+                </span>
               </Link>
             </div>
 
@@ -386,16 +398,18 @@ export default function Header() {
           >
             <nav className="px-6 py-8 max-w-2xl mx-auto space-y-6">
               {([
-                { label: lang === "en" ? "HOME" : "DOMOV", to: "/spartanops" as const },
-                { label: lang === "en" ? "JOIN A GAME" : "VSTOPI V IGRO", to: "/join" as const },
-                { label: lang === "en" ? "EVENTS" : "DOGODKI", to: "/events" as const },
-                { label: lang === "en" ? "PLAYER PROFILE" : "IGRALSKI PROFIL", to: "/me" as const },
-                { label: lang === "en" ? "MARSHAL COMMAND CENTER" : "MARSHAL COMMAND CENTER", to: "/admin-pregled" as const },
-                { label: lang === "en" ? "SYSTEM UPDATES" : "SISTEMSKE POSODOBITVE", to: "/updates" as const },
-                { label: lang === "en" ? "PRICING" : "CENIK", to: "/spartanops" as const, hash: "pricing" },
-                { label: lang === "en" ? "PRINT" : "TISK", to: "/print" as const },
-                { label: lang === "en" ? "MISSION ARCHIVE" : "ARHIV MISIJ", to: "/archive" as const },
-              ]).map((link) => (
+                { label: en ? "HOME" : "DOMOV", to: "/spartanops" as const },
+                { label: en ? "JOIN A GAME" : "VSTOPI V IGRO", to: "/join" as const },
+                { label: en ? "EVENTS" : "DOGODKI", to: "/events" as const },
+                ...(signedIn
+                  ? [{ label: en ? "MY ACCOUNT" : "MOJ RAČUN", to: "/me" as const, sub: accountLabel ?? undefined }]
+                  : [{ label: en ? "SIGN IN / CREATE ACCOUNT" : "PRIJAVA / REGISTRACIJA", to: "/me" as const, gold: true }]),
+                ...(signedIn && isMarshal ? [{ label: "MARSHAL COMMAND CENTER", to: "/admin-pregled" as const }] : []),
+                { label: en ? "SYSTEM UPDATES" : "SISTEMSKE POSODOBITVE", to: "/updates" as const },
+                { label: en ? "PRICING" : "CENIK", to: "/spartanops" as const, hash: "pricing" },
+                { label: en ? "PRINT" : "TISK", to: "/print" as const },
+                { label: en ? "MISSION ARCHIVE" : "ARHIV MISIJ", to: "/archive" as const },
+              ] as Array<{ label: string; to: string; hash?: string; sub?: string; gold?: boolean }>).map((link) => (
                 <Link
                   key={`${link.label}`}
                   to={link.to as any}
@@ -448,11 +462,24 @@ export default function Header() {
                       className="group-hover:text-[#E0B04E]"
                       style={{ transition: "color 0.2s ease" }}
                     >
-                      {link.label}
+                      <span style={link.gold ? { color: "#E0B04E", borderBottom: "1px solid rgba(224,176,78,0.6)", paddingBottom: 2 } : undefined}>{link.label}</span>
+                      {link.sub && (
+                        <span style={{ marginLeft: 10, fontFamily: "monospace", fontSize: 11, letterSpacing: "0.04em", textTransform: "none", color: "rgba(236,227,196,0.6)" }}>{link.sub}</span>
+                      )}
                     </span>
                   </span>
                 </Link>
               ))}
+              {signedIn && (
+                <button
+                  type="button"
+                  onClick={async () => { setOpen(false); await supabase.auth.signOut(); }}
+                  className="block hover:opacity-100"
+                  style={{ fontFamily: "'Michroma', monospace", fontSize: 10, letterSpacing: "0.18em", color: "rgba(236,227,196,0.6)", background: "transparent", border: "none", padding: 0, cursor: "pointer", textTransform: "uppercase" }}
+                >
+                  {en ? "SIGN OUT" : "ODJAVA"}
+                </button>
+              )}
             </nav>
           </div>
         </div>

@@ -1162,7 +1162,7 @@ function AccountMissionsSection({ en, onOpenMission, onCreateInEvent }: { en: bo
       <div style={{ maxWidth: 480, margin: "0 auto 28px", padding: "10px 12px", border: `1px dashed ${ACCENT}55`, fontFamily: "monospace", fontSize: 12, color: MUTED, textAlign: "center" }}>
         {en ? "Log in to see your missions from any device — " : "Prijavi se in svoje misije vidi na vsaki napravi — "}
         <Link to="/marshal-account" style={{ color: ACCENT, textDecoration: "underline" }}>
-          {en ? "Field settings" : "Nastavitve poligona"}
+          {en ? "Sign in" : "Prijava"}
         </Link>
       </div>
     );
