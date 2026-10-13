@@ -103,3 +103,22 @@ describe("car pool board", () => {
     expect(g[1]).toMatchObject({ town: "Celje", match: false });
   });
 });
+
+describe("avatar follows callsign visibility", () => {
+  const withAvatar = { ...profile, avatar_icon: "wolf", avatar_color: "teal" };
+  it("public / signed-out viewer gets no row, so no avatar", () => {
+    expect(v(publicSignedOut, row(), withAvatar)).toBeNull();
+    expect(v(signedNoProfile, row(), withAvatar)).toBeNull();
+  });
+  it("signed-in player with a profile sees it", () => {
+    expect(v(adult, row(), withAvatar)).toMatchObject({ avatar_icon: "wolf", avatar_color: "teal" });
+  });
+  it("a minor's avatar is shown like any other", () => {
+    const minorProfile = { ...withAvatar, age_group: "16_17" as const, last_name: null, phone: null };
+    expect(v(adult, row(), minorProfile)).toMatchObject({ avatar_icon: "wolf", avatar_color: "teal" });
+  });
+  it("ride entries carry the avatar", () => {
+    const view = v(adult, row(), withAvatar)!;
+    expect(buildRides([view])[0].drivers[0]).toMatchObject({ avatar_icon: "wolf", avatar_color: "teal" });
+  });
+});

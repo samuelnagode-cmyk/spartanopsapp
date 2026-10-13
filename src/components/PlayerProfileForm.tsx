@@ -1,9 +1,11 @@
-import { useState, type CSSProperties, type ReactNode } from "react";
+import { useState, type CSSProperties, type KeyboardEvent as ReactKeyboardEvent, type ReactNode } from "react";
 import { Link } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { supabase } from "@/integrations/supabase/client";
 import { EXPERIENCE_LEVELS, ExperienceBadge, type ExperienceLevel } from "@/components/ExperienceBadge";
 import { playerDeleteMine, playerExportMine, playerSaveMine } from "@/lib/player.functions";
+import { PlayerAvatar, AvatarGlyph } from "@/components/PlayerAvatar";
+import { AVATAR_COLORS, AVATAR_ICONS, avatarHex } from "@/lib/avatars";
 import { OPERATOR_TYPES, normalizePhone, validatePlayer, type AgeChoice } from "@/lib/player-validation";
 
 const BG = "#0b0d09";
@@ -27,6 +29,7 @@ export type PlayerProfile = {
   age_group: "16_17" | "18_plus"; phone: string | null; club: string | null; experience_level: string;
   operator_type: string | null; primary_weapon: string | null; secondary_weapon: string | null;
   sidearm: string | null; gear_notes: string | null; link_games?: boolean;
+  avatar_icon?: string | null; avatar_color?: string | null;
 };
 
 const ERRORS: Record<string, [string, string]> = {
@@ -36,6 +39,7 @@ const ERRORS: Record<string, [string, string]> = {
   "validation:phone": ["Phone number is not valid.", "Telefonska številka ni veljavna."],
   "validation:age_group": ["Choose your age group.", "Izberi starostno skupino."],
   "validation:under_16": ["Profiles are for players aged 16 and over.", "Profili so za igralce od 16. leta naprej."],
+  "validation:avatar": ["Choose an avatar from the list, or No avatar.", "Izberi avatar s seznama ali Brez avatarja."],
   "validation:privacy": ["Please confirm the Privacy notice and the Terms.", "Potrdi obvestilo o zasebnosti in pogoje."],
   login_required: ["Please sign in again.", "Ponovno se prijavi."],
 };
@@ -58,7 +62,10 @@ export function ProfilePreview({ p, en }: { p: PlayerProfile; en: boolean }) {
   return (
     <section style={{ ...card, borderColor: ACCENT }}>
       <p style={{ ...label, marginBottom: 12 }}>{en ? "How other players see you" : "Kako te vidijo drugi igralci"}</p>
-      <p style={{ fontFamily: "'Michroma', monospace", fontSize: 22, letterSpacing: "0.08em", color: INK, wordBreak: "break-word" }}>{p.nickname}</p>
+      <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+        <PlayerAvatar icon={p.avatar_icon} color={p.avatar_color} name={p.nickname} size={56} ink={INK} />
+        <p style={{ fontFamily: "'Michroma', monospace", fontSize: 22, letterSpacing: "0.08em", color: INK, wordBreak: "break-word", minWidth: 0 }}>{p.nickname}</p>
+      </div>
       <p style={{ fontFamily: "monospace", fontSize: 14, marginTop: 6 }}>{p.first_name}{surname}{p.club ? ` · ${p.club}` : ""}</p>
       <div style={{ display: "flex", alignItems: "center", gap: 10, marginTop: 12, flexWrap: "wrap" }}>
         <ExperienceBadge level={p.experience_level as ExperienceLevel} size={16} color={ACCENT} />
@@ -84,6 +91,7 @@ export function PlayerProfileForm({ en, initial, needsConsent, onSaved, onDelete
     operator_type: initial?.operator_type ?? prefill?.operator_type ?? "", primary_weapon: initial?.primary_weapon ?? "",
     secondary_weapon: initial?.secondary_weapon ?? "", sidearm: initial?.sidearm ?? "", gear_notes: initial?.gear_notes ?? "",
     link_games: initial?.link_games ?? true,
+    avatar_icon: initial?.avatar_icon ?? null as string | null, avatar_color: initial?.avatar_color ?? null as string | null,
   });
   const [consent, setConsent] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -99,6 +107,7 @@ export function PlayerProfileForm({ en, initial, needsConsent, onSaved, onDelete
       nickname: f.nickname, first_name: f.first_name, age_group: f.age, club: f.club, experience_level: f.experience_level,
       operator_type: f.operator_type || null, primary_weapon: f.primary_weapon, secondary_weapon: f.secondary_weapon,
       sidearm: f.sidearm, gear_notes: f.gear_notes, link_games: f.link_games,
+      avatar_icon: f.avatar_icon, avatar_color: f.avatar_color,
       ...(adult ? { last_name: f.last_name, phone: f.phone, show_full_last_name: f.show_full_last_name } : {}),
     };
     const v = validatePlayer(profile);
@@ -109,6 +118,7 @@ export function PlayerProfileForm({ en, initial, needsConsent, onSaved, onDelete
       const res = await save({ data: { accessToken: await token(), profile, privacyAccepted: consent } });
       setStatus({ ok: true, text: en ? "Saved." : "Shranjeno." });
       onSaved(res.profile as PlayerProfile);
+      window.dispatchEvent(new Event("spartanops:profile-saved"));
     } catch (e) {
       setStatus({ ok: false, text: errText(String((e as Error)?.message ?? ""), en) });
     } finally { setBusy(false); }
@@ -161,6 +171,9 @@ export function PlayerProfileForm({ en, initial, needsConsent, onSaved, onDelete
           </>
         )}
       </Card>
+
+      <AvatarPicker en={en} icon={f.avatar_icon} color={f.avatar_color} name={f.nickname || "?"}
+        onChange={(icon, color) => setF((s) => ({ ...s, avatar_icon: icon, avatar_color: color }))} />
 
       <Card title={en ? "Loadout" : "Oprema"}>
         <p style={label}>{en ? "Operator type" : "Tip operaterja"}</p>
@@ -282,5 +295,68 @@ function DeleteDialog({ en, onClose, onConfirm }: { en: boolean; onClose: () => 
         </div>
       </div>
     </div>
+  );
+}
+
+function AvatarPicker({ en, icon, color, name, onChange }: {
+  en: boolean; icon: string | null; color: string | null; name: string; onChange: (icon: string | null, color: string | null) => void;
+}) {
+  const [open, setOpen] = useState(!!icon);
+  const tint = avatarHex(color) ?? ACCENT;
+  const idx = Math.max(0, AVATAR_ICONS.findIndex((i) => i.id === icon));
+  const pick = (id: string) => onChange(id, color ?? "gold");
+  const onKey = (e: ReactKeyboardEvent<HTMLDivElement>) => {
+    const cols = window.matchMedia("(min-width: 1024px)").matches ? 5 : 4;
+    const d = { ArrowRight: 1, ArrowLeft: -1, ArrowDown: cols, ArrowUp: -cols }[e.key];
+    if (d === undefined) return;
+    e.preventDefault();
+    const n = (idx + d + AVATAR_ICONS.length) % AVATAR_ICONS.length;
+    pick(AVATAR_ICONS[n].id);
+    (e.currentTarget.querySelectorAll<HTMLButtonElement>("[role=radio]")[n])?.focus();
+  };
+  return (
+    <section style={card}>
+      <h2 style={cardTitle}>Avatar</h2>
+      {!open ? (
+        <button type="button" onClick={() => setOpen(true)} style={{ background: "none", border: "none", color: ACCENT, fontFamily: "monospace", fontSize: 13, padding: "10px 0", minHeight: 44, cursor: "pointer", textAlign: "left" }}>
+          {en ? "No avatar. Pick one (optional)" : "Brez avatarja. Izberi ga (neobvezno)"}
+        </button>
+      ) : (
+        <>
+          <div style={{ display: "flex", alignItems: "center", gap: 14, marginBottom: 14 }}>
+            <PlayerAvatar icon={icon} color={color} name={name} size={72} labelled lang={en ? "en" : "sl"} ink={INK} />
+            <button type="button" onClick={() => onChange(null, null)} style={{ ...outlineBtn, width: "auto", padding: "10px 14px", minHeight: 44 }}>
+              {en ? "No avatar" : "Brez avatarja"}
+            </button>
+          </div>
+          <div role="radiogroup" aria-label={en ? "Avatar icon" : "Ikona avatarja"} onKeyDown={onKey} className="grid grid-cols-4 lg:grid-cols-5" style={{ gap: 8, marginBottom: 14 }}>
+            {AVATAR_ICONS.map((i, n) => {
+              const on = i.id === icon;
+              return (
+                <button key={i.id} type="button" role="radio" aria-checked={on} aria-label={en ? i.en : i.sl}
+                  tabIndex={n === idx ? 0 : -1} onClick={() => pick(i.id)} className="focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"
+                  style={{ minHeight: 52, minWidth: 48, display: "flex", alignItems: "center", justifyContent: "center", background: on ? `${tint}2E` : "rgba(0,0,0,0.3)", border: `1px solid ${on ? tint : `${tint}33`}`, color: tint, cursor: "pointer", outlineColor: ACCENT }}>
+                  <AvatarGlyph icon={i.id} size={26} />
+                </button>
+              );
+            })}
+          </div>
+          <div role="radiogroup" aria-label={en ? "Avatar colour" : "Barva avatarja"} style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+            {AVATAR_COLORS.map((c) => {
+              const on = c.id === color;
+              return (
+                <button key={c.id} type="button" role="radio" aria-checked={on} aria-label={en ? c.en : c.sl}
+                  onClick={() => onChange(icon ?? AVATAR_ICONS[0].id, c.id)} className="focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"
+                  style={{ width: 44, height: 44, display: "flex", alignItems: "center", justifyContent: "center", background: "transparent", border: "none", cursor: "pointer", padding: 0, outlineColor: ACCENT }}>
+                  <span style={{ width: 30, height: 30, borderRadius: "50%", background: c.hex, boxShadow: on ? `0 0 0 2px ${BG}, 0 0 0 4px ${c.hex}` : "none", display: "flex", alignItems: "center", justifyContent: "center", color: BG, fontSize: 16, fontWeight: 700 }}>
+                    {on ? "✓" : ""}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+        </>
+      )}
+    </section>
   );
 }

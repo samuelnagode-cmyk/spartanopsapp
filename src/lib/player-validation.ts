@@ -1,3 +1,4 @@
+import { isAvatarColor, isAvatarIcon, type AvatarColorId, type AvatarIconId } from "./avatars";
 /** Shared player-profile rules: used by the form and the server, so they cannot drift. */
 export const PRIVACY_VERSION = "2026-10b";
 
@@ -27,6 +28,7 @@ export type PlayerInput = {
   nickname?: unknown; first_name?: unknown; last_name?: unknown; show_full_last_name?: unknown;
   age_group?: unknown; phone?: unknown; club?: unknown; experience_level?: unknown; operator_type?: unknown;
   primary_weapon?: unknown; secondary_weapon?: unknown; sidearm?: unknown; gear_notes?: unknown;
+  avatar_icon?: unknown; avatar_color?: unknown;
 };
 
 export type PlayerProfileData = {
@@ -34,6 +36,7 @@ export type PlayerProfileData = {
   age_group: AgeGroup; phone: string | null; club: string | null; experience_level: (typeof EXPERIENCE_VALUES)[number];
   operator_type: (typeof OPERATOR_TYPES)[number] | null; primary_weapon: string | null;
   secondary_weapon: string | null; sidearm: string | null; gear_notes: string | null;
+  avatar_icon: AvatarIconId | null; avatar_color: AvatarColorId | null;
 };
 
 /** Returns cleaned data or an error code like "validation:nickname". */
@@ -65,6 +68,10 @@ export function validatePlayer(input: PlayerInput): { ok: true; data: PlayerProf
   const op = input.operator_type == null || input.operator_type === "" ? null : input.operator_type;
   if (op !== null && !OPERATOR_TYPES.includes(op as never)) return { ok: false, error: "validation:operator_type" };
   const opt = (v: unknown, max: number) => cleanText(v, max) || null;
+  const ai = input.avatar_icon ?? null, ac = input.avatar_color ?? null;
+  if (ai !== null || ac !== null) {
+    if (!isAvatarIcon(ai) || !isAvatarColor(ac)) return { ok: false, error: "validation:avatar" };
+  }
 
   return {
     ok: true,
@@ -75,6 +82,7 @@ export function validatePlayer(input: PlayerInput): { ok: true; data: PlayerProf
       operator_type: op as PlayerProfileData["operator_type"],
       primary_weapon: opt(input.primary_weapon, 60), secondary_weapon: opt(input.secondary_weapon, 60),
       sidearm: opt(input.sidearm, 60), gear_notes: opt(input.gear_notes, 140),
+      avatar_icon: (ai as AvatarIconId | null), avatar_color: (ac as AvatarColorId | null),
     },
   };
 }

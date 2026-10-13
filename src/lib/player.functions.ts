@@ -6,7 +6,7 @@ import { exportRsvpsFor } from "./event-rsvps.functions";
 type TokenIn = { accessToken: string };
 const tokenOnly = (d: unknown): TokenIn => ({ accessToken: String((d as TokenIn)?.accessToken ?? "") });
 
-const COLS = "nickname, first_name, last_name, show_full_last_name, age_group, phone, club, experience_level, operator_type, primary_weapon, secondary_weapon, sidearm, gear_notes, link_games, privacy_version, privacy_accepted_at, created_at, updated_at";
+const COLS = "nickname, first_name, last_name, show_full_last_name, age_group, phone, club, experience_level, operator_type, primary_weapon, secondary_weapon, sidearm, gear_notes, avatar_icon, avatar_color, link_games, privacy_version, privacy_accepted_at, created_at, updated_at";
 
 const GAME_COLS = "mission_name, gamemode, ended_at, callsign, team, team_won, captures, deaths, is_mvp, end_reason";
 
