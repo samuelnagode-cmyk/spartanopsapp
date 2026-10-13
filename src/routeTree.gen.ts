@@ -33,7 +33,6 @@ import { Route as FieldRouteImport } from './routes/field'
 import { Route as EventsDoticsRouteImport } from './routes/events[.]ics'
 import { Route as DogodkiRouteImport } from './routes/dogodki'
 import { Route as DevPreviewRouteImport } from './routes/dev-preview'
-import { Route as DevAvatarsRouteImport } from './routes/dev-avatars'
 import { Route as CaptureRouteImport } from './routes/capture'
 import { Route as ArhivRouteImport } from './routes/arhiv'
 import { Route as ArchiveRouteImport } from './routes/archive'
@@ -168,11 +167,6 @@ const DevPreviewRoute = DevPreviewRouteImport.update({
   path: '/dev-preview',
   getParentRoute: () => rootRouteImport,
 } as any)
-const DevAvatarsRoute = DevAvatarsRouteImport.update({
-  id: '/dev-avatars',
-  path: '/dev-avatars',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const CaptureRoute = CaptureRouteImport.update({
   id: '/capture',
   path: '/capture',
@@ -248,7 +242,6 @@ export interface FileRoutesByFullPath {
   '/archive': typeof ArchiveRoute
   '/arhiv': typeof ArhivRoute
   '/capture': typeof CaptureRoute
-  '/dev-avatars': typeof DevAvatarsRoute
   '/dev-preview': typeof DevPreviewRoute
   '/dogodki': typeof DogodkiRoute
   '/events.ics': typeof EventsDoticsRoute
@@ -288,7 +281,6 @@ export interface FileRoutesByTo {
   '/archive': typeof ArchiveRoute
   '/arhiv': typeof ArhivRoute
   '/capture': typeof CaptureRoute
-  '/dev-avatars': typeof DevAvatarsRoute
   '/dev-preview': typeof DevPreviewRoute
   '/dogodki': typeof DogodkiRoute
   '/events.ics': typeof EventsDoticsRoute
@@ -329,7 +321,6 @@ export interface FileRoutesById {
   '/archive': typeof ArchiveRoute
   '/arhiv': typeof ArhivRoute
   '/capture': typeof CaptureRoute
-  '/dev-avatars': typeof DevAvatarsRoute
   '/dev-preview': typeof DevPreviewRoute
   '/dogodki': typeof DogodkiRoute
   '/events.ics': typeof EventsDoticsRoute
@@ -371,7 +362,6 @@ export interface FileRouteTypes {
     | '/archive'
     | '/arhiv'
     | '/capture'
-    | '/dev-avatars'
     | '/dev-preview'
     | '/dogodki'
     | '/events.ics'
@@ -411,7 +401,6 @@ export interface FileRouteTypes {
     | '/archive'
     | '/arhiv'
     | '/capture'
-    | '/dev-avatars'
     | '/dev-preview'
     | '/dogodki'
     | '/events.ics'
@@ -451,7 +440,6 @@ export interface FileRouteTypes {
     | '/archive'
     | '/arhiv'
     | '/capture'
-    | '/dev-avatars'
     | '/dev-preview'
     | '/dogodki'
     | '/events.ics'
@@ -492,7 +480,6 @@ export interface RootRouteChildren {
   ArchiveRoute: typeof ArchiveRoute
   ArhivRoute: typeof ArhivRoute
   CaptureRoute: typeof CaptureRoute
-  DevAvatarsRoute: typeof DevAvatarsRoute
   DevPreviewRoute: typeof DevPreviewRoute
   DogodkiRoute: typeof DogodkiRoute
   EventsDoticsRoute: typeof EventsDoticsRoute
@@ -697,13 +684,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DevPreviewRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/dev-avatars': {
-      id: '/dev-avatars'
-      path: '/dev-avatars'
-      fullPath: '/dev-avatars'
-      preLoaderRoute: typeof DevAvatarsRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/capture': {
       id: '/capture'
       path: '/capture'
@@ -804,7 +784,6 @@ const rootRouteChildren: RootRouteChildren = {
   ArchiveRoute: ArchiveRoute,
   ArhivRoute: ArhivRoute,
   CaptureRoute: CaptureRoute,
-  DevAvatarsRoute: DevAvatarsRoute,
   DevPreviewRoute: DevPreviewRoute,
   DogodkiRoute: DogodkiRoute,
   EventsDoticsRoute: EventsDoticsRoute,

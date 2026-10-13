@@ -14,7 +14,7 @@ async function admin() {
 }
 
 const UUID_RE = /^[0-9a-f-]{36}$/i;
-const PROFILE_COLS = "user_id, nickname, first_name, last_name, show_full_last_name, age_group, phone, club, experience_level, operator_type, primary_weapon, secondary_weapon, sidearm, gear_notes";
+const PROFILE_COLS = "user_id, nickname, first_name, last_name, show_full_last_name, age_group, phone, club, experience_level, operator_type, primary_weapon, secondary_weapon, sidearm, gear_notes, avatar_icon, avatar_color";
 const RSVP_COLS = "event_id, user_id, status, phone_share, ride_role, ride_from, ride_seats, ride_note, created_at";
 
 export type Counts = { going: number; maybe: number; seatsOffered: number };
