@@ -490,3 +490,10 @@ export default function Header() {
     </>
   );
 }
+
+/** Same hue as the attendee avatars on events (AttendeeList), as a thin tint. */
+function avatarTint(s: string) {
+  let h = 0;
+  for (const ch of s) h = (h * 31 + ch.charCodeAt(0)) % 360;
+  return `hsl(${h} 45% 38% / 0.18)`;
+}
