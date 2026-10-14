@@ -226,7 +226,7 @@ export function PlayerProfileForm({ en, initial, needsConsent, onSaved, onDelete
           <input type="checkbox" role="switch" aria-checked={f.link_games} checked={f.link_games} onChange={(e) => set("link_games", e.target.checked)} style={{ width: 18, height: 18, accentColor: ACCENT }} />
           {en ? "Save my games to my profile" : "Shrani moje igre v profil"}
         </label>
-        <p style={{ ...help, marginTop: 8, marginBottom: 0 }}>{en ? "Your results (team, captures, deaths) appear in 'My games'. Marshals never see this history." : "Tvoji rezultati (ekipa, zavzetja, smrti) se prikažejo v 'Moje igre'. Maršali te zgodovine ne vidijo."}</p>
+        <p style={{ ...help, marginTop: 8, marginBottom: 0 }}>{en ? "Your results (team, captures, deaths) appear in 'My games' (from the account switch). Marshals never see this history." : "Tvoji rezultati (ekipa, zavzetja, smrti) se prikažejo v 'Moje igre'. Maršali te zgodovine ne vidijo."}</p>
       </Card>
 
       {needsConsent && (
