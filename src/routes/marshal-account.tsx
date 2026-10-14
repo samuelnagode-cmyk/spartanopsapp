@@ -207,7 +207,7 @@ function LoggedIn({ user, en }: { user: User; en: boolean }) {
         {en ? "Missions" : "Misije"}
       </Link>
       <Link to="/events/manage" style={{ ...btnStyle, display: "block", textAlign: "center", textDecoration: "none", marginTop: -12, marginBottom: 22, background: "transparent", color: ACCENT, border: `1px solid ${ACCENT}` }}>
-        {en ? "Events" : "Dogodki"}
+        {en ? "Field events" : "Dogodki poligona"}
       </Link>
 
 

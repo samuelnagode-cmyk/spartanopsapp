@@ -142,7 +142,7 @@ function ManagePage() {
     };
     return wrap(
       <>
-        <button type="button" className="ev-focus" onClick={closeForm} style={{ background: "none", border: "none", color: ACCENT, fontFamily: "monospace", fontSize: 12.5, cursor: "pointer", marginBottom: 12, padding: 0 }}>← {en ? "My events" : "Moji dogodki"}</button>
+        <button type="button" className="ev-focus" onClick={closeForm} style={{ background: "none", border: "none", color: ACCENT, fontFamily: "monospace", fontSize: 12.5, cursor: "pointer", marginBottom: 12, padding: 0 }}>← {en ? "Field events" : "Dogodki poligona"}</button>
         <h1 style={{ fontFamily: MICHROMA, fontSize: 17, letterSpacing: "0.12em", textTransform: "uppercase", marginBottom: 16 }}>
           {isCreate ? (en ? "New event" : "Nov dogodek") : (en ? "Edit event" : "Uredi dogodek")}
         </h1>
@@ -205,7 +205,7 @@ function EventList({ mine, lang, onChange, onNew, onEdit, onDuplicate }: {
       )}
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, marginBottom: 16, flexWrap: "wrap" }}>
         <div>
-          <p style={{ fontFamily: "monospace", fontSize: 11, letterSpacing: "0.24em", color: ACCENT, marginBottom: 4 }}>{en ? "EVENTS" : "DOGODKI"}</p>
+          <p style={{ fontFamily: "monospace", fontSize: 11, letterSpacing: "0.24em", color: ACCENT, marginBottom: 4 }}>{en ? "FIELD EVENTS" : "DOGODKI POLIGONA"}</p>
           <h1 style={{ fontFamily: MICHROMA, fontSize: 18, letterSpacing: "0.08em", textTransform: "uppercase", margin: 0, wordBreak: "break-word", display: "flex", alignItems: "center", gap: 10 }}><FieldLogo url={mine.field.logoUrl} name={mine.field.name} size={40} />{mine.field.name}</h1>
         </div>
         <div style={{ textAlign: "right" }}>

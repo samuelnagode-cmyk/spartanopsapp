@@ -268,6 +268,7 @@ export function PlayerProfileForm({ en, initial, needsConsent, onSaved, onDelete
         const r = await del({ data: { accessToken: await token(), confirm: "DELETE" } });
         if (!r.keptLogin) await supabase.auth.signOut().catch(() => {});
         onDeleted(r.keptLogin);
+        window.dispatchEvent(new Event("spartanops:profile-saved"));
       }} />}
     </div>
   );
