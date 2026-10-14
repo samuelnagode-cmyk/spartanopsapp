@@ -277,7 +277,7 @@ export default function Header() {
     const active = isCurrent(to, hash);
     return (
       <Link key={label} to={to as never} hash={hash} onClick={() => setOpen(false)} aria-current={active ? "page" : undefined}
-        className="menu-item group block"
+        className="focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#E0B04E] group block"
         style={{ fontFamily: "'Michroma', monospace", fontSize: 13, letterSpacing: "0.18em", color: active ? "#E0B04E" : "#ece3c4", textTransform: "uppercase", textDecoration: "none" }}>
         <span className="inline-flex items-center gap-3">
           <span aria-hidden="true" className="group-hover:opacity-100" style={{ color: "#E0B04E", fontSize: 12, letterSpacing: "0.10em", opacity: active ? 1 : 0.75, transition: "opacity 0.2s ease" }}>//</span>
@@ -453,7 +453,7 @@ export default function Header() {
               <div style={{ paddingBottom: 18, marginBottom: 22, borderBottom: "1px solid rgba(224,176,78,0.18)" }}>
                 {signedIn ? (
                   <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                    <Link to="/me" onClick={() => setOpen(false)} className="menu-item flex items-center gap-3" style={{ flex: 1, minWidth: 0, minHeight: 44, textDecoration: "none", color: "#ece3c4" }}>
+                    <Link to="/me" onClick={() => setOpen(false)} className="focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#E0B04E] flex items-center gap-3" style={{ flex: 1, minWidth: 0, minHeight: 44, textDecoration: "none", color: "#ece3c4" }}>
                       <PlayerAvatar icon={avatar?.icon} color={avatar?.color} name={accountLabel ?? email ?? "?"} size={40} />
                       <span style={{ minWidth: 0, display: "flex", flexDirection: "column", gap: 2 }}>
                         <span style={{ fontFamily: "'Michroma', monospace", fontSize: 12, letterSpacing: "0.12em", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{accountLabel ?? ""}</span>
@@ -464,14 +464,14 @@ export default function Header() {
                     <button
                       type="button"
                       onClick={async () => { setOpen(false); await supabase.auth.signOut(); }}
-                      className="menu-item"
+                      className="focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#E0B04E]"
                       style={{ minHeight: 44, minWidth: 44, padding: "0 6px", flexShrink: 0, fontFamily: "'Michroma', monospace", fontSize: 10, letterSpacing: "0.18em", color: "rgba(224,176,78,0.75)", background: "transparent", border: "none", cursor: "pointer", textTransform: "uppercase" }}
                     >
                       {en ? "SIGN OUT" : "ODJAVA"}
                     </button>
                   </div>
                 ) : (
-                  <Link to="/me" onClick={() => setOpen(false)} className="menu-item flex items-center justify-center"
+                  <Link to="/me" onClick={() => setOpen(false)} className="focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#E0B04E] flex items-center justify-center"
                     style={{ minHeight: 44, width: "100%", background: "#E0B04E", color: "#0a0c08", fontFamily: "'Michroma', monospace", fontSize: 12, letterSpacing: "0.16em", textTransform: "uppercase", fontWeight: 700, textDecoration: "none", padding: "0 12px" }}>
                     {en ? "SIGN IN / CREATE ACCOUNT" : "PRIJAVA / REGISTRACIJA"}
                   </Link>
