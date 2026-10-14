@@ -4,14 +4,7 @@ import type { Lang } from "@/lib/events";
 import { ACCENT, INK, MICHROMA, MUTED, PANEL } from "./ui";
 import { ContactButtons } from "./ContactButtons";
 import { PlayerAvatar } from "@/components/PlayerAvatar";
-
-/** "3 prosta mesta" / "3 free seats" (Slovenian dual and plural by last two digits). */
-export function freeSeatsLabel(n: number, lang: Lang, short = false): string {
-  if (lang === "en") return short ? `${n} free` : `${n} free ${n === 1 ? "seat" : "seats"}`;
-  const m = n % 100;
-  const [adj, noun] = m === 1 ? ["prosto", "mesto"] : m === 2 ? ["prosti", "mesti"] : m === 3 || m === 4 ? ["prosta", "mesta"] : ["prostih", "mest"];
-  return short ? `${n} ${adj}` : `${n} ${adj} ${noun}`;
-}
+import { freeSeatsLabel } from "@/lib/free-seats";
 
 export function CarpoolBoard({ rides, lang, seatsOffered = 0 }: { rides: RideGroup[]; lang: Lang; seatsOffered?: number }) {
   const en = lang === "en";

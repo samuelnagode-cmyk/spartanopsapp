@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { freeSeatsLabel } from "../src/components/events/CarpoolBoard";
+import { freeSeatsLabel } from "../src/lib/free-seats";
 describe("free seats wording", () => {
   it("slovenian forms", () => {
     expect([1,2,3,4,5,11].map((n) => freeSeatsLabel(n, "sl"))).toEqual(["1 prosto mesto","2 prosti mesti","3 prosta mesta","4 prosta mesta","5 prostih mest","11 prostih mest"]);
