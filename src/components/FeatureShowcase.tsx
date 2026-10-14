@@ -50,7 +50,7 @@ const ALL_TABS: Tab[] = [
   },
   {
     id: "hud",
-    tab: { en: "Player HUD", sl: "HUD" },
+    tab: { en: "Game screen", sl: "Zaslon igre" },
     lead: {
       en: "The whole game on your phone: score, timers and who holds which sector.",
       sl: "Cela igra na telefonu: rezultat, časovniki in kdo drži kateri sektor.",

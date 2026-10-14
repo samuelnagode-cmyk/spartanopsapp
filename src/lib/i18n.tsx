@@ -25,7 +25,7 @@ export const dict: Dict = {
   // Capture Success Popup
   "captureSuccessTitle": { sl: "ODOBRENO", en: "APPROVED" },
   "captureSuccessSubtitle": { sl: "", en: "" },
-  "captureAckBtn": { sl: "POTRDI IN NAZAJ V HUD", en: "ACKNOWLEDGE & RETURN TO HUD" },
+  "captureAckBtn": { sl: "POTRDI IN NAZAJ V MISIJO", en: "ACKNOWLEDGE & BACK TO MISSION" },
   "captureTelemetryNote": {
     sl: "// TA SEKTOR ZDAJ PRINAŠA TOČKE VAŠI EKIPI.",
     en: "// THIS SECTOR NOW BRINGS POINTS FOR YOUR TEAM.",
@@ -541,7 +541,7 @@ export const dict: Dict = {
   "spartan.featureLiveTrackingTitle": { sl: "// SLEDENJE V ŽIVO", en: "// LIVE TRACKING" },
   "spartan.featureLiveTrackingDesc": { sl: "Nadzor sektorjev v realnem času, točkovanje v živo in takojnji odziv ob zavzetju za vsakega igralca na terenu.", en: "Real-time sector control, live scoring and instant capture feedback for every player on the field." },
   "spartan.featurePureImmersionTitle": { sl: "// POPOLNA POTOPITEV", en: "// PURE IMMERSION" },
-  "spartan.featurePureImmersionDesc": { sl: "Visoko vidne taktične QR tablice in na boj pripravljen HUD, zgrajen za zunanje bojne scenarije.", en: "High-visibility tactical QR plates and a battle-ready HUD built for outdoor combat scenarios." },
+  "spartan.featurePureImmersionDesc": { sl: "Visoko vidne taktične QR tablice in na boj pripravljen zaslon, zgrajen za zunanje bojne scenarije.", en: "High-visibility tactical QR plates and a battle-ready screen built for outdoor combat scenarios." },
   "spartan.btnGetPrintFiles": { sl: "PRENESI PRINT KIT", en: "GET THE PRINT KIT" },
   "spartan.tagLiveOps": { sl: "// SLEDENJE OPERACIJAM V ŽIVO", en: "// LIVE OPS TRACKER" },
   "spartan.titleTelemetry": { sl: "SPARTANOPS V ŠTEVILKAH", en: "SPARTANOPS IN NUMBERS" },
