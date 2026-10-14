@@ -1,5 +1,4 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { ArrowLeft } from "lucide-react";
 import { spartanDevlogEntries, useT } from "@/lib/i18n";
 
 export const Route = createFileRoute("/updates")({
@@ -35,23 +34,7 @@ function UpdatesPage() {
     <div style={{ background: BG, color: INK, minHeight: "100dvh", paddingTop: 80, paddingBottom: 96 }}>
       <section className="w-full px-4 sm:px-6 lg:px-8">
         <div className="max-w-4xl mx-auto">
-          <Link
-            to="/spartanops"
-            style={{
-              display: "inline-flex",
-              alignItems: "center",
-              gap: 6,
-              color: MUTED,
-              fontFamily: "monospace",
-              fontSize: 11,
-              letterSpacing: "0.24em",
-              textTransform: "uppercase",
-              textDecoration: "none",
-              marginBottom: 24,
-            }}
-          >
-            <ArrowLeft size={12} /> Back to home
-          </Link>
+          
 
           <div className="mb-10 md:mb-14">
             <p

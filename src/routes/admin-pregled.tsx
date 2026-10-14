@@ -559,9 +559,9 @@ function AdminPage() {
   return (
     <div style={{ background: BG, color: INK, minHeight: "100dvh", padding: "96px 16px 80px" }}>
       <div style={{ maxWidth: 1200, margin: "0 auto" }}>
-        {/* Top bar */}
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12, marginTop: 0, gap: 12 }}>
-          {isEditMode ? (
+        {/* Top bar: only in admin edit mode (header back arrow covers exit). */}
+        {isEditMode && (
+          <div style={{ display: "flex", alignItems: "center", marginBottom: 12 }}>
             <button
               onClick={handleExitAdminView}
               title={en ? "Exit admin view" : "Izhod iz skrbniškega pogleda"}
@@ -580,20 +580,11 @@ function AdminPage() {
             >
               ✕ {en ? "EXIT ADMIN" : "IZHOD ADMIN"}
             </button>
-          ) : (
-            <span />
-          )}
-          {isEditMode ? (
-            <span />
-          ) : (
-            <Link to="/spartanops" style={{ color: MUTED, fontSize: 11, letterSpacing: "0.14em", textTransform: "uppercase", textDecoration: "none", display: "inline-flex", alignItems: "center", gap: 4 }}>
-              <ArrowLeft size={11} /> {en ? "Exit" : "Izhod"}
-            </Link>
-          )}
-        </div>
+          </div>
+        )}
 
         {/* Prominent title — sits comfortably below the fixed navbar */}
-        <div style={{ textAlign: "center", marginTop: 56, marginBottom: 18 }}>
+        <div style={{ textAlign: "center", marginTop: isEditMode ? 32 : 28, marginBottom: 18 }}>
           <h1 style={{
             fontFamily: "'Michroma', monospace",
             fontSize: "clamp(16px, 4.4vw, 26px)",
@@ -641,6 +632,8 @@ function AdminPage() {
                   color: active ? BG : INK,
                   border: `1px solid ${active ? ACCENT : "rgba(224,176,78,0.35)"}`,
                   padding: "12px 10px",
+                  minHeight: 44,
+                  overflowWrap: "normal", wordBreak: "keep-all", hyphens: "none",
                   fontFamily: "'Michroma', monospace",
                   fontSize: 11,
                   letterSpacing: "0.14em",
@@ -2313,7 +2306,7 @@ function MarshalLobbyConsole({ lobby: initialLobby, marshalPassword, lobbyPasswo
       </div>
 
       {/* ── TAB BAR: operations first, settings after. Two rows at 360px. ── */}
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(10, minmax(0, 1fr))", gap: 6, marginBottom: 18 }}>
+      <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 18 }}>
         {lobbyTabs.map((t) => {
           const active = lobbyTab === t.k;
           const ops = t.k === "match" || t.k === "review";
@@ -2325,21 +2318,22 @@ function MarshalLobbyConsole({ lobby: initialLobby, marshalPassword, lobbyPasswo
               type="button"
               onClick={() => setLobbyTab(t.k)}
               style={{
-                gridColumn: ops ? "span 5" : "span 2",
-                minWidth: 0,
+                flex: ops ? "1 1 calc(50% - 3px)" : "1 1 auto",
+                minWidth: "max-content",
+                minHeight: 44,
                 background: active ? ACCENT : "transparent",
                 color: active ? BG : INK,
                 border: `1px solid ${active ? ACCENT : "rgba(224,176,78,0.35)"}`,
-                padding: ops ? "10px 6px" : "10px 2px",
+                padding: "10px 12px",
                 fontFamily: "'Michroma', monospace",
                 fontSize: ops ? 10 : 9,
-                letterSpacing: ops ? "0.12em" : "0.04em",
+                letterSpacing: ops ? "0.08em" : "0.04em",
                 lineHeight: 1.25,
                 textTransform: "uppercase",
                 cursor: "pointer",
                 fontWeight: active ? 700 : 500,
                 display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 6,
-                textAlign: "center", overflowWrap: "anywhere",
+                textAlign: "center", whiteSpace: "nowrap", overflowWrap: "normal", wordBreak: "keep-all", hyphens: "none",
               }}
             >
               {t.k === "match" && (
