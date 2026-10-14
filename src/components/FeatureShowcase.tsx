@@ -31,12 +31,12 @@ const ALL_TABS: Tab[] = [
     id: "domination",
     tab: { en: "Domination", sl: "Domination" },
     lead: {
-      en: "One plate per sector. Scan it to capture the sector for your team.",
-      sl: "Ena plošča na sektor. Skeniraj jo in sektor je vaš.",
+      en: "One plate per sector. Scan it to capture it for your team.",
+      sl: "Ena plošča na sektor. Skeniraj jo in zavzemi sektor za ekipo.",
     },
     detail: {
-      en: "Points keep adding up while your team holds it, and the score updates live on every phone.",
-      sl: "Točke se seštevajo, dokler ga ekipa drži, rezultat pa se v živo posodablja na vsakem telefonu.",
+      en: "Points add up while you hold it.",
+      sl: "Točke tečejo, dokler ga držite.",
     },
     alt: {
       en: "A printed Domination sector plate with a QR code, hung on a tree",
@@ -56,8 +56,8 @@ const ALL_TABS: Tab[] = [
       sl: "Cela igra na telefonu: rezultat, časovniki in kdo drži kateri sektor.",
     },
     detail: {
-      en: "Every capture is logged in the event history. It opens in the browser, so there is nothing to install.",
-      sl: "Vsak zavzem se zabeleži v zgodovini dogodkov. Odpre se v brskalniku, namestitev ni potrebna.",
+      en: "Nothing to install.",
+      sl: "Brez namestitve.",
     },
     alt: {
       en: "A player checking the game on a phone in the forest",
@@ -73,12 +73,12 @@ const ALL_TABS: Tab[] = [
     id: "respawn",
     tab: { en: "Respawn", sl: "Respawn" },
     lead: {
-      en: "Hit? Walk to your respawn zone and scan the banner.",
-      sl: "Zadet? Pojdi v respawn cono in skeniraj baner.",
+      en: "Hit? Scan the banner at your respawn zone.",
+      sl: "Zadet? Skeniraj baner v respawn coni.",
     },
     detail: {
-      en: "Your phone counts down the wait, so there is no stopwatch and nothing to argue about. The marshal sets a fixed or a growing respawn time.",
-      sl: "Telefon odšteva čakanje, zato štoparica in prepiri niso potrebni. Maršal nastavi fiksen ali naraščajoč čas respawna.",
+      en: "The phone counts down your wait: no stopwatch, no arguing.",
+      sl: "Telefon odšteva čakanje: brez štoparice in prepirov.",
     },
     alt: {
       en: "A player scanning the respawn banner and seeing the countdown on the phone",
@@ -118,8 +118,8 @@ const ALL_TABS: Tab[] = [
       sl: "Odnesi bombo na točko in skeniraj obe kodi, da jo aktiviraš.",
     },
     detail: {
-      en: "The bomb is a printed code you strap to a suitcase, so there are no props to buy.",
-      sl: "Bomba je natisnjena koda, ki jo pritrdiš na kovček. Rekvizitov ni treba kupovati.",
+      en: "The bomb is just a printed code on a suitcase.",
+      sl: "Bomba je le natisnjena koda na kovčku.",
     },
     alt: {
       en: "A Search & Destroy bomb site plate with a QR code",
@@ -140,8 +140,8 @@ const ALL_TABS: Tab[] = [
       sl: "Skrivnostne skrinje, obveščevalni kovčki in King of the Hill so v pripravi.",
     },
     detail: {
-      en: "The idea stays the same: print a plate, place it, players scan it.",
-      sl: "Ideja ostaja ista: natisni ploščo, jo postavi, igralci jo skenirajo.",
+      en: "Same idea: print a plate, scan it.",
+      sl: "Ista ideja: natisni ploščo, skeniraj jo.",
     },
     alt: {
       en: "A Mystery Box plate with a QR code",
@@ -363,7 +363,7 @@ export default function FeatureShowcase() {
           </div>
 
           {/* Copy area */}
-          <div className="so-fs-copy" style={{ padding: "22px 20px 24px", textAlign: "left" }}>
+          <div className="so-fs-copy" style={{ textAlign: "left" }}>
             <p style={{ fontSize: 14, lineHeight: 1.6, color: "rgba(236,227,196,0.7)", margin: 0 }}>
               <span style={{ color: "#ece3c4", fontSize: 15 }}>
                 {en ? tab.lead.en : tab.lead.sl}
@@ -411,7 +411,7 @@ export default function FeatureShowcase() {
           padding: 2px 2px 10px;
         }
         .so-fs-tabs::-webkit-scrollbar { display: none; }
-        .so-fs-copy { min-height: 206px; }
+        .so-fs-copy { padding: 16px 18px 18px; }
         .fs-tab {
           flex: 0 0 auto;
           scroll-snap-align: center;
@@ -421,6 +421,7 @@ export default function FeatureShowcase() {
         }
         @media (min-width: 900px) {
           .so-fs-grid { grid-template-columns: 1.15fr 1fr !important; align-items: stretch; }
+          .so-fs-copy { padding: 22px 20px 24px; }
           .fs-tab { font-size: 10px; letter-spacing: 0.16em; }
         }
       `}</style>
