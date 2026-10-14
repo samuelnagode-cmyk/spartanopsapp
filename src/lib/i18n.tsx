@@ -577,7 +577,7 @@ export const dict: Dict = {
   "spartan.benefit4Desc": { sl: "Rezultat, odštevanja in poročilo z MVP-jem na telefonu vsakega igralca.", en: "Scores, timers and an MVP report on every player’s phone." },
   "spartan.benefit5Title": { sl: "Vstop v nekaj sekundah", en: "Join in seconds" },
   "spartan.benefit5Desc": { sl: "Skeniraj plakat, vpiši geslo, izberi ekipo. Brez namestitve aplikacije.", en: "Scan the poster, enter the password, pick a team. No app to install." },
-  "spartan.showcaseLead": { sl: "Zavzemanje, igralni HUD, respawni in več, vse na telefonih igralcev.", en: "Domination, player HUD, respawns and more, all running on players' own phones." },
+  "spartan.showcaseLead": { sl: "Kako plošče izgledajo na terenu in kaj se zgodi na telefonu, ko jih nekdo skenira.", en: "What the plates look like on the field, and what happens on the phone when someone scans one." },
   "spartan.faqTitle": { sl: "Vprašanja lastnikov poligonov", en: "Questions field owners ask" },
   "spartan.faqQ1": { sl: "Ali morajo igralci namestiti aplikacijo?", en: "Do players need to install an app?" },
   "spartan.faqA1": { sl: "Ne. Skenirajo tvojo QR kodo in igrajo v brskalniku na svojem telefonu.", en: "No. They scan your QR code and play in the browser on their own phone." },
