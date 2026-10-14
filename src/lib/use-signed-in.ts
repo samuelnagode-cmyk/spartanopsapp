@@ -65,3 +65,58 @@ export function useAccountLabel(): string | null {
   }, [getMine]);
   return label;
 }
+
+/** Fired on window after the player profile is saved or deleted. */
+export const PROFILE_CHANGED_EVENT = "spartanops:profile-saved";
+
+let profileCache: { userId: string; has: boolean } | null = null;
+
+/** Whether this login has a player profile. null while unknown. Cached per sign-in; refreshed on PROFILE_CHANGED_EVENT. */
+export function useHasProfile(): boolean | null {
+  const getMine = useServerFn(playerGetMine);
+  const [has, setHas] = useState<boolean | null>(null);
+  useEffect(() => {
+    let cancelled = false;
+    const load = async (force: boolean) => {
+      const { data } = await supabase.auth.getSession();
+      const s = data.session;
+      if (!s) { profileCache = null; if (!cancelled) setHas(false); return; }
+      if (!force && profileCache?.userId === s.user.id) { if (!cancelled) setHas(profileCache.has); return; }
+      try {
+        const r = await getMine({ data: { accessToken: s.access_token } });
+        profileCache = { userId: s.user.id, has: !!r.profile };
+        if (!cancelled) setHas(profileCache.has);
+      } catch { if (!cancelled) setHas(false); }
+    };
+    void load(false);
+    const { data: sub } = supabase.auth.onAuthStateChange((event) => {
+      if (event === "SIGNED_IN" || event === "SIGNED_OUT") { profileCache = null; void load(true); }
+    });
+    const onChange = () => { profileCache = null; void load(true); };
+    window.addEventListener(PROFILE_CHANGED_EVENT, onChange);
+    return () => { cancelled = true; sub.subscription.unsubscribe(); window.removeEventListener(PROFILE_CHANGED_EVENT, onChange); };
+  }, [getMine]);
+  return has;
+}
+
+/** Like useIsMarshal but null until the first check finishes. */
+export function useIsMarshalKnown(): boolean | null {
+  const [v, setV] = useState<boolean | null>(null);
+  useEffect(() => {
+    let cancelled = false;
+    const check = async (userId: string | null) => {
+      if (!userId) { if (!cancelled) setV(false); return; }
+      const { data } = await supabase.from("spartanops_accounts").select("id").eq("id", userId).maybeSingle();
+      if (!cancelled) setV(!!data);
+    };
+    const recheck = () => { supabase.auth.getSession().then(({ data }) => check(data.session?.user?.id ?? null)); };
+    recheck();
+    const { data: sub } = supabase.auth.onAuthStateChange((event, session) => {
+      if (event !== "SIGNED_IN" && event !== "SIGNED_OUT" && event !== "USER_UPDATED") return;
+      void check(session?.user?.id ?? null);
+    });
+    window.addEventListener(FIELD_CREATED_EVENT, recheck);
+    return () => { cancelled = true; sub.subscription.unsubscribe(); window.removeEventListener(FIELD_CREATED_EVENT, recheck); };
+  }, []);
+  return v;
+}
