@@ -1514,7 +1514,7 @@ function RespawnLockScreen({ until, field, sessionId, serverOffset, en }: { unti
       <p className="mt-4 max-w-lg font-mono text-[12px] uppercase tracking-[0.18em]" style={{ color: MUTED, lineHeight: 1.8 }}>
         {left > 0
           ? (en ? "Remain on this mission screen until your cooldown expires." : "Ostanite na tem zaslonu misije, dokler se cooldown ne izteče.")
-          : (en ? "Cooldown complete — rejoining mission HUD." : "Cooldown zaključen — vračanje v HUD misije.")}
+          : (en ? "Cooldown complete, rejoining the mission." : "Cooldown zaključen, vračanje v misijo.")}
       </p>
       <div className="my-7 font-bold" style={{ fontFamily: "'Michroma', monospace", fontSize: "clamp(72px, 22vw, 150px)", color: ACCENT, lineHeight: 0.95, textShadow: `0 0 34px ${ACCENT}55` }}>
         {mm}:{ss}
@@ -1522,8 +1522,8 @@ function RespawnLockScreen({ until, field, sessionId, serverOffset, en }: { unti
       <div style={{ width: "min(520px, 100%)", border: `1px solid ${ACCENT}55`, background: "rgba(0,0,0,0.35)", padding: "12px 14px" }}>
         <p className="font-mono text-[11px]" style={{ color: INK, lineHeight: 1.7, margin: 0 }}>
           {en
-            ? "Leaving and opening the HUD again will not bypass this timer. SpartanOps keeps the lock on this mission until re-entry is authorized."
-            : "Zapustitev strani in ponovni vstop v HUD ne obideta tega časovnika. SpartanOps zaklep drži na tej misiji do dovoljenega vstopa."}
+            ? "Leaving and re-entering the mission will not bypass this timer. SpartanOps keeps the lock on this mission until re-entry is authorized."
+            : "Zapustitev strani in ponovni vstop v misijo ne obideta tega časovnika. SpartanOps zaklep drži na tej misiji do dovoljenega vstopa."}
         </p>
       </div>
     </div>
@@ -1531,13 +1531,6 @@ function RespawnLockScreen({ until, field, sessionId, serverOffset, en }: { unti
 }
 
 
-function PlayerHudHeader({ en }: { en: boolean }) {
-  return (
-    <p className="text-center font-semibold" style={{ fontSize: 11, letterSpacing: "0.3em", color: "rgba(224,176,78,0.8)", marginBottom: 4, fontFamily: "'Michroma', monospace" }}>
-      {en ? "PLAYER HUD" : "PLAYER HUD"}
-    </p>
-  );
-}
 
 function MissionFieldSubline({ missionName, fieldName, en }: { missionName: string; fieldName: string; en: boolean }) {
   const missionPart = missionName || fieldName || (en ? "Active Operation" : "Aktivna operacija");
@@ -3538,7 +3531,6 @@ function EndgameReport({ state, roster, captures, en, now, myTeam, meId, showSav
 
   return (
     <div className="max-w-4xl mx-auto px-4 py-10" style={{ paddingTop: 112 }}>
-      <PlayerHudHeader en={en} />
       <div className="text-center mb-6">
         <h1
           className="mt-1"

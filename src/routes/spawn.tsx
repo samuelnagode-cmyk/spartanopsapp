@@ -400,7 +400,7 @@ function SpawnPage() {
                   className="mt-5 px-5 py-3 font-mono text-[11px] uppercase tracking-[0.22em]"
                   style={{ background: c, color: BG, border: "none", cursor: "pointer" }}
                 >
-                  {en ? "Return to HUD" : "Nazaj v HUD"}
+                  {en ? "Back to mission" : "Nazaj v misijo"}
                 </button>
               </>
             )}

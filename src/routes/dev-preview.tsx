@@ -1,5 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
+import { MissionInProgressBackdrop, MissionInProgressCard } from "@/components/MissionInProgressModal";
 import { CheckCircle2, AlertTriangle, Shield, Skull, WifiOff } from "lucide-react";
 
 export const Route = createFileRoute("/dev-preview")({
@@ -322,6 +323,15 @@ function DevPreviewPage() {
     { title: en ? "SPARTACUS WARNING" : "SPARTACUS OPOZORILO", el: () => <SpartacusWarningMock en={en} /> },
     { title: en ? "SUSPENDED / FROZEN" : "IZKLJUČEN / ZAMRZNJEN", el: () => <SuspendedFrozenMock en={en} /> },
     { title: en ? "DEBRIEFING SCREEN" : "PORAZDELITEV", sound: "SONG_DEBRIEFING.mp3", el: () => <DebriefingMock en={en} /> },
+    { title: en ? "MISSION RUNNING POPUP (EN + SL)" : "POJAVNO OKNO MISIJA TEČE (EN + SL)", el: () => (
+      <div style={{ display: "grid", gap: 12 }}>
+        {[true, false].map((e) => (
+          <MissionInProgressBackdrop key={String(e)} fixed={false} onDismiss={() => {}}>
+            <MissionInProgressCard en={e} autoFocus={false} onReturn={() => {}} onDismiss={() => {}} />
+          </MissionInProgressBackdrop>
+        ))}
+      </div>
+    ) },
     { title: en ? "GAME PAUSED OVERLAY" : "IGRA PREKINJENA", el: () => <GamePausedMock en={en} /> },
   ];
 

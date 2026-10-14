@@ -598,7 +598,7 @@ function CapturePage() {
               : `Sektor ${pointName} je že pod nadzorom vaše ekipe!`}
           </h2>
           <p className="text-xs mt-4 font-mono uppercase tracking-[0.2em]" style={{ color: MUTED }}>
-            {en ? "Returning to HUD..." : "Vračam v HUD..."}
+            {en ? "Returning to the mission..." : "Vračam v misijo..."}
           </p>
         </div>
       </div>
