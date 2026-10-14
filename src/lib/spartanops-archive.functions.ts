@@ -79,3 +79,31 @@ export const masterDeleteArchivedMission = createServerFn({ method: "POST" })
     if (error) throw new Error(error.message);
     return { ok: true as const };
   });
+
+/** Marshal: archived missions of the caller's own field only. Account id comes from the verified token. */
+export const listMyArchivedMissions = createServerFn({ method: "POST" })
+  .inputValidator((d: { accessToken: string }) => ({ accessToken: String(d?.accessToken ?? "") }))
+  .handler(async ({ data }): Promise<{ hasField: boolean; rows: SpartanOpsArchiveRow[] }> => {
+    const { requireUser } = await import("./player-auth.server");
+    const user = await requireUser(data.accessToken);
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data: account } = await supabaseAdmin
+      .from("spartanops_accounts" as any).select("id").eq("id", user.id).maybeSingle();
+    if (!account) return { hasField: false, rows: [] };
+    const { data: rows, error } = await supabaseAdmin
+      .from("spartanops_archived_missions" as any)
+      .select("id,lobby_id,field_name,event_name,location,city,country,gamemode,final_scores,winner_team,mission_state,player_count,capture_count,started_at,decommissioned_at")
+      .eq("account_id", user.id)
+      .order("decommissioned_at", { ascending: false });
+    if (error) throw new Error(error.message);
+    return {
+      hasField: true,
+      rows: ((rows ?? []) as any[]).map((r): SpartanOpsArchiveRow => ({
+        id: r.id, lobbyId: r.lobby_id, fieldName: r.field_name, eventName: r.event_name ?? null,
+        location: r.location ?? null, city: r.city ?? null, country: r.country ?? null, gamemode: r.gamemode ?? null,
+        finalScores: (r.final_scores as Record<string, number>) ?? {}, winnerTeam: r.winner_team ?? null,
+        missionState: r.mission_state ?? null, playerCount: Number(r.player_count ?? 0),
+        captureCount: Number(r.capture_count ?? 0), startedAt: r.started_at ?? null, decommissionedAt: r.decommissioned_at,
+      })),
+    };
+  });

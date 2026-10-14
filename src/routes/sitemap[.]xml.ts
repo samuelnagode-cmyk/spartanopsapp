@@ -11,7 +11,6 @@ const paths = [
   { path: "/join", priority: "0.9", changefreq: "weekly" as const },
   { path: "/events", priority: "0.9", changefreq: "daily" as const },
   { path: "/updates", priority: "0.6", changefreq: "weekly" as const },
-  { path: "/archive", priority: "0.5", changefreq: "monthly" as const },
   { path: "/print", priority: "0.6", changefreq: "monthly" as const },
   { path: "/privacy", priority: "0.3", changefreq: "yearly" as const },
   { path: "/terms", priority: "0.3", changefreq: "yearly" as const },

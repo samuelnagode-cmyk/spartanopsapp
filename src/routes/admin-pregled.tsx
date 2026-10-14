@@ -1183,7 +1183,10 @@ function AccountMissionsSection({ en, onOpenMission, onCreateInEvent }: { en: bo
     <div style={{ marginBottom: 32 }}>
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, marginBottom: 14 }}>
         <strong style={{ color: ACCENT, fontFamily: "monospace", fontSize: 14, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{business || ""}</strong>
-        <Link to="/marshal-account" style={{ ...smallBarBtn, flexShrink: 0 }}>{en ? "Field settings" : "Nastavitve poligona"}</Link>
+        <span style={{ display: "inline-flex", gap: 6, flexShrink: 0 }}>
+          <Link to="/archive" style={{ ...smallBarBtn, flexShrink: 0 }}>{en ? "Past missions" : "Pretekle misije"}</Link>
+          <Link to="/marshal-account" style={{ ...smallBarBtn, flexShrink: 0 }}>{en ? "Field settings" : "Nastavitve poligona"}</Link>
+        </span>
       </div>
       <p style={{ fontFamily: "monospace", fontSize: 10, letterSpacing: "0.30em", color: ACCENT, margin: "0 0 10px", textTransform: "uppercase" }}>
         {en ? "// YOUR MISSIONS" : "// TVOJE MISIJE"}
