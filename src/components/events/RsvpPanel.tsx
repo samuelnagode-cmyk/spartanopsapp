@@ -12,7 +12,8 @@ import { PlayerAuthDialog } from "@/components/PlayerAuth";
 import { ACCENT, ERR, INK, MICHROMA, MUTED, OK, PANEL, btnOutline, btnPrimary } from "./ui";
 import { CapacityBar } from "./CapacityBar";
 import { AttendeeList, LockedAttendees } from "./AttendeeList";
-import { CarpoolBoard, freeSeatsLabel } from "./CarpoolBoard";
+import { CarpoolBoard } from "./CarpoolBoard";
+import { freeSeatsLabel } from "@/lib/free-seats";
 
 const INTENT_KEY = "spartanops:rsvp-intent";
 type Status = "going" | "maybe";
