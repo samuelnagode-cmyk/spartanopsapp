@@ -562,7 +562,7 @@ export const dict: Dict = {
   "spartan.step3Tag": { sl: "KORAK 03 // SLEDENJE", en: "STEP 03 // TRACKING" },
   "spartan.step3Title": { sl: "Igralci skenirajo in igrajo.", en: "Players scan and play." },
   "spartan.step3Desc": { sl: "Igralci skenirajo tvoj plakat, izberejo ekipo in z telefoni zavzemajo sektorje. Ti vodi\u0161 igro in spremlja\u0161 rezultat v \u017eivo.", en: "Players scan your poster, pick a team, and capture sectors with their phones. You control the match and watch the score live." },
-  "spartan.heroHeadline": { sl: "Raj za airsoft maršale.", en: "Airsoft marshals’ paradise." },
+  "spartan.heroHeadline": { sl: "Raj za airsoft maršale", en: "Airsoft marshals’ paradise" },
   "spartan.btnStartFreeCta": { sl: "ZAČNI BREZPLAČNO", en: "START FREE" },
   "spartan.heroUnderButtons": { sl: "Brezplačen začetek · Brez namestitve aplikacije", en: "Free to start · No app to install" },
   "spartan.heroJoinLink": { sl: "Igraš danes? Vstopi v igro →", en: "Playing today? Join a game →" },
