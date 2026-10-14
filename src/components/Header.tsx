@@ -30,6 +30,26 @@ export default function Header() {
   const accountInitial = accountLabel ? Array.from(accountLabel.trim())[0]?.toUpperCase() ?? null : null;
   const en = lang === "en";
   const getMine = useServerFn(playerGetMine);
+  const navRef = useRef<HTMLElement>(null);
+  const menuBtnRef = useRef<HTMLButtonElement>(null);
+  const [email, setEmail] = useState<string | null>(null);
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data }) => setEmail(data.session?.user.email ?? null));
+    const { data: sub } = supabase.auth.onAuthStateChange((_e, s) => setEmail(s?.user.email ?? null));
+    return () => sub.subscription.unsubscribe();
+  }, []);
+  // Close on every navigation
+  useEffect(() => { setOpen(false); }, [location.pathname, location.hash]);
+  // Focus: first item on open, menu button on close
+  const wasOpen = useRef(false);
+  useEffect(() => {
+    if (open) {
+      const t = window.setTimeout(() => navRef.current?.querySelector<HTMLElement>("a,button")?.focus(), 30);
+      wasOpen.current = true;
+      return () => window.clearTimeout(t);
+    }
+    if (wasOpen.current) { wasOpen.current = false; menuBtnRef.current?.focus(); }
+  }, [open, menuVisible]);
   const [avatar, setAvatar] = useState<{ icon: string; color: string } | null>(null);
   useEffect(() => {
     let cancelled = false;
@@ -70,7 +90,8 @@ export default function Header() {
       if (
         open &&
         menuRef.current &&
-        !menuRef.current.contains(e.target as Node)
+        !menuRef.current.contains(e.target as Node) &&
+        !menuBtnRef.current?.contains(e.target as Node)
       ) {
         setOpen(false);
       }
@@ -88,13 +109,12 @@ export default function Header() {
     return () => document.removeEventListener("keydown", onKey);
   }, [open]);
 
-  // Prevent body scroll when menu open
+  // Prevent page scroll behind the menu
   useEffect(() => {
-    if (open) {
-      document.body.style.overflow = "hidden";
-    } else {
-      document.body.style.overflow = "";
-    }
+    document.documentElement.style.overflow = open ? "hidden" : "";
+    document.body.style.overflow = open ? "hidden" : "";
+    if (!open) return;
+    return () => { document.documentElement.style.overflow = ""; document.body.style.overflow = ""; };
     return () => {
       document.body.style.overflow = "";
     };
@@ -254,6 +274,22 @@ export default function Header() {
     </div>
   );
 
+  const isCurrent = (to: string, hash?: string) =>
+    location.pathname === to && (hash ? location.hash.replace(/^#/, "") === hash : !location.hash || to !== "/spartanops");
+  const menuLink = ({ label, to, hash }: { label: string; to: string; hash?: string }) => {
+    const active = isCurrent(to, hash);
+    return (
+      <Link key={label} to={to as never} hash={hash} onClick={() => setOpen(false)} aria-current={active ? "page" : undefined}
+        className="menu-item group block"
+        style={{ fontFamily: "'Michroma', monospace", fontSize: 13, letterSpacing: "0.18em", color: active ? "#E0B04E" : "#ece3c4", textTransform: "uppercase", textDecoration: "none" }}>
+        <span className="inline-flex items-center gap-3">
+          <span aria-hidden="true" className="group-hover:opacity-100" style={{ color: "#E0B04E", fontSize: 12, letterSpacing: "0.10em", opacity: active ? 1 : 0.75, transition: "opacity 0.2s ease" }}>//</span>
+          <span className="group-hover:text-[#E0B04E]" style={{ transition: "color 0.2s ease" }}>{label}</span>
+        </span>
+      </Link>
+    );
+  };
+
   const layoutCols = "grid-cols-3";
 
   return (
@@ -367,6 +403,8 @@ export default function Header() {
                 }}
               />
               <button
+                ref={menuBtnRef}
+                aria-controls="site-menu"
                 onClick={() => setOpen(!open)}
                 className="relative z-[95] p-2 transition-opacity hover:opacity-80"
                 style={{
@@ -376,7 +414,7 @@ export default function Header() {
                     : "transparent",
                   borderRadius: 999,
                 }}
-                aria-label={t("nav.openMenu")}
+                aria-label={open ? (en ? "Close menu" : "Zapri meni") : (en ? "Open menu" : "Odpri meni")}
                 aria-expanded={open}
               >
                 {open ? (
@@ -397,116 +435,65 @@ export default function Header() {
       {/* Overlay + Menu — tactical dark drawer */}
       {menuVisible && (
         <div ref={menuRef}>
-          {/* Backdrop overlay */}
           <div
             className="fixed inset-0 z-[60]"
-            style={{
-              backgroundColor: "rgba(0, 0, 0, 0.55)",
-              backdropFilter: "blur(10px)",
-              WebkitBackdropFilter: "blur(10px)",
-              opacity: open ? 1 : 0,
-              transition: "opacity 0.35s ease",
-            }}
+            style={{ backgroundColor: "rgba(0, 0, 0, 0.55)", backdropFilter: "blur(10px)", WebkitBackdropFilter: "blur(10px)", opacity: open ? 1 : 0, transition: "opacity 0.35s ease" }}
             onClick={() => setOpen(false)}
             aria-hidden="true"
           />
-          {/* Menu panel */}
           <div
+            id="site-menu"
             className="fixed left-0 right-0 z-[70]"
             style={{
-              top: 64,
-              background: "#0a0c08",
-              borderTop: "1px solid rgba(224,176,78,0.30)",
-              borderBottom: "1px solid rgba(224,176,78,0.18)",
-              boxShadow: "0 20px 40px -20px rgba(0,0,0,0.7)",
-              opacity: open ? 1 : 0,
-              transform: open ? "translateY(0)" : "translateY(-12px)",
-              transition: "opacity 0.35s ease, transform 0.35s ease",
+              top: 64, maxHeight: "calc(100dvh - 64px)", overflowY: "auto", overscrollBehavior: "contain",
+              background: "#0a0c08", borderTop: "1px solid rgba(224,176,78,0.30)", borderBottom: "1px solid rgba(224,176,78,0.18)",
+              boxShadow: "0 20px 40px -20px rgba(0,0,0,0.7)", opacity: open ? 1 : 0,
+              transform: open ? "translateY(0)" : "translateY(-12px)", transition: "opacity 0.35s ease, transform 0.35s ease",
             }}
           >
-            <nav className="px-6 py-8 max-w-2xl mx-auto space-y-6">
-              {([
-                { label: en ? "HOME" : "DOMOV", to: "/spartanops" as const },
-                { label: en ? "JOIN A GAME" : "VSTOPI V IGRO", to: "/join" as const },
-                { label: en ? "EVENTS" : "DOGODKI", to: "/events" as const },
-                ...(signedIn
-                  ? [{ label: en ? "MY ACCOUNT" : "MOJ RAČUN", to: "/me" as const, sub: accountLabel ?? undefined }]
-                  : [{ label: en ? "SIGN IN / CREATE ACCOUNT" : "PRIJAVA / REGISTRACIJA", to: "/me" as const, gold: true }]),
-                ...(signedIn && isMarshal ? [{ label: "MARSHAL COMMAND CENTER", to: "/admin-pregled" as const }] : []),
-                { label: en ? "SYSTEM UPDATES" : "SISTEMSKE POSODOBITVE", to: "/updates" as const },
-                { label: en ? "PRICING" : "CENIK", to: "/spartanops" as const, hash: "pricing" },
-                { label: en ? "PRINT" : "TISK", to: "/print" as const },
-                { label: en ? "MISSION ARCHIVE" : "ARHIV MISIJ", to: "/archive" as const },
-              ] as Array<{ label: string; to: string; hash?: string; sub?: string; gold?: boolean }>).map((link) => (
-                <Link
-                  key={`${link.label}`}
-                  to={link.to as never}
-                  hash={link.hash}
-                  onClick={() => setOpen(false)}
-                  className="group block transition-colors"
-                  style={{
-                    fontFamily: "'Michroma', monospace",
-                    fontSize: 13,
-                    letterSpacing: "0.18em",
-                    color: "#ece3c4",
-                    textTransform: "uppercase",
-                  }}
-                  activeOptions={{ exact: true, includeHash: true, includeSearch: true }}
-                  inactiveProps={{
-                    style: {
-                      fontFamily: "'Michroma', monospace",
-                      fontSize: 13,
-                      letterSpacing: "0.18em",
-                      color: "#ece3c4",
-                      textTransform: "uppercase",
-                    },
-                  }}
-                  activeProps={{
-                    style: {
-                      fontFamily: "'Michroma', monospace",
-                      fontSize: 13,
-                      letterSpacing: "0.18em",
-                      color: "#ece3c4",
-                      textTransform: "uppercase",
-                    },
-                  }}
-                >
-                  <span className="inline-flex items-center gap-3">
-                    <span
-                      aria-hidden="true"
-                      style={{
-                        color: "#E0B04E",
-                        fontSize: 12,
-                        letterSpacing: "0.10em",
-                        opacity: 0.75,
-                        transition: "opacity 0.2s ease",
-                      }}
-                      className="group-hover:opacity-100"
+            <nav ref={navRef} aria-label={en ? "Main menu" : "Glavni meni"} className="px-6 py-6 max-w-2xl mx-auto">
+              {/* Account block */}
+              <div style={{ paddingBottom: 18, marginBottom: 22, borderBottom: "1px solid rgba(224,176,78,0.18)" }}>
+                {signedIn ? (
+                  <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                    <Link to="/me" onClick={() => setOpen(false)} className="menu-item flex items-center gap-3" style={{ flex: 1, minWidth: 0, minHeight: 44, textDecoration: "none", color: "#ece3c4" }}>
+                      <PlayerAvatar icon={avatar?.icon} color={avatar?.color} name={accountLabel ?? email ?? "?"} size={40} />
+                      <span style={{ minWidth: 0, display: "flex", flexDirection: "column", gap: 2 }}>
+                        <span style={{ fontFamily: "'Michroma', monospace", fontSize: 12, letterSpacing: "0.12em", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{accountLabel ?? ""}</span>
+                        {email && <span style={{ fontFamily: "monospace", fontSize: 11, color: "rgba(236,227,196,0.6)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{email}</span>}
+                        <span style={{ fontFamily: "monospace", fontSize: 10, color: "#E0B04E", letterSpacing: "0.08em" }}>{en ? "My account →" : "Moj račun →"}</span>
+                      </span>
+                    </Link>
+                    <button
+                      type="button"
+                      onClick={async () => { setOpen(false); await supabase.auth.signOut(); }}
+                      className="menu-item"
+                      style={{ minHeight: 44, minWidth: 44, padding: "0 6px", flexShrink: 0, fontFamily: "'Michroma', monospace", fontSize: 10, letterSpacing: "0.18em", color: "rgba(224,176,78,0.75)", background: "transparent", border: "none", cursor: "pointer", textTransform: "uppercase" }}
                     >
-                      //
-                    </span>
-                    <span
-                      className="group-hover:text-[#E0B04E]"
-                      style={{ transition: "color 0.2s ease" }}
-                    >
-                      <span style={link.gold ? { color: "#E0B04E", borderBottom: "1px solid rgba(224,176,78,0.6)", paddingBottom: 2 } : undefined}>{link.label}</span>
-                      {link.sub && (
-                        <span style={{ marginLeft: 10, fontFamily: "monospace", fontSize: 11, letterSpacing: "0.04em", textTransform: "none", color: "rgba(236,227,196,0.6)" }}>{link.sub}</span>
-                      )}
-                    </span>
-                  </span>
-                </Link>
-              ))}
-              {signedIn && (
-                <button
-                  type="button"
-                  onClick={async () => { setOpen(false); await supabase.auth.signOut(); }}
-                  className="block hover:opacity-100"
-                  style={{ fontFamily: "'Michroma', monospace", fontSize: 10, letterSpacing: "0.18em", color: "rgba(236,227,196,0.6)", background: "transparent", border: "none", padding: 0, cursor: "pointer", textTransform: "uppercase" }}
-                >
-                  {en ? "SIGN OUT" : "ODJAVA"}
-                </button>
-              )}
+                      {en ? "SIGN OUT" : "ODJAVA"}
+                    </button>
+                  </div>
+                ) : (
+                  <Link to="/me" onClick={() => setOpen(false)} className="menu-item flex items-center justify-center"
+                    style={{ minHeight: 44, width: "100%", background: "#E0B04E", color: "#0a0c08", fontFamily: "'Michroma', monospace", fontSize: 12, letterSpacing: "0.16em", textTransform: "uppercase", fontWeight: 700, textDecoration: "none", padding: "0 12px" }}>
+                    {en ? "SIGN IN / CREATE ACCOUNT" : "PRIJAVA / REGISTRACIJA"}
+                  </Link>
+                )}
+              </div>
+              <div className="space-y-6">
+                {menuLink({ label: en ? "HOME" : "DOMOV", to: "/spartanops" })}
+                {menuLink({ label: en ? "JOIN A GAME" : "VSTOPI V IGRO", to: "/join" })}
+                {menuLink({ label: en ? "EVENTS" : "DOGODKI", to: "/events" })}
+              </div>
+              <div style={{ borderTop: "1px solid rgba(224,176,78,0.12)", margin: "30px 0 14px" }} />
+              <p aria-hidden="true" style={{ fontFamily: "'Michroma', monospace", fontSize: 8, letterSpacing: "0.3em", color: "#E0B04E", margin: "0 0 18px" }}>{en ? "FOR FIELDS" : "ZA POLIGONE"}</p>
+              <div className="space-y-6">
+                {signedIn && isMarshal && menuLink({ label: en ? "COMMAND CENTER" : "KOMANDNI CENTER", to: "/admin-pregled" })}
+                {menuLink({ label: en ? "PRICING" : "CENIK", to: "/spartanops", hash: "pricing" })}
+                {menuLink({ label: en ? "FIELD MANUAL" : "PRIROČNIK", to: "/intel" })}
+                {menuLink({ label: en ? "PRINT KIT" : "TISKOVINE", to: "/print" })}
+                {menuLink({ label: en ? "WHAT'S NEW" : "NOVOSTI", to: "/updates" })}
+              </div>
             </nav>
           </div>
         </div>
