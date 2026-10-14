@@ -2,6 +2,7 @@ import { useState, type CSSProperties } from "react";
 import { Link } from "@tanstack/react-router";
 import { CalendarPlus, Car, Share2 } from "lucide-react";
 import { CapacityBar } from "./CapacityBar";
+import { freeSeatsLabel } from "./CarpoolBoard";
 import { flagFor } from "@/lib/countries";
 import {
   buildIcs, dateTileParts, formatTimeRange, googleCalendarUrl, kindInfo, priceLabel, shortDate, slugify, type IcsEvent, type Lang,
@@ -94,7 +95,7 @@ export function EventCard({ e, lang, myStatus }: { e: EventListItem; lang: Lang;
           {e.min_age && <span style={smallChip}>min. {e.min_age}</span>}
           {e.capacity && <span style={smallChip}>{e.capacity} {en ? "spots" : "mest"}</span>}
           {(e.going ?? 0) > 0 && <span style={smallChip}>{e.going} {en ? "going" : "pride"}</span>}
-          {(e.seatsOffered ?? 0) > 0 && <span style={{ ...smallChip, display: "inline-flex", alignItems: "center", gap: 4 }}><Car size={12} />{e.seatsOffered} {en ? "seats" : "mest"}</span>}
+          {(e.seatsOffered ?? 0) > 0 && <span style={{ ...smallChip, display: "inline-flex", alignItems: "center", gap: 4 }}><Car size={12} />{en ? "Ride" : "Prevoz"}: {freeSeatsLabel(e.seatsOffered ?? 0, lang, true)}</span>}
           {myStatus && <span style={{ ...smallChip, background: ACCENT, color: BG, fontFamily: MICHROMA, fontSize: 9, letterSpacing: "0.14em" }}>{myStatus === "going" ? (en ? "YOU'RE GOING" : "PRIDEŠ") : (en ? "MAYBE" : "MORDA")}</span>}
         </div>
         {e.capacity ? <CapacityBar going={e.going ?? 0} capacity={e.capacity} lang={lang} compact /> : null}

@@ -5,12 +5,21 @@ import { ACCENT, INK, MICHROMA, MUTED, PANEL } from "./ui";
 import { ContactButtons } from "./ContactButtons";
 import { PlayerAvatar } from "@/components/PlayerAvatar";
 
-export function CarpoolBoard({ rides, lang }: { rides: RideGroup[]; lang: Lang }) {
+/** "3 prosta mesta" / "3 free seats" (Slovenian dual and plural by last two digits). */
+export function freeSeatsLabel(n: number, lang: Lang, short = false): string {
+  if (lang === "en") return short ? `${n} free` : `${n} free ${n === 1 ? "seat" : "seats"}`;
+  const m = n % 100;
+  const [adj, noun] = m === 1 ? ["prosto", "mesto"] : m === 2 ? ["prosti", "mesti"] : m === 3 || m === 4 ? ["prosta", "mesta"] : ["prostih", "mest"];
+  return short ? `${n} ${adj}` : `${n} ${adj} ${noun}`;
+}
+
+export function CarpoolBoard({ rides, lang, seatsOffered = 0 }: { rides: RideGroup[]; lang: Lang; seatsOffered?: number }) {
   const en = lang === "en";
   return (
     <section style={{ marginTop: 18, background: PANEL, border: `1px solid ${ACCENT}33`, padding: 14 }}>
       <h2 style={{ fontFamily: MICHROMA, fontSize: 11, letterSpacing: "0.16em", color: ACCENT, textTransform: "uppercase", margin: "0 0 10px", display: "flex", alignItems: "center", gap: 8 }}>
         <Car size={15} /> {en ? "Car pool" : "Skupni prevoz"}
+        {seatsOffered > 0 && <span style={{ fontFamily: "monospace", fontSize: 11.5, letterSpacing: 0, textTransform: "none", color: MUTED }}>· {freeSeatsLabel(seatsOffered, lang)}</span>}
       </h2>
       {rides.length === 0 ? (
         <p style={{ fontFamily: "monospace", fontSize: 12.5, color: MUTED, display: "flex", alignItems: "center", gap: 6 }}>
@@ -23,7 +32,7 @@ export function CarpoolBoard({ rides, lang }: { rides: RideGroup[]; lang: Lang }
               <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8, flexWrap: "wrap" }}>
                 <strong style={{ fontFamily: "monospace", fontSize: 14, color: INK }}>{g.town}</strong>
                 {g.match && <span style={{ background: ACCENT, color: "#0b0d09", fontFamily: MICHROMA, fontSize: 9, letterSpacing: "0.16em", padding: "2px 6px" }}>{en ? "MATCH" : "UJEMANJE"}</span>}
-                {g.seatsOffered > 0 && <span style={{ fontFamily: "monospace", fontSize: 11.5, color: MUTED }}>{en ? `${g.seatsOffered} seats` : `${g.seatsOffered} mest`}</span>}
+                {g.seatsOffered > 0 && <span style={{ fontFamily: "monospace", fontSize: 11.5, color: MUTED }}>{freeSeatsLabel(g.seatsOffered, lang)}</span>}
               </div>
               <ul style={{ listStyle: "none", padding: 0, margin: 0, display: "grid", gap: 10 }}>
                 {[...g.drivers.map((d) => ({ ...d, driver: true })), ...g.riders.map((r) => ({ ...r, driver: false }))].map((p) => (
