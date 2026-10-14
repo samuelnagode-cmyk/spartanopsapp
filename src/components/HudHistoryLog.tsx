@@ -40,7 +40,8 @@ export function HudHistoryLog({
   teamLabelFor,
   teamColor,
   nodeNames,
-  maxHeight = 320,
+  meCallsign,
+  en = false,
 }: {
   captures: CaptureEntry[];
   deaths: DeathEvent[];
@@ -48,10 +49,13 @@ export function HudHistoryLog({
   teamLabelFor: (t: string) => string;
   teamColor: (t: string) => string;
   nodeNames: string[];
-  maxHeight?: number;
+  meCallsign?: string;
+  en?: boolean;
 }) {
   const t = useT();
   const [filter, setFilter] = useState<"all" | "sectors">("all");
+  const [showAll, setShowAll] = useState(false);
+  const meKey = (meCallsign ?? "").trim().toUpperCase();
 
   const rows = useMemo<Row[]>(() => {
     const capRows: Row[] = captures.map((c) => ({
@@ -72,7 +76,7 @@ export function HudHistoryLog({
             player: String(d.callsign ?? "—").toUpperCase(),
           }))
         : [];
-    return [...capRows, ...deathRows].sort((a, b) => b.at - a.at);
+    return [...capRows, ...deathRows].sort((a, b) => b.at - a.at).slice(0, 200);
   }, [captures, deaths, showDeaths, filter, nodeNames]);
 
 
@@ -123,15 +127,16 @@ export function HudHistoryLog({
           </div>
         )}
       </div>
-      <div style={{ maxHeight, overflowY: "auto" }}>
+      <div>
         {rows.length === 0 && (
           <p style={{ color: MUTED, fontStyle: "italic", padding: 16, fontSize: 12, textAlign: "center" }}>
             {t("hudLog.empty")}
           </p>
         )}
-        {rows.map((r) => {
+        {(showAll ? rows : rows.slice(0, 8)).map((r) => {
           const c = teamColor(r.team) ?? ACCENT;
           const isCap = r.kind === "capture";
+          const mine = !!meKey && r.player === meKey;
           return (
             <div
               key={r.id}
@@ -144,7 +149,7 @@ export function HudHistoryLog({
                 padding: "4px 12px",
                 borderTop: "1px solid rgba(236,227,196,0.05)",
                 borderLeft: `3px solid ${isCap ? c : `${c}66`}`,
-                background: isCap ? `${c}0d` : "transparent",
+                background: mine ? "rgba(224,176,78,0.12)" : isCap ? `${c}0d` : "transparent",
               }}
             >
               <span aria-hidden style={{ fontSize: isCap ? 11 : 10, color: c, lineHeight: 1 }}>
@@ -177,15 +182,32 @@ export function HudHistoryLog({
                 }}
               >
                 {r.player}
+                {mine && <span style={{ color: ACCENT, fontWeight: 400 }}>{en ? " · YOU" : " · TI"}</span>}
               </span>
               {isCap && (
                 <span style={{ marginLeft: "auto", fontFamily: "monospace", fontSize: 10, color: MUTED, letterSpacing: "0.1em" }}>
-                  {r.sector}
+                  {en ? "SECTOR" : "SEKTOR"} {r.sector}
                 </span>
               )}
             </div>
           );
         })}
+        {rows.length > 8 && (
+          <button
+            type="button"
+            onClick={() => setShowAll((v) => !v)}
+            style={{ width: "100%", minHeight: 40, background: "transparent", border: "none", borderTop: "1px solid rgba(236,227,196,0.08)", color: ACCENT, fontFamily: "monospace", fontSize: 10, letterSpacing: "0.18em", textTransform: "uppercase", cursor: "pointer" }}
+          >
+            {showAll ? (en ? "Hide" : "Skrij") : `${en ? "Show all" : "Pokaži vse"} (${rows.length})`}
+          </button>
+        )}
+        {showDeaths && (
+          <p style={{ color: MUTED, fontFamily: "monospace", fontSize: 10, lineHeight: 1.5, padding: "6px 12px 8px", margin: 0, borderTop: "1px solid rgba(236,227,196,0.05)" }}>
+            {en
+              ? "Deaths shown are those this phone saw live; some may be missing if the app was closed."
+              : "Prikazane so smrti, ki jih je ta telefon videl v živo; če je bila aplikacija zaprta, katera manjka."}
+          </p>
+        )}
 
       </div>
     </div>
