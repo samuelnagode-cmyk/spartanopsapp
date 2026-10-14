@@ -20,7 +20,7 @@ import { MissionRulesAccordion, MissionDescriptionCard, CollapsibleCard } from "
 
 import { OfflineBanner } from "@/components/OfflineBanner";
 import { TacticalCompass } from "@/components/TacticalCompass";
-import { Crosshair, Shield, Phone, QrCode, MapPin, Headphones, Check } from "lucide-react";
+import { Crosshair, Shield, Phone, QrCode, MapPin, Headphones, Check, Users } from "lucide-react";
 import { useLang, useT } from "@/lib/i18n";
 import { HudNotificationStack, useHudNotices, fillTemplate } from "@/components/HudNotificationStack";
 import { HudHistoryLog } from "@/components/HudHistoryLog";
