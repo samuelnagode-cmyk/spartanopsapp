@@ -3211,13 +3211,14 @@ function LiveMatch({ state, captures, now, roster, myTeam, meId, meCallsign }: {
           style={{
             position: "fixed", top: headerH, left: 0, right: 0, height: 40, zIndex: 900,
             background: "rgba(11,13,9,0.94)", borderBottom: `1px solid ${ACCENT}44`, border: "none",
-            display: "flex", alignItems: "center", justifyContent: "center", gap: 10,
-            fontFamily: "'Michroma', monospace", fontSize: 12, letterSpacing: "0.1em", cursor: "pointer",
+            display: "flex", alignItems: "center", justifyContent: "center", gap: 6,
+            fontFamily: "'Michroma', monospace", fontSize: teams.length === 3 ? 10 : 12, letterSpacing: "0.06em", cursor: "pointer",
+            whiteSpace: "nowrap", overflow: "hidden", padding: "0 8px",
             backdropFilter: "blur(6px)",
           }}
         >
           {teams.map((tm, i) => (
-            <span key={tm} style={{ display: "inline-flex", alignItems: "center", gap: 10 }}>
+            <span key={tm} style={{ display: "inline-flex", alignItems: "center", gap: 6, minWidth: 0 }}>
               {i > 0 && <span style={{ color: MUTED }}>·</span>}
               <span style={{ color: TEAM_COLOR[tm] }}>{teamLabelFor(tm)} {scoreFor(tm)}</span>
               {i === 0 && <><span style={{ color: MUTED }}>·</span><span style={{ color: INK }}>{mm}:{ss}</span></>}
