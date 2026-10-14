@@ -256,6 +256,15 @@ export function RsvpPanel({ event, lang, onCounts }: { event: RsvpEvent; lang: L
             </>
           ) : !v.needsReconsent && (
             <>
+              {me && (
+                <button type="button" className="ev-focus" aria-expanded={open} onClick={() => setAnsOpen(!open)}
+                  style={{ width: "100%", minHeight: 44, background: "none", border: "none", cursor: "pointer", display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8, padding: 0 }}>
+                  <span style={{ fontFamily: "monospace", fontSize: 12.5, color: INK, textAlign: "left" }}>{summary}</span>
+                  <ChevronDown size={16} style={{ flexShrink: 0, color: ACCENT, transform: open ? "rotate(180deg)" : "none" }} />
+                </button>
+              )}
+              {open && (
+              <>
               <div role="radiogroup" aria-label={en ? "Your answer" : "Tvoj odgovor"} style={{ display: "flex", gap: 6 }}>
                 <button type="button" role="radio" aria-checked={me?.status === "going"} className="ev-focus" disabled={busy || (full && me?.status !== "going")}
                   style={{ ...segBtn(me?.status === "going"), opacity: full && me?.status !== "going" ? 0.45 : 1 }} onClick={() => me?.status !== "going" && answer("going")}>{en ? "Going" : "Pridem"}</button>
@@ -353,6 +362,8 @@ export function RsvpPanel({ event, lang, onCounts }: { event: RsvpEvent; lang: L
                     </div>
                   ))}
                 </div>
+              )}
+              </>
               )}
             </>
           )}
