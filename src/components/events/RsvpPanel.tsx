@@ -12,7 +12,7 @@ import { PlayerAuthDialog } from "@/components/PlayerAuth";
 import { ACCENT, ERR, INK, MICHROMA, MUTED, OK, PANEL, btnOutline, btnPrimary } from "./ui";
 import { CapacityBar } from "./CapacityBar";
 import { AttendeeList, LockedAttendees } from "./AttendeeList";
-import { CarpoolBoard } from "./CarpoolBoard";
+import { CarpoolBoard, freeSeatsLabel } from "./CarpoolBoard";
 
 const INTENT_KEY = "spartanops:rsvp-intent";
 type Status = "going" | "maybe";
@@ -190,10 +190,9 @@ export function RsvpPanel({ event, lang, onCounts }: { event: RsvpEvent; lang: L
     <div style={{ marginTop: 22 }}>
       {/* 4a header numbers */}
       <section style={{ background: PANEL, border: `1px solid ${ACCENT}44`, padding: "16px 14px" }}>
-        <div style={{ display: "grid", gridTemplateColumns: `repeat(${att.seatsOffered > 0 ? 3 : 2}, minmax(0, 1fr))`, gap: 8 }}>
+        <div style={{ display: "grid", gridTemplateColumns: `repeat(2, minmax(0, 1fr))`, gap: 8 }}>
           <Big n={att.going} label={en ? "Going" : "Pride"} />
           <Big n={att.maybe} label={en ? "Maybe" : "Morda"} />
-          {att.seatsOffered > 0 && <Big n={att.seatsOffered} label={en ? "Seats offered" : "Ponujena mesta"} />}
         </div>
         <CapacityBar going={att.going} capacity={att.capacity} lang={lang} />
         {event.schedule_changed_at && (
@@ -346,8 +345,10 @@ export function RsvpPanel({ event, lang, onCounts }: { event: RsvpEvent; lang: L
       ) : null}
 
       {/* 4e car pool */}
-      {canSeeRides ? <CarpoolBoard rides={att.rides ?? []} lang={lang} /> : !v.signedIn && (
-        <p style={{ marginTop: 12, fontFamily: "monospace", fontSize: 12, color: MUTED }}>{en ? "Sign in (18+) to see rides." : "Prijavi se (18+), da vidiš prevoze."}</p>
+      {canSeeRides ? <CarpoolBoard rides={att.rides ?? []} lang={lang} seatsOffered={att.seatsOffered} /> : !v.signedIn && (
+        <p style={{ marginTop: 12, fontFamily: "monospace", fontSize: 12, color: MUTED }}>{att.seatsOffered > 0
+          ? (en ? `Rides: ${freeSeatsLabel(att.seatsOffered, lang)}. Sign in (18+) to see where from.` : `Prevozi: ${freeSeatsLabel(att.seatsOffered, lang)}. Prijavi se (18+), da vidiš, od kod.`)
+          : (en ? "Sign in (18+) to see rides." : "Prijavi se (18+), da vidiš prevoze.")}</p>
       )}
 
       <PlayerAuthDialog open={authOpen} onClose={() => setAuthOpen(false)} next={next} rsvp={pendingRsvp ?? undefined} onDone={() => { void load().then(async (a) => { if (a?.viewer.signedIn && !a.viewer.hasProfile) navigate({ to: "/me", search: { next, ...(pendingRsvp ? { rsvp: pendingRsvp } : {}) } as never }); else await applyIntent(a); }); }} />
