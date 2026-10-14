@@ -411,7 +411,7 @@ export default function FeatureShowcase() {
           padding: 2px 2px 10px;
         }
         .so-fs-tabs::-webkit-scrollbar { display: none; }
-        .so-fs-copy { min-height: 160px; }
+        .so-fs-copy { min-height: 206px; }
         .fs-tab {
           flex: 0 0 auto;
           scroll-snap-align: center;
