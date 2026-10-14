@@ -2213,10 +2213,7 @@ function TeamGrid({ roster, meId, settings }: { roster: Checkin[]; meId: string;
   const { lang } = useLang();
   const en = lang === "en";
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
-  const blueCount = roster.filter((r) => r.assigned_team === "modra").length;
-  const redCount = roster.filter((r) => r.assigned_team === "rdeca").length;
   const teams = activeTeams(settings);
-  const yellowCount = roster.filter((r) => r.assigned_team === "rumena").length;
   const FALLBACK: Record<string, string> = { modra: "ALPHA", rdeca: "BRAVO", rumena: "CHARLIE" };
   const primary = (k: "modra" | "rdeca" | "rumena") => {
     const custom = settings?.teamNames?.[k];
@@ -2225,46 +2222,13 @@ function TeamGrid({ roster, meId, settings }: { roster: Checkin[]; meId: string;
   };
   const colorTag = (k: "modra" | "rdeca" | "rumena") => (en ? TEAM_LABEL_EN[k] : TEAM_LABEL[k]);
   type TeamKey = "modra" | "rdeca" | "rumena";
-  const allCols: { key: TeamKey; label: string; sub: string }[] = [
-    { key: "modra", label: primary("modra"), sub: `· ${colorTag("modra")} FACTION ·` },
-    { key: "rdeca", label: primary("rdeca"), sub: `· ${colorTag("rdeca")} FACTION ·` },
-    { key: "rumena", label: primary("rumena"), sub: `· ${colorTag("rumena")} FACTION ·` },
-  ];
+  const allCols: { key: TeamKey; label: string; sub: string }[] = (["modra", "rdeca", "rumena"] as TeamKey[]).map((k) => ({
+    key: k, label: primary(k), sub: colorTag(k),
+  }));
   const cols = allCols.filter((c) => teams.includes(c.key) || roster.some((r) => r.assigned_team === c.key));
+  const waiting = roster.filter((r) => r.assigned_team === "none");
   return (
     <div>
-      <div
-        className="mb-4 rounded-md px-4 py-4 text-center"
-        style={{
-          background: "linear-gradient(135deg, rgba(19,22,15,0.96), rgba(8,10,7,0.96))",
-          border: `1px solid ${ACCENT}33`,
-        }}
-      >
-        <p className="font-mono uppercase tracking-[0.28em] text-[10px] mb-2" style={{ color: MUTED }}>
-          ACTIVE PLAYER RATIO
-        </p>
-        <div
-          className="flex items-center justify-center gap-3 sm:gap-5 flex-wrap"
-          style={{ fontFamily: "'Michroma', monospace" }}
-        >
-          <span style={{ color: TEAM_COLOR.modra, fontSize: "clamp(28px, 8vw, 48px)", fontWeight: 800 }}>
-            {blueCount}
-          </span>
-          <span style={{ color: MUTED, fontSize: "clamp(16px, 5vw, 28px)", letterSpacing: "0.14em" }}>VS</span>
-          <span style={{ color: TEAM_COLOR.rdeca, fontSize: "clamp(28px, 8vw, 48px)", fontWeight: 800 }}>
-            {redCount}
-          </span>
-          {yellowCount > 0 && (
-            <>
-              <span style={{ color: MUTED, fontSize: "clamp(16px, 5vw, 28px)", letterSpacing: "0.14em" }}>VS</span>
-              <span style={{ color: TEAM_COLOR.rumena, fontSize: "clamp(28px, 8vw, 48px)", fontWeight: 800 }}>
-                {yellowCount}
-              </span>
-            </>
-          )}
-        </div>
-      </div>
-
       <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
         {cols.map((c) => {
           const players = roster.filter((r) => r.assigned_team === c.key);
@@ -2277,49 +2241,30 @@ function TeamGrid({ roster, meId, settings }: { roster: Checkin[]; meId: string;
               style={{
                 background: `linear-gradient(180deg, ${TEAM_COLOR[c.key]}18, rgba(19,22,15,0.96) 34%)`,
                 border: `1px solid ${TEAM_COLOR[c.key]}66`,
-                boxShadow: `0 14px 34px -26px ${TEAM_COLOR[c.key]}`,
               }}
             >
               <div
-                className="flex items-center justify-between gap-3 px-3 py-3"
+                className="flex items-center justify-between gap-3 px-3 py-2"
                 style={{ borderBottom: `1px solid ${TEAM_COLOR[c.key]}33` }}
               >
-                <div>
-                  <p
-                    style={{
-                      fontFamily: "'Michroma', monospace",
-                      color: TEAM_COLOR[c.key],
-                      fontSize: 12,
-                      letterSpacing: "0.16em",
-                    }}
-                  >
-                    {c.label} ({players.length})
-                  </p>
-                  <p className="font-mono uppercase tracking-[0.18em] text-[9px] mt-1" style={{ color: MUTED }}>
-                    {c.sub}
+                <div className="flex items-center gap-2 min-w-0">
+                  <span style={{ width: 8, height: 8, borderRadius: "50%", background: TEAM_COLOR[c.key], flexShrink: 0 }} />
+                  <p style={{ fontFamily: "'Michroma', monospace", color: TEAM_COLOR[c.key], fontSize: 12, letterSpacing: "0.16em", overflowWrap: "anywhere" }}>
+                    {c.label} · {players.length}
                   </p>
                 </div>
-                <span
-                  style={{
-                    width: 10,
-                    height: 10,
-                    borderRadius: "50%",
-                    background: TEAM_COLOR[c.key],
-                    boxShadow: `0 0 14px ${TEAM_COLOR[c.key]}`,
-                  }}
-                />
+                <span className="font-mono uppercase tracking-[0.18em] text-[9px] shrink-0" style={{ color: MUTED }}>
+                  {c.sub}
+                </span>
               </div>
-              <div className="p-3 space-y-2 min-h-[92px]">
+              <div className="p-2 space-y-1.5">
                 {players.length === 0 && (
-                  <p
-                    className="text-center font-mono text-[10px] uppercase tracking-widest py-6"
-                    style={{ color: MUTED }}
-                  >
+                  <p className="text-center font-mono text-[10px] uppercase tracking-widest py-3" style={{ color: MUTED }}>
                     {en ? "— EMPTY —" : "— prazno —"}
                   </p>
                 )}
                 {visiblePlayers.map((p) => (
-                  <PlayerRow key={p.id} p={p} isMe={p.id === meId} en={en} />
+                  <PlayerRow key={p.id} p={p} isMe={p.id === meId} en={en} dense />
                 ))}
                 {players.length > 5 && (
                   <button
@@ -2339,46 +2284,18 @@ function TeamGrid({ roster, meId, settings }: { roster: Checkin[]; meId: string;
             </div>
           );
         })}
-        <div
-          className="md:col-span-3 rounded-md"
-          style={{ background: PANEL, border: `1px solid rgba(236,227,196,0.12)` }}
-        >
-          <div
-            style={{
-              padding: "8px 12px",
-              fontFamily: "'Michroma', monospace",
-              fontSize: 11,
-              letterSpacing: "0.2em",
-              color: MUTED,
-              textAlign: "center",
-            }}
-          >
-            {en ? "WAITING ROOM" : "ČAKALNICA"} · {roster.filter((r) => r.assigned_team === "none").length}
-          </div>
-          <div
-            style={{
-              padding: "10px 12px",
-              borderTop: `1px dashed rgba(224,176,78,0.25)`,
-              background: "rgba(224,176,78,0.05)",
-              color: MUTED,
-              fontFamily: "monospace",
-              fontSize: 10.5,
-              lineHeight: 1.55,
-              textAlign: "center",
-            }}
-          >
-            {en
-              ? "Please join teams according to player numbers and experience level, otherwise the marshal will reposition some players to make the game more balanced."
-              : "Prosimo, pridružite se ekipam glede na število igralcev in raven izkušenj, sicer bo maršal razporedil nekaj igralcev, da bo igra bolj uravnotežena."}
-          </div>
-          <div className="p-3 flex flex-wrap gap-2">
-            {roster
-              .filter((r) => r.assigned_team === "none")
-              .map((p) => (
+        {waiting.length > 0 && (
+          <div className="md:col-span-3 rounded-md" style={{ background: PANEL, border: `1px solid rgba(236,227,196,0.12)` }}>
+            <div style={{ padding: "6px 12px", fontFamily: "'Michroma', monospace", fontSize: 11, letterSpacing: "0.2em", color: MUTED, textAlign: "center" }}>
+              {en ? "WAITING ROOM" : "ČAKALNICA"} · {waiting.length}
+            </div>
+            <div className="px-3 pb-3 flex flex-wrap gap-2">
+              {waiting.map((p) => (
                 <PlayerRow key={p.id} p={p} isMe={p.id === meId} compact en={en} />
               ))}
+            </div>
           </div>
-        </div>
+        )}
       </div>
     </div>
   );
@@ -2418,14 +2335,28 @@ const PlayerRow = memo(function PlayerRow({ p, isMe, compact, en }: { p: Checkin
   );
 });
 
+function slPlayers(n: number): string {
+  const m100 = n % 100;
+  if (m100 === 1) return `${n} igralec`;
+  if (m100 === 2) return `${n} igralca`;
+  if (m100 === 3 || m100 === 4) return `${n} igralci`;
+  return `${n} igralcev`;
+}
+
+export function playersLabel(n: number, en: boolean): string {
+  return en ? `${n} ${n === 1 ? "player" : "players"}` : slPlayers(n);
+}
+
 function TeamSelectModal({
   onPick,
   onClose,
   settings,
+  counts,
 }: {
   onPick: (t: "modra" | "rdeca" | "rumena") => void;
   onClose: () => void;
   settings?: any;
+  counts?: Partial<Record<"modra" | "rdeca" | "rumena", number>>;
 }) {
   const { lang } = useLang();
   const en = lang === "en";
@@ -2436,6 +2367,11 @@ function TeamSelectModal({
     if (typeof custom === "string" && custom.trim()) return custom.trim().toUpperCase();
     return (en ? FALLBACK_EN : FALLBACK_SL)[t];
   };
+  const teamsList = activeTeams(settings);
+  const nums = teamsList.map((t) => counts?.[t] ?? 0);
+  const minN = Math.min(...nums);
+  const allEqual = nums.every((n) => n === nums[0]);
+  const fewestCount = nums.filter((n) => n === minN).length;
   return (
     <div
       className="fixed inset-0 z-[1100] flex items-center justify-center p-4"
@@ -2453,14 +2389,17 @@ function TeamSelectModal({
           {en ? "CHOOSE FACTION" : "IZBERI EKIPO"}
         </h3>
         <div className="flex flex-col gap-2">
-          {activeTeams(settings).map((t) => (
+          {teamsList.map((t) => {
+            const n = counts?.[t] ?? 0;
+            const fewer = counts && !allEqual && n === minN && fewestCount === 1;
+            return (
             <button
               key={t}
               onClick={() => onPick(t)}
               style={{
                 background: TEAM_COLOR[t],
                 color: "#fff",
-                padding: "18px 14px",
+                padding: "14px 14px",
                 border: "none",
                 cursor: "pointer",
                 fontFamily: "'Michroma', monospace",
@@ -2472,8 +2411,14 @@ function TeamSelectModal({
               }}
             >
               {label(t)}
+              {counts && (
+                <span style={{ display: "block", fontFamily: "monospace", fontSize: 11, fontWeight: 400, letterSpacing: "0.04em", marginTop: 4 }}>
+                  {playersLabel(n, en)}{fewer ? (en ? " · fewer players" : " · manj igralcev") : ""}
+                </span>
+              )}
             </button>
-          ))}
+            );
+          })}
         </div>
       </div>
     </div>
