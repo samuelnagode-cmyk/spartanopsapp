@@ -24,6 +24,7 @@ import { Crosshair, Shield, Phone, QrCode, MapPin, Headphones, Check, Users } fr
 import { useLang, useT } from "@/lib/i18n";
 import { HudNotificationStack, useHudNotices, fillTemplate } from "@/components/HudNotificationStack";
 import { HudHistoryLog } from "@/components/HudHistoryLog";
+import { scoreboardColumns, deathsEffectivelyPublic } from "@/lib/scoreboard-columns";
 import { appendDeathEvents, readDeathEvents, clearDeathEvents, type DeathEvent } from "@/lib/hud-history";
 import { QRScanner, type ScanPayload } from "@/components/QRScanner";
 import { useAmbientAudio } from "@/components/AmbientAudio";
@@ -37,7 +38,7 @@ export const Route = createFileRoute("/misija")({
   head: () => ({
     meta: [{ title: "SpartanOps · Misija" }, { name: "robots", content: "noindex,nofollow" }],
   }),
-  validateSearch: (s: Record<string, unknown>): { field: string; point?: string; preview?: boolean; marshal?: boolean; preset?: string; pts?: string; deaths?: string } => {
+  validateSearch: (s: Record<string, unknown>): { field: string; point?: string; preview?: boolean; marshal?: boolean; preset?: string; pts?: string; deaths?: string; vis?: string; rsp?: string; teams?: string; big?: string } => {
     return {
       field: typeof s.field === "string" ? s.field : (typeof s.field_id === "string" ? s.field_id : "zeleni-raj"),
       point: typeof s.point === "string" || typeof s.point === "number" ? String(s.point) : undefined,
@@ -47,6 +48,10 @@ export const Route = createFileRoute("/misija")({
       // Preview-only flags (read only when preview=1): pts=0 / deaths=0.
       pts: s.pts === 0 || s.pts === "0" ? "0" : undefined,
       deaths: s.deaths === 0 || s.deaths === "0" ? "0" : undefined,
+      vis: s.vis === "team" ? "team" : undefined,
+      rsp: s.rsp === 0 || s.rsp === "0" ? "0" : undefined,
+      teams: s.teams === 3 || s.teams === "3" ? "3" : undefined,
+      big: s.big === 1 || s.big === "1" ? "1" : undefined,
     };
   },
 
@@ -265,7 +270,9 @@ function makePreviewRoster(field: string, sessionId: string): Checkin[] {
   ];
 }
 
-function makePreviewState(field: string, preset?: string, flags?: { ptsOff?: boolean; deathsOff?: boolean }): GameState {
+type PreviewFlags = { ptsOff?: boolean; deathsOff?: boolean; visTeam?: boolean; rspOff?: boolean; three?: boolean; big?: boolean };
+
+function makePreviewState(field: string, preset?: string, flags?: PreviewFlags): GameState {
   const now = Date.now();
   const ended = preset === "ended";
   const active = preset === "hud" || preset === "paused";
@@ -282,7 +289,7 @@ function makePreviewState(field: string, preset?: string, flags?: { ptsOff?: boo
     countdown_seconds: 60,
     match_started_at: ended ? new Date(now - 40 * 60_000).toISOString() : prestart ? new Date(now + 60_000).toISOString() : active ? new Date(now - 7 * 60_000).toISOString() : null,
     match_duration_minutes: 40,
-    team_scores: { modra: 7, rdeca: 4, rumena: 0 },
+    team_scores: { modra: 7, rdeca: 4, rumena: flags?.three ? 2 : 0 },
     node_holders: { "1": "modra", "2": "rdeca", "3": null, "4": "modra", "5": null },
     node_positions: { "1": { x: 21, y: 28 }, "2": { x: 70, y: 25 }, "3": { x: 50, y: 50 }, "4": { x: 30, y: 72 }, "5": { x: 76, y: 74 } },
     point_target: 200,
@@ -290,16 +297,42 @@ function makePreviewState(field: string, preset?: string, flags?: { ptsOff?: boo
     settings: {
       missionName: "Operation Fallen Angel",
       missionDescription: "Secure and hold ALPHA and DELTA for a minimum of 6 minutes. Bravo team defends BETA at all costs.",
-      teamCount: 2,
-      teamNames: { modra: "ALPHA", rdeca: "BRAVO" },
-      respawn: { enabled: true, mode: "linear", linearSec: 60, dynStartMin: 1, dynEndMin: 3, visibility: "all", publicDeaths: !flags?.deathsOff },
+      teamCount: flags?.three ? 3 : 2,
+      teamNames: flags?.three ? { modra: "ALPHA", rdeca: "BRAVO", rumena: "CHARLIE" } : { modra: "ALPHA", rdeca: "BRAVO" },
+      respawn: { enabled: !flags?.rspOff, mode: "linear", linearSec: 60, dynStartMin: 1, dynEndMin: 3, visibility: flags?.visTeam ? "team" : "all", publicDeaths: !flags?.deathsOff },
       capturePointsScoring: !flags?.ptsOff,
     },
   };
 }
 
-function makePreviewCaptures(): Capture[] {
+function makePreviewExtras(field: string, flags: PreviewFlags): Checkin[] {
+  const out: Checkin[] = [];
+  if (flags.three) {
+    out.push(
+      { id: `${field}-c1`, callsign: "Raven_Six", club: null, experience_level: "dobro", assigned_team: "rumena", team_changed_flag: false, first_name: "Luka", last_initial: "R", death_count: 1, respawn_unlock_at: null } as Checkin,
+      { id: `${field}-c2`, callsign: "Lynx", club: null, experience_level: "slabo", assigned_team: "rumena", team_changed_flag: false, first_name: "Eva", last_initial: "L", death_count: 0, respawn_unlock_at: new Date(Date.now() + 35_000).toISOString() } as Checkin,
+    );
+  }
+  if (flags.big) {
+    const levels = ["slabo", "dobro", "zelo_dobro"];
+    for (let i = 0; i < 26; i++) {
+      const team = i % 2 === 0 ? "modra" : "rdeca";
+      out.push({ id: `${field}-g${i}`, callsign: `Ghost_${String(i + 1).padStart(2, "0")}`, club: null, experience_level: levels[i % 3], assigned_team: team, team_changed_flag: false, first_name: "Test", last_initial: String.fromCharCode(65 + (i % 26)), death_count: (i * 7) % 6, respawn_unlock_at: i % 5 === 0 ? new Date(Date.now() + (20 + i) * 1000).toISOString() : null } as Checkin);
+    }
+  }
+  return out;
+}
+
+function makePreviewCaptures(flags?: PreviewFlags): Capture[] {
   const base = Date.now() - 6 * 60_000;
+  if (flags?.big) {
+    const list: Capture[] = [];
+    for (let i = 0; i < 30; i++) {
+      const team = i % 2 === 0 ? "modra" : "rdeca";
+      list.push({ id: `preview-b${i}`, point_number: (i % 5) + 1, team, player_callsign: `Ghost_${String((i % 26) + 1).padStart(2, "0")}`, captured_at: new Date(base + i * 10_000).toISOString() });
+    }
+    return list;
+  }
   return [
     { id: "preview-c1", point_number: 1, team: "modra", player_callsign: "Kozjak_Marko", captured_at: new Date(base).toISOString() },
     { id: "preview-c2", point_number: 2, team: "rdeca", player_callsign: "Ghost_Falcon", captured_at: new Date(base + 75_000).toISOString() },
@@ -467,7 +500,7 @@ function MisijaPageInner() {
   const { lang } = useLang();
   const t = useT();
   const en = lang === "en";
-  const { field: rawField, point: targetPoint, preview, marshal: marshalMode, preset, pts: previewPts, deaths: previewDeaths } = Route.useSearch();
+  const { field: rawField, point: targetPoint, preview, marshal: marshalMode, preset, pts: previewPts, deaths: previewDeaths, vis: previewVis, rsp: previewRsp, teams: previewTeams, big: previewBig } = Route.useSearch();
 
   // Anti-cheat security alert: /scan sets this flag when a QR is opened
   // outside the in-app scanner. Surface a tactical warning on arrival.
@@ -585,10 +618,11 @@ function MisijaPageInner() {
 
   useEffect(() => {
     if (!preview || !sessionId || !preset) return;
-    const previewRoster = makePreviewRoster(field, sessionId);
+    const flags: PreviewFlags = { ptsOff: previewPts === "0", deathsOff: previewDeaths === "0", visTeam: previewVis === "team", rspOff: previewRsp === "0", three: previewTeams === "3", big: previewBig === "1" };
+    const previewRoster = [...makePreviewRoster(field, sessionId), ...makePreviewExtras(field, flags)];
     const primary = previewRoster[0];
-    setState(makePreviewState(field, preset, { ptsOff: previewPts === "0", deathsOff: previewDeaths === "0" }));
-    setCaptures(makePreviewCaptures());
+    setState(makePreviewState(field, preset, flags));
+    setCaptures(makePreviewCaptures(flags));
     setRoster(previewRoster);
     if (preset === "registration") {
       setGhostMe(null);
@@ -597,7 +631,7 @@ function MisijaPageInner() {
     }
     setGhostMe({ ...primary, assigned_team: preset === "team" ? "none" : "modra" });
     setShowTeamSelect(preset === "team");
-  }, [preview, preset, field, sessionId, previewPts, previewDeaths]);
+  }, [preview, preset, field, sessionId, previewPts, previewDeaths, previewVis, previewRsp, previewTeams, previewBig]);
 
   useEffect(() => {
     if (!sessionId || preview) return;
@@ -3096,7 +3130,9 @@ function ScanCodeButton({ paused, en }: { paused: boolean; en: boolean }) {
 function LiveMatch({ state, captures, now, roster, myTeam, meId, meCallsign }: { state: GameState; captures: Capture[]; now: number; roster: Checkin[]; myTeam: string; meId?: string; meCallsign?: string }) {
 
   const deathLog = useDeathLog(state.field_id ?? "");
-  const visibleHudDeaths = deathLog.filter((d) => canSeeDeath(d, { deathsPublic: !!state.settings?.respawn?.publicDeaths, teamOnly: state.settings?.respawn?.visibility === "team", myTeam, meId, meCallsign }));
+  const deathsPublic = deathsEffectivelyPublic(state.settings);
+  const teamOnly = state.settings?.respawn?.visibility === "team";
+  const visibleHudDeaths = deathLog.filter((d) => canSeeDeath(d, { deathsPublic, teamOnly, myTeam, meId, meCallsign }));
   const { lang } = useLang();
   const t = useT();
   const en = lang === "en";
@@ -3118,29 +3154,82 @@ function LiveMatch({ state, captures, now, roster, myTeam, meId, meCallsign }: {
 
   const mm = String(Math.floor(remaining / 60)).padStart(2, "0");
   const ss = String(remaining % 60).padStart(2, "0");
+  const showIntro = !!startMs && effectiveNow >= startMs && effectiveNow - startMs < 5 * 60_000;
 
   const hasPositions = [1, 2, 3, 4, 5].some((n) => (state.node_positions ?? {})[String(n)]);
 
-  const matchEndMs = startMs ? startMs + state.match_duration_minutes * 60 * 1000 : null;
   const target = state.point_target ?? 200;
   const visibleCaptures = useMemo(
     () => startMs ? captures.filter((c) => new Date(c.captured_at).getTime() >= startMs) : [],
     [captures, startMs],
   );
-  const visibleNodeHolders = useMemo(() => nodeHoldersFromCaptures(visibleCaptures), [visibleCaptures]);
   // Server-stored scores only (spartanops_tick_scores): steps with each 30s tick.
   const dynamicScores = state.team_scores ?? {};
   const scoreFor = (t: string) => Math.floor(Number(dynamicScores[t] ?? 0) || 0);
+  const teams = activeTeams(state.settings);
+
+  // Sticky mini bar: shown once the score cards leave the screen.
+  const scoreRef = useRef<HTMLDivElement | null>(null);
+  const [scoreHidden, setScoreHidden] = useState(false);
+  const [headerH, setHeaderH] = useState(64);
+  useEffect(() => {
+    const measure = () => {
+      const h = document.querySelector("header")?.getBoundingClientRect().bottom;
+      if (h && h > 0) setHeaderH(Math.round(h));
+    };
+    measure();
+    window.addEventListener("resize", measure);
+    const el = scoreRef.current;
+    let io: IntersectionObserver | null = null;
+    if (el && typeof IntersectionObserver !== "undefined") {
+      io = new IntersectionObserver(([entry]) => setScoreHidden(!entry.isIntersecting && entry.boundingClientRect.top < 0), { threshold: 0 });
+      io.observe(el);
+    }
+    return () => { window.removeEventListener("resize", measure); io?.disconnect(); };
+  }, []);
+  const showMiniBar = scoreHidden && preMatchSec === 0 && state.status !== "paused";
+
+  const [panel, setPanel] = useState<"events" | "players">("events");
+  useEffect(() => {
+    try { const v = sessionStorage.getItem("spartanops:hud-panel"); if (v === "players" || v === "events") setPanel(v); } catch { /* ignore */ }
+  }, []);
+  const choosePanel = (v: "events" | "players") => {
+    setPanel(v);
+    try { sessionStorage.setItem("spartanops:hud-panel", v); } catch { /* ignore */ }
+  };
 
   return (
     <div className="max-w-5xl mx-auto px-4 py-6" style={{ paddingTop: 84, paddingBottom: "calc(96px + env(safe-area-inset-bottom, 0px))" }}>
-      <HudNoticeFeed captures={visibleCaptures} roster={roster} myTeam={myTeam} meId={meId} meCallsign={meCallsign} teamLabelFor={teamLabelFor} respawnEnabled={!!state.settings?.respawn?.enabled || !!state.settings?.respawn?.publicDeaths} deathsPublic={!!state.settings?.respawn?.publicDeaths} teamOnly={state.settings?.respawn?.visibility === "team"} fieldId={state.field_id ?? ""} />
+      <HudNoticeFeed captures={visibleCaptures} roster={roster} myTeam={myTeam} meId={meId} meCallsign={meCallsign} teamLabelFor={teamLabelFor} respawnEnabled={!!state.settings?.respawn?.enabled} deathsPublic={deathsPublic} teamOnly={teamOnly} fieldId={state.field_id ?? ""} />
       {preMatchSec > 0 && <PreMatchCountdown seconds={preMatchSec} polygon={fieldTitleFromState(state, "")} eventName={missionTitleFromState(state, "")} gamemode={state.gamemode} pointTarget={state.point_target} settings={state.settings} en={en} state={state} roster={roster} myTeam={myTeam} meCallsign={meCallsign} />}
 
-      <PlayerHudHeader en={en} />
+      {showMiniBar && (
+        <button
+          type="button"
+          onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
+          aria-label={en ? "Back to the score" : "Nazaj na rezultat"}
+          style={{
+            position: "fixed", top: headerH, left: 0, right: 0, height: 40, zIndex: 900,
+            background: "rgba(11,13,9,0.94)", border: "none", borderBottom: `1px solid ${ACCENT}44`,
+            display: "flex", alignItems: "center", justifyContent: "center", gap: 6,
+            fontFamily: "'Michroma', monospace", fontSize: teams.length === 3 ? 10 : 12, letterSpacing: "0.06em", cursor: "pointer",
+            whiteSpace: "nowrap", overflow: "hidden", padding: "0 8px",
+            backdropFilter: "blur(6px)",
+          }}
+        >
+          {teams.map((tm, i) => (
+            <span key={tm} style={{ display: "inline-flex", alignItems: "center", gap: 6, minWidth: 0 }}>
+              {i > 0 && <span style={{ color: MUTED }}>·</span>}
+              <span style={{ color: TEAM_COLOR[tm] }}>{teamLabelFor(tm)} {scoreFor(tm)}</span>
+              {i === 0 && <><span style={{ color: MUTED }}>·</span><span style={{ color: INK }}>{mm}:{ss}</span></>}
+            </span>
+          ))}
+        </button>
+      )}
+
       <h1
         className="text-center"
-        style={{ fontFamily: "'Michroma', monospace", fontSize: 20, color: ACCENT, letterSpacing: "0.14em", textTransform: "uppercase", marginTop: 2 }}
+        style={{ fontFamily: "'Michroma', monospace", fontSize: 18, color: ACCENT, letterSpacing: "0.14em", textTransform: "uppercase", marginTop: 2 }}
       >
         {missionTitleFromState(state, en ? "Active Mission" : "Aktivna misija")}
       </h1>
@@ -3150,103 +3239,106 @@ function LiveMatch({ state, captures, now, roster, myTeam, meId, meCallsign }: {
         </p>
       )}
 
-      {/* Score header — team label above, big centered "score / target" in team color */}
-      {(() => {
-        const showYellow = scoreFor("rumena") > 0;
-        const teams: ReadonlyArray<"modra" | "rdeca" | "rumena"> = showYellow
-          ? ["modra", "rdeca", "rumena"]
-          : ["modra", "rdeca"];
-        return (
-          <div className={`grid gap-3 mb-5 ${showYellow ? "grid-cols-3" : "grid-cols-2"}`}>
-            {teams.map((t) => {
-              const val = scoreFor(t);
-              const pct = Math.min(100, Math.max(0, (val / target) * 100));
-              const col = TEAM_COLOR[t];
-              return (
-                <div key={t} style={{ background: PANEL, borderTop: `3px solid ${col}`, padding: "12px 10px 14px", textAlign: "center" }}>
-                  <div style={{ fontFamily: "monospace", fontSize: 10, letterSpacing: "0.22em", color: MUTED, textTransform: "uppercase" }}>
-                    {teamLabelFor(t)} SCOREBOARD
-                  </div>
-                  <div
-                    style={{
-                      fontFamily: "'Michroma', monospace",
-                      fontSize: "clamp(24px, 7vw, 34px)",
-                      color: col,
-                      fontWeight: 700,
-                      textAlign: "center",
-                      marginTop: 4,
-                      textShadow: `0 0 12px ${col}55`,
-                    }}
-                  >
-                    {val} / {target}
-                  </div>
-                  {/* Progress bar */}
-                  <div style={{ position: "relative", marginTop: 10, height: 8, borderRadius: 999, background: "rgba(255,255,255,0.06)", overflow: "hidden" }}>
-                    <div style={{
-                      position: "absolute", top: 0, left: 0, bottom: 0, width: `${pct}%`,
-                      background: `linear-gradient(90deg, ${col}66 0%, ${col} 90%, #fff 100%)`,
-                      boxShadow: `0 0 10px ${col}, 0 0 4px #fff`,
-                      transition: "width 500ms ease-out",
-                      borderRadius: 999,
-                    }} />
-                    {[25, 50, 75].map((p) => (
-                      <div key={p} style={{ position: "absolute", top: 1, bottom: 1, left: `${p}%`, width: 1, background: "rgba(255,255,255,0.28)" }} />
-                    ))}
-                  </div>
+      <div ref={scoreRef}>
+        <div className={`grid gap-3 ${teams.length === 3 ? "grid-cols-3" : "grid-cols-2"}`}>
+          {teams.map((tm) => {
+            const val = scoreFor(tm);
+            const pct = Math.min(100, Math.max(0, (val / target) * 100));
+            const col = TEAM_COLOR[tm];
+            return (
+              <div key={tm} style={{ background: PANEL, borderTop: `3px solid ${col}`, padding: "10px 8px 12px", textAlign: "center", minWidth: 0 }}>
+                <div style={{ fontFamily: "monospace", fontSize: 10, letterSpacing: "0.22em", color: MUTED, textTransform: "uppercase", overflowWrap: "anywhere" }}>
+                  {teamLabelFor(tm)}
                 </div>
-              );
-            })}
+                <div style={{ fontFamily: "'Michroma', monospace", fontSize: teams.length === 3 ? "clamp(18px, 5.5vw, 30px)" : "clamp(22px, 7vw, 34px)", color: col, fontWeight: 700, marginTop: 4, textShadow: `0 0 12px ${col}55` }}>
+                  {val} / {target}
+                </div>
+                <div style={{ position: "relative", marginTop: 8, height: 8, borderRadius: 999, background: "rgba(255,255,255,0.06)", overflow: "hidden" }}>
+                  <div style={{
+                    position: "absolute", top: 0, left: 0, bottom: 0, width: `${pct}%`,
+                    background: `linear-gradient(90deg, ${col}66 0%, ${col} 90%, #fff 100%)`,
+                    boxShadow: `0 0 10px ${col}, 0 0 4px #fff`,
+                    transition: "width 500ms ease-out",
+                    borderRadius: 999,
+                  }} />
+                  {[25, 50, 75].map((p) => (
+                    <div key={p} style={{ position: "absolute", top: 1, bottom: 1, left: `${p}%`, width: 1, background: "rgba(255,255,255,0.28)" }} />
+                  ))}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+        <div className="text-center mt-3 mb-4">
+          <div className="font-mono uppercase" style={{ color: MUTED, fontSize: 10, letterSpacing: "0.22em" }}>
+            {en ? "TIME REMAINING" : "PREOSTALI ČAS"}
           </div>
-        );
-      })()}
-
-      <p
-        className="text-center font-mono mb-5"
-        style={{ color: MUTED, fontSize: "clamp(12px, 3.4vw, 15px)", lineHeight: 1.45, letterSpacing: "0.02em", maxWidth: 560, marginLeft: "auto", marginRight: "auto" }}
-      >
-        {en
-          ? `Tap ${t("scanner.hudButton")} and scan the QR codes at flagged locations to score points for your team.`
-          : `Tapni ${t("scanner.hudButton")} in skeniraj QR kode na lokacijah z zastavico, da tvoja ekipa pridobi točke.`}
-      </p>
-
-      <div className="text-center mb-6 font-mono text-[12px] uppercase tracking-widest" style={{ color: ACCENT }}>
-        {en ? "TIME REMAINING:" : "Preostali čas:"}{" "}
-        <span style={{ color: INK, fontSize: 20 }}>
-          {mm}:{ss}
-        </span>
+          <div style={{ fontFamily: "'Michroma', monospace", color: INK, fontSize: 28, letterSpacing: "0.08em", lineHeight: 1.2 }}>
+            {mm}:{ss}
+          </div>
+        </div>
       </div>
 
       {/* Map with positioned node markers — click to open zoomable modal */}
       <TacticalMap state={state} captures={visibleCaptures} en={en} hasPositions={hasPositions} missionName={missionTitleFromState(state, en ? "Active Mission" : "Aktivna misija")} timeLabel={`${mm}:${ss}`} />
 
+      {showIntro && (
+        <p className="text-center font-mono mt-2" style={{ color: MUTED, fontSize: 11, lineHeight: 1.5, maxWidth: 560, marginLeft: "auto", marginRight: "auto" }}>
+          {en
+            ? `Tap ${t("scanner.hudButton")} and scan the QR codes at flagged locations to score points for your team.`
+            : `Tapni ${t("scanner.hudButton")} in skeniraj QR kode na lokacijah z zastavico, da tvoja ekipa pridobi točke.`}
+        </p>
+      )}
+
       {/* In-app Scan Code button — the ONLY sanctioned capture path */}
       <ScanCodeButton paused={state.status === "paused"} en={en} />
 
-
-
-
-
-      {/* Two-tier tactical history log */}
-      <HudHistoryLog
-        captures={visibleCaptures}
-        deaths={visibleHudDeaths}
-        showDeaths={!!state.settings?.respawn?.publicDeaths || visibleHudDeaths.length > 0}
-        teamLabelFor={teamLabelFor}
-        teamColor={(t) => TEAM_COLOR[t] ?? ACCENT}
-        nodeNames={NODE_NAMES}
-        maxHeight={300}
-      />
-
-      {/* Player scoreboard (capture counts per player) */}
-      {state.settings?.capturePointsScoring && (
-        <PlayerScoreboard roster={roster} captures={visibleCaptures} respawn={state.settings?.respawn} settings={state.settings} en={en} />
-      )}
-
-      {/* Separator between scoreboard and the rest of the HUD */}
-      <div style={{ height: 1, background: `linear-gradient(90deg, transparent, ${ACCENT}66, transparent)`, margin: "24px 0" }} />
+      {/* Events | Players panel */}
+      <div className="mt-6">
+        <div role="tablist" aria-label={en ? "Events or players" : "Dogodki ali igralci"} className="grid grid-cols-2 mb-3" style={{ border: `1px solid ${ACCENT}55` }}>
+          {(["events", "players"] as const).map((v) => {
+            const active = panel === v;
+            return (
+              <button
+                key={v}
+                type="button"
+                role="tab"
+                aria-selected={active}
+                onClick={() => choosePanel(v)}
+                style={{
+                  minHeight: 44, border: "none", cursor: "pointer",
+                  background: active ? `${ACCENT}26` : "transparent",
+                  color: active ? ACCENT : MUTED,
+                  fontFamily: "'Michroma', monospace", fontSize: 11, letterSpacing: "0.18em", textTransform: "uppercase",
+                }}
+              >
+                {v === "events" ? (en ? "EVENTS" : "DOGODKI") : (en ? "PLAYERS" : "IGRALCI")}
+              </button>
+            );
+          })}
+        </div>
+        <div role="tabpanel">
+          {panel === "events" ? (
+            <HudHistoryLog
+              captures={visibleCaptures}
+              deaths={visibleHudDeaths}
+              showDeaths={deathsPublic || visibleHudDeaths.length > 0}
+              teamLabelFor={teamLabelFor}
+              teamColor={(t) => TEAM_COLOR[t] ?? ACCENT}
+              nodeNames={NODE_NAMES}
+              meCallsign={meCallsign}
+              en={en}
+            />
+          ) : (
+            <PlayerScoreboard roster={roster} captures={visibleCaptures} settings={state.settings} en={en} myTeam={myTeam} meId={meId} now={now} />
+          )}
+        </div>
+      </div>
 
       {/* Mission description / instructions — collapsible, emphasized card */}
-      <MissionDescriptionCard description={(state.settings as any)?.missionDescription} en={en} />
+      <div style={{ marginTop: 20 }}>
+        <MissionDescriptionCard description={(state.settings as any)?.missionDescription} en={en} />
+      </div>
 
       <div style={{ marginTop: 12 }}>
         <MissionRulesAccordion respawn={state.settings?.respawn} weaponRules={(state.settings as any)?.weaponRules} en={en} />
@@ -3255,7 +3347,7 @@ function LiveMatch({ state, captures, now, roster, myTeam, meId, meCallsign }: {
   );
 }
 
-function PlayerScoreboard({ roster, captures, respawn, settings, en = false }: { roster: Checkin[]; captures: Capture[]; respawn?: RespawnSettings; settings?: GameSettings | null; en?: boolean }) {
+function PlayerScoreboard({ roster, captures, settings, en = false, myTeam, meId, now }: { roster: Checkin[]; captures: Capture[]; settings?: GameSettings | null; en?: boolean; myTeam?: string; meId?: string; now: number }) {
   const captureCounts = useMemo(() => {
     const counts: Record<string, number> = {};
     for (const c of captures) {
@@ -3264,69 +3356,105 @@ function PlayerScoreboard({ roster, captures, respawn, settings, en = false }: {
     }
     return counts;
   }, [captures]);
+  const [open, setOpen] = useState<Record<string, boolean>>({});
+  const [all, setAll] = useState<Record<string, boolean>>({});
 
-  const teams = (["modra", "rdeca", "rumena"] as const).filter(
-    (t) => roster.some((r) => r.assigned_team === t)
+  const present = (["modra", "rdeca", "rumena"] as const).filter(
+    (t) => activeTeams(settings).includes(t) || roster.some((r) => r.assigned_team === t),
   );
+  // Own team first.
+  const teams = [...present].sort((a, b) => (a === myTeam ? -1 : b === myTeam ? 1 : 0));
   const teamLabelFor = (t: string) => teamName(t, settings, en);
 
   return (
-    <div className="mt-6 flex flex-col w-full gap-4">
+    <div className="flex flex-col w-full gap-3">
       {teams.map((t) => {
+        const cols = scoreboardColumns(settings, t, myTeam);
         const players = roster
           .filter((r) => r.assigned_team === t)
           .map((r) => ({ ...r, pts: captureCounts[r.callsign] ?? 0 }))
-          .sort((a, b) => b.pts - a.pts);
+          .sort((a, b) => (cols.points ? b.pts - a.pts : 0) || a.callsign.localeCompare(b.callsign));
+        const isOpen = open[t] ?? (t === myTeam || !myTeam || myTeam === "none");
+        const showAll = all[t] ?? false;
+        const visible = showAll ? players : players.slice(0, 10);
+        const totalCaps = players.reduce((s, p) => s + p.pts, 0);
+        const totalDeaths = players.reduce((s, p) => s + (p.death_count ?? 0), 0);
+        const grid = `24px minmax(0,1fr)${cols.points ? " 48px" : ""}${cols.deaths ? " 48px" : ""}${cols.respawnStatus ? " 64px" : ""}`;
+        const extra = cols.points || cols.deaths || cols.respawnStatus;
         return (
           <div key={t} className="w-full" style={{ background: PANEL, border: `1px solid ${TEAM_COLOR[t]}66` }}>
-            <div style={{ padding: "8px 12px", background: `${TEAM_COLOR[t]}22`, color: TEAM_COLOR[t], fontFamily: "'Michroma', monospace", fontSize: 11, letterSpacing: "0.18em", textTransform: "uppercase" }}>
-              {teamLabelFor(t)} SCOREBOARD
-            </div>
-            <div className="divide-y" style={{ borderColor: "rgba(236,227,196,0.08)", maxHeight: 300, overflowY: "auto" }}>
-              <div className="grid gap-1.5 px-3 py-1 text-[9px] font-mono uppercase tracking-widest" style={{ position: "sticky", top: 0, zIndex: 1, background: PANEL, color: MUTED, gridTemplateColumns: `24px minmax(0,1fr) 42px${respawn?.publicDeaths ? " 46px" : ""}${respawn?.enabled ? " 62px" : ""}` }}>
-                <span></span>
-                <span>{en ? "Callsign" : "Callsign"}</span>
-                <span style={{ textAlign: "right", letterSpacing: "0.04em" }}>{en ? "Points" : "Točke"}</span>
-                {respawn?.publicDeaths && <span style={{ textAlign: "right", letterSpacing: "0.04em" }}>{en ? "Deaths" : "Smrti"}</span>}
-                {respawn?.enabled && <span style={{ textAlign: "right" }}>RSP</span>}
-              </div>
-              {players.length === 0 && (
-                <p className="text-center py-3 font-mono text-[11px]" style={{ color: MUTED }}>{en ? "— empty —" : "— prazno —"}</p>
-              )}
-              {players.map((p) => {
-                const real = [p.first_name?.trim(), p.last_initial?.trim() ? `${p.last_initial.trim().charAt(0).toUpperCase()}.` : null].filter(Boolean).join(" ");
-                const unlockMs = p.respawn_unlock_at ? Date.parse(p.respawn_unlock_at) : NaN;
-                const showTimer = respawn?.enabled && respawn?.visibility === "all" && Number.isFinite(unlockMs) && unlockMs > Date.now();
-                const leftSec = showTimer ? Math.max(0, Math.ceil((unlockMs - Date.now()) / 1000)) : 0;
-                const tmm = String(Math.floor(leftSec / 60)).padStart(2, "0");
-                const tss = String(leftSec % 60).padStart(2, "0");
-                const infoLen = p.callsign.length + (p.operator_type?.length ?? 0) + real.length;
-                const baseSize = infoLen > 40 ? 9 : infoLen > 32 ? 10 : infoLen > 24 ? 11 : 12;
-                return (
-                  <div key={p.id} className="grid gap-1.5 items-center px-3 py-2 text-[12px] font-mono" style={{ gridTemplateColumns: `24px minmax(0,1fr) 42px${respawn?.publicDeaths ? " 46px" : ""}${respawn?.enabled ? " 62px" : ""}` }}>
-                    <span style={{ color: ACCENT, display: "inline-flex", alignItems: "center" }}>
-                      <ExperienceBadge level={p.experience_level} size={14} />
-                    </span>
-                    <span style={{ color: INK, fontWeight: 700, minWidth: 0, lineHeight: 1.3, fontSize: baseSize, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
-                      {p.callsign}{p.operator_type && <span style={{ color: ACCENT, fontSize: baseSize - 2, marginLeft: 5 }}>· {p.operator_type}</span>}
-                      {real && <span style={{ color: MUTED, fontWeight: 400, fontSize: baseSize - 2, marginLeft: 4 }}>({real})</span>}
-                    </span>
-
-                    <span style={{ color: TEAM_COLOR[t], fontWeight: 700, textAlign: "right" }}>{p.pts}</span>
-                    {respawn?.publicDeaths && (
-                      <span style={{ color: "#ff7070", textAlign: "right", fontSize: 11, letterSpacing: "0.06em" }}>☠ {p.death_count ?? 0}</span>
-                    )}
-                    {respawn?.enabled && (
-                      showTimer ? (
+            <button
+              type="button"
+              aria-expanded={isOpen}
+              onClick={() => setOpen((o) => ({ ...o, [t]: !isOpen }))}
+              className="w-full flex items-center justify-between gap-2"
+              style={{ minHeight: 44, padding: "8px 12px", background: `${TEAM_COLOR[t]}22`, color: TEAM_COLOR[t], border: "none", cursor: "pointer", fontFamily: "'Michroma', monospace", fontSize: 11, letterSpacing: "0.16em", textTransform: "uppercase", textAlign: "left" }}
+            >
+              <span style={{ minWidth: 0, overflowWrap: "anywhere" }}>
+                {teamLabelFor(t)} · {en ? "PLAYERS" : "IGRALCI"} ({players.length})
+              </span>
+              <span className="font-mono shrink-0" style={{ fontSize: 10, letterSpacing: "0.08em", color: MUTED, display: "inline-flex", gap: 8, alignItems: "center" }}>
+                {!isOpen && cols.points && <span>🎯 {totalCaps}</span>}
+                {!isOpen && cols.deaths && <span>☠ {totalDeaths}</span>}
+                <span aria-hidden="true">{isOpen ? "▴" : "▾"}</span>
+              </span>
+            </button>
+            {isOpen && (
+              <div>
+                {extra && players.length > 0 && (
+                  <div className="grid gap-1.5 px-3 py-1 text-[9px] font-mono uppercase tracking-widest" style={{ color: MUTED, gridTemplateColumns: grid }}>
+                    <span></span>
+                    <span>Callsign</span>
+                    {cols.points && <span style={{ textAlign: "right", letterSpacing: "0.04em" }}>{en ? "Points" : "Točke"}</span>}
+                    {cols.deaths && <span style={{ textAlign: "right", letterSpacing: "0.04em" }}>{en ? "Deaths" : "Smrti"}</span>}
+                    {cols.respawnStatus && <span style={{ textAlign: "right", letterSpacing: "0.04em" }}>Respawn</span>}
+                  </div>
+                )}
+                {players.length === 0 && (
+                  <p className="text-center py-3 font-mono text-[11px]" style={{ color: MUTED }}>{en ? "— empty —" : "— prazno —"}</p>
+                )}
+                {visible.map((p) => {
+                  const isMe = p.id === meId;
+                  const real = [p.first_name?.trim(), p.last_initial?.trim() ? `${p.last_initial.trim().charAt(0).toUpperCase()}.` : null].filter(Boolean).join(" ");
+                  const unlockMs = p.respawn_unlock_at ? Date.parse(p.respawn_unlock_at) : NaN;
+                  const dead = cols.respawnStatus && Number.isFinite(unlockMs) && unlockMs > now;
+                  const leftSec = dead ? Math.max(0, Math.ceil((unlockMs - now) / 1000)) : 0;
+                  const tmm = String(Math.floor(leftSec / 60)).padStart(2, "0");
+                  const tss = String(leftSec % 60).padStart(2, "0");
+                  const infoLen = p.callsign.length + (p.operator_type?.length ?? 0) + real.length;
+                  const baseSize = infoLen > 40 ? 9 : infoLen > 32 ? 10 : infoLen > 24 ? 11 : 12;
+                  return (
+                    <div key={p.id} className="grid gap-1.5 items-center px-3 font-mono text-[12px]" style={{ gridTemplateColumns: grid, minHeight: 36, borderTop: "1px solid rgba(236,227,196,0.06)", background: isMe ? `${ACCENT}1f` : "transparent" }}>
+                      <span style={{ color: ACCENT, display: "inline-flex", alignItems: "center" }}>
+                        <ExperienceBadge level={p.experience_level} size={14} />
+                      </span>
+                      <span style={{ color: INK, fontWeight: 700, minWidth: 0, lineHeight: 1.3, fontSize: baseSize, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                        {p.callsign}{p.operator_type && <span style={{ color: ACCENT, fontSize: baseSize - 2, marginLeft: 5 }}>· {p.operator_type}</span>}
+                        {real && <span style={{ color: MUTED, fontWeight: 400, fontSize: baseSize - 2, marginLeft: 4 }}>({real})</span>}
+                        {isMe && <span style={{ color: ACCENT, fontWeight: 400 }}>{en ? " · YOU" : " · TI"}</span>}
+                      </span>
+                      {cols.points && <span style={{ color: TEAM_COLOR[t], fontWeight: 700, textAlign: "right" }}>{p.pts}</span>}
+                      {cols.deaths && <span style={{ color: "#ff7070", textAlign: "right", fontSize: 11, letterSpacing: "0.06em" }}>☠ {p.death_count ?? 0}</span>}
+                      {cols.respawnStatus && (dead ? (
                         <span style={{ color: "#ff9a3d", textAlign: "right", fontSize: 10, letterSpacing: "0.08em", fontWeight: 700 }}>☠ {tmm}:{tss}</span>
                       ) : (
-                        <span style={{ color: "#9eff3d", textAlign: "right", fontSize: 9, letterSpacing: "0.14em" }}>ALIVE</span>
-                      )
-                    )}
-                  </div>
-                );
-              })}
-            </div>
+                        <span style={{ color: "#9eff3d", textAlign: "right", fontSize: 9, letterSpacing: "0.1em" }}>{en ? "Alive" : "V igri"}</span>
+                      ))}
+                    </div>
+                  );
+                })}
+                {players.length > 10 && (
+                  <button
+                    type="button"
+                    onClick={() => setAll((a) => ({ ...a, [t]: !showAll }))}
+                    className="w-full font-mono uppercase tracking-[0.18em] text-[10px]"
+                    style={{ minHeight: 40, background: `${TEAM_COLOR[t]}14`, border: "none", borderTop: `1px solid ${TEAM_COLOR[t]}44`, color: TEAM_COLOR[t], cursor: "pointer" }}
+                  >
+                    {showAll ? (en ? "Hide" : "Skrij") : `${en ? "Show all" : "Pokaži vse"} (${players.length})`}
+                  </button>
+                )}
+              </div>
+            )}
           </div>
         );
       })}
@@ -3353,8 +3481,8 @@ function EndgameReport({ state, roster, captures, en, now, myTeam, meId, showSav
   const t = useT();
   const deathLog = useDeathLog(state.field_id ?? "");
   const respawnEnabled = !!state.settings?.respawn?.enabled;
-  const showDeaths = !!state.settings?.respawn?.publicDeaths;
-  const deathsPublic = showDeaths;
+  const deathsPublic = deathsEffectivelyPublic(state.settings);
+  const showDeaths = deathsPublic;
   const pointsOn = !!state.settings?.capturePointsScoring;
   const meCallsign = meId ? roster.find((r) => r.id === meId)?.callsign : undefined;
   const visibleDeathLog = deathLog.filter((d) => canSeeDeath(d, { deathsPublic, teamOnly: state.settings?.respawn?.visibility === "team", myTeam, meId, meCallsign }));
@@ -3584,7 +3712,8 @@ function EndgameReport({ state, roster, captures, en, now, myTeam, meId, showSav
           fieldName: fieldTitleFromState(state, state.field_id ?? ""),
           marshalName: state.settings?.marshalName?.trim() || undefined,
           en,
-          showDeaths,
+          // Share image is public: team-only deaths stay off it.
+          showDeaths: showDeaths && state.settings?.respawn?.visibility !== "team",
           showPlayers: pointsOn,
           winnerKey: winner,
           isTie,
@@ -3604,7 +3733,7 @@ function EndgameReport({ state, roster, captures, en, now, myTeam, meId, showSav
 
       {showSaveCard && (() => {
         const row = enriched.find((r) => r.id === meId);
-        return <DebriefSaveCard en={en} me={row ? { callsign: row.callsign, teamName: teamLabelFor(row.assigned_team), teamColor: TEAM_COLOR[row.assigned_team] ?? ACCENT, captures: row.pts, deaths: showDeaths ? (row.death_count ?? 0) : null } : undefined} />;
+        return <DebriefSaveCard en={en} me={row ? { callsign: row.callsign, teamName: teamLabelFor(row.assigned_team), teamColor: TEAM_COLOR[row.assigned_team] ?? ACCENT, captures: row.pts, deaths: scoreboardColumns(state.settings, row.assigned_team, myTeam).deaths ? (row.death_count ?? 0) : null } : undefined} />;
       })()}
 
       <div className="grid gap-4 md:grid-cols-2">
@@ -3612,7 +3741,8 @@ function EndgameReport({ state, roster, captures, en, now, myTeam, meId, showSav
           const teamCol = TEAM_COLOR[team] ?? ACCENT;
           const members = enriched.filter((p) => p.assigned_team === team);
           const teamDeaths = members.reduce((sum, p) => sum + (p.death_count ?? 0), 0);
-          const cols = `minmax(0,1fr)${pointsOn ? " 44px" : ""}${showDeaths ? " 48px" : ""}`;
+          const tableDeaths = scoreboardColumns(state.settings, team, myTeam).deaths;
+          const cols = `minmax(0,1fr)${pointsOn ? " 44px" : ""}${tableDeaths ? " 48px" : ""}`;
           return (
             <div key={team} style={{ background: PANEL, border: `1px solid ${teamCol}66` }}>
               <div style={{ padding: "10px 14px", borderBottom: `1px solid ${teamCol}44`, fontFamily: "'Michroma', monospace", fontSize: 12, letterSpacing: "0.16em", color: teamCol, textTransform: "uppercase" }}>
@@ -3621,7 +3751,7 @@ function EndgameReport({ state, roster, captures, en, now, myTeam, meId, showSav
               <div className="grid gap-1.5 px-3 py-2 text-[9px] font-mono uppercase tracking-widest" style={{ color: MUTED, gridTemplateColumns: cols }}>
                 <span>Callsign</span>
                 {pointsOn && <span style={{ textAlign: "right", letterSpacing: "0.04em" }}>{en ? "Points" : "Točke"}</span>}
-                {showDeaths && <span style={{ textAlign: "right", letterSpacing: "0.04em" }}>{en ? "Deaths" : "Smrti"}</span>}
+                {tableDeaths && <span style={{ textAlign: "right", letterSpacing: "0.04em" }}>{en ? "Deaths" : "Smrti"}</span>}
               </div>
               {members.length === 0 ? (
                 <p className="text-center py-6 font-mono text-[11px]" style={{ color: MUTED }}>—</p>
@@ -3636,11 +3766,11 @@ function EndgameReport({ state, roster, captures, en, now, myTeam, meId, showSav
                     </span>
 
                     {pointsOn && <span style={{ color: INK, fontWeight: 700, textAlign: "right" }}>{p.pts}</span>}
-                    {showDeaths && <span style={{ color: "#ff7070", textAlign: "right", fontWeight: 700 }}>☠ {p.death_count ?? 0}</span>}
+                    {tableDeaths && <span style={{ color: "#ff7070", textAlign: "right", fontWeight: 700 }}>☠ {p.death_count ?? 0}</span>}
                   </div>
                 );
               })}
-              {showDeaths && (
+              {tableDeaths && (
                 <div className="px-3 py-2 font-mono text-[10px] uppercase tracking-[0.16em] flex items-center justify-between" style={{ borderTop: `1px solid ${teamCol}44`, color: MUTED }}>
                   <span>{t("hudLog.totalDeaths")}</span>
                   <span style={{ color: "#ff7070", fontWeight: 700 }}>☠ {teamDeaths}</span>
@@ -3671,7 +3801,8 @@ function EndgameReport({ state, roster, captures, en, now, myTeam, meId, showSav
           teamLabelFor={teamLabelFor}
           teamColor={(x) => TEAM_COLOR[x] ?? ACCENT}
           nodeNames={NODE_NAMES}
-          maxHeight={360}
+          meCallsign={meCallsign}
+          en={en}
         />
       </div>
     </div>
