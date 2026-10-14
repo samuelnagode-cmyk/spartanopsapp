@@ -1131,7 +1131,7 @@ function MisijaPageInner() {
         {reassignedBanner}
         {warningOverlay}
         {pauseOverlay}
-        <PreMatchCountdown seconds={preMatchSecEarly} polygon={state.current_polygon_name} eventName={missionTitleFromState(state, "")} gamemode={state.gamemode} pointTarget={state.point_target} settings={state.settings} en={en} state={state} roster={roster} />
+        <PreMatchCountdown seconds={preMatchSecEarly} polygon={state.current_polygon_name} eventName={missionTitleFromState(state, "")} gamemode={state.gamemode} pointTarget={state.point_target} settings={state.settings} en={en} state={state} roster={roster} myTeam={me.assigned_team} meCallsign={me.callsign} />
         
         {preview && <PreviewReturnButton />}
       </div>
@@ -1189,7 +1189,7 @@ function MisijaPageInner() {
       <OfflineBanner />
       {reassignedBanner}
         {warningOverlay}
-      {preMatchSec > 0 && <PreMatchCountdown seconds={preMatchSec} polygon={fieldTitleFromState(state, field)} eventName={missionTitleFromState(state, field)} gamemode={state.gamemode} pointTarget={state.point_target} settings={state.settings} en={en} state={state} roster={roster} /> }
+      {preMatchSec > 0 && <PreMatchCountdown seconds={preMatchSec} polygon={fieldTitleFromState(state, field)} eventName={missionTitleFromState(state, field)} gamemode={state.gamemode} pointTarget={state.point_target} settings={state.settings} en={en} state={state} roster={roster} myTeam={me.assigned_team} meCallsign={me.callsign} /> }
       <div className="max-w-5xl mx-auto px-4 pt-1 pb-8">
 
         <PlayerHudHeader en={en} />
@@ -1204,8 +1204,6 @@ function MisijaPageInner() {
           fieldName={fieldTitleFromState(state, field)}
           en={en}
         />
-        {!preview && <ProfileOfferCard en={en} />}
-
         {me.assigned_team === "none" ? (
           <div className="text-center mb-8">
             <ChooseFactionButton onClick={() => setShowTeamSelect(true)} en={en} />
@@ -2485,7 +2483,7 @@ function TeamSelectModal({
 
 
 
-function PreMatchCountdown({ seconds, polygon, eventName, gamemode, pointTarget, settings, en = false, state, roster }: { seconds: number; polygon: string | null; eventName?: string | null; gamemode?: "domination" | "search_destroy" | null; pointTarget?: number; settings?: GameSettings | null; en?: boolean; state?: GameState; roster?: Checkin[] }) {
+function PreMatchCountdown({ seconds, polygon, eventName, gamemode, pointTarget, settings, en = false, state, roster, myTeam, meCallsign }: { myTeam?: string; meCallsign?: string; seconds: number; polygon: string | null; eventName?: string | null; gamemode?: "domination" | "search_destroy" | null; pointTarget?: number; settings?: GameSettings | null; en?: boolean; state?: GameState; roster?: Checkin[] }) {
   const mm = String(Math.floor(seconds / 60)).padStart(2, "0");
   const ss = String(seconds % 60).padStart(2, "0");
   const modeLabel = gamemode === "search_destroy" ? "SEARCH & DESTROY" : "DOMINATION";
@@ -2505,170 +2503,163 @@ function PreMatchCountdown({ seconds, polygon, eventName, gamemode, pointTarget,
       try { window.dispatchEvent(new Event("spartanops:countdown")); } catch { /* ignore */ }
     }
   }, [seconds]);
+  const players = roster ?? [];
+  const teamKeys = (["modra", "rdeca", "rumena"] as const).filter(
+    (k) => k !== "rumena" || (settings as any)?.teamCount === 3 || players.some((r) => r.assigned_team === "rumena"),
+  );
+  const hasTeam = !!myTeam && myTeam !== "none" && !!TEAM_COLOR[myTeam];
+  const myColor = hasTeam ? TEAM_COLOR[myTeam!] : ACCENT;
+  const hasDescription = !!description?.trim();
   return (
     <div
       className="fixed inset-0 z-[1100] flex flex-col items-center justify-start overflow-y-auto p-4 text-center"
-      style={{ background: "radial-gradient(circle at 50% 0%, rgba(224,176,78,0.14), rgba(11,13,9,0.99) 34%, #050604 100%)", color: INK, paddingTop: 112, paddingBottom: 40 }}
+      style={{ background: "radial-gradient(circle at 50% 0%, rgba(224,176,78,0.14), rgba(11,13,9,0.99) 34%, #050604 100%)", color: INK, paddingTop: 96, paddingBottom: 40 }}
     >
+      {/* 1) Mode line */}
       <p style={{ color: ACCENT, fontFamily: "monospace", fontSize: 11, letterSpacing: "0.32em", textTransform: "uppercase", marginBottom: 8 }}>
-        SPARTANOPS {modeLabel} MODE
+        {modeLabel}
       </p>
+      {/* 2) Mission + field */}
       <h2
         style={{
           fontFamily: "'Michroma', monospace",
-          fontSize: "clamp(25px, 7vw, 58px)",
+          fontSize: "clamp(22px, 6vw, 44px)",
           letterSpacing: "0.10em",
           color: ACCENT,
-          lineHeight: 1.08,
+          lineHeight: 1.1,
           maxWidth: 940,
+          overflowWrap: "anywhere",
           textShadow: `0 0 18px ${ACCENT}77, 0 0 52px rgba(224,176,78,0.30)`,
           textTransform: "uppercase",
         }}
       >
-        <span style={{ display: "block", fontSize: "clamp(11px, 2.4vw, 18px)", letterSpacing: "0.34em", color: `${ACCENT}bb`, textShadow: "none", marginBottom: 6 }}>MISSION:</span>
         {missionName}
       </h2>
       {fieldName && (
         <p
-          className="uppercase mt-3"
-          style={{ color: INK, fontFamily: "'Michroma', monospace", fontSize: 13, letterSpacing: "0.14em", opacity: 0.85 }}
+          className="uppercase mt-2"
+          style={{ color: INK, fontFamily: "'Michroma', monospace", fontSize: 12, letterSpacing: "0.14em", opacity: 0.85 }}
         >
           {fieldName}
         </p>
       )}
 
-      <p className="font-mono text-[10px] uppercase tracking-[0.2em] mt-5" style={{ color: MUTED }}>
+      {/* 3) Countdown */}
+      <p className="font-mono text-[10px] uppercase tracking-[0.2em] mt-4" style={{ color: MUTED }}>
         {en ? "Mission begins in:" : "Misija se bo začela čez:"}
       </p>
       <div
-        className="my-3 font-bold"
-        style={{ fontFamily: "'Michroma', monospace", fontSize: "clamp(72px, 20vw, 142px)", color: ACCENT, lineHeight: 0.95, textShadow: `0 0 34px ${ACCENT}55` }}
+        className="my-2 font-bold"
+        style={{ fontFamily: "'Michroma', monospace", fontSize: "clamp(64px, 17vw, 120px)", color: ACCENT, lineHeight: 0.95, textShadow: `0 0 34px ${ACCENT}55` }}
       >
         {mm}:{ss}
       </div>
-      {/* 1) Team vs team with player counts (directly under the timer) */}
-      <div
-        className="flex flex-col items-center justify-center mt-1 mb-4"
-        style={{ width: "min(640px, 100%)", rowGap: 4, textAlign: "center" }}
-      >
-        {(["modra", "rdeca"] as const).map((k, i) => (
+
+      {/* 4) Team strip, one row */}
+      <div className="flex flex-wrap items-baseline justify-center mt-1 mb-3" style={{ width: "min(640px, 100%)", columnGap: 12, rowGap: 4 }}>
+        {teamKeys.map((k, i) => (
           <Fragment key={k}>
-            {i === 1 && (
-              <span style={{ color: MUTED, fontFamily: "monospace", fontSize: 12, letterSpacing: "0.2em" }}>VS</span>
-            )}
-            <span
-              style={{
-                fontFamily: "'Michroma', monospace",
-                fontSize: 14,
-                color: TEAM_COLOR[k],
-                letterSpacing: "0.12em",
-                textTransform: "uppercase",
-                textAlign: "center",
-                maxWidth: "100%",
-              }}
-            >
+            {i > 0 && <span style={{ color: MUTED, fontFamily: "monospace", fontSize: 11, letterSpacing: "0.2em" }}>VS</span>}
+            <span style={{ fontFamily: "'Michroma', monospace", fontSize: 13, color: TEAM_COLOR[k], letterSpacing: "0.12em", textTransform: "uppercase", whiteSpace: "nowrap" }}>
               {teamName(k, settings, en)}
-              <span style={{ color: INK, marginLeft: 6 }}>({(roster ?? []).filter((r) => r.assigned_team === k).length})</span>
+              <span style={{ color: INK, marginLeft: 6 }}>{players.filter((r) => r.assigned_team === k).length}</span>
             </span>
           </Fragment>
         ))}
       </div>
 
-
-      {/* 2) Mission description / instructions (from Marshal Command Center) */}
-      {description?.trim() && (
-        <div
-          className="max-w-2xl mt-1 mb-4"
-          style={{
-            border: `1px solid ${ACCENT}55`,
-            background: "rgba(0,0,0,0.42)",
-            padding: "12px 14px",
-            textAlign: "left",
-            width: "min(640px, 100%)",
-          }}
-        >
-          <p style={{ color: ACCENT, fontFamily: "monospace", fontSize: 9.5, letterSpacing: "0.24em", textTransform: "uppercase", marginBottom: 6 }}>
-            {en ? "// MISSION DESCRIPTION / INSTRUCTIONS" : "// OPIS MISIJE / NAVODILA"}
-          </p>
-          <p style={{ color: INK, fontSize: 13, lineHeight: 1.7, whiteSpace: "pre-wrap" }}>
-            {description}
-          </p>
-        </div>
-      )}
-
-
-
-
-      {/* 3) Standing objective text */}
-      <p className="max-w-2xl text-[12px]" style={{ color: MUTED, lineHeight: 1.7, fontStyle: "italic", marginTop: 14, marginBottom: 0, width: "min(640px, 100%)" }}>
-        {en
-          ? "Your objective is to secure as many sectors as possible via scanning the QR codes in the marked areas."
-          : "Vaš cilj je zavarovati čim več sektorjev s skeniranjem QR kod na označenih lokacijah."}
-      </p>
-
-      {/* 4) Objective + time */}
-      <div className="grid grid-cols-2 gap-3 my-5" style={{ width: "min(560px, 100%)" }}>
-        <div style={{ border: `1px solid ${ACCENT}55`, background: "rgba(0,0,0,0.32)", padding: "12px 10px" }}>
-          <p style={{ color: MUTED, fontFamily: "monospace", fontSize: 9, letterSpacing: "0.20em", textTransform: "uppercase" }}>{en ? "Objective" : "Cilj"}</p>
-          <p style={{ color: ACCENT, fontFamily: "'Michroma', monospace", fontSize: 18, marginTop: 5 }}>{pointTarget ?? 50} PTS</p>
-        </div>
-        <div style={{ border: `1px solid ${ACCENT}55`, background: "rgba(0,0,0,0.32)", padding: "12px 10px" }}>
-          <p style={{ color: MUTED, fontFamily: "monospace", fontSize: 9, letterSpacing: "0.20em", textTransform: "uppercase" }}>{en ? "Time to do it" : "Čas izvedbe"}</p>
-          <p style={{ color: ACCENT, fontFamily: "'Michroma', monospace", fontSize: 18, marginTop: 5 }}>{duration || "—"} MIN</p>
-        </div>
-      </div>
-
-      {/* 5) Spawn point note */}
+      {/* 5) Your team + what to do */}
       <div
-        className="max-w-2xl mb-5"
         style={{
-          border: `1px solid ${ACCENT}66`,
-          borderLeft: `5px solid ${TEAM_COLOR.modra}`,
-          background: "rgba(59,130,246,0.10)",
+          border: `1px solid ${myColor}88`,
+          borderLeft: `5px solid ${myColor}`,
+          background: "rgba(0,0,0,0.45)",
           padding: "10px 14px",
           textAlign: "left",
           width: "min(640px, 100%)",
+          marginBottom: 12,
         }}
       >
-        <p style={{ color: INK, fontSize: 12.5, lineHeight: 1.65, fontFamily: "monospace", margin: 0 }}>
-          {en
-            ? "You can now move to your spawn points, get ready and wait for the start of the game."
-            : "Zdaj se lahko premaknete na spawn točke, se pripravite in počakate na začetek igre."}
+        <p style={{ fontFamily: "'Michroma', monospace", fontSize: 12, letterSpacing: "0.12em", textTransform: "uppercase", color: INK, margin: 0 }}>
+          {hasTeam ? (
+            <>{en ? "Your team: " : "Tvoja ekipa: "}<span style={{ color: myColor }}>{teamName(myTeam!, settings, en)}</span></>
+          ) : (en ? "No team yet" : "Še nimaš ekipe")}
+        </p>
+        <p style={{ color: INK, fontSize: 12.5, lineHeight: 1.6, fontFamily: "monospace", margin: "6px 0 0" }}>
+          {hasTeam
+            ? (en ? "Move to your spawn point, get ready and wait for the start." : "Pojdi na svojo spawn točko, se pripravi in počakaj na začetek.")
+            : (en ? "The marshal will assign you before the start." : "Maršal te bo dodelil pred začetkom.")}
         </p>
       </div>
 
+      {/* 6) Facts strip */}
+      <div className="grid grid-cols-2" style={{ width: "min(640px, 100%)", border: `1px solid ${ACCENT}55`, background: "rgba(0,0,0,0.32)", marginBottom: 12 }}>
+        <div style={{ padding: "8px 10px", borderRight: `1px solid ${ACCENT}44` }}>
+          <p style={{ color: MUTED, fontFamily: "monospace", fontSize: 9, letterSpacing: "0.20em", textTransform: "uppercase", margin: 0 }}>{en ? "Objective" : "Cilj"}</p>
+          <p style={{ color: ACCENT, fontFamily: "'Michroma', monospace", fontSize: 16, margin: "3px 0 0" }}>{pointTarget ?? 50} PTS</p>
+        </div>
+        <div style={{ padding: "8px 10px" }}>
+          <p style={{ color: MUTED, fontFamily: "monospace", fontSize: 9, letterSpacing: "0.20em", textTransform: "uppercase", margin: 0 }}>{en ? "Time" : "Čas"}</p>
+          <p style={{ color: ACCENT, fontFamily: "'Michroma', monospace", fontSize: 16, margin: "3px 0 0" }}>{duration || "—"} MIN</p>
+        </div>
+      </div>
+
+      {/* 7) Marshal description */}
+      {hasDescription && (
+        <div className="mb-3" style={{ border: `1px solid ${ACCENT}55`, background: "rgba(0,0,0,0.42)", padding: "12px 14px", textAlign: "left", width: "min(640px, 100%)" }}>
+          <p style={{ color: ACCENT, fontFamily: "monospace", fontSize: 9.5, letterSpacing: "0.24em", textTransform: "uppercase", marginBottom: 6 }}>
+            {en ? "// MISSION DESCRIPTION / INSTRUCTIONS" : "// OPIS MISIJE / NAVODILA"}
+          </p>
+          <p style={{ color: INK, fontSize: 13, lineHeight: 1.7, whiteSpace: "pre-wrap" }}>{description}</p>
+        </div>
+      )}
+
+      {/* 8) Generic objective: Domination only, only without a marshal description */}
+      {!hasDescription && gamemode !== "search_destroy" && (
+        <p className="text-[12px] mb-3" style={{ color: MUTED, lineHeight: 1.7, fontStyle: "italic", width: "min(640px, 100%)" }}>
+          {en
+            ? "Your objective is to secure as many sectors as possible via scanning the QR codes in the marked areas."
+            : "Vaš cilj je zavarovati čim več sektorjev s skeniranjem QR kod na označenih lokacijah."}
+        </p>
+      )}
+
+      {/* 9) Map */}
       {state && (
         <div style={{ width: "100%", maxWidth: 720, margin: "0 auto 12px" }}>
           <TacticalMap state={state} captures={[]} en={en} hasPositions={true} missionName={missionName} timeLabel={`${mm}:${ss}`} />
         </div>
       )}
-      {/* 6) Team rosters under the map */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-5" style={{ width: "min(720px, 100%)" }}>
-        {(["modra", "rdeca"] as const).map((k) => {
-          const members = (roster ?? []).filter((r) => r.assigned_team === k);
-          return (
-            <div key={k} style={{ border: `1px solid ${TEAM_COLOR[k]}66`, background: "rgba(0,0,0,0.38)", padding: "10px 12px", textAlign: "left" }}>
-              <p style={{ color: TEAM_COLOR[k], fontFamily: "'Michroma', monospace", fontSize: 11, letterSpacing: "0.16em", textTransform: "uppercase", marginBottom: 8 }}>
-                {teamName(k, settings, en)} ({members.length})
-              </p>
-              {members.length === 0 ? (
-                <p style={{ color: MUTED, fontFamily: "monospace", fontSize: 11 }}>
-                  {en ? "// NO OPERATORS ASSIGNED" : "// NI DODELJENIH OPERATIVCEV"}
-                </p>
-              ) : (
-                <ul style={{ listStyle: "none", margin: 0, padding: 0, display: "grid", gap: 4 }}>
-                  {members.map((m) => (
-                    <li key={m.id} style={{ color: INK, fontFamily: "monospace", fontSize: 12, letterSpacing: "0.06em", textTransform: "uppercase" }}>
-                      <span style={{ color: TEAM_COLOR[k], marginRight: 6 }}>▪</span>{m.callsign}
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </div>
-          );
-        })}
+
+      {/* 10) Rosters, collapsed */}
+      <div style={{ width: "min(640px, 100%)", textAlign: "left" }}>
+        <CollapsibleCard icon={<Users size={16} />} title={en ? `Teams and players (${players.length})` : `Ekipe in igralci (${players.length})`}>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            {teamKeys.map((k) => {
+              const members = players.filter((r) => r.assigned_team === k);
+              return (
+                <div key={k} style={{ border: `1px solid ${TEAM_COLOR[k]}66`, background: "rgba(0,0,0,0.38)", padding: "10px 12px" }}>
+                  <p style={{ color: TEAM_COLOR[k], fontFamily: "'Michroma', monospace", fontSize: 11, letterSpacing: "0.16em", textTransform: "uppercase", marginBottom: 8 }}>
+                    {teamName(k, settings, en)} ({members.length})
+                  </p>
+                  {members.length === 0 ? (
+                    <p style={{ color: MUTED, fontFamily: "monospace", fontSize: 11 }}>{en ? "// NO OPERATORS ASSIGNED" : "// NI DODELJENIH OPERATIVCEV"}</p>
+                  ) : (
+                    <ul style={{ listStyle: "none", margin: 0, padding: 0, display: "grid", gap: 4 }}>
+                      {members.map((m) => (
+                        <li key={m.id} style={{ color: INK, fontFamily: "monospace", fontSize: 12, letterSpacing: "0.06em", textTransform: "uppercase", overflowWrap: "anywhere" }}>
+                          <span style={{ color: TEAM_COLOR[k], marginRight: 6 }}>▪</span>{m.callsign}
+                          {!!meCallsign && m.callsign === meCallsign && <span style={{ color: ACCENT, marginLeft: 6, textTransform: "none" }}>{en ? "(you)" : "(ti)"}</span>}
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        </CollapsibleCard>
       </div>
-      
+
       <MissionRulesAccordion respawn={settings?.respawn} weaponRules={(settings as any)?.weaponRules} en={en} />
       <MarshalContactBlock settings={settings} en={en} />
 
@@ -3187,7 +3178,7 @@ function LiveMatch({ state, captures, now, roster, myTeam, meId, meCallsign }: {
   return (
     <div className="max-w-5xl mx-auto px-4 py-6" style={{ paddingTop: 84, paddingBottom: "calc(96px + env(safe-area-inset-bottom, 0px))" }}>
       <HudNoticeFeed captures={visibleCaptures} roster={roster} myTeam={myTeam} meId={meId} meCallsign={meCallsign} teamLabelFor={teamLabelFor} respawnEnabled={!!state.settings?.respawn?.enabled || !!state.settings?.respawn?.publicDeaths} deathsPublic={!!state.settings?.respawn?.publicDeaths} teamOnly={state.settings?.respawn?.visibility === "team"} fieldId={state.field_id ?? ""} />
-      {preMatchSec > 0 && <PreMatchCountdown seconds={preMatchSec} polygon={fieldTitleFromState(state, "")} eventName={missionTitleFromState(state, "")} gamemode={state.gamemode} pointTarget={state.point_target} settings={state.settings} en={en} state={state} roster={roster} />}
+      {preMatchSec > 0 && <PreMatchCountdown seconds={preMatchSec} polygon={fieldTitleFromState(state, "")} eventName={missionTitleFromState(state, "")} gamemode={state.gamemode} pointTarget={state.point_target} settings={state.settings} en={en} state={state} roster={roster} myTeam={myTeam} meCallsign={meCallsign} />}
 
       <PlayerHudHeader en={en} />
       <h1
