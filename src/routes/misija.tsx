@@ -37,13 +37,16 @@ export const Route = createFileRoute("/misija")({
   head: () => ({
     meta: [{ title: "SpartanOps · Misija" }, { name: "robots", content: "noindex,nofollow" }],
   }),
-  validateSearch: (s: Record<string, unknown>): { field: string; point?: string; preview?: boolean; marshal?: boolean; preset?: string } => {
+  validateSearch: (s: Record<string, unknown>): { field: string; point?: string; preview?: boolean; marshal?: boolean; preset?: string; pts?: string; deaths?: string } => {
     return {
       field: typeof s.field === "string" ? s.field : (typeof s.field_id === "string" ? s.field_id : "zeleni-raj"),
       point: typeof s.point === "string" || typeof s.point === "number" ? String(s.point) : undefined,
       preview: s.preview === "1" || s.preview === 1 || s.preview === true || s.preview === "true" ? true : false,
       marshal: s.marshal === "1" || s.marshal === 1 || s.marshal === true || s.marshal === "true" ? true : false,
       preset: typeof s.preset === "string" ? s.preset : undefined,
+      // Preview-only flags (read only when preview=1): pts=0 / deaths=0.
+      pts: s.pts === 0 || s.pts === "0" ? "0" : undefined,
+      deaths: s.deaths === 0 || s.deaths === "0" ? "0" : undefined,
     };
   },
 
@@ -262,21 +265,22 @@ function makePreviewRoster(field: string, sessionId: string): Checkin[] {
   ];
 }
 
-function makePreviewState(field: string, preset?: string): GameState {
+function makePreviewState(field: string, preset?: string, flags?: { ptsOff?: boolean; deathsOff?: boolean }): GameState {
   const now = Date.now();
+  const ended = preset === "ended";
   const active = preset === "hud" || preset === "paused";
   const prestart = preset === "prestart";
   return {
     field_id: field,
     field_label: "Zeleni Raj",
-    status: preset === "paused" ? "paused" : active || prestart ? "active" : "lobby",
+    status: ended ? "ended" : preset === "paused" ? "paused" : active || prestart ? "active" : "lobby",
     team_selection_open: true,
     current_polygon_name: "Zeleni Raj",
     event_name: "Operation Fallen Angel",
     gamemode: "domination",
     compressed_map_url: landingView.url,
     countdown_seconds: 60,
-    match_started_at: prestart ? new Date(now + 60_000).toISOString() : active ? new Date(now - 7 * 60_000).toISOString() : null,
+    match_started_at: ended ? new Date(now - 40 * 60_000).toISOString() : prestart ? new Date(now + 60_000).toISOString() : active ? new Date(now - 7 * 60_000).toISOString() : null,
     match_duration_minutes: 40,
     team_scores: { modra: 7, rdeca: 4, rumena: 0 },
     node_holders: { "1": "modra", "2": "rdeca", "3": null, "4": "modra", "5": null },
@@ -288,8 +292,8 @@ function makePreviewState(field: string, preset?: string): GameState {
       missionDescription: "Secure and hold ALPHA and DELTA for a minimum of 6 minutes. Bravo team defends BETA at all costs.",
       teamCount: 2,
       teamNames: { modra: "ALPHA", rdeca: "BRAVO" },
-      respawn: { enabled: true, mode: "linear", linearSec: 60, dynStartMin: 1, dynEndMin: 3, visibility: "all", publicDeaths: true },
-      capturePointsScoring: true,
+      respawn: { enabled: true, mode: "linear", linearSec: 60, dynStartMin: 1, dynEndMin: 3, visibility: "all", publicDeaths: !flags?.deathsOff },
+      capturePointsScoring: !flags?.ptsOff,
     },
   };
 }
@@ -463,7 +467,7 @@ function MisijaPageInner() {
   const { lang } = useLang();
   const t = useT();
   const en = lang === "en";
-  const { field: rawField, point: targetPoint, preview, marshal: marshalMode, preset } = Route.useSearch();
+  const { field: rawField, point: targetPoint, preview, marshal: marshalMode, preset, pts: previewPts, deaths: previewDeaths } = Route.useSearch();
 
   // Anti-cheat security alert: /scan sets this flag when a QR is opened
   // outside the in-app scanner. Surface a tactical warning on arrival.
@@ -583,7 +587,7 @@ function MisijaPageInner() {
     if (!preview || !sessionId || !preset) return;
     const previewRoster = makePreviewRoster(field, sessionId);
     const primary = previewRoster[0];
-    setState(makePreviewState(field, preset));
+    setState(makePreviewState(field, preset, { ptsOff: previewPts === "0", deathsOff: previewDeaths === "0" }));
     setCaptures(makePreviewCaptures());
     setRoster(previewRoster);
     if (preset === "registration") {
@@ -593,7 +597,7 @@ function MisijaPageInner() {
     }
     setGhostMe({ ...primary, assigned_team: preset === "team" ? "none" : "modra" });
     setShowTeamSelect(preset === "team");
-  }, [preview, preset, field, sessionId]);
+  }, [preview, preset, field, sessionId, previewPts, previewDeaths]);
 
   useEffect(() => {
     if (!sessionId || preview) return;
@@ -3144,6 +3148,7 @@ function ScanCodeButton({ paused, en }: { paused: boolean; en: boolean }) {
 function LiveMatch({ state, captures, now, roster, myTeam, meId, meCallsign }: { state: GameState; captures: Capture[]; now: number; roster: Checkin[]; myTeam: string; meId?: string; meCallsign?: string }) {
 
   const deathLog = useDeathLog(state.field_id ?? "");
+  const visibleHudDeaths = deathLog.filter((d) => canSeeDeath(d, { deathsPublic: !!state.settings?.respawn?.publicDeaths, teamOnly: state.settings?.respawn?.visibility === "team", myTeam, meId, meCallsign }));
   const { lang } = useLang();
   const t = useT();
   const en = lang === "en";
@@ -3181,7 +3186,7 @@ function LiveMatch({ state, captures, now, roster, myTeam, meId, meCallsign }: {
 
   return (
     <div className="max-w-5xl mx-auto px-4 py-6" style={{ paddingTop: 84, paddingBottom: "calc(96px + env(safe-area-inset-bottom, 0px))" }}>
-      <HudNoticeFeed captures={visibleCaptures} roster={roster} myTeam={myTeam} meId={meId} meCallsign={meCallsign} teamLabelFor={teamLabelFor} respawnEnabled={!!state.settings?.respawn?.enabled || !!state.settings?.respawn?.publicDeaths} fieldId={state.field_id ?? ""} />
+      <HudNoticeFeed captures={visibleCaptures} roster={roster} myTeam={myTeam} meId={meId} meCallsign={meCallsign} teamLabelFor={teamLabelFor} respawnEnabled={!!state.settings?.respawn?.enabled || !!state.settings?.respawn?.publicDeaths} deathsPublic={!!state.settings?.respawn?.publicDeaths} teamOnly={state.settings?.respawn?.visibility === "team"} fieldId={state.field_id ?? ""} />
       {preMatchSec > 0 && <PreMatchCountdown seconds={preMatchSec} polygon={fieldTitleFromState(state, "")} eventName={missionTitleFromState(state, "")} gamemode={state.gamemode} pointTarget={state.point_target} settings={state.settings} en={en} state={state} roster={roster} />}
 
       <PlayerHudHeader en={en} />
@@ -3276,8 +3281,8 @@ function LiveMatch({ state, captures, now, roster, myTeam, meId, meCallsign }: {
       {/* Two-tier tactical history log */}
       <HudHistoryLog
         captures={visibleCaptures}
-        deaths={deathLog}
-        showDeaths={!!state.settings?.respawn?.enabled || !!state.settings?.respawn?.publicDeaths}
+        deaths={visibleHudDeaths}
+        showDeaths={!!state.settings?.respawn?.publicDeaths || visibleHudDeaths.length > 0}
         teamLabelFor={teamLabelFor}
         teamColor={(t) => TEAM_COLOR[t] ?? ACCENT}
         nodeNames={NODE_NAMES}
@@ -3401,6 +3406,10 @@ function EndgameReport({ state, roster, captures, en, now, myTeam, meId, showSav
   const deathLog = useDeathLog(state.field_id ?? "");
   const respawnEnabled = !!state.settings?.respawn?.enabled;
   const showDeaths = !!state.settings?.respawn?.publicDeaths;
+  const deathsPublic = showDeaths;
+  const pointsOn = !!state.settings?.capturePointsScoring;
+  const meCallsign = meId ? roster.find((r) => r.id === meId)?.callsign : undefined;
+  const visibleDeathLog = deathLog.filter((d) => canSeeDeath(d, { deathsPublic, teamOnly: state.settings?.respawn?.visibility === "team", myTeam, meId, meCallsign }));
   const teamLabelFor = (tm: string) => teamName(tm, state.settings, en);
   const counts: Record<string, number> = {};
   for (const c of captures) counts[c.player_callsign ?? "—"] = (counts[c.player_callsign ?? "—"] ?? 0) + 1;
@@ -3504,6 +3513,7 @@ function EndgameReport({ state, roster, captures, en, now, myTeam, meId, showSav
       </div>
       <style>{`@keyframes spo-tie-flash { 0%,100% { box-shadow: 0 0 20px rgba(234,179,8,0.35); } 50% { box-shadow: 0 0 46px rgba(234,179,8,0.75); } }`}</style>
 
+      {pointsOn && (<>
       {/* PODIUM */}
       <p className="text-center font-mono text-[10px] uppercase tracking-[0.28em] mb-4" style={{ color: MUTED }}>
         ▌ {winner
@@ -3618,6 +3628,7 @@ function EndgameReport({ state, roster, captures, en, now, myTeam, meId, showSav
         })}
       </div>
 
+      </>)}
       <DebriefShareButton
         accentColor={winnerColor}
         data={{
@@ -3626,9 +3637,12 @@ function EndgameReport({ state, roster, captures, en, now, myTeam, meId, showSav
           marshalName: state.settings?.marshalName?.trim() || undefined,
           en,
           showDeaths,
+          showPlayers: pointsOn,
+          winnerKey: winner,
+          isTie,
           teams: activeTeams.map((tm) => ({ key: tm, name: teamLabelFor(tm), color: TEAM_COLOR[tm] ?? ACCENT, score: teamScoresFinal[tm] ?? 0 })),
-          top3: enriched.slice(0, 3).map((p) => ({ callsign: p.callsign, pts: p.pts, deaths: p.death_count ?? 0, color: TEAM_COLOR[p.assigned_team] ?? ACCENT })),
-          leaderboard: enriched.slice(0, 8).map((p) => ({ callsign: p.callsign, pts: p.pts, deaths: p.death_count ?? 0, color: TEAM_COLOR[p.assigned_team] ?? ACCENT, team: p.assigned_team })),
+          top3: !pointsOn ? [] : enriched.slice(0, 3).map((p) => ({ callsign: p.callsign, pts: p.pts, deaths: p.death_count ?? 0, color: TEAM_COLOR[p.assigned_team] ?? ACCENT })),
+          leaderboard: !pointsOn ? [] : enriched.slice(0, 8).map((p) => ({ callsign: p.callsign, pts: p.pts, deaths: p.death_count ?? 0, color: TEAM_COLOR[p.assigned_team] ?? ACCENT, team: p.assigned_team })),
           nodes: Object.entries(state.node_positions ?? {})
             .filter(([, pos]) => !!pos)
             .map(([k, pos]) => ({
@@ -3650,7 +3664,7 @@ function EndgameReport({ state, roster, captures, en, now, myTeam, meId, showSav
           const teamCol = TEAM_COLOR[team] ?? ACCENT;
           const members = enriched.filter((p) => p.assigned_team === team);
           const teamDeaths = members.reduce((sum, p) => sum + (p.death_count ?? 0), 0);
-          const cols = showDeaths ? "minmax(0,1fr) 44px 48px" : "minmax(0,1fr) 44px";
+          const cols = `minmax(0,1fr)${pointsOn ? " 44px" : ""}${showDeaths ? " 48px" : ""}`;
           return (
             <div key={team} style={{ background: PANEL, border: `1px solid ${teamCol}66` }}>
               <div style={{ padding: "10px 14px", borderBottom: `1px solid ${teamCol}44`, fontFamily: "'Michroma', monospace", fontSize: 12, letterSpacing: "0.16em", color: teamCol, textTransform: "uppercase" }}>
@@ -3658,7 +3672,7 @@ function EndgameReport({ state, roster, captures, en, now, myTeam, meId, showSav
               </div>
               <div className="grid gap-1.5 px-3 py-2 text-[9px] font-mono uppercase tracking-widest" style={{ color: MUTED, gridTemplateColumns: cols }}>
                 <span>Callsign</span>
-                <span style={{ textAlign: "right", letterSpacing: "0.04em" }}>{en ? "Points" : "Točke"}</span>
+                {pointsOn && <span style={{ textAlign: "right", letterSpacing: "0.04em" }}>{en ? "Points" : "Točke"}</span>}
                 {showDeaths && <span style={{ textAlign: "right", letterSpacing: "0.04em" }}>{en ? "Deaths" : "Smrti"}</span>}
               </div>
               {members.length === 0 ? (
@@ -3673,7 +3687,7 @@ function EndgameReport({ state, roster, captures, en, now, myTeam, meId, showSav
                       {p.callsign}{p.operator_type && <span style={{ color: ACCENT, fontSize: baseSize - 2, marginLeft: 5 }}>· {p.operator_type}</span>}{real && <span style={{ color: MUTED, fontWeight: 400, fontSize: baseSize - 2, marginLeft: 6 }}>({real})</span>}
                     </span>
 
-                    <span style={{ color: INK, fontWeight: 700, textAlign: "right" }}>{p.pts}</span>
+                    {pointsOn && <span style={{ color: INK, fontWeight: 700, textAlign: "right" }}>{p.pts}</span>}
                     {showDeaths && <span style={{ color: "#ff7070", textAlign: "right", fontWeight: 700 }}>☠ {p.death_count ?? 0}</span>}
                   </div>
                 );
@@ -3704,8 +3718,8 @@ function EndgameReport({ state, roster, captures, en, now, myTeam, meId, showSav
       <div style={{ maxWidth: 720, margin: "24px auto 0" }}>
         <HudHistoryLog
           captures={captures}
-          deaths={deathLog}
-          showDeaths={respawnEnabled || !!state.settings?.respawn?.publicDeaths}
+          deaths={visibleDeathLog}
+          showDeaths={deathsPublic || visibleDeathLog.length > 0}
           teamLabelFor={teamLabelFor}
           teamColor={(x) => TEAM_COLOR[x] ?? ACCENT}
           nodeNames={NODE_NAMES}
@@ -3714,6 +3728,18 @@ function EndgameReport({ state, roster, captures, en, now, myTeam, meId, showSav
       </div>
     </div>
   );
+}
+
+/** Display-only filter: which death events this viewer may see. */
+function canSeeDeath(
+  d: { id: string; callsign: string; team: string },
+  o: { deathsPublic: boolean; teamOnly: boolean; myTeam?: string; meId?: string; meCallsign?: string },
+) {
+  const own = (!!o.meId && d.id.startsWith(`${o.meId}-`)) || (!!o.meCallsign && d.callsign === o.meCallsign);
+  if (own) return true;
+  if (!o.deathsPublic) return false;
+  if (o.teamOnly) return !!o.myTeam && d.team === o.myTeam;
+  return true;
 }
 
 export function useDeathLog(fieldId: string): DeathEvent[] {
@@ -3735,6 +3761,8 @@ function HudNoticeFeed({
   meCallsign,
   teamLabelFor,
   respawnEnabled,
+  deathsPublic,
+  teamOnly,
   fieldId,
 }: {
   captures: Capture[];
@@ -3744,6 +3772,8 @@ function HudNoticeFeed({
   meCallsign?: string;
   teamLabelFor: (t: string) => string;
   respawnEnabled: boolean;
+  deathsPublic: boolean;
+  teamOnly: boolean;
   fieldId: string;
 }) {
   const t = useT();
@@ -3816,7 +3846,7 @@ function HudNoticeFeed({
     }
     fresh.slice(-3).forEach((p) => {
       const color = TEAM_COLOR[p.assigned_team] ?? ACCENT;
-      if (p.id !== meId) push({
+      if (p.id !== meId && canSeeDeath({ id: `${p.id}-x`, callsign: String(p.callsign ?? ""), team: p.assigned_team }, { deathsPublic, teamOnly, myTeam, meId, meCallsign })) push({
         id: `rsp-${p.id}-${p.respawn_unlock_at}`,
         kind: "respawn",
         title: t("hudNotif.respawnTitle"),
@@ -3829,7 +3859,7 @@ function HudNoticeFeed({
       });
       try { window.dispatchEvent(new Event("spartanops:sfx-respawn")); } catch { /* ignore */ }
     });
-  }, [roster, respawnEnabled, meId, push, t, teamLabelFor, fieldId]);
+  }, [roster, respawnEnabled, deathsPublic, teamOnly, myTeam, meCallsign, meId, push, t, teamLabelFor, fieldId]);
 
   return <HudNotificationStack notices={notices} onDismiss={dismiss} />;
 }

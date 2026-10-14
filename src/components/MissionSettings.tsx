@@ -282,8 +282,8 @@ export function MissionSettingsTabs({
 
   return (
     <div>
-      {/* Tab bar: 3 columns on phones (two rows), 5 on wider screens. */}
-      {!hideTabBar && <div className="grid grid-cols-3 sm:grid-cols-5" style={{ gap: 6, marginBottom: 18 }}>
+      {/* Tab bar: wrapping flex row; words never split, rows stretch to fill. */}
+      {!hideTabBar && <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 18 }}>
         {tabs.map((t) => {
           const active = tab === t.k;
           const warn = tabsWithMissing.has(t.k);
@@ -293,19 +293,22 @@ export function MissionSettingsTabs({
               type="button"
               onClick={() => setTab(t.k)}
               style={{
-                minWidth: 0,
+                flex: "1 1 auto",
+                minWidth: "max-content",
+                minHeight: 44,
                 background: active ? ACCENT : "transparent",
                 color: active ? BG : INK,
                 border: `1px solid ${active ? ACCENT : "rgba(224,176,78,0.35)"}`,
-                padding: "10px 4px",
+                padding: "10px 12px",
                 fontFamily: "'Michroma', monospace",
                 fontSize: 10,
-                letterSpacing: "0.1em",
+                letterSpacing: "0.08em",
+                overflowWrap: "normal", wordBreak: "keep-all", hyphens: "none",
                 textTransform: "uppercase",
                 cursor: "pointer",
                 fontWeight: active ? 700 : 500,
                 display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 6,
-                whiteSpace: "nowrap", overflow: "hidden",
+                whiteSpace: "nowrap",
               }}
             >
               {t.l}
@@ -444,7 +447,7 @@ export function MissionSettingsTabs({
 
           <SwitchCard
             title={en ? "Player scoring display" : "Prikaz točk igralcev"}
-            desc={en ? "Show each player's points on the scoreboard and crown the top three at the end." : "Prikaži točke vsakega igralca na semaforju in ob koncu okronaj najboljše tri."}
+            desc={en ? "Show every player's points and, at the end, show the top three of the winning team." : "Prikaži točke vseh igralcev in ob koncu prikaži najboljše tri na zmagovalni ekipi."}
             on={!!s.capturePointsScoring}
             onToggle={() => patchSettings({ ...s, capturePointsScoring: !s.capturePointsScoring })}
           />

@@ -27,6 +27,11 @@ export type DebriefShareData = {
   leaderboard?: SharePlayer[];
   nodes: ShareNode[];
   showDeaths: boolean;
+  /** Player scoring option; false hides podium and leaderboard. */
+  showPlayers?: boolean;
+  /** Winner as decided on the debrief screen (single source of truth). */
+  winnerKey?: string | null;
+  isTie?: boolean;
   en: boolean;
 };
 
@@ -46,6 +51,8 @@ export function DebriefShareButton({ data, accentColor }: { data: DebriefShareDa
     const { toBlob } = await import("html-to-image");
     const opts = { width: CARD_W, height: CARD_H, pixelRatio: 1, cacheBust: true, backgroundColor: "#070906" };
     try {
+      // Warm-up render (fonts/images often missing on the first pass in iOS Safari); discard it.
+      await toBlob(node, opts).catch(() => null);
       return await toBlob(node, opts);
     } catch {
       return await toBlob(node, { ...opts, skipFonts: true });
@@ -149,8 +156,10 @@ function ShareCard({ ref, data }: { ref: React.Ref<HTMLDivElement>; data: Debrie
   const en = data.en;
   const teams = [...data.teams].sort((a, b) => b.score - a.score);
   const maxScore = Math.max(1, ...teams.map((t) => t.score));
-  const winner = teams[0];
-  const draw = teams.length > 1 && teams[0].score === teams[1].score;
+  const draw = !!data.isTie;
+  const winner = data.winnerKey ? teams.find((t) => t.key === data.winnerKey) : undefined;
+  const noResult = !draw && !winner;
+  const players = data.showPlayers !== false;
   const board = (data.leaderboard ?? data.top3).slice(3, 8);
 
   // podium order: 2nd, 1st, 3rd
@@ -215,33 +224,39 @@ function ShareCard({ ref, data }: { ref: React.Ref<HTMLDivElement>; data: Debrie
           marginTop: 30,
           padding: "22px 30px",
           textAlign: "center",
-          background: draw ? "rgba(255,255,255,0.05)" : `linear-gradient(90deg, transparent, ${winner?.color ?? ACCENT}33, transparent)`,
-          border: `2px solid ${draw ? `${ACCENT}66` : `${winner?.color ?? ACCENT}`}`,
+          background: draw || noResult ? "rgba(255,255,255,0.05)" : `linear-gradient(90deg, transparent, ${winner?.color ?? ACCENT}33, transparent)`,
+          border: `2px solid ${draw ? "#eab308" : noResult ? `${ACCENT}66` : `${winner?.color ?? ACCENT}`}`,
         }}
       >
         <p style={{ fontFamily: mono, fontSize: 17, letterSpacing: "0.32em", color: MUTED, textTransform: "uppercase" }}>
-          {draw ? (en ? "RESULT" : "IZID") : (en ? "VICTORY" : "ZMAGOVALEC")}
+          {draw || noResult ? (en ? "RESULT" : "IZID") : (en ? "VICTORY" : "ZMAGOVALEC")}
         </p>
-        <p style={{ fontFamily: mono, fontSize: 42, letterSpacing: "0.1em", color: draw ? INK : winner?.color ?? ACCENT, marginTop: 12, textTransform: "uppercase" }}>
-          {draw ? (en ? "DRAW" : "NEODLOČENO") : winner?.name}
+        <p style={{ fontFamily: mono, fontSize: 42, letterSpacing: "0.1em", color: draw ? "#eab308" : noResult ? INK : winner?.color ?? ACCENT, marginTop: 12, textTransform: "uppercase" }}>
+          {draw ? (en ? "DRAW" : "NEODLOČENO") : noResult ? (en ? "OPERATION COMPLETED" : "OPERACIJA KONČANA") : winner?.name}
         </p>
       </div>
 
       {/* TEAM SCORES */}
-      <div style={{ marginTop: 32 }}>
+      <div style={{ marginTop: 32, ...(players ? {} : { flex: 1, display: "flex", flexDirection: "column", justifyContent: "center", paddingBottom: 60 }) }}>
+        {!players && (
+          <p style={{ fontFamily: mono, fontSize: 18, letterSpacing: "0.28em", color: ACCENT, textTransform: "uppercase", marginBottom: 34, textAlign: "center" }}>
+            {en ? "TEAM SCORES" : "TOČKE EKIP"}
+          </p>
+        )}
         {teams.map((t) => (
-          <div key={t.key} style={{ marginBottom: 20 }}>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 9 }}>
-              <span style={{ fontFamily: mono, fontSize: 22, letterSpacing: "0.16em", color: t.color, textTransform: "uppercase" }}>{t.name}</span>
-              <span style={{ fontFamily: mono, fontSize: 30, color: t.color, fontWeight: 700 }}>{t.score}</span>
+          <div key={t.key} style={{ marginBottom: players ? 20 : 56 }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: players ? 9 : 16 }}>
+              <span style={{ fontFamily: mono, fontSize: players ? 22 : 30, letterSpacing: "0.16em", color: t.color, textTransform: "uppercase" }}>{t.name}</span>
+              <span style={{ fontFamily: mono, fontSize: players ? 30 : 56, color: t.color, fontWeight: 700 }}>{t.score}</span>
             </div>
-            <div style={{ height: 14, background: "rgba(255,255,255,0.07)", border: `1px solid ${t.color}55` }}>
+            <div style={{ height: players ? 14 : 34, background: "rgba(255,255,255,0.07)", border: `1px solid ${t.color}55` }}>
               <div style={{ width: `${Math.round((t.score / maxScore) * 100)}%`, height: "100%", background: t.color, boxShadow: `0 0 20px ${t.color}` }} />
             </div>
           </div>
         ))}
       </div>
 
+      {players && <>
       {/* PODIUM */}
       <div style={{ marginTop: 26 }}>
         <p style={{ fontFamily: mono, fontSize: 18, letterSpacing: "0.28em", color: ACCENT, textTransform: "uppercase", marginBottom: 18, textAlign: "center" }}>
@@ -352,6 +367,7 @@ function ShareCard({ ref, data }: { ref: React.Ref<HTMLDivElement>; data: Debrie
           </>
         )}
       </div>
+      </>}
 
       {/* SECTOR STRIP */}
       {data.nodes.length > 0 && (
