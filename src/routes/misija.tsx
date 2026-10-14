@@ -28,6 +28,7 @@ import { appendDeathEvents, readDeathEvents, clearDeathEvents, type DeathEvent }
 import { QRScanner, type ScanPayload } from "@/components/QRScanner";
 import { useAmbientAudio } from "@/components/AmbientAudio";
 import { DebriefShareButton } from "@/components/DebriefShareCard";
+import { DebriefSaveCard } from "@/components/DebriefSaveCard";
 
 import landingView from "@/assets/landing-view.webp.asset.json";
 import { setLocationCheckOn } from "@/lib/location-check";
@@ -1168,7 +1169,7 @@ function MisijaPageInner() {
         {reassignedBanner}
         {warningOverlay}
         <EndgameSoundtrackTrigger />
-        <EndgameReport state={state} roster={roster} captures={captures} en={en} now={currentTime} myTeam={me.assigned_team} />
+        <EndgameReport state={state} roster={roster} captures={captures} en={en} now={currentTime} myTeam={me.assigned_team} meId={me.id} showSaveCard={!preview && me.assigned_team !== "none"} />
         <AbortMissionButton field={field} en={en} settings={state.settings} />
         {preview && <PreviewReturnButton />}
       </div>
@@ -3387,7 +3388,7 @@ function EndgameSoundtrackTrigger() {
   return null;
 }
 
-function EndgameReport({ state, roster, captures, en, now, myTeam }: { state: GameState; roster: Checkin[]; captures: Capture[]; en: boolean; now: number; myTeam?: string }) {
+function EndgameReport({ state, roster, captures, en, now, myTeam, meId, showSaveCard }: { state: GameState; roster: Checkin[]; captures: Capture[]; en: boolean; now: number; myTeam?: string; meId?: string; showSaveCard?: boolean }) {
   useEffect(() => {
     // Mission completed — counted once per mission run (deduped server-side).
     bumpTelemetryClient("mission_complete", `${state.field_id ?? "unknown"}:${state.match_started_at ?? "na"}`);
@@ -3639,6 +3640,10 @@ function EndgameReport({ state, roster, captures, en, now, myTeam }: { state: Ga
         }}
       />
 
+      {showSaveCard && (() => {
+        const row = enriched.find((r) => r.id === meId);
+        return <DebriefSaveCard en={en} me={row ? { callsign: row.callsign, teamName: teamLabelFor(row.assigned_team), teamColor: TEAM_COLOR[row.assigned_team] ?? ACCENT, captures: row.pts, deaths: showDeaths ? (row.death_count ?? 0) : null } : undefined} />;
+      })()}
 
       <div className="grid gap-4 md:grid-cols-2">
         {activeTeams.map((team) => {
