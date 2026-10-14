@@ -39,6 +39,7 @@ import { Route as ArchiveRouteImport } from './routes/archive'
 import { Route as AdminPregledRouteImport } from './routes/admin-pregled'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as EventsIndexRouteImport } from './routes/events.index'
+import { Route as MeGamesRouteImport } from './routes/me_.games'
 import { Route as EventsManageRouteImport } from './routes/events.manage'
 import { Route as EventsEventIdRouteImport } from './routes/events.$eventId'
 import { Route as ApiSendReservationRouteImport } from './routes/api/send-reservation'
@@ -197,6 +198,11 @@ const EventsIndexRoute = EventsIndexRouteImport.update({
   path: '/events/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const MeGamesRoute = MeGamesRouteImport.update({
+  id: '/me_/games',
+  path: '/me/games',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const EventsManageRoute = EventsManageRouteImport.update({
   id: '/events/manage',
   path: '/events/manage',
@@ -270,6 +276,7 @@ export interface FileRoutesByFullPath {
   '/api/send-reservation': typeof ApiSendReservationRoute
   '/events/$eventId': typeof EventsEventIdRoute
   '/events/manage': typeof EventsManageRoute
+  '/me/games': typeof MeGamesRoute
   '/events/': typeof EventsIndexRoute
   '/api/public/spartanops-cron-tick': typeof ApiPublicSpartanopsCronTickRoute
   '/api/public/spartanops-events-cleanup': typeof ApiPublicSpartanopsEventsCleanupRoute
@@ -309,6 +316,7 @@ export interface FileRoutesByTo {
   '/api/send-reservation': typeof ApiSendReservationRoute
   '/events/$eventId': typeof EventsEventIdRoute
   '/events/manage': typeof EventsManageRoute
+  '/me/games': typeof MeGamesRoute
   '/events': typeof EventsIndexRoute
   '/api/public/spartanops-cron-tick': typeof ApiPublicSpartanopsCronTickRoute
   '/api/public/spartanops-events-cleanup': typeof ApiPublicSpartanopsEventsCleanupRoute
@@ -349,6 +357,7 @@ export interface FileRoutesById {
   '/api/send-reservation': typeof ApiSendReservationRoute
   '/events/$eventId': typeof EventsEventIdRoute
   '/events/manage': typeof EventsManageRoute
+  '/me_/games': typeof MeGamesRoute
   '/events/': typeof EventsIndexRoute
   '/api/public/spartanops-cron-tick': typeof ApiPublicSpartanopsCronTickRoute
   '/api/public/spartanops-events-cleanup': typeof ApiPublicSpartanopsEventsCleanupRoute
@@ -390,6 +399,7 @@ export interface FileRouteTypes {
     | '/api/send-reservation'
     | '/events/$eventId'
     | '/events/manage'
+    | '/me/games'
     | '/events/'
     | '/api/public/spartanops-cron-tick'
     | '/api/public/spartanops-events-cleanup'
@@ -429,6 +439,7 @@ export interface FileRouteTypes {
     | '/api/send-reservation'
     | '/events/$eventId'
     | '/events/manage'
+    | '/me/games'
     | '/events'
     | '/api/public/spartanops-cron-tick'
     | '/api/public/spartanops-events-cleanup'
@@ -468,6 +479,7 @@ export interface FileRouteTypes {
     | '/api/send-reservation'
     | '/events/$eventId'
     | '/events/manage'
+    | '/me_/games'
     | '/events/'
     | '/api/public/spartanops-cron-tick'
     | '/api/public/spartanops-events-cleanup'
@@ -508,6 +520,7 @@ export interface RootRouteChildren {
   ApiSendReservationRoute: typeof ApiSendReservationRoute
   EventsEventIdRoute: typeof EventsEventIdRoute
   EventsManageRoute: typeof EventsManageRoute
+  MeGamesRoute: typeof MeGamesRoute
   EventsIndexRoute: typeof EventsIndexRoute
   ApiPublicSpartanopsCronTickRoute: typeof ApiPublicSpartanopsCronTickRoute
   ApiPublicSpartanopsEventsCleanupRoute: typeof ApiPublicSpartanopsEventsCleanupRoute
@@ -726,6 +739,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof EventsIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/me_/games': {
+      id: '/me_/games'
+      path: '/me/games'
+      fullPath: '/me/games'
+      preLoaderRoute: typeof MeGamesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/events/manage': {
       id: '/events/manage'
       path: '/events/manage'
@@ -812,6 +832,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiSendReservationRoute: ApiSendReservationRoute,
   EventsEventIdRoute: EventsEventIdRoute,
   EventsManageRoute: EventsManageRoute,
+  MeGamesRoute: MeGamesRoute,
   EventsIndexRoute: EventsIndexRoute,
   ApiPublicSpartanopsCronTickRoute: ApiPublicSpartanopsCronTickRoute,
   ApiPublicSpartanopsEventsCleanupRoute: ApiPublicSpartanopsEventsCleanupRoute,
