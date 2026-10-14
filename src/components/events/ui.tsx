@@ -2,7 +2,7 @@ import { useState, type CSSProperties } from "react";
 import { Link } from "@tanstack/react-router";
 import { CalendarPlus, Car, Share2 } from "lucide-react";
 import { CapacityBar } from "./CapacityBar";
-import { freeSeatsLabel } from "./CarpoolBoard";
+import { freeSeatsLabel } from "@/lib/free-seats";
 import { flagFor } from "@/lib/countries";
 import {
   buildIcs, dateTileParts, formatTimeRange, googleCalendarUrl, kindInfo, priceLabel, shortDate, slugify, type IcsEvent, type Lang,
