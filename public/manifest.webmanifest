@@ -1,0 +1,17 @@
+{
+  "id": "/",
+  "name": "SpartanOps",
+  "short_name": "SpartanOps",
+  "description": "Live-scored airsoft games with QR codes, and an events calendar for Slovenia.",
+  "start_url": "/spartanops",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#0a0c08",
+  "theme_color": "#0a0c08",
+  "lang": "sl",
+  "icons": [
+    { "src": "/icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "/icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "/icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}
