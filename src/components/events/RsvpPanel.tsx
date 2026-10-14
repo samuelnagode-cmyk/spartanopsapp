@@ -87,6 +87,8 @@ export function RsvpPanel({ event, lang, onCounts }: { event: RsvpEvent; lang: L
   const [phone, setPhone] = useState("");
   const [, setForcedLine] = useState(false);
   const [saved, setSaved] = useState(false);
+  const [ansOpen, setAnsOpen] = useState(true);
+  const firstLoadDone = useRef(false);
   const applying = useRef(false);
   const [pendingRsvp, setPendingRsvp] = useState<Status | null>(null);
 
@@ -101,7 +103,9 @@ export function RsvpPanel({ event, lang, onCounts }: { event: RsvpEvent; lang: L
       if (a.me) {
         setShare(a.me.phone_share as Share); setRide(a.me.ride_role as Ride); setFrom(a.me.ride_from ?? "");
         setSeats(a.me.ride_seats ?? 3); setNote(a.me.ride_note ?? "");
+        if (!firstLoadDone.current) setAnsOpen(false);
       }
+      firstLoadDone.current = true;
       return a;
     } catch { setLoadErr(true); return null; }
   }, [attendanceFn, event.id, onCounts]);
@@ -149,6 +153,7 @@ export function RsvpPanel({ event, lang, onCounts }: { event: RsvpEvent; lang: L
 
   const answer = async (status: Status | "not") => {
     setBusy(true); setErr(null); setNotice(null); setSaved(false);
+    if (status !== "not") setAnsOpen(true);
     try {
       const t = await token();
       if (status === "not") await removeFn({ data: { accessToken: t, eventId: event.id } });
@@ -174,6 +179,7 @@ export function RsvpPanel({ event, lang, onCounts }: { event: RsvpEvent; lang: L
       await setFn({ data: { accessToken: t, eventId: event.id, status: me.status, phoneShare: share, rideRole: ride, rideFrom: from, rideSeats: seats, rideNote: note } });
       await load();
       setSaved(true);
+      setAnsOpen(false);
     } catch (e) { setErr(errText(e, en)); }
     finally { setBusy(false); }
   };
@@ -186,6 +192,22 @@ export function RsvpPanel({ event, lang, onCounts }: { event: RsvpEvent; lang: L
   const shareTarget = share === "organiser" ? (en ? "the organiser" : "organizatorju") : (en ? "the organiser and signed-in adult players going to this event" : "organizatorju in prijavljenim polnoletnim igralcem, ki pridejo na ta dogodek");
   const canSeeList = !!att.attendees;
   const canSeeRides = canSeeList && (v.organiser || v.adult);
+  const open = !me || ansOpen;
+  const summary = me
+    ? [
+        me.status === "going" ? (en ? "Going" : "Pridem") : (en ? "Maybe" : "Morda"),
+        ride === "none"
+          ? (en ? "no ride needed" : "brez prevoza")
+          : ride === "driver"
+            ? (en ? `driving, leaving from ${from || "—"}` : `pelješ, odhod iz ${from || "—"}`)
+            : (en ? `needs a ride, leaving from ${from || "—"}` : `išče prevoz, odhod iz ${from || "—"}`),
+        share === "none"
+          ? (en ? "phone not shared" : "številka ni deljena")
+          : share === "organiser"
+            ? (en ? "phone: organiser" : "številka: organizator")
+            : (en ? "phone: players too" : "številka: tudi igralci"),
+      ].join(" · ")
+    : "";
 
   return (
     <div style={{ marginTop: 22 }}>
@@ -234,6 +256,15 @@ export function RsvpPanel({ event, lang, onCounts }: { event: RsvpEvent; lang: L
             </>
           ) : !v.needsReconsent && (
             <>
+              {me && (
+                <button type="button" className="ev-focus" aria-expanded={open} onClick={() => setAnsOpen(!open)}
+                  style={{ width: "100%", minHeight: 44, background: "none", border: "none", cursor: "pointer", display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8, padding: 0 }}>
+                  <span style={{ fontFamily: "monospace", fontSize: 12.5, color: INK, textAlign: "left" }}>{summary}</span>
+                  <ChevronDown size={16} style={{ flexShrink: 0, color: ACCENT, transform: open ? "rotate(180deg)" : "none" }} />
+                </button>
+              )}
+              {open && (
+              <>
               <div role="radiogroup" aria-label={en ? "Your answer" : "Tvoj odgovor"} style={{ display: "flex", gap: 6 }}>
                 <button type="button" role="radio" aria-checked={me?.status === "going"} className="ev-focus" disabled={busy || (full && me?.status !== "going")}
                   style={{ ...segBtn(me?.status === "going"), opacity: full && me?.status !== "going" ? 0.45 : 1 }} onClick={() => me?.status !== "going" && answer("going")}>{en ? "Going" : "Pridem"}</button>
@@ -331,6 +362,8 @@ export function RsvpPanel({ event, lang, onCounts }: { event: RsvpEvent; lang: L
                     </div>
                   ))}
                 </div>
+              )}
+              </>
               )}
             </>
           )}
