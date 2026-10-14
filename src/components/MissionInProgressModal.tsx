@@ -1,11 +1,15 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useLocation, useNavigate } from "@tanstack/react-router";
-import { X } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useLang } from "@/lib/i18n";
 
 const ACTIVE_SESSION_KEY = "spartanops.active_session";
 const DISMISS_KEY = "spartanops:mip_dismissed_at";
+
+const ACCENT = "#E0B04E";
+const PANEL = "#13160f";
+const INK = "#ece3c4";
+const MUTED = "rgba(236,227,196,0.65)";
 
 type ActiveSession = { lobbyId: string; authenticated: boolean };
 
@@ -19,11 +23,96 @@ function loadLobbyId(): string | null {
   } catch { return null; }
 }
 
+/** Backdrop used by the modal and by the /dev-preview entry. */
+export function MissionInProgressBackdrop({
+  onDismiss, children, fixed = true,
+}: { onDismiss: () => void; children: React.ReactNode; fixed?: boolean }) {
+  return (
+    <div
+      onClick={(e) => { if (e.target === e.currentTarget) onDismiss(); }}
+      style={{
+        position: fixed ? "fixed" : "relative", inset: fixed ? 0 : undefined, zIndex: fixed ? 1100 : undefined,
+        background: "rgba(0,0,0,0.85)",
+        display: "grid", placeItems: "center", padding: 16,
+      }}
+    >
+      {children}
+    </div>
+  );
+}
+
+/** Presentational card for the "mission running" prompt. */
+export function MissionInProgressCard({
+  en, onReturn, onDismiss, autoFocus = true,
+}: { en: boolean; onReturn: () => void; onDismiss: () => void; autoFocus?: boolean }) {
+  const btnRef = useRef<HTMLButtonElement>(null);
+  const id = useRef(`mip-${Math.random().toString(36).slice(2, 8)}`).current;
+
+  useEffect(() => {
+    if (autoFocus) btnRef.current?.focus();
+    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") onDismiss(); };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [autoFocus, onDismiss]);
+
+  return (
+    <div
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby={`${id}-title`}
+      aria-describedby={`${id}-desc`}
+      style={{
+        background: PANEL,
+        border: `1px solid ${ACCENT}`,
+        borderLeft: `3px solid ${ACCENT}`,
+        maxWidth: 420, width: "100%", boxSizing: "border-box",
+        padding: 24, color: INK,
+      }}
+    >
+      <style>{`@keyframes mipPulse{0%,100%{opacity:1}50%{opacity:.3}}.mip-dot{animation:mipPulse 1.4s ease-in-out infinite}@media (prefers-reduced-motion: reduce){.mip-dot{animation:none}}`}</style>
+      <p style={{ display: "flex", alignItems: "center", gap: 8, margin: 0, marginBottom: 10, fontFamily: "'Michroma', monospace", fontSize: 10, letterSpacing: "0.22em", color: ACCENT, fontWeight: 700 }}>
+        <span className="mip-dot" aria-hidden="true" style={{ width: 7, height: 7, borderRadius: "50%", background: ACCENT, flexShrink: 0 }} />
+        {en ? "MISSION RUNNING" : "MISIJA TEČE"}
+      </p>
+      <h2 id={`${id}-title`} style={{ fontFamily: "'Michroma', monospace", fontSize: 16, color: INK, fontWeight: 700, margin: 0, marginBottom: 10, lineHeight: 1.35, overflowWrap: "break-word" }}>
+        {en ? "Your game is still on" : "Tvoja igra še teče"}
+      </h2>
+      <p id={`${id}-desc`} style={{ fontSize: 14, lineHeight: 1.6, color: MUTED, margin: 0, marginBottom: 20 }}>
+        {en
+          ? "You are checked in to a running mission. Jump back in."
+          : "Prijavljen si v misijo, ki še teče. Vrni se v igro."}
+      </p>
+      <button
+        ref={btnRef}
+        type="button"
+        onClick={onReturn}
+        style={{
+          width: "100%", minHeight: 52, background: ACCENT, color: "#0b0d09", border: "none",
+          fontFamily: "'Michroma', monospace", fontSize: 12, letterSpacing: "0.14em",
+          fontWeight: 700, cursor: "pointer", padding: "0 12px",
+        }}
+      >
+        {en ? "BACK TO MISSION" : "NAZAJ V MISIJO"}
+      </button>
+      <button
+        type="button"
+        onClick={onDismiss}
+        style={{
+          width: "100%", minHeight: 44, marginTop: 6, background: "transparent", border: "none",
+          color: MUTED, fontSize: 14, cursor: "pointer",
+        }}
+      >
+        {en ? "Not now" : "Ne zdaj"}
+      </button>
+    </div>
+  );
+}
+
 /**
- * Global "Mission in Progress" recovery modal.
+ * Global "mission running" recovery modal.
  * If the browser has an active-session lobby stored and that lobby's
- * game_state is 'active', prompt the player to return to their HUD.
- * Suppressed while on /misija or /capture.
+ * game_state is 'active', offer the player a way back into the mission.
+ * Suppressed on the game screens.
  */
 export default function MissionInProgressModal() {
   const { pathname } = useLocation();
@@ -76,98 +165,14 @@ export default function MissionInProgressModal() {
     try { sessionStorage.setItem(DISMISS_KEY, String(Date.now())); } catch {}
     setShow(false);
   };
-  const goToHud = () => {
+  const goToMission = () => {
     setShow(false);
     navigate({ to: "/misija", search: { field: lobbyId } });
   };
 
   return (
-    <div
-      role="dialog"
-      aria-modal="true"
-      style={{
-        position: "fixed", inset: 0, zIndex: 1100,
-        background: "rgba(0,0,0,0.75)",
-        display: "grid", placeItems: "center", padding: 16,
-      }}
-    >
-      <div
-        style={{
-          background: "#13160f",
-          border: "1.5px solid #E0B04E",
-          boxShadow: "0 24px 60px -12px rgba(0,0,0,0.8), 0 0 40px -8px rgba(224,176,78,0.35)",
-          maxWidth: 520, width: "100%",
-          padding: 22, position: "relative",
-          color: "#ece3c4",
-        }}
-      >
-        <button
-          type="button"
-          onClick={dismiss}
-          aria-label={en ? "Close" : "Zapri"}
-          style={{
-            position: "absolute", top: 10, right: 10,
-            background: "transparent", border: "none",
-            color: "rgba(236,227,196,0.55)", cursor: "pointer",
-            padding: 6, display: "grid", placeItems: "center",
-          }}
-        >
-          <X size={18} />
-        </button>
-        <p
-          style={{
-            fontFamily: "'Michroma', monospace", fontSize: 10,
-            letterSpacing: "0.28em", color: "#E0B04E", textTransform: "uppercase", marginBottom: 8,
-          }}
-        >
-          // {en ? "ATTENTION" : "POZOR"},
-        </p>
-        <h2
-          style={{
-            fontFamily: "'Michroma', monospace", fontSize: 17,
-            letterSpacing: "0.14em", color: "#E0B04E", textTransform: "uppercase",
-            fontWeight: 700, marginBottom: 12,
-          }}
-        >
-          {en ? "Mission in progress" : "Misija je aktivna"}
-        </h2>
-        <p style={{ fontSize: 14, lineHeight: 1.7, color: "rgba(236,227,196,0.85)", marginBottom: 22 }}>
-          {en
-            ? "You are currently registered in an active mission. Would you like to return to your Player HUD?"
-            : "Trenutno si prijavljen v aktivno misijo. Se želiš vrniti na svoj nadzorni meni (Player HUD)?"}
-        </p>
-        <div style={{ display: "flex", gap: 8, flexWrap: "nowrap", alignItems: "stretch" }}>
-          <button
-            type="button"
-            onClick={goToHud}
-            style={{
-              flex: "1 1 auto", minWidth: 0,
-              background: "#E0B04E22", color: "#E0B04E",
-              border: "1px solid #E0B04E", padding: "12px 10px",
-              fontFamily: "'Michroma', monospace", fontSize: 10,
-              letterSpacing: "0.12em", textTransform: "uppercase", cursor: "pointer", fontWeight: 700,
-              whiteSpace: "nowrap",
-            }}
-          >
-            [ {en ? "RETURN TO HUD" : "NAZAJ NA HUD"} ]
-          </button>
-          <button
-            type="button"
-            onClick={dismiss}
-            style={{
-              flex: "0 1 auto", minWidth: 0,
-              background: "transparent", color: "rgba(236,227,196,0.7)",
-              border: "1px solid rgba(236,227,196,0.25)", padding: "12px 10px",
-              fontFamily: "'Michroma', monospace", fontSize: 10,
-              letterSpacing: "0.12em", textTransform: "uppercase", cursor: "pointer",
-              whiteSpace: "nowrap",
-            }}
-          >
-            {en ? "Stay here" : "Ostani tukaj"}
-          </button>
-        </div>
-
-      </div>
-    </div>
+    <MissionInProgressBackdrop onDismiss={dismiss}>
+      <MissionInProgressCard en={en} onReturn={goToMission} onDismiss={dismiss} />
+    </MissionInProgressBackdrop>
   );
 }
