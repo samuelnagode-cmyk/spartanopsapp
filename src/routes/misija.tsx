@@ -3148,6 +3148,7 @@ function ScanCodeButton({ paused, en }: { paused: boolean; en: boolean }) {
 function LiveMatch({ state, captures, now, roster, myTeam, meId, meCallsign }: { state: GameState; captures: Capture[]; now: number; roster: Checkin[]; myTeam: string; meId?: string; meCallsign?: string }) {
 
   const deathLog = useDeathLog(state.field_id ?? "");
+  const visibleHudDeaths = deathLog.filter((d) => canSeeDeath(d, { deathsPublic: !!state.settings?.respawn?.publicDeaths, teamOnly: state.settings?.respawn?.visibility === "team", myTeam, meId, meCallsign }));
   const { lang } = useLang();
   const t = useT();
   const en = lang === "en";
