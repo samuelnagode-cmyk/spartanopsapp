@@ -1185,14 +1185,13 @@ function MisijaPageInner() {
   const preMatchSec = startMs && clockNow < startMs ? Math.ceil((startMs - clockNow) / 1000) : 0;
 
   return (
-    <div style={{ background: BG, color: INK, minHeight: "100dvh", paddingTop: 84 }}>
+    <div style={{ background: BG, color: INK, minHeight: "100dvh", paddingTop: 84, paddingBottom: 96 }}>
       <OfflineBanner />
       {reassignedBanner}
         {warningOverlay}
       {preMatchSec > 0 && <PreMatchCountdown seconds={preMatchSec} polygon={fieldTitleFromState(state, field)} eventName={missionTitleFromState(state, field)} gamemode={state.gamemode} pointTarget={state.point_target} settings={state.settings} en={en} state={state} roster={roster} myTeam={me.assigned_team} meCallsign={me.callsign} /> }
-      <div className="max-w-5xl mx-auto px-4 pt-1 pb-8">
-
-        <PlayerHudHeader en={en} />
+      <style>{`@keyframes soPulse{0%,100%{opacity:1}50%{opacity:.25}}.so-pulse{animation:soPulse 1.6s ease-in-out infinite}@media (prefers-reduced-motion: reduce){.so-pulse{animation:none}}`}</style>
+      <div className="max-w-5xl mx-auto px-4 pt-1 pb-4">
         <h1
           className="text-center font-display tracking-widest mb-2"
           style={{ fontFamily: "'Michroma', monospace", fontSize: 22, color: INK }}
@@ -1204,28 +1203,33 @@ function MisijaPageInner() {
           fieldName={fieldTitleFromState(state, field)}
           en={en}
         />
+        <p className="text-center font-mono text-[11px] mb-4 flex items-center justify-center gap-2" style={{ color: MUTED }}>
+          <span className="so-pulse" aria-hidden="true" style={{ width: 6, height: 6, borderRadius: "50%", background: ACCENT, display: "inline-block" }} />
+          {en ? "Waiting for the marshal's command…" : "Čakanje na maršalovo komando…"}
+        </p>
         {me.assigned_team === "none" ? (
-          <div className="text-center mb-8">
+          <div className="text-center mb-4">
             <ChooseFactionButton onClick={() => setShowTeamSelect(true)} en={en} />
+            <p className="font-mono mx-auto mt-2" style={{ color: MUTED, fontSize: 11, lineHeight: 1.5, maxWidth: 420 }}>
+              {en
+                ? "Pick the smaller team or the one that fits your experience. Otherwise the marshal may move you."
+                : "Izberi manjšo ekipo ali tisto, ki ustreza tvoji izkušnji. Sicer te lahko maršal premesti."}
+            </p>
           </div>
         ) : (
-          <div className="text-center mb-6 font-mono uppercase text-[11px] tracking-widest" style={{ color: MUTED }}>
-            {en ? "Your faction:" : "Vaša ekipa:"} <strong style={{ color: TEAM_COLOR[me.assigned_team] }}>{teamName(me.assigned_team, state.settings, en)}</strong>
-          </div>
-        )}
-
-        <p
-          className="text-center font-mono text-[11px] uppercase tracking-widest mb-6"
-          style={{ color: MUTED, letterSpacing: "0.2em", lineHeight: 1.8 }}
-        >
-          {en ? "AWAITING MARSHAL COMMAND..." : "ČAKANJE NA MARŠALOVO KOMANDO..."}
-        </p>
-
-
-        <TeamGrid roster={roster} meId={me.id} settings={state.settings} />
-
-        {me.assigned_team !== "none" && (
-          <div className="mt-4 flex justify-center">
+          <div
+            className="mb-4 mx-auto flex items-center justify-between gap-3"
+            style={{
+              maxWidth: 640,
+              background: PANEL,
+              border: `1px solid rgba(236,227,196,0.12)`,
+              borderLeft: `4px solid ${TEAM_COLOR[me.assigned_team]}`,
+              padding: "8px 8px 8px 12px",
+            }}
+          >
+            <span className="font-mono uppercase text-[12px] tracking-widest min-w-0" style={{ color: INK, overflowWrap: "anywhere" }}>
+              {en ? "Your team:" : "Tvoja ekipa:"} <strong style={{ color: TEAM_COLOR[me.assigned_team] }}>{teamName(me.assigned_team, state.settings, en)}</strong>
+            </span>
             <button
               type="button"
               onClick={() => {
@@ -1235,25 +1239,33 @@ function MisijaPageInner() {
               }}
               style={{
                 background: "transparent",
-                border: `1px solid ${ACCENT}88`,
+                border: "none",
                 color: ACCENT,
-                padding: "8px 18px",
+                minHeight: 44,
+                padding: "0 8px",
                 fontFamily: "'Michroma', monospace",
-                fontSize: 11,
-                letterSpacing: "0.18em",
+                fontSize: 10,
+                letterSpacing: "0.16em",
                 textTransform: "uppercase",
                 cursor: "pointer",
+                flexShrink: 0,
               }}
             >
-              ⇄ {en ? "SWITCH TEAMS" : "ZAMENJAJ EKIPO"}
+              ⇄ {en ? "SWITCH" : "ZAMENJAJ"}
             </button>
           </div>
         )}
 
+        <TeamGrid roster={roster} meId={me.id} settings={state.settings} />
 
         {showTeamSelect && (
           <TeamSelectModal
             settings={state.settings}
+            counts={{
+              modra: roster.filter((r) => r.assigned_team === "modra").length,
+              rdeca: roster.filter((r) => r.assigned_team === "rdeca").length,
+              rumena: roster.filter((r) => r.assigned_team === "rumena").length,
+            }}
             onPick={async (team) => {
               if (team === "rumena" && !confirm("Ali ste prepričani, da bodo v igri 3 ekipe?")) return;
               const previous = me;
@@ -1330,7 +1342,7 @@ function MarshalContactBlock({ settings, en }: { settings?: GameSettings | null;
 function AbortMissionButton({ field, en, settings }: { field: string; en: boolean; settings?: GameSettings | null }) {
   const deleteMyCheckinFn = useServerFn(spartanopsDeleteMyCheckin);
   const onClick = async () => {
-    if (!confirm(en ? "Abort mission and disconnect from this lobby?" : "Prekiniti misijo in se odklopiti iz tega lobbyja?")) return;
+    if (!confirm(en ? "Leave this lobby and delete your data for this field?" : "Zapustiš lobby in izbrišeš svoje podatke za ta poligon?")) return;
     let sid: string | null = null;
     try {
       if (typeof window !== "undefined") {
@@ -1342,10 +1354,13 @@ function AbortMissionButton({ field, en, settings }: { field: string; en: boolea
     }
     try {
       if (typeof window !== "undefined") {
-        localStorage.removeItem(SESSION_KEY);
+        // Keep the anonymous game-history id, saved profile details and
+        // device-claim markers so an accidental abort costs no history.
+        const keep = (k: string) =>
+          k === SESSION_KEY || k === "spartanops:player-profile" || k.startsWith("spartanops:device-claimed:");
         localStorage.removeItem("spartanops.active_session");
         Object.keys(localStorage)
-          .filter((k) => k.startsWith("spartanops:") || k.startsWith(`spartanops.marshal.${field}`))
+          .filter((k) => (k.startsWith("spartanops:") || k.startsWith(`spartanops.marshal.${field}`)) && !keep(k))
           .forEach((k) => localStorage.removeItem(k));
       }
     } catch { /* ignore */ }
@@ -1355,9 +1370,8 @@ function AbortMissionButton({ field, en, settings }: { field: string; en: boolea
   return (
     <div className="mt-0 mb-2 flex flex-col items-center px-4">
       <MarshalContactBlock settings={settings} en={en} />
-      <div style={{ height: 72 }} aria-hidden="true" />
+      <div style={{ height: 24 }} aria-hidden="true" />
       <button
-
         onClick={onClick}
         className="transition-colors"
         style={{
@@ -1376,9 +1390,6 @@ function AbortMissionButton({ field, en, settings }: { field: string; en: boolea
       >
         [ {en ? "ABORT MISSION / DISCONNECT" : "PREKINI MISIJO / ODKLOP"} ]
       </button>
-      <div style={{ fontFamily: "monospace", fontSize: 10, color: "rgba(148,148,148,0.55)", letterSpacing: "0.04em", marginTop: 4 }}>
-        {en ? "Leave this lobby and delete your data for this field." : "Zapustite lobby in izbrišite svoje podatke za ta poligon."}
-      </div>
     </div>
   );
 }
@@ -2213,10 +2224,7 @@ function TeamGrid({ roster, meId, settings }: { roster: Checkin[]; meId: string;
   const { lang } = useLang();
   const en = lang === "en";
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
-  const blueCount = roster.filter((r) => r.assigned_team === "modra").length;
-  const redCount = roster.filter((r) => r.assigned_team === "rdeca").length;
   const teams = activeTeams(settings);
-  const yellowCount = roster.filter((r) => r.assigned_team === "rumena").length;
   const FALLBACK: Record<string, string> = { modra: "ALPHA", rdeca: "BRAVO", rumena: "CHARLIE" };
   const primary = (k: "modra" | "rdeca" | "rumena") => {
     const custom = settings?.teamNames?.[k];
@@ -2225,46 +2233,13 @@ function TeamGrid({ roster, meId, settings }: { roster: Checkin[]; meId: string;
   };
   const colorTag = (k: "modra" | "rdeca" | "rumena") => (en ? TEAM_LABEL_EN[k] : TEAM_LABEL[k]);
   type TeamKey = "modra" | "rdeca" | "rumena";
-  const allCols: { key: TeamKey; label: string; sub: string }[] = [
-    { key: "modra", label: primary("modra"), sub: `· ${colorTag("modra")} FACTION ·` },
-    { key: "rdeca", label: primary("rdeca"), sub: `· ${colorTag("rdeca")} FACTION ·` },
-    { key: "rumena", label: primary("rumena"), sub: `· ${colorTag("rumena")} FACTION ·` },
-  ];
+  const allCols: { key: TeamKey; label: string; sub: string }[] = (["modra", "rdeca", "rumena"] as TeamKey[]).map((k) => ({
+    key: k, label: primary(k), sub: colorTag(k),
+  }));
   const cols = allCols.filter((c) => teams.includes(c.key) || roster.some((r) => r.assigned_team === c.key));
+  const waiting = roster.filter((r) => r.assigned_team === "none");
   return (
     <div>
-      <div
-        className="mb-4 rounded-md px-4 py-4 text-center"
-        style={{
-          background: "linear-gradient(135deg, rgba(19,22,15,0.96), rgba(8,10,7,0.96))",
-          border: `1px solid ${ACCENT}33`,
-        }}
-      >
-        <p className="font-mono uppercase tracking-[0.28em] text-[10px] mb-2" style={{ color: MUTED }}>
-          ACTIVE PLAYER RATIO
-        </p>
-        <div
-          className="flex items-center justify-center gap-3 sm:gap-5 flex-wrap"
-          style={{ fontFamily: "'Michroma', monospace" }}
-        >
-          <span style={{ color: TEAM_COLOR.modra, fontSize: "clamp(28px, 8vw, 48px)", fontWeight: 800 }}>
-            {blueCount}
-          </span>
-          <span style={{ color: MUTED, fontSize: "clamp(16px, 5vw, 28px)", letterSpacing: "0.14em" }}>VS</span>
-          <span style={{ color: TEAM_COLOR.rdeca, fontSize: "clamp(28px, 8vw, 48px)", fontWeight: 800 }}>
-            {redCount}
-          </span>
-          {yellowCount > 0 && (
-            <>
-              <span style={{ color: MUTED, fontSize: "clamp(16px, 5vw, 28px)", letterSpacing: "0.14em" }}>VS</span>
-              <span style={{ color: TEAM_COLOR.rumena, fontSize: "clamp(28px, 8vw, 48px)", fontWeight: 800 }}>
-                {yellowCount}
-              </span>
-            </>
-          )}
-        </div>
-      </div>
-
       <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
         {cols.map((c) => {
           const players = roster.filter((r) => r.assigned_team === c.key);
@@ -2277,49 +2252,30 @@ function TeamGrid({ roster, meId, settings }: { roster: Checkin[]; meId: string;
               style={{
                 background: `linear-gradient(180deg, ${TEAM_COLOR[c.key]}18, rgba(19,22,15,0.96) 34%)`,
                 border: `1px solid ${TEAM_COLOR[c.key]}66`,
-                boxShadow: `0 14px 34px -26px ${TEAM_COLOR[c.key]}`,
               }}
             >
               <div
-                className="flex items-center justify-between gap-3 px-3 py-3"
+                className="flex items-center justify-between gap-3 px-3 py-2"
                 style={{ borderBottom: `1px solid ${TEAM_COLOR[c.key]}33` }}
               >
-                <div>
-                  <p
-                    style={{
-                      fontFamily: "'Michroma', monospace",
-                      color: TEAM_COLOR[c.key],
-                      fontSize: 12,
-                      letterSpacing: "0.16em",
-                    }}
-                  >
-                    {c.label} ({players.length})
-                  </p>
-                  <p className="font-mono uppercase tracking-[0.18em] text-[9px] mt-1" style={{ color: MUTED }}>
-                    {c.sub}
+                <div className="flex items-center gap-2 min-w-0">
+                  <span style={{ width: 8, height: 8, borderRadius: "50%", background: TEAM_COLOR[c.key], flexShrink: 0 }} />
+                  <p style={{ fontFamily: "'Michroma', monospace", color: TEAM_COLOR[c.key], fontSize: 12, letterSpacing: "0.16em", overflowWrap: "anywhere" }}>
+                    {c.label} · {players.length}
                   </p>
                 </div>
-                <span
-                  style={{
-                    width: 10,
-                    height: 10,
-                    borderRadius: "50%",
-                    background: TEAM_COLOR[c.key],
-                    boxShadow: `0 0 14px ${TEAM_COLOR[c.key]}`,
-                  }}
-                />
+                <span className="font-mono uppercase tracking-[0.18em] text-[9px] shrink-0" style={{ color: MUTED }}>
+                  {c.sub}
+                </span>
               </div>
-              <div className="p-3 space-y-2 min-h-[92px]">
+              <div className="p-2 space-y-1.5">
                 {players.length === 0 && (
-                  <p
-                    className="text-center font-mono text-[10px] uppercase tracking-widest py-6"
-                    style={{ color: MUTED }}
-                  >
+                  <p className="text-center font-mono text-[10px] uppercase tracking-widest py-3" style={{ color: MUTED }}>
                     {en ? "— EMPTY —" : "— prazno —"}
                   </p>
                 )}
                 {visiblePlayers.map((p) => (
-                  <PlayerRow key={p.id} p={p} isMe={p.id === meId} en={en} />
+                  <PlayerRow key={p.id} p={p} isMe={p.id === meId} en={en} dense />
                 ))}
                 {players.length > 5 && (
                   <button
@@ -2339,52 +2295,24 @@ function TeamGrid({ roster, meId, settings }: { roster: Checkin[]; meId: string;
             </div>
           );
         })}
-        <div
-          className="md:col-span-3 rounded-md"
-          style={{ background: PANEL, border: `1px solid rgba(236,227,196,0.12)` }}
-        >
-          <div
-            style={{
-              padding: "8px 12px",
-              fontFamily: "'Michroma', monospace",
-              fontSize: 11,
-              letterSpacing: "0.2em",
-              color: MUTED,
-              textAlign: "center",
-            }}
-          >
-            {en ? "WAITING ROOM" : "ČAKALNICA"} · {roster.filter((r) => r.assigned_team === "none").length}
-          </div>
-          <div
-            style={{
-              padding: "10px 12px",
-              borderTop: `1px dashed rgba(224,176,78,0.25)`,
-              background: "rgba(224,176,78,0.05)",
-              color: MUTED,
-              fontFamily: "monospace",
-              fontSize: 10.5,
-              lineHeight: 1.55,
-              textAlign: "center",
-            }}
-          >
-            {en
-              ? "Please join teams according to player numbers and experience level, otherwise the marshal will reposition some players to make the game more balanced."
-              : "Prosimo, pridružite se ekipam glede na število igralcev in raven izkušenj, sicer bo maršal razporedil nekaj igralcev, da bo igra bolj uravnotežena."}
-          </div>
-          <div className="p-3 flex flex-wrap gap-2">
-            {roster
-              .filter((r) => r.assigned_team === "none")
-              .map((p) => (
+        {waiting.length > 0 && (
+          <div className="md:col-span-3 rounded-md" style={{ background: PANEL, border: `1px solid rgba(236,227,196,0.12)` }}>
+            <div style={{ padding: "6px 12px", fontFamily: "'Michroma', monospace", fontSize: 11, letterSpacing: "0.2em", color: MUTED, textAlign: "center" }}>
+              {en ? "WAITING ROOM" : "ČAKALNICA"} · {waiting.length}
+            </div>
+            <div className="px-3 pb-3 flex flex-wrap gap-2">
+              {waiting.map((p) => (
                 <PlayerRow key={p.id} p={p} isMe={p.id === meId} compact en={en} />
               ))}
+            </div>
           </div>
-        </div>
+        )}
       </div>
     </div>
   );
 }
 
-const PlayerRow = memo(function PlayerRow({ p, isMe, compact, en }: { p: Checkin; isMe: boolean; compact?: boolean; en: boolean }) {
+const PlayerRow = memo(function PlayerRow({ p, isMe, compact, en, dense }: { p: Checkin; isMe: boolean; compact?: boolean; en: boolean; dense?: boolean }) {
   const realName = [p.first_name?.trim(), p.last_initial?.trim() ? `${p.last_initial.trim().charAt(0).toUpperCase()}.` : null]
     .filter(Boolean)
     .join(" ");
@@ -2394,7 +2322,8 @@ const PlayerRow = memo(function PlayerRow({ p, isMe, compact, en }: { p: Checkin
       style={{
         background: isMe ? `${ACCENT}1f` : "rgba(0,0,0,0.28)",
         border: `1px solid ${isMe ? ACCENT : "rgba(236,227,196,0.08)"}`,
-        padding: compact ? "6px 9px" : "8px 10px",
+        padding: compact ? "6px 9px" : dense ? "6px 10px" : "8px 10px",
+        minHeight: dense ? 36 : undefined,
         fontSize: 12,
         display: "flex",
         alignItems: "center",
@@ -2418,14 +2347,28 @@ const PlayerRow = memo(function PlayerRow({ p, isMe, compact, en }: { p: Checkin
   );
 });
 
+function slPlayers(n: number): string {
+  const m100 = n % 100;
+  if (m100 === 1) return `${n} igralec`;
+  if (m100 === 2) return `${n} igralca`;
+  if (m100 === 3 || m100 === 4) return `${n} igralci`;
+  return `${n} igralcev`;
+}
+
+export function playersLabel(n: number, en: boolean): string {
+  return en ? `${n} ${n === 1 ? "player" : "players"}` : slPlayers(n);
+}
+
 function TeamSelectModal({
   onPick,
   onClose,
   settings,
+  counts,
 }: {
   onPick: (t: "modra" | "rdeca" | "rumena") => void;
   onClose: () => void;
   settings?: any;
+  counts?: Partial<Record<"modra" | "rdeca" | "rumena", number>>;
 }) {
   const { lang } = useLang();
   const en = lang === "en";
@@ -2436,6 +2379,11 @@ function TeamSelectModal({
     if (typeof custom === "string" && custom.trim()) return custom.trim().toUpperCase();
     return (en ? FALLBACK_EN : FALLBACK_SL)[t];
   };
+  const teamsList = activeTeams(settings);
+  const nums = teamsList.map((t) => counts?.[t] ?? 0);
+  const minN = Math.min(...nums);
+  const allEqual = nums.every((n) => n === nums[0]);
+  const fewestCount = nums.filter((n) => n === minN).length;
   return (
     <div
       className="fixed inset-0 z-[1100] flex items-center justify-center p-4"
@@ -2453,14 +2401,17 @@ function TeamSelectModal({
           {en ? "CHOOSE FACTION" : "IZBERI EKIPO"}
         </h3>
         <div className="flex flex-col gap-2">
-          {activeTeams(settings).map((t) => (
+          {teamsList.map((t) => {
+            const n = counts?.[t] ?? 0;
+            const fewer = counts && !allEqual && n === minN && fewestCount === 1;
+            return (
             <button
               key={t}
               onClick={() => onPick(t)}
               style={{
                 background: TEAM_COLOR[t],
                 color: "#fff",
-                padding: "18px 14px",
+                padding: "14px 14px",
                 border: "none",
                 cursor: "pointer",
                 fontFamily: "'Michroma', monospace",
@@ -2472,8 +2423,14 @@ function TeamSelectModal({
               }}
             >
               {label(t)}
+              {counts && (
+                <span style={{ display: "block", fontFamily: "monospace", fontSize: 11, fontWeight: 400, letterSpacing: "0.04em", marginTop: 4 }}>
+                  {playersLabel(n, en)}{fewer ? (en ? " · fewer players" : " · manj igralcev") : ""}
+                </span>
+              )}
             </button>
-          ))}
+            );
+          })}
         </div>
       </div>
     </div>
