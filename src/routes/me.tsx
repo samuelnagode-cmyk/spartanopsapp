@@ -107,7 +107,15 @@ function MePage() {
                 {en ? "We filled in what you already told us. Check it and add your email." : "Izpolnili smo, kar si že vpisal. Preveri in dodaj e-pošto."}
               </p>
             )}
-            <PlayerAuth initialTab={from === "game" ? "signup" : "signin"} next={next} rsvp={rsvpEventId ? rsvp : undefined} onDone={() => { const n = safeNext(next); if (n) navigate({ to: n as never }); }} />
+            <PlayerAuth initialTab={from === "game" ? "signup" : "signin"} next={next} rsvp={rsvpEventId ? rsvp : undefined} onDone={async () => {
+              if (from === "game") {
+                try {
+                  const { data: s1 } = await supabase.auth.getSession();
+                  if (s1.session) await claimDeviceOnce(claim, s1.session.user.id, s1.session.access_token, true);
+                } catch { /* profile may not exist yet; claim runs after save */ }
+              }
+              const n = safeNext(next); if (n) navigate({ to: n as never });
+            }} />
             <p style={{ textAlign: "center", marginTop: 18, fontFamily: "monospace", fontSize: 12 }}>
               <Link to="/privacy" style={{ color: ACCENT }}>{en ? "Privacy" : "Zasebnost"}</Link>{"  ·  "}
               <Link to="/terms" style={{ color: ACCENT }}>{en ? "Terms" : "Pogoji"}</Link>
