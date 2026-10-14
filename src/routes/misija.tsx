@@ -3210,7 +3210,7 @@ function LiveMatch({ state, captures, now, roster, myTeam, meId, meCallsign }: {
           aria-label={en ? "Back to the score" : "Nazaj na rezultat"}
           style={{
             position: "fixed", top: headerH, left: 0, right: 0, height: 40, zIndex: 900,
-            background: "rgba(11,13,9,0.94)", borderBottom: `1px solid ${ACCENT}44`, border: "none",
+            background: "rgba(11,13,9,0.94)", border: "none", borderBottom: `1px solid ${ACCENT}44`,
             display: "flex", alignItems: "center", justifyContent: "center", gap: 6,
             fontFamily: "'Michroma', monospace", fontSize: teams.length === 3 ? 10 : 12, letterSpacing: "0.06em", cursor: "pointer",
             whiteSpace: "nowrap", overflow: "hidden", padding: "0 8px",
