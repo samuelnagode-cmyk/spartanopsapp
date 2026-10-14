@@ -115,9 +115,6 @@ export default function Header() {
     document.body.style.overflow = open ? "hidden" : "";
     if (!open) return;
     return () => { document.documentElement.style.overflow = ""; document.body.style.overflow = ""; };
-    return () => {
-      document.body.style.overflow = "";
-    };
   }, [open]);
 
   // On airsoft routes, lock html/body background to the tactical dark color so

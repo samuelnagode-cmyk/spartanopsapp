@@ -168,3 +168,5 @@ body {
     transform-origin: center;
   }
 }
+
+.menu-item:focus-visible { outline: 2px solid #E0B04E; outline-offset: 4px; }
