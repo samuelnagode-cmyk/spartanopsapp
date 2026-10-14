@@ -243,7 +243,7 @@ function Hero() {
           </div>
           <h1
             className="mx-auto mt-5"
-            style={{ fontFamily: "'Michroma', monospace", fontSize: "clamp(22px, 3.4vw, 34px)", letterSpacing: "0.04em", color: INK, lineHeight: 1.25, maxWidth: 760, textWrap: "balance" }}
+            style={{ fontFamily: "'Michroma', monospace", fontSize: "clamp(13px, 4.9vw, 34px)", letterSpacing: "0.04em", color: INK, lineHeight: 1.25, maxWidth: 760, whiteSpace: "nowrap" }}
           >
             {t("spartan.heroHeadline")}
           </h1>
