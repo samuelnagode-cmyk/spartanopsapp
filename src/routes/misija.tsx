@@ -38,7 +38,7 @@ export const Route = createFileRoute("/misija")({
   head: () => ({
     meta: [{ title: "SpartanOps · Misija" }, { name: "robots", content: "noindex,nofollow" }],
   }),
-  validateSearch: (s: Record<string, unknown>): { field: string; point?: string; preview?: boolean; marshal?: boolean; preset?: string; pts?: string; deaths?: string } => {
+  validateSearch: (s: Record<string, unknown>): { field: string; point?: string; preview?: boolean; marshal?: boolean; preset?: string; pts?: string; deaths?: string; vis?: string; rsp?: string; teams?: string; big?: string } => {
     return {
       field: typeof s.field === "string" ? s.field : (typeof s.field_id === "string" ? s.field_id : "zeleni-raj"),
       point: typeof s.point === "string" || typeof s.point === "number" ? String(s.point) : undefined,
@@ -48,6 +48,10 @@ export const Route = createFileRoute("/misija")({
       // Preview-only flags (read only when preview=1): pts=0 / deaths=0.
       pts: s.pts === 0 || s.pts === "0" ? "0" : undefined,
       deaths: s.deaths === 0 || s.deaths === "0" ? "0" : undefined,
+      vis: s.vis === "team" ? "team" : undefined,
+      rsp: s.rsp === 0 || s.rsp === "0" ? "0" : undefined,
+      teams: s.teams === 3 || s.teams === "3" ? "3" : undefined,
+      big: s.big === 1 || s.big === "1" ? "1" : undefined,
     };
   },
 
@@ -266,7 +270,9 @@ function makePreviewRoster(field: string, sessionId: string): Checkin[] {
   ];
 }
 
-function makePreviewState(field: string, preset?: string, flags?: { ptsOff?: boolean; deathsOff?: boolean }): GameState {
+type PreviewFlags = { ptsOff?: boolean; deathsOff?: boolean; visTeam?: boolean; rspOff?: boolean; three?: boolean; big?: boolean };
+
+function makePreviewState(field: string, preset?: string, flags?: PreviewFlags): GameState {
   const now = Date.now();
   const ended = preset === "ended";
   const active = preset === "hud" || preset === "paused";
@@ -283,7 +289,7 @@ function makePreviewState(field: string, preset?: string, flags?: { ptsOff?: boo
     countdown_seconds: 60,
     match_started_at: ended ? new Date(now - 40 * 60_000).toISOString() : prestart ? new Date(now + 60_000).toISOString() : active ? new Date(now - 7 * 60_000).toISOString() : null,
     match_duration_minutes: 40,
-    team_scores: { modra: 7, rdeca: 4, rumena: 0 },
+    team_scores: { modra: 7, rdeca: 4, rumena: flags?.three ? 2 : 0 },
     node_holders: { "1": "modra", "2": "rdeca", "3": null, "4": "modra", "5": null },
     node_positions: { "1": { x: 21, y: 28 }, "2": { x: 70, y: 25 }, "3": { x: 50, y: 50 }, "4": { x: 30, y: 72 }, "5": { x: 76, y: 74 } },
     point_target: 200,
@@ -291,16 +297,42 @@ function makePreviewState(field: string, preset?: string, flags?: { ptsOff?: boo
     settings: {
       missionName: "Operation Fallen Angel",
       missionDescription: "Secure and hold ALPHA and DELTA for a minimum of 6 minutes. Bravo team defends BETA at all costs.",
-      teamCount: 2,
-      teamNames: { modra: "ALPHA", rdeca: "BRAVO" },
-      respawn: { enabled: true, mode: "linear", linearSec: 60, dynStartMin: 1, dynEndMin: 3, visibility: "all", publicDeaths: !flags?.deathsOff },
+      teamCount: flags?.three ? 3 : 2,
+      teamNames: flags?.three ? { modra: "ALPHA", rdeca: "BRAVO", rumena: "CHARLIE" } : { modra: "ALPHA", rdeca: "BRAVO" },
+      respawn: { enabled: !flags?.rspOff, mode: "linear", linearSec: 60, dynStartMin: 1, dynEndMin: 3, visibility: flags?.visTeam ? "team" : "all", publicDeaths: !flags?.deathsOff },
       capturePointsScoring: !flags?.ptsOff,
     },
   };
 }
 
-function makePreviewCaptures(): Capture[] {
+function makePreviewExtras(field: string, flags: PreviewFlags): Checkin[] {
+  const out: Checkin[] = [];
+  if (flags.three) {
+    out.push(
+      { id: `${field}-c1`, callsign: "Raven_Six", club: null, experience_level: "dobro", assigned_team: "rumena", team_changed_flag: false, first_name: "Luka", last_initial: "R", death_count: 1, respawn_unlock_at: null } as Checkin,
+      { id: `${field}-c2`, callsign: "Lynx", club: null, experience_level: "slabo", assigned_team: "rumena", team_changed_flag: false, first_name: "Eva", last_initial: "L", death_count: 0, respawn_unlock_at: new Date(Date.now() + 35_000).toISOString() } as Checkin,
+    );
+  }
+  if (flags.big) {
+    const levels = ["slabo", "dobro", "zelo_dobro"];
+    for (let i = 0; i < 26; i++) {
+      const team = i % 2 === 0 ? "modra" : "rdeca";
+      out.push({ id: `${field}-g${i}`, callsign: `Ghost_${String(i + 1).padStart(2, "0")}`, club: null, experience_level: levels[i % 3], assigned_team: team, team_changed_flag: false, first_name: "Test", last_initial: String.fromCharCode(65 + (i % 26)), death_count: (i * 7) % 6, respawn_unlock_at: i % 5 === 0 ? new Date(Date.now() + (20 + i) * 1000).toISOString() : null } as Checkin);
+    }
+  }
+  return out;
+}
+
+function makePreviewCaptures(flags?: PreviewFlags): Capture[] {
   const base = Date.now() - 6 * 60_000;
+  if (flags?.big) {
+    const list: Capture[] = [];
+    for (let i = 0; i < 30; i++) {
+      const team = i % 2 === 0 ? "modra" : "rdeca";
+      list.push({ id: `preview-b${i}`, point_number: (i % 5) + 1, team, player_callsign: `Ghost_${String((i % 26) + 1).padStart(2, "0")}`, captured_at: new Date(base + i * 10_000).toISOString() });
+    }
+    return list;
+  }
   return [
     { id: "preview-c1", point_number: 1, team: "modra", player_callsign: "Kozjak_Marko", captured_at: new Date(base).toISOString() },
     { id: "preview-c2", point_number: 2, team: "rdeca", player_callsign: "Ghost_Falcon", captured_at: new Date(base + 75_000).toISOString() },
@@ -468,7 +500,7 @@ function MisijaPageInner() {
   const { lang } = useLang();
   const t = useT();
   const en = lang === "en";
-  const { field: rawField, point: targetPoint, preview, marshal: marshalMode, preset, pts: previewPts, deaths: previewDeaths } = Route.useSearch();
+  const { field: rawField, point: targetPoint, preview, marshal: marshalMode, preset, pts: previewPts, deaths: previewDeaths, vis: previewVis, rsp: previewRsp, teams: previewTeams, big: previewBig } = Route.useSearch();
 
   // Anti-cheat security alert: /scan sets this flag when a QR is opened
   // outside the in-app scanner. Surface a tactical warning on arrival.
@@ -586,10 +618,11 @@ function MisijaPageInner() {
 
   useEffect(() => {
     if (!preview || !sessionId || !preset) return;
-    const previewRoster = makePreviewRoster(field, sessionId);
+    const flags: PreviewFlags = { ptsOff: previewPts === "0", deathsOff: previewDeaths === "0", visTeam: previewVis === "team", rspOff: previewRsp === "0", three: previewTeams === "3", big: previewBig === "1" };
+    const previewRoster = [...makePreviewRoster(field, sessionId), ...makePreviewExtras(field, flags)];
     const primary = previewRoster[0];
-    setState(makePreviewState(field, preset, { ptsOff: previewPts === "0", deathsOff: previewDeaths === "0" }));
-    setCaptures(makePreviewCaptures());
+    setState(makePreviewState(field, preset, flags));
+    setCaptures(makePreviewCaptures(flags));
     setRoster(previewRoster);
     if (preset === "registration") {
       setGhostMe(null);
@@ -598,7 +631,7 @@ function MisijaPageInner() {
     }
     setGhostMe({ ...primary, assigned_team: preset === "team" ? "none" : "modra" });
     setShowTeamSelect(preset === "team");
-  }, [preview, preset, field, sessionId, previewPts, previewDeaths]);
+  }, [preview, preset, field, sessionId, previewPts, previewDeaths, previewVis, previewRsp, previewTeams, previewBig]);
 
   useEffect(() => {
     if (!sessionId || preview) return;
