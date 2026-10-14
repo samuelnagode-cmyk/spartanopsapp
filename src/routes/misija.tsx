@@ -1185,14 +1185,13 @@ function MisijaPageInner() {
   const preMatchSec = startMs && clockNow < startMs ? Math.ceil((startMs - clockNow) / 1000) : 0;
 
   return (
-    <div style={{ background: BG, color: INK, minHeight: "100dvh", paddingTop: 84 }}>
+    <div style={{ background: BG, color: INK, minHeight: "100dvh", paddingTop: 84, paddingBottom: 96 }}>
       <OfflineBanner />
       {reassignedBanner}
         {warningOverlay}
       {preMatchSec > 0 && <PreMatchCountdown seconds={preMatchSec} polygon={fieldTitleFromState(state, field)} eventName={missionTitleFromState(state, field)} gamemode={state.gamemode} pointTarget={state.point_target} settings={state.settings} en={en} state={state} roster={roster} myTeam={me.assigned_team} meCallsign={me.callsign} /> }
-      <div className="max-w-5xl mx-auto px-4 pt-1 pb-8">
-
-        <PlayerHudHeader en={en} />
+      <style>{`@keyframes soPulse{0%,100%{opacity:1}50%{opacity:.25}}.so-pulse{animation:soPulse 1.6s ease-in-out infinite}@media (prefers-reduced-motion: reduce){.so-pulse{animation:none}}`}</style>
+      <div className="max-w-5xl mx-auto px-4 pt-1 pb-4">
         <h1
           className="text-center font-display tracking-widest mb-2"
           style={{ fontFamily: "'Michroma', monospace", fontSize: 22, color: INK }}
@@ -1204,28 +1203,33 @@ function MisijaPageInner() {
           fieldName={fieldTitleFromState(state, field)}
           en={en}
         />
+        <p className="text-center font-mono text-[11px] mb-4 flex items-center justify-center gap-2" style={{ color: MUTED }}>
+          <span className="so-pulse" aria-hidden="true" style={{ width: 6, height: 6, borderRadius: "50%", background: ACCENT, display: "inline-block" }} />
+          {en ? "Waiting for the marshal's command…" : "Čakanje na maršalovo komando…"}
+        </p>
         {me.assigned_team === "none" ? (
-          <div className="text-center mb-8">
+          <div className="text-center mb-4">
             <ChooseFactionButton onClick={() => setShowTeamSelect(true)} en={en} />
+            <p className="font-mono mx-auto mt-2" style={{ color: MUTED, fontSize: 11, lineHeight: 1.5, maxWidth: 420 }}>
+              {en
+                ? "Pick the smaller team or the one that fits your experience. Otherwise the marshal may move you."
+                : "Izberi manjšo ekipo ali tisto, ki ustreza tvoji izkušnji. Sicer te lahko maršal premesti."}
+            </p>
           </div>
         ) : (
-          <div className="text-center mb-6 font-mono uppercase text-[11px] tracking-widest" style={{ color: MUTED }}>
-            {en ? "Your faction:" : "Vaša ekipa:"} <strong style={{ color: TEAM_COLOR[me.assigned_team] }}>{teamName(me.assigned_team, state.settings, en)}</strong>
-          </div>
-        )}
-
-        <p
-          className="text-center font-mono text-[11px] uppercase tracking-widest mb-6"
-          style={{ color: MUTED, letterSpacing: "0.2em", lineHeight: 1.8 }}
-        >
-          {en ? "AWAITING MARSHAL COMMAND..." : "ČAKANJE NA MARŠALOVO KOMANDO..."}
-        </p>
-
-
-        <TeamGrid roster={roster} meId={me.id} settings={state.settings} />
-
-        {me.assigned_team !== "none" && (
-          <div className="mt-4 flex justify-center">
+          <div
+            className="mb-4 mx-auto flex items-center justify-between gap-3"
+            style={{
+              maxWidth: 640,
+              background: PANEL,
+              border: `1px solid rgba(236,227,196,0.12)`,
+              borderLeft: `4px solid ${TEAM_COLOR[me.assigned_team]}`,
+              padding: "8px 8px 8px 12px",
+            }}
+          >
+            <span className="font-mono uppercase text-[12px] tracking-widest min-w-0" style={{ color: INK, overflowWrap: "anywhere" }}>
+              {en ? "Your team:" : "Tvoja ekipa:"} <strong style={{ color: TEAM_COLOR[me.assigned_team] }}>{teamName(me.assigned_team, state.settings, en)}</strong>
+            </span>
             <button
               type="button"
               onClick={() => {
@@ -1235,25 +1239,33 @@ function MisijaPageInner() {
               }}
               style={{
                 background: "transparent",
-                border: `1px solid ${ACCENT}88`,
+                border: "none",
                 color: ACCENT,
-                padding: "8px 18px",
+                minHeight: 44,
+                padding: "0 8px",
                 fontFamily: "'Michroma', monospace",
-                fontSize: 11,
-                letterSpacing: "0.18em",
+                fontSize: 10,
+                letterSpacing: "0.16em",
                 textTransform: "uppercase",
                 cursor: "pointer",
+                flexShrink: 0,
               }}
             >
-              ⇄ {en ? "SWITCH TEAMS" : "ZAMENJAJ EKIPO"}
+              ⇄ {en ? "SWITCH" : "ZAMENJAJ"}
             </button>
           </div>
         )}
 
+        <TeamGrid roster={roster} meId={me.id} settings={state.settings} />
 
         {showTeamSelect && (
           <TeamSelectModal
             settings={state.settings}
+            counts={{
+              modra: roster.filter((r) => r.assigned_team === "modra").length,
+              rdeca: roster.filter((r) => r.assigned_team === "rdeca").length,
+              rumena: roster.filter((r) => r.assigned_team === "rumena").length,
+            }}
             onPick={async (team) => {
               if (team === "rumena" && !confirm("Ali ste prepričani, da bodo v igri 3 ekipe?")) return;
               const previous = me;
@@ -1330,7 +1342,7 @@ function MarshalContactBlock({ settings, en }: { settings?: GameSettings | null;
 function AbortMissionButton({ field, en, settings }: { field: string; en: boolean; settings?: GameSettings | null }) {
   const deleteMyCheckinFn = useServerFn(spartanopsDeleteMyCheckin);
   const onClick = async () => {
-    if (!confirm(en ? "Abort mission and disconnect from this lobby?" : "Prekiniti misijo in se odklopiti iz tega lobbyja?")) return;
+    if (!confirm(en ? "Leave this lobby and delete your data for this field?" : "Zapustiš lobby in izbrišeš svoje podatke za ta poligon?")) return;
     let sid: string | null = null;
     try {
       if (typeof window !== "undefined") {
@@ -1342,10 +1354,13 @@ function AbortMissionButton({ field, en, settings }: { field: string; en: boolea
     }
     try {
       if (typeof window !== "undefined") {
-        localStorage.removeItem(SESSION_KEY);
+        // Keep the anonymous game-history id, saved profile details and
+        // device-claim markers so an accidental abort costs no history.
+        const keep = (k: string) =>
+          k === SESSION_KEY || k === "spartanops:player-profile" || k.startsWith("spartanops:device-claimed:");
         localStorage.removeItem("spartanops.active_session");
         Object.keys(localStorage)
-          .filter((k) => k.startsWith("spartanops:") || k.startsWith(`spartanops.marshal.${field}`))
+          .filter((k) => (k.startsWith("spartanops:") || k.startsWith(`spartanops.marshal.${field}`)) && !keep(k))
           .forEach((k) => localStorage.removeItem(k));
       }
     } catch { /* ignore */ }
@@ -1355,9 +1370,8 @@ function AbortMissionButton({ field, en, settings }: { field: string; en: boolea
   return (
     <div className="mt-0 mb-2 flex flex-col items-center px-4">
       <MarshalContactBlock settings={settings} en={en} />
-      <div style={{ height: 72 }} aria-hidden="true" />
+      <div style={{ height: 24 }} aria-hidden="true" />
       <button
-
         onClick={onClick}
         className="transition-colors"
         style={{
@@ -1376,9 +1390,6 @@ function AbortMissionButton({ field, en, settings }: { field: string; en: boolea
       >
         [ {en ? "ABORT MISSION / DISCONNECT" : "PREKINI MISIJO / ODKLOP"} ]
       </button>
-      <div style={{ fontFamily: "monospace", fontSize: 10, color: "rgba(148,148,148,0.55)", letterSpacing: "0.04em", marginTop: 4 }}>
-        {en ? "Leave this lobby and delete your data for this field." : "Zapustite lobby in izbrišite svoje podatke za ta poligon."}
-      </div>
     </div>
   );
 }
