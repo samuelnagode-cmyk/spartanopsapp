@@ -1174,12 +1174,14 @@ function AccountMissionsSection({ en, onOpenMission, onCreateInEvent }: { en: bo
 
   return (
     <div style={{ marginBottom: 32 }}>
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, marginBottom: 14 }}>
-        <strong style={{ color: ACCENT, fontFamily: "monospace", fontSize: 14, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{business || ""}</strong>
-        <span style={{ display: "inline-flex", gap: 6, flexShrink: 0 }}>
-          <Link to="/archive" style={{ ...smallBarBtn, flexShrink: 0 }}>{en ? "Past missions" : "Pretekle misije"}</Link>
-          <Link to="/marshal-account" style={{ ...smallBarBtn, flexShrink: 0 }}>{en ? "Field settings" : "Nastavitve poligona"}</Link>
-        </span>
+      <div style={{ marginBottom: 14 }}>
+        {business ? (
+          <strong style={{ display: "block", color: ACCENT, fontFamily: "monospace", fontSize: 15, lineHeight: 1.35, whiteSpace: "normal", overflowWrap: "anywhere", marginBottom: 6 }}>{business}</strong>
+        ) : null}
+        <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+          <Link to="/archive" style={smallBarBtn}>{en ? "Past missions" : "Pretekle misije"}</Link>
+          <Link to="/marshal-account" style={smallBarBtn}>{en ? "Field settings" : "Nastavitve poligona"}</Link>
+        </div>
       </div>
       <p style={{ fontFamily: "monospace", fontSize: 10, letterSpacing: "0.30em", color: ACCENT, margin: "0 0 10px", textTransform: "uppercase" }}>
         {en ? "// YOUR MISSIONS" : "// TVOJE MISIJE"}
@@ -1218,8 +1220,8 @@ function AccountMissionsSection({ en, onOpenMission, onCreateInEvent }: { en: bo
                 onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onOpenMission(pinned); } }}
                 style={{ border: `1px solid ${ACCENT}`, background: "rgba(0,0,0,0.35)", padding: "10px 12px", fontFamily: "monospace", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10 }}
               >
-                <div style={{ minWidth: 0 }}>
-                  <div style={{ fontSize: 14, color: INK, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{titleOf(pinned)}</div>
+                <div style={{ minWidth: 0, flex: 1 }}>
+                  <div style={{ fontSize: 14, color: INK, whiteSpace: "normal", overflowWrap: "anywhere" }}>{titleOf(pinned)}</div>
                   <div style={{ fontSize: 11, color: MUTED, marginTop: 2 }}>{gamemodeLabel(pinned.gamemode)}{dur ? ` · ${dur} min` : ""}</div>
                 </div>
                 <span style={{ fontSize: 9.5, letterSpacing: "0.15em", color: BG, background: ACCENT, padding: "4px 7px", whiteSpace: "nowrap", flexShrink: 0 }}>
@@ -1242,8 +1244,8 @@ function AccountMissionsSection({ en, onOpenMission, onCreateInEvent }: { en: bo
                   style={{ flex: 1, minWidth: 0, display: "flex", alignItems: "center", gap: 8, background: "transparent", border: "none", color: INK, cursor: "pointer", padding: "8px 0", textAlign: "left", fontFamily: "monospace" }}
                 >
                   <span style={{ color: ACCENT, width: 12, display: "inline-block" }}>{open ? "▾" : "▸"}</span>
-                  <span style={{ fontSize: 13, fontWeight: 700, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{g.title}</span>
-                  <span style={{ fontSize: 11, color: MUTED, whiteSpace: "nowrap" }}>{en ? `${n} mission${n === 1 ? "" : "s"}` : slMissionCount(n)}</span>
+                  <span style={{ fontSize: 13, fontWeight: 700, minWidth: 0, flex: "0 1 auto", whiteSpace: "normal", overflowWrap: "anywhere" }}>{g.title}</span>
+                  <span style={{ fontSize: 11, color: MUTED, whiteSpace: "nowrap", flexShrink: 0 }}>{en ? `${n} mission${n === 1 ? "" : "s"}` : slMissionCount(n)}</span>
                 </button>
               </div>
               {open && (
@@ -1259,8 +1261,8 @@ function AccountMissionsSection({ en, onOpenMission, onCreateInEvent }: { en: bo
                         onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onOpenMission(m); } }}
                         style={{ border: `1px solid ${activeLobbyId === m.id ? ACCENT : `${ACCENT}33`}`, background: "rgba(0,0,0,0.25)", padding: "10px 12px", marginBottom: 6, fontFamily: "monospace", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10 }}
                       >
-                        <div style={{ minWidth: 0 }}>
-                          <div style={{ fontSize: 14, color: INK, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{titleOf(m)}</div>
+                        <div style={{ minWidth: 0, flex: 1 }}>
+                          <div style={{ fontSize: 14, color: INK, whiteSpace: "normal", overflowWrap: "anywhere" }}>{titleOf(m)}</div>
                           <div style={{ fontSize: 11, color: MUTED, marginTop: 2 }}>
                             {gamemodeLabel(m.gamemode)}{dur ? ` · ${dur} min` : ""}
                           </div>
