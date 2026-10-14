@@ -2301,7 +2301,7 @@ function TeamGrid({ roster, meId, settings }: { roster: Checkin[]; meId: string;
   );
 }
 
-const PlayerRow = memo(function PlayerRow({ p, isMe, compact, en }: { p: Checkin; isMe: boolean; compact?: boolean; en: boolean }) {
+const PlayerRow = memo(function PlayerRow({ p, isMe, compact, en, dense }: { p: Checkin; isMe: boolean; compact?: boolean; en: boolean; dense?: boolean }) {
   const realName = [p.first_name?.trim(), p.last_initial?.trim() ? `${p.last_initial.trim().charAt(0).toUpperCase()}.` : null]
     .filter(Boolean)
     .join(" ");
@@ -2311,7 +2311,8 @@ const PlayerRow = memo(function PlayerRow({ p, isMe, compact, en }: { p: Checkin
       style={{
         background: isMe ? `${ACCENT}1f` : "rgba(0,0,0,0.28)",
         border: `1px solid ${isMe ? ACCENT : "rgba(236,227,196,0.08)"}`,
-        padding: compact ? "6px 9px" : "8px 10px",
+        padding: compact ? "6px 9px" : dense ? "6px 10px" : "8px 10px",
+        minHeight: dense ? 36 : undefined,
         fontSize: 12,
         display: "flex",
         alignItems: "center",
