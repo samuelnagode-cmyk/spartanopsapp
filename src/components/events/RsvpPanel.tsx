@@ -87,6 +87,8 @@ export function RsvpPanel({ event, lang, onCounts }: { event: RsvpEvent; lang: L
   const [phone, setPhone] = useState("");
   const [, setForcedLine] = useState(false);
   const [saved, setSaved] = useState(false);
+  const [ansOpen, setAnsOpen] = useState(true);
+  const firstLoadDone = useRef(false);
   const applying = useRef(false);
   const [pendingRsvp, setPendingRsvp] = useState<Status | null>(null);
 
@@ -101,7 +103,9 @@ export function RsvpPanel({ event, lang, onCounts }: { event: RsvpEvent; lang: L
       if (a.me) {
         setShare(a.me.phone_share as Share); setRide(a.me.ride_role as Ride); setFrom(a.me.ride_from ?? "");
         setSeats(a.me.ride_seats ?? 3); setNote(a.me.ride_note ?? "");
+        if (!firstLoadDone.current) setAnsOpen(false);
       }
+      firstLoadDone.current = true;
       return a;
     } catch { setLoadErr(true); return null; }
   }, [attendanceFn, event.id, onCounts]);
@@ -149,6 +153,7 @@ export function RsvpPanel({ event, lang, onCounts }: { event: RsvpEvent; lang: L
 
   const answer = async (status: Status | "not") => {
     setBusy(true); setErr(null); setNotice(null); setSaved(false);
+    if (status !== "not") setAnsOpen(true);
     try {
       const t = await token();
       if (status === "not") await removeFn({ data: { accessToken: t, eventId: event.id } });
@@ -174,6 +179,7 @@ export function RsvpPanel({ event, lang, onCounts }: { event: RsvpEvent; lang: L
       await setFn({ data: { accessToken: t, eventId: event.id, status: me.status, phoneShare: share, rideRole: ride, rideFrom: from, rideSeats: seats, rideNote: note } });
       await load();
       setSaved(true);
+      setAnsOpen(false);
     } catch (e) { setErr(errText(e, en)); }
     finally { setBusy(false); }
   };
@@ -186,6 +192,22 @@ export function RsvpPanel({ event, lang, onCounts }: { event: RsvpEvent; lang: L
   const shareTarget = share === "organiser" ? (en ? "the organiser" : "organizatorju") : (en ? "the organiser and signed-in adult players going to this event" : "organizatorju in prijavljenim polnoletnim igralcem, ki pridejo na ta dogodek");
   const canSeeList = !!att.attendees;
   const canSeeRides = canSeeList && (v.organiser || v.adult);
+  const open = !me || ansOpen;
+  const summary = me
+    ? [
+        me.status === "going" ? (en ? "Going" : "Pridem") : (en ? "Maybe" : "Morda"),
+        ride === "none"
+          ? (en ? "no ride needed" : "brez prevoza")
+          : ride === "driver"
+            ? (en ? `driving, leaving from ${from || "—"}` : `pelješ, odhod iz ${from || "—"}`)
+            : (en ? `needs a ride, leaving from ${from || "—"}` : `išče prevoz, odhod iz ${from || "—"}`),
+        share === "none"
+          ? (en ? "phone not shared" : "številka ni deljena")
+          : share === "organiser"
+            ? (en ? "phone: organiser" : "številka: organizator")
+            : (en ? "phone: players too" : "številka: tudi igralci"),
+      ].join(" · ")
+    : "";
 
   return (
     <div style={{ marginTop: 22 }}>
