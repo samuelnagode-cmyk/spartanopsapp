@@ -237,7 +237,7 @@ function ShareCard({ ref, data }: { ref: React.Ref<HTMLDivElement>; data: Debrie
       </div>
 
       {/* TEAM SCORES */}
-      <div style={{ marginTop: players ? 32 : 90, ...(players ? {} : { flex: 1 }) }}>
+      <div style={{ marginTop: 32, ...(players ? {} : { flex: 1, display: "flex", flexDirection: "column", justifyContent: "center", paddingBottom: 60 }) }}>
         {!players && (
           <p style={{ fontFamily: mono, fontSize: 18, letterSpacing: "0.28em", color: ACCENT, textTransform: "uppercase", marginBottom: 34, textAlign: "center" }}>
             {en ? "TEAM SCORES" : "TOČKE EKIP"}
