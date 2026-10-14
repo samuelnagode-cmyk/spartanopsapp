@@ -1,3 +1,4 @@
+import { AccountSwitch } from "@/components/AccountSwitch";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useCallback, useEffect, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
@@ -93,6 +94,7 @@ function MePage() {
     <main style={{ minHeight: "100vh", background: BG, color: INK, padding: "110px 16px 48px" }}>
       <div style={{ maxWidth: 520, margin: "0 auto" }}>
         <h1 style={{ fontFamily: "'Michroma', monospace", fontSize: 16, letterSpacing: "0.18em", textAlign: "center", textTransform: "uppercase", marginBottom: 20 }}>{title}</h1>
+        {signedIn && <AccountSwitch current="account" />}
         {notice && <p role="status" style={{ color: OK, fontFamily: "monospace", fontSize: 13, textAlign: "center", marginBottom: 16 }}>{notice}</p>}
         {signedIn === null || (signedIn && !mine) ? (
           <p style={{ textAlign: "center", fontFamily: "monospace", opacity: 0.7 }}>…</p>
@@ -119,12 +121,6 @@ function MePage() {
           <>
             {!mine.isMarshal && user && (
               <FieldCreateCard collapsible user={user} en={en} onCreated={() => setMine({ ...mine, isMarshal: true })} />
-            )}
-            {mine.isMarshal && (
-              <p style={{ fontFamily: "monospace", fontSize: 12.5, textAlign: "center", marginBottom: 14 }}>
-                {en ? "You also run a field: " : "Vodiš tudi poligon: "}
-                <Link to="/marshal-account" style={{ color: ACCENT }}>{en ? "Field settings →" : "Nastavitve poligona →"}</Link>
-              </p>
             )}
             {mine.profile && <MyEvents lang={en ? "en" : "sl"} />}
             {mine.profile && !mine.needsReconsent && <ProfilePreview p={mine.profile} en={en} />}
