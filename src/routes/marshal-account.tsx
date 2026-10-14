@@ -1,3 +1,4 @@
+import { AccountSwitch } from "@/components/AccountSwitch";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState, type CSSProperties, type FormEvent } from "react";
 import type { SupabaseClient, User } from "@supabase/supabase-js";
@@ -85,6 +86,7 @@ function MarshalAccountPage() {
         <h1 style={{ fontFamily: "'Michroma', monospace", fontSize: 15, letterSpacing: "0.18em", color: INK, textAlign: "center", textTransform: "uppercase", marginBottom: 22 }}>
           {user ? (en ? "Field settings" : "Nastavitve poligona") : (en ? "Register your field" : "Registracija poligona")}
         </h1>
+        {ready && user && <AccountSwitch current="field" />}
         {!ready ? (
           <p style={{ textAlign: "center", fontFamily: "monospace", fontSize: 12, opacity: 0.7 }}>…</p>
         ) : user ? (
