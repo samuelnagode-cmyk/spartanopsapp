@@ -1,6 +1,6 @@
 import { createServerFn } from "@tanstack/react-start";
 import { createHash } from "node:crypto";
-import { PRIVACY_VERSION, cleanText } from "./player-validation";
+import { PRIVACY_VERSION, cleanText, methodsOrDefault, type ContactMethod } from "./player-validation";
 import {
   buildRides, canSeeAttendees, eventEndMs, viewAttendee,
   type AttendeeProfile, type AttendeeView, type RideGroup, type RsvpRow, type Viewer,
@@ -90,7 +90,7 @@ export const eventAttendance = createServerFn({ method: "POST" })
       vp = p ?? null;
     }
     const viewerInfo: ViewerInfo = {
-      signedIn: !!userId, hasProfile: !!vp, adult: vp?.age_group === "18_plus", hasPhone: !!vp?.phone, contactMethods: normalizeContactMethods(vp?.contact_methods)?.length ? normalizeContactMethods(vp?.contact_methods)! : DEFAULT_CONTACT_METHODS,
+      signedIn: !!userId, hasProfile: !!vp, adult: vp?.age_group === "18_plus", hasPhone: !!vp?.phone, contactMethods: methodsOrDefault(vp?.contact_methods),
       needsReconsent: !!vp && vp.privacy_version !== PRIVACY_VERSION, organiser: !!userId && userId === ev.account_id,
     };
     const base: Attendance = { ...counts, capacity: ev.capacity, viewer: viewerInfo };

@@ -35,6 +35,12 @@ export function normalizeContactMethods(input: unknown): ContactMethod[] | null 
   return CONTACT_METHODS.filter((m) => input.includes(m));
 }
 
+/** Stored value or the default three when missing, invalid or empty. */
+export function methodsOrDefault(v: unknown): ContactMethod[] {
+  const m = normalizeContactMethods(v);
+  return m && m.length ? m : [...DEFAULT_CONTACT_METHODS];
+}
+
 export type PlayerInput = {
   nickname?: unknown; first_name?: unknown; last_name?: unknown; show_full_last_name?: unknown;
   age_group?: unknown; phone?: unknown; club?: unknown; experience_level?: unknown; operator_type?: unknown;
