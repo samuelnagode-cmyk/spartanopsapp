@@ -122,3 +122,29 @@ describe("avatar follows callsign visibility", () => {
     expect(buildRides([view])[0].drivers[0]).toMatchObject({ avatar_icon: "wolf", avatar_color: "teal" });
   });
 });
+
+describe("contact methods follow the phone exactly", () => {
+  const withSms = { ...profile, contact_methods: ["sms", "viber"] };
+  it("visible to self, organiser and adult player when the phone is", () => {
+    for (const viewer of [self, organiser, adult]) {
+      const a = v(viewer, row(), withSms)!;
+      expect(a.phone).not.toBeNull();
+      expect(a.contact_methods).toEqual(["sms", "viber"]);
+    }
+  });
+  it("null wherever the phone is null", () => {
+    expect(v(publicSignedOut, row(), withSms)).toBeNull();
+    expect(v(minor, row(), withSms)!.contact_methods).toBeNull();
+    expect(v(adult, row({ phone_share: "none", ride_role: "none" }), withSms)!.contact_methods).toBeNull();
+    expect(v(adult, row(), withSms, AFTER_WINDOW)!.contact_methods).toBeNull();
+    expect(v(adult, row(), { ...withSms, phone: null })!.contact_methods).toBeNull();
+  });
+  it("default three when the profile value is missing or empty", () => {
+    expect(v(adult)!.contact_methods).toEqual(["call", "viber", "whatsapp"]);
+    expect(v(adult, row(), { ...profile, contact_methods: [] })!.contact_methods).toEqual(["call", "viber", "whatsapp"]);
+  });
+  it("car pool entries carry the same methods", () => {
+    const r = buildRides([v(adult, row(), withSms)!]);
+    expect(r[0].drivers[0].contact_methods).toEqual(["sms", "viber"]);
+  });
+});

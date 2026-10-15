@@ -6,7 +6,7 @@ import { EXPERIENCE_LEVELS, ExperienceBadge, type ExperienceLevel } from "@/comp
 import { playerDeleteMine, playerExportMine, playerSaveMine } from "@/lib/player.functions";
 import { PlayerAvatar, AvatarGlyph } from "@/components/PlayerAvatar";
 import { AVATAR_COLORS, AVATAR_ICONS, avatarHex } from "@/lib/avatars";
-import { OPERATOR_TYPES, normalizePhone, validatePlayer, type AgeChoice } from "@/lib/player-validation";
+import { CONTACT_METHODS, DEFAULT_CONTACT_METHODS, OPERATOR_TYPES, methodsOrDefault, normalizePhone, validatePlayer, type AgeChoice } from "@/lib/player-validation";
 
 const BG = "#0b0d09";
 const PANEL = "#13160f";
@@ -30,6 +30,7 @@ export type PlayerProfile = {
   operator_type: string | null; primary_weapon: string | null; secondary_weapon: string | null;
   sidearm: string | null; gear_notes: string | null; link_games?: boolean;
   avatar_icon?: string | null; avatar_color?: string | null;
+  contact_methods?: string[] | null;
 };
 
 const ERRORS: Record<string, [string, string]> = {
@@ -40,6 +41,7 @@ const ERRORS: Record<string, [string, string]> = {
   "validation:age_group": ["Choose your age group.", "Izberi starostno skupino."],
   "validation:under_16": ["Profiles are for players aged 16 and over.", "Profili so za igralce od 16. leta naprej."],
   "validation:avatar": ["Choose an avatar from the list, or No avatar.", "Izberi avatar s seznama ali Brez avatarja."],
+  "validation:contact_methods": ["Choose at least one way people can contact you.", "Izberi vsaj en način, kako te lahko kontaktirajo."],
   "validation:privacy": ["Please confirm the Privacy notice and the Terms.", "Potrdi obvestilo o zasebnosti in pogoje."],
   login_required: ["Please sign in again.", "Ponovno se prijavi."],
 };
@@ -92,6 +94,7 @@ export function PlayerProfileForm({ en, initial, needsConsent, onSaved, onDelete
     secondary_weapon: initial?.secondary_weapon ?? "", sidearm: initial?.sidearm ?? "", gear_notes: initial?.gear_notes ?? "",
     link_games: initial?.link_games ?? true,
     avatar_icon: initial?.avatar_icon ?? null as string | null, avatar_color: initial?.avatar_color ?? null as string | null,
+    contact_methods: initial ? methodsOrDefault(initial.contact_methods) : [...DEFAULT_CONTACT_METHODS],
   });
   const [consent, setConsent] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -108,7 +111,7 @@ export function PlayerProfileForm({ en, initial, needsConsent, onSaved, onDelete
       operator_type: f.operator_type || null, primary_weapon: f.primary_weapon, secondary_weapon: f.secondary_weapon,
       sidearm: f.sidearm, gear_notes: f.gear_notes, link_games: f.link_games,
       avatar_icon: f.avatar_icon, avatar_color: f.avatar_color,
-      ...(adult ? { last_name: f.last_name, phone: f.phone, show_full_last_name: f.show_full_last_name } : {}),
+      ...(adult ? { last_name: f.last_name, phone: f.phone, show_full_last_name: f.show_full_last_name, contact_methods: f.contact_methods } : {}),
     };
     const v = validatePlayer(profile);
     if (!v.ok) { setStatus({ ok: false, text: errText(v.error, en) }); return; }
@@ -218,6 +221,26 @@ export function PlayerProfileForm({ en, initial, needsConsent, onSaved, onDelete
           {phonePreview && !phonePreview.ok && <p style={{ ...help, color: ERR }}>{errText("validation:phone", en)}</p>}
           <p style={help}>{en ? "Never public. You choose per event whether to share it, and with whom." : "Nikoli javno. Pri vsakem dogodku izbereš, ali jo deliš in s kom."}</p>
           <p style={help}>{en ? "Numbers starting with 0 are treated as Slovenian (+386)." : "Številke, ki se začnejo z 0, štejemo za slovenske (+386)."}</p>
+          {f.phone.trim() && (
+            <div role="group" aria-label={en ? "How can people contact you?" : "Kako te naj kontaktirajo?"} style={{ marginTop: 14 }}>
+              <span style={label}>{en ? "How can people contact you?" : "Kako te naj kontaktirajo?"}</span>
+              <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+                {CONTACT_METHODS.map((m) => {
+                  const on = f.contact_methods.includes(m);
+                  const text = m === "call" ? (en ? "Call" : "Pokliči") : m === "sms" ? "SMS" : m === "viber" ? "Viber" : "WhatsApp";
+                  return (
+                    <button key={m} type="button" aria-pressed={on} style={{ ...chip(on), minHeight: 44 }}
+                      onClick={() => {
+                        if (on && f.contact_methods.length === 1) return;
+                        const next = on ? f.contact_methods.filter((x) => x !== m) : [...f.contact_methods, m];
+                        set("contact_methods", CONTACT_METHODS.filter((x) => next.includes(x)));
+                      }}>{text}</button>
+                  );
+                })}
+              </div>
+              <p style={help}>{en ? "When you share your number, only the chosen buttons are shown." : "Ko deliš številko, se prikažejo samo izbrani gumbi."}</p>
+            </div>
+          )}
         </Card>
       )}
 

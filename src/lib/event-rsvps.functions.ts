@@ -1,6 +1,6 @@
 import { createServerFn } from "@tanstack/react-start";
 import { createHash } from "node:crypto";
-import { PRIVACY_VERSION, cleanText } from "./player-validation";
+import { PRIVACY_VERSION, cleanText, methodsOrDefault, type ContactMethod } from "./player-validation";
 import {
   buildRides, canSeeAttendees, eventEndMs, viewAttendee,
   type AttendeeProfile, type AttendeeView, type RideGroup, type RsvpRow, type Viewer,
@@ -14,7 +14,7 @@ async function admin() {
 }
 
 const UUID_RE = /^[0-9a-f-]{36}$/i;
-const PROFILE_COLS = "user_id, nickname, first_name, last_name, show_full_last_name, age_group, phone, club, experience_level, operator_type, primary_weapon, secondary_weapon, sidearm, gear_notes, avatar_icon, avatar_color";
+const PROFILE_COLS = "user_id, nickname, first_name, last_name, show_full_last_name, age_group, phone, club, experience_level, operator_type, primary_weapon, secondary_weapon, sidearm, gear_notes, avatar_icon, avatar_color, contact_methods";
 const RSVP_COLS = "event_id, user_id, status, phone_share, ride_role, ride_from, ride_seats, ride_note, created_at";
 
 export type Counts = { going: number; maybe: number; seatsOffered: number };
@@ -64,7 +64,7 @@ async function visibleEvent(eventId: unknown): Promise<EventRow | null> {
 }
 
 export type MyRsvp = { status: "going" | "maybe"; phone_share: string; ride_role: string; ride_from: string | null; ride_seats: number | null; ride_note: string | null };
-export type ViewerInfo = { signedIn: boolean; hasProfile: boolean; adult: boolean; hasPhone: boolean; needsReconsent: boolean; organiser: boolean };
+export type ViewerInfo = { signedIn: boolean; hasProfile: boolean; adult: boolean; hasPhone: boolean; contactMethods: ContactMethod[]; needsReconsent: boolean; organiser: boolean };
 export type Attendance = Counts & {
   capacity: number | null;
   viewer: ViewerInfo;
@@ -84,13 +84,13 @@ export const eventAttendance = createServerFn({ method: "POST" })
     const counts = (await countsFor([ev.id]))[ev.id];
     const db = await admin();
     const userId = await userFromToken(data.accessToken);
-    let vp: { age_group: string; phone: string | null; privacy_version: string } | null = null;
+    let vp: { age_group: string; phone: string | null; privacy_version: string; contact_methods: string[] | null } | null = null;
     if (userId) {
-      const { data: p } = await db.from("spartanops_players").select("age_group, phone, privacy_version").eq("user_id", userId).maybeSingle();
+      const { data: p } = await db.from("spartanops_players").select("age_group, phone, privacy_version, contact_methods").eq("user_id", userId).maybeSingle();
       vp = p ?? null;
     }
     const viewerInfo: ViewerInfo = {
-      signedIn: !!userId, hasProfile: !!vp, adult: vp?.age_group === "18_plus", hasPhone: !!vp?.phone,
+      signedIn: !!userId, hasProfile: !!vp, adult: vp?.age_group === "18_plus", hasPhone: !!vp?.phone, contactMethods: methodsOrDefault(vp?.contact_methods),
       needsReconsent: !!vp && vp.privacy_version !== PRIVACY_VERSION, organiser: !!userId && userId === ev.account_id,
     };
     const base: Attendance = { ...counts, capacity: ev.capacity, viewer: viewerInfo };

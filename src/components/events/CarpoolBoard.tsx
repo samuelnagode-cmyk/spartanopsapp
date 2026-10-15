@@ -32,7 +32,7 @@ export function CarpoolBoard({ rides, lang, seatsOffered = 0 }: { rides: RideGro
                   <li key={p.key} style={{ fontFamily: "monospace", fontSize: 12.5, lineHeight: 1.5 }}>
                     <div style={{ display: "flex", gap: 8, alignItems: "center" }}>{p.avatar_icon && <PlayerAvatar icon={p.avatar_icon} color={p.avatar_color} name={p.callsign} size={28} ink={INK} />}<span><strong>{p.callsign}</strong> <span style={{ color: MUTED }}>({p.first_name})</span> · <span style={{ color: p.driver ? ACCENT : INK }}>{p.driver ? (en ? `drives, ${p.seats} free seats` : `vozi, prostih mest: ${p.seats}`) : (en ? "needs a ride" : "potrebuje prevoz")}</span></span></div>
                     {p.note && <div style={{ color: MUTED, wordBreak: "break-word" }}>{p.note}</div>}
-                    {p.phone && <div style={{ marginTop: 6 }}><ContactButtons phone={p.phone} lang={lang} /></div>}
+                    {p.phone && <div style={{ marginTop: 6 }}><ContactButtons phone={p.phone} lang={lang} methods={p.contact_methods} /></div>}
                   </li>
                 ))}
               </ul>

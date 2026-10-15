@@ -49,3 +49,26 @@ describe("avatar validation", () => {
     expect(validatePlayer({ ...a, avatar_icon: "wolf" })).toEqual({ ok: false, error: "validation:avatar" });
   });
 });
+
+import { normalizeContactMethods } from "../src/lib/player-validation";
+describe("contact methods", () => {
+  const base = { nickname: "Ghost", first_name: "Miha", age_group: "18_plus" };
+  it("normalises order and duplicates", () => {
+    expect(normalizeContactMethods(["whatsapp", "call", "call"])).toEqual(["call", "whatsapp"]);
+  });
+  it("rejects unknown values and non-arrays", () => {
+    expect(normalizeContactMethods(["telegram"])).toBeNull();
+    expect(normalizeContactMethods("call")).toBeNull();
+  });
+  it("adult with empty list is rejected", () => {
+    expect(validatePlayer({ ...base, contact_methods: [] })).toEqual({ ok: false, error: "validation:contact_methods" });
+  });
+  it("absent field is left out so the stored choice is kept", () => {
+    const r = validatePlayer(base);
+    expect(r.ok && "contact_methods" in r.data).toBe(false);
+  });
+  it("minor's choice is ignored", () => {
+    const r = validatePlayer({ ...base, age_group: "16_17", contact_methods: ["sms"] });
+    expect(r.ok && "contact_methods" in r.data).toBe(false);
+  });
+});

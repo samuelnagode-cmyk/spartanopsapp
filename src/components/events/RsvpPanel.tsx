@@ -344,6 +344,13 @@ export function RsvpPanel({ event, lang, onCounts }: { event: RsvpEvent; lang: L
                           {en ? `Your phone number will be visible to ${shareTarget} until 3 days after the event. You can change this at any time.` : `Tvoja telefonska številka bo vidna ${shareTarget} do 3 dni po dogodku. To lahko kadar koli spremeniš.`}
                         </p>
                       )}
+                      {(v.hasPhone || phone.trim() !== "") && (
+                        <p style={{ fontFamily: "monospace", fontSize: 12, color: MUTED, lineHeight: 1.6 }}>
+                          {en ? "Contact buttons: " : "Gumbi za kontakt: "}
+                          {(v.contactMethods ?? ["call", "viber", "whatsapp"]).map((m) => m === "call" ? (en ? "Call" : "Pokliči") : m === "sms" ? "SMS" : m === "viber" ? "Viber" : "WhatsApp").join(", ")}.{" "}
+                          {en ? "Change " : "Spremeni "}<Link to="/me" className="ev-focus" style={{ color: ACCENT }}>{en ? "in your profile" : "v profilu"}</Link>.
+                        </p>
+                      )}
                       {share && share !== "none" && ride === "none" && !v.hasPhone && (
                         <div>
                           <label style={label} htmlFor={`ph-${event.id}`}>{en ? "Phone number" : "Telefonska številka"}</label>

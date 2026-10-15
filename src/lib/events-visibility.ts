@@ -3,6 +3,7 @@
  * every attendee/ride response is built through viewAttendee, so hidden fields
  * never leave the server. Covered cell by cell in tests/events-visibility.test.ts.
  */
+import { methodsOrDefault, type ContactMethod } from "./player-validation";
 
 export const CONTACT_DAYS_AFTER = 3;
 const DEFAULT_LENGTH_MS = 6 * 3600_000;
@@ -20,6 +21,7 @@ export type AttendeeProfile = {
   operator_type: string | null; primary_weapon: string | null; secondary_weapon: string | null;
   sidearm: string | null; gear_notes: string | null;
   avatar_icon?: string | null; avatar_color?: string | null;
+  contact_methods?: string[] | null;
 };
 export type Viewer = { userId: string | null; profile: { age_group: string } | null };
 export type EventTimes = { account_id: string; starts_at: string; ends_at: string | null };
@@ -30,7 +32,7 @@ export type AttendeeView = {
   callsign: string; first_name: string; last_initial: string | null; last_name: string | null;
   club: string | null; experience_level: string; operator_type: string | null;
   primary_weapon: string | null; secondary_weapon: string | null; sidearm: string | null; gear_notes: string | null;
-  phone: string | null;
+  phone: string | null; contact_methods: ContactMethod[] | null;
   avatar_icon: string | null; avatar_color: string | null;
   ride: { role: "driver" | "rider"; from: string; seats: number | null; note: string | null } | null;
 };
@@ -86,7 +88,7 @@ export function viewAttendee(row: RsvpRow, profile: AttendeeProfile, viewer: Vie
     club: profile.club, experience_level: profile.experience_level, operator_type: profile.operator_type,
     primary_weapon: profile.primary_weapon, secondary_weapon: profile.secondary_weapon, sidearm: profile.sidearm, gear_notes: profile.gear_notes,
     avatar_icon: profile.avatar_icon ?? null, avatar_color: profile.avatar_color ?? null,
-    phone, ride,
+    phone, contact_methods: phone ? methodsOrDefault(profile.contact_methods) : null, ride,
   };
 }
 
@@ -95,7 +97,7 @@ export function foldTown(s: string): string {
   return s.normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/đ/g, "d").replace(/Đ/g, "d").toLowerCase().replace(/\s+/g, " ").trim();
 }
 
-export type RideEntry = { key: string; callsign: string; first_name: string; avatar_icon: string | null; avatar_color: string | null; seats: number | null; note: string | null; phone: string | null };
+export type RideEntry = { key: string; callsign: string; first_name: string; avatar_icon: string | null; avatar_color: string | null; seats: number | null; note: string | null; phone: string | null; contact_methods: ContactMethod[] | null };
 export type RideGroup = { town: string; drivers: RideEntry[]; riders: RideEntry[]; seatsOffered: number; match: boolean };
 
 /** Car pool board from already-filtered attendee views. */
@@ -108,7 +110,7 @@ export function buildRides(views: AttendeeView[]): RideGroup[] {
     const g = groups.get(k) ?? { spellings: new Map(), drivers: [], riders: [] };
     const sp = v.ride.from.trim();
     g.spellings.set(sp, (g.spellings.get(sp) ?? 0) + 1);
-    const entry: RideEntry = { key: v.key, callsign: v.callsign, first_name: v.first_name, avatar_icon: v.avatar_icon, avatar_color: v.avatar_color, seats: v.ride.seats, note: v.ride.note, phone: v.phone };
+    const entry: RideEntry = { key: v.key, callsign: v.callsign, first_name: v.first_name, avatar_icon: v.avatar_icon, avatar_color: v.avatar_color, seats: v.ride.seats, note: v.ride.note, phone: v.phone, contact_methods: v.contact_methods };
     (v.ride.role === "driver" ? g.drivers : g.riders).push(entry);
     groups.set(k, g);
   }

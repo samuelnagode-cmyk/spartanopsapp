@@ -99,6 +99,13 @@
       "when": 1791924292593,
       "tag": "0013_0013_player_avatar",
       "breakpoints": true
+    },
+    {
+      "idx": 14,
+      "version": "7",
+      "when": 1792086892033,
+      "tag": "0014_player_contact_methods",
+      "breakpoints": true
     }
   ]
 }
