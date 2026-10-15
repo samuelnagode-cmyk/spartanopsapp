@@ -39,9 +39,9 @@ function Card({ a, lang, organiser }: { a: AttendeeView; lang: Lang; organiser: 
         </div>
       )}
       {a.phone && !a.self && (
-        <div style={{ marginTop: 8, paddingLeft: 46 }}>
+        <div style={{ marginTop: 8 }}>
           {organiser && <div style={{ fontFamily: "monospace", fontSize: 12, marginBottom: 6 }}>{a.phone}</div>}
-          <ContactButtons phone={a.phone} lang={lang} />
+          <ContactButtons phone={a.phone} lang={lang} methods={a.contact_methods} />
         </div>
       )}
     </li>
