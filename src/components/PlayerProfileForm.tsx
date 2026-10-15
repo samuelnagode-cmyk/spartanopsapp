@@ -6,7 +6,7 @@ import { EXPERIENCE_LEVELS, ExperienceBadge, type ExperienceLevel } from "@/comp
 import { playerDeleteMine, playerExportMine, playerSaveMine } from "@/lib/player.functions";
 import { PlayerAvatar, AvatarGlyph } from "@/components/PlayerAvatar";
 import { AVATAR_COLORS, AVATAR_ICONS, avatarHex } from "@/lib/avatars";
-import { OPERATOR_TYPES, normalizePhone, validatePlayer, type AgeChoice } from "@/lib/player-validation";
+import { CONTACT_METHODS, DEFAULT_CONTACT_METHODS, OPERATOR_TYPES, methodsOrDefault, normalizePhone, validatePlayer, type AgeChoice } from "@/lib/player-validation";
 
 const BG = "#0b0d09";
 const PANEL = "#13160f";
