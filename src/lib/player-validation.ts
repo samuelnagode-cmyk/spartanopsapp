@@ -24,11 +24,22 @@ export function normalizePhone(raw: string): { ok: true; value: string } | { ok:
   return PHONE_RE.test(p) ? { ok: true, value: p } : { ok: false };
 }
 
+export const CONTACT_METHODS = ["call", "sms", "viber", "whatsapp"] as const;
+export type ContactMethod = (typeof CONTACT_METHODS)[number];
+export const DEFAULT_CONTACT_METHODS: ContactMethod[] = ["call", "viber", "whatsapp"];
+
+/** Deduplicated, fixed order (call, sms, viber, whatsapp); null when not an array or any value is unknown. */
+export function normalizeContactMethods(input: unknown): ContactMethod[] | null {
+  if (!Array.isArray(input)) return null;
+  for (const v of input) if (!CONTACT_METHODS.includes(v as never)) return null;
+  return CONTACT_METHODS.filter((m) => input.includes(m));
+}
+
 export type PlayerInput = {
   nickname?: unknown; first_name?: unknown; last_name?: unknown; show_full_last_name?: unknown;
   age_group?: unknown; phone?: unknown; club?: unknown; experience_level?: unknown; operator_type?: unknown;
   primary_weapon?: unknown; secondary_weapon?: unknown; sidearm?: unknown; gear_notes?: unknown;
-  avatar_icon?: unknown; avatar_color?: unknown;
+  avatar_icon?: unknown; avatar_color?: unknown; contact_methods?: unknown;
 };
 
 export type PlayerProfileData = {
@@ -37,6 +48,7 @@ export type PlayerProfileData = {
   operator_type: (typeof OPERATOR_TYPES)[number] | null; primary_weapon: string | null;
   secondary_weapon: string | null; sidearm: string | null; gear_notes: string | null;
   avatar_icon: AvatarIconId | null; avatar_color: AvatarColorId | null;
+  contact_methods?: ContactMethod[];
 };
 
 /** Returns cleaned data or an error code like "validation:nickname". */
@@ -64,6 +76,13 @@ export function validatePlayer(input: PlayerInput): { ok: true; data: PlayerProf
     }
   }
 
+  let methods: ContactMethod[] | undefined;
+  if (adult && input.contact_methods !== undefined) {
+    const m = normalizeContactMethods(input.contact_methods);
+    if (!m || m.length === 0) return { ok: false, error: "validation:contact_methods" };
+    methods = m;
+  }
+
   const exp = EXPERIENCE_VALUES.includes(input.experience_level as never) ? (input.experience_level as PlayerProfileData["experience_level"]) : "dobro";
   const op = input.operator_type == null || input.operator_type === "" ? null : input.operator_type;
   if (op !== null && !OPERATOR_TYPES.includes(op as never)) return { ok: false, error: "validation:operator_type" };
@@ -83,6 +102,7 @@ export function validatePlayer(input: PlayerInput): { ok: true; data: PlayerProf
       primary_weapon: opt(input.primary_weapon, 60), secondary_weapon: opt(input.secondary_weapon, 60),
       sidearm: opt(input.sidearm, 60), gear_notes: opt(input.gear_notes, 140),
       avatar_icon: (ai as AvatarIconId | null), avatar_color: (ac as AvatarColorId | null),
+      ...(methods ? { contact_methods: methods } : {}),
     },
   };
 }
