@@ -1054,6 +1054,7 @@ export type Database = {
           avatar_color: string | null
           avatar_icon: string | null
           club: string | null
+          contact_methods: string[]
           created_at: string
           experience_level: string
           first_name: string
@@ -1077,6 +1078,7 @@ export type Database = {
           avatar_color?: string | null
           avatar_icon?: string | null
           club?: string | null
+          contact_methods?: string[]
           created_at?: string
           experience_level?: string
           first_name: string
@@ -1100,6 +1102,7 @@ export type Database = {
           avatar_color?: string | null
           avatar_icon?: string | null
           club?: string | null
+          contact_methods?: string[]
           created_at?: string
           experience_level?: string
           first_name?: string
