@@ -22,6 +22,7 @@ export const Route = createFileRoute("/me")({
   head: () => ({
     meta: [
       { title: "My account — SpartanOps" },
+      { name: "robots", content: "noindex" },
       { name: "description", content: "Your SpartanOps account and profile: callsign, loadout and privacy tools for airsoft events." },
       { property: "og:title", content: "My account — SpartanOps" },
       { property: "og:description", content: "Your SpartanOps account and profile: callsign, loadout and privacy tools for airsoft events." },

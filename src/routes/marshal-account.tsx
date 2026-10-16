@@ -26,6 +26,7 @@ export const Route = createFileRoute("/marshal-account")({
   head: () => ({
     meta: [
       { title: "Field account — SpartanOps" },
+      { name: "robots", content: "noindex" },
       { name: "description", content: "Sign up or log in to your SpartanOps field and run airsoft missions." },
       { property: "og:title", content: "Field account — SpartanOps" },
       { property: "og:description", content: "Sign up or log in to your SpartanOps field and run airsoft missions." },
