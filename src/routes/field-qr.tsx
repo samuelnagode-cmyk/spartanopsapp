@@ -13,6 +13,7 @@ export const Route = createFileRoute("/field-qr")({
   head: () => ({
     meta: [
       { title: "Player QR Poster — SpartanOps" },
+      { name: "robots", content: "noindex" },
       { name: "description", content: "Print the permanent QR poster players scan to join your field." },
       { property: "og:title", content: "Player QR Poster — SpartanOps" },
       { property: "og:description", content: "Print the permanent QR poster players scan to join your field." },

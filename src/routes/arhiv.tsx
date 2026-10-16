@@ -416,6 +416,7 @@ function AirsoftArchivePage() {
             >
               <img
                 src={activeEvent.images[lightbox.index]}
+                decoding="async"
                 alt={`${activeEvent.title} — ${lightbox.index + 1}/${activeEvent.images.length}`}
                 className="block max-h-full max-w-full w-auto h-auto object-contain"
               />

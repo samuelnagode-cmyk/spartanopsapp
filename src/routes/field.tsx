@@ -36,6 +36,7 @@ export const Route = createFileRoute("/field")({
   head: () => ({
     meta: [
       { title: "Join the Field — SpartanOps" },
+      { name: "robots", content: "noindex" },
       { name: "description", content: "Enter your field password to join the airsoft mission that is running now." },
       { property: "og:title", content: "Join the Field — SpartanOps" },
       { property: "og:description", content: "Enter your field password to join the airsoft mission that is running now." },

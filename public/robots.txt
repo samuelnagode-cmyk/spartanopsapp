@@ -6,5 +6,11 @@ Disallow: /capture
 Disallow: /spawn
 Disallow: /scan
 Disallow: /qr-generator
+Disallow: /me
+Disallow: /field
+Disallow: /reset-password
+Disallow: /dev-preview
+Disallow: /events/manage
+Disallow: /marshal-account
 
 Sitemap: https://spartanopsapp.com/sitemap.xml
