@@ -234,9 +234,20 @@ export function AmbientAudioProvider({ children }: { children: ReactNode }) {
   const respawnRef = useRef<HTMLAudioElement | null>(null);
 
 
+  // Audio is created lazily: only once the player reaches a game route (or has
+  // opted into music, which also plays on public pages). Casual visitors on
+  // home/events/pricing download no audio at all. Once true it never resets.
+  const isGameRoute = isLobbyPath(pathname) || isMissionPath(pathname) || isSilentPath(pathname);
+  const [audioWanted, setAudioWanted] = useState(false);
+  useEffect(() => {
+    if (!audioWanted && (isGameRoute || musicEnabled)) setAudioWanted(true);
+  }, [audioWanted, isGameRoute, musicEnabled]);
+  const [audioReady, setAudioReady] = useState(false);
+
   // Instantiate audio nodes once. Levels are controlled by the Web Audio gain
   // graph (see writeLevel) because iOS ignores el.volume assignments.
   useEffect(() => {
+    if (!audioWanted) return;
     const mk = (url: string, opts: { loop?: boolean; preload?: "auto" | "none" }) => {
       const a = new Audio(url);
       a.loop = !!opts.loop;
@@ -267,6 +278,7 @@ export function AmbientAudioProvider({ children }: { children: ReactNode }) {
     teamCapRef.current = teamCap;
     enemyCapRef.current = enemyCap;
     respawnRef.current = rsp;
+    setAudioReady(true);
     return () => {
       [main, lobby, debrief, cd, sec, teamCap, enemyCap, rsp].forEach((a) => {
 
@@ -276,7 +288,7 @@ export function AmbientAudioProvider({ children }: { children: ReactNode }) {
         } catch {}
       });
     };
-  }, []);
+  }, [audioWanted]);
 
   // Compute active music track from route + mission phase.
   const activeTrack: Track = useMemo(() => {
@@ -335,7 +347,7 @@ export function AmbientAudioProvider({ children }: { children: ReactNode }) {
     fade(main, 0.5);
     // unlockTick re-runs this after a gesture / app resume, because autoplay
     // before the first gesture is refused on both iOS and Android.
-  }, [musicEnabled, activeTrack, unlockTick]);
+  }, [musicEnabled, activeTrack, unlockTick, audioReady]);
 
 
   // SFX event bridges. Countdown is dispatched by pre-match at T-14s AND by
@@ -413,6 +425,9 @@ export function AmbientAudioProvider({ children }: { children: ReactNode }) {
     // switch, backgrounding), and only a gesture can bring it back.
     resumeAudioContext();
     if (unlockedRef.current) return;
+    // Nodes not created yet (non-game page): stay un-primed so the next
+    // gesture after they exist performs the priming.
+    if (!mainRef.current) return;
     unlockedRef.current = true;
     const nodes = [
       mainRef.current,
