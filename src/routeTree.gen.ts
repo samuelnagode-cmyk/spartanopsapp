@@ -9,178 +9,48 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
-import { Route as UpdatesRouteImport } from './routes/updates'
-import { Route as TermsRouteImport } from './routes/terms'
-import { Route as SpawnRouteImport } from './routes/spawn'
-import { Route as SpartanopsRouteImport } from './routes/spartanops'
-import { Route as SitemapDotxmlRouteImport } from './routes/sitemap[.]xml'
-import { Route as ScanRouteImport } from './routes/scan'
-import { Route as SRouteImport } from './routes/s'
-import { Route as ResetPasswordRouteImport } from './routes/reset-password'
-import { Route as QrGeneratorRouteImport } from './routes/qr-generator'
-import { Route as PrivacyRouteImport } from './routes/privacy'
-import { Route as PrintRouteImport } from './routes/print'
-import { Route as PricingRouteImport } from './routes/pricing'
-import { Route as MisijaRouteImport } from './routes/misija'
-import { Route as MeRouteImport } from './routes/me'
-import { Route as MarshalAccountRouteImport } from './routes/marshal-account'
-import { Route as LokacijaRouteImport } from './routes/lokacija'
-import { Route as KRouteImport } from './routes/k'
-import { Route as JoinRouteImport } from './routes/join'
-import { Route as IntelRouteImport } from './routes/intel'
-import { Route as FieldQrRouteImport } from './routes/field-qr'
-import { Route as FieldRouteImport } from './routes/field'
-import { Route as EventsDoticsRouteImport } from './routes/events[.]ics'
-import { Route as DogodkiRouteImport } from './routes/dogodki'
-import { Route as DevPreviewRouteImport } from './routes/dev-preview'
-import { Route as CaptureRouteImport } from './routes/capture'
-import { Route as ArhivRouteImport } from './routes/arhiv'
-import { Route as ArchiveRouteImport } from './routes/archive'
-import { Route as AdminPregledRouteImport } from './routes/admin-pregled'
 import { Route as IndexRouteImport } from './routes/index'
-import { Route as EventsIndexRouteImport } from './routes/events.index'
-import { Route as MeGamesRouteImport } from './routes/me_.games'
-import { Route as EventsManageRouteImport } from './routes/events.manage'
-import { Route as EventsEventIdRouteImport } from './routes/events.$eventId'
-import { Route as ApiSendReservationRouteImport } from './routes/api/send-reservation'
+import { Route as AdminPregledRouteImport } from './routes/admin-pregled'
+import { Route as ArchiveRouteImport } from './routes/archive'
+import { Route as ArhivRouteImport } from './routes/arhiv'
+import { Route as CaptureRouteImport } from './routes/capture'
+import { Route as DevPreviewRouteImport } from './routes/dev-preview'
+import { Route as DogodkiRouteImport } from './routes/dogodki'
+import { Route as EventsDoticsRouteImport } from './routes/events[.]ics'
+import { Route as FieldRouteImport } from './routes/field'
+import { Route as FieldQrRouteImport } from './routes/field-qr'
+import { Route as IntelRouteImport } from './routes/intel'
+import { Route as JoinRouteImport } from './routes/join'
+import { Route as KRouteImport } from './routes/k'
+import { Route as LokacijaRouteImport } from './routes/lokacija'
+import { Route as MarshalAccountRouteImport } from './routes/marshal-account'
+import { Route as MeRouteImport } from './routes/me'
+import { Route as MisijaRouteImport } from './routes/misija'
+import { Route as PricingRouteImport } from './routes/pricing'
+import { Route as PrintRouteImport } from './routes/print'
+import { Route as PrivacyRouteImport } from './routes/privacy'
+import { Route as QrGeneratorRouteImport } from './routes/qr-generator'
+import { Route as ResetPasswordRouteImport } from './routes/reset-password'
+import { Route as SRouteImport } from './routes/s'
+import { Route as ScanRouteImport } from './routes/scan'
+import { Route as SitemapDotxmlRouteImport } from './routes/sitemap[.]xml'
+import { Route as SpartanopsRouteImport } from './routes/spartanops'
+import { Route as SpawnRouteImport } from './routes/spawn'
+import { Route as TermsRouteImport } from './routes/terms'
+import { Route as UpdatesRouteImport } from './routes/updates'
 import { Route as ApiSendInquiryRouteImport } from './routes/api/send-inquiry'
-import { Route as ApiPublicSpartanopsEventsCleanupRouteImport } from './routes/api/public/spartanops-events-cleanup'
+import { Route as ApiSendReservationRouteImport } from './routes/api/send-reservation'
+import { Route as EventsIndexRouteImport } from './routes/events.index'
+import { Route as EventsEventIdRouteImport } from './routes/events.$eventId'
+import { Route as EventsManageRouteImport } from './routes/events.manage'
+import { Route as MeGamesRouteImport } from './routes/me_.games'
 import { Route as ApiPublicSpartanopsCronTickRouteImport } from './routes/api/public/spartanops-cron-tick'
+import { Route as ApiPublicSpartanopsEventsCleanupRouteImport } from './routes/api/public/spartanops-events-cleanup'
 import { Route as ApiPublicFieldMediaSplatRouteImport } from './routes/api/public/field-media.$'
 
-const UpdatesRoute = UpdatesRouteImport.update({
-  id: '/updates',
-  path: '/updates',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const TermsRoute = TermsRouteImport.update({
-  id: '/terms',
-  path: '/terms',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const SpawnRoute = SpawnRouteImport.update({
-  id: '/spawn',
-  path: '/spawn',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const SpartanopsRoute = SpartanopsRouteImport.update({
-  id: '/spartanops',
-  path: '/spartanops',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const SitemapDotxmlRoute = SitemapDotxmlRouteImport.update({
-  id: '/sitemap.xml',
-  path: '/sitemap.xml',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ScanRoute = ScanRouteImport.update({
-  id: '/scan',
-  path: '/scan',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const SRoute = SRouteImport.update({
-  id: '/s',
-  path: '/s',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ResetPasswordRoute = ResetPasswordRouteImport.update({
-  id: '/reset-password',
-  path: '/reset-password',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const QrGeneratorRoute = QrGeneratorRouteImport.update({
-  id: '/qr-generator',
-  path: '/qr-generator',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const PrivacyRoute = PrivacyRouteImport.update({
-  id: '/privacy',
-  path: '/privacy',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const PrintRoute = PrintRouteImport.update({
-  id: '/print',
-  path: '/print',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const PricingRoute = PricingRouteImport.update({
-  id: '/pricing',
-  path: '/pricing',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const MisijaRoute = MisijaRouteImport.update({
-  id: '/misija',
-  path: '/misija',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const MeRoute = MeRouteImport.update({
-  id: '/me',
-  path: '/me',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const MarshalAccountRoute = MarshalAccountRouteImport.update({
-  id: '/marshal-account',
-  path: '/marshal-account',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const LokacijaRoute = LokacijaRouteImport.update({
-  id: '/lokacija',
-  path: '/lokacija',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const KRoute = KRouteImport.update({
-  id: '/k',
-  path: '/k',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const JoinRoute = JoinRouteImport.update({
-  id: '/join',
-  path: '/join',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const IntelRoute = IntelRouteImport.update({
-  id: '/intel',
-  path: '/intel',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const FieldQrRoute = FieldQrRouteImport.update({
-  id: '/field-qr',
-  path: '/field-qr',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const FieldRoute = FieldRouteImport.update({
-  id: '/field',
-  path: '/field',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const EventsDoticsRoute = EventsDoticsRouteImport.update({
-  id: '/events.ics',
-  path: '/events.ics',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const DogodkiRoute = DogodkiRouteImport.update({
-  id: '/dogodki',
-  path: '/dogodki',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const DevPreviewRoute = DevPreviewRouteImport.update({
-  id: '/dev-preview',
-  path: '/dev-preview',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const CaptureRoute = CaptureRouteImport.update({
-  id: '/capture',
-  path: '/capture',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ArhivRoute = ArhivRouteImport.update({
-  id: '/arhiv',
-  path: '/arhiv',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ArchiveRoute = ArchiveRouteImport.update({
-  id: '/archive',
-  path: '/archive',
+const IndexRoute = IndexRouteImport.update({
+  id: '/',
+  path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AdminPregledRoute = AdminPregledRouteImport.update({
@@ -188,34 +58,139 @@ const AdminPregledRoute = AdminPregledRouteImport.update({
   path: '/admin-pregled',
   getParentRoute: () => rootRouteImport,
 } as any)
-const IndexRoute = IndexRouteImport.update({
-  id: '/',
-  path: '/',
+const ArchiveRoute = ArchiveRouteImport.update({
+  id: '/archive',
+  path: '/archive',
   getParentRoute: () => rootRouteImport,
 } as any)
-const EventsIndexRoute = EventsIndexRouteImport.update({
-  id: '/events/',
-  path: '/events/',
+const ArhivRoute = ArhivRouteImport.update({
+  id: '/arhiv',
+  path: '/arhiv',
   getParentRoute: () => rootRouteImport,
 } as any)
-const MeGamesRoute = MeGamesRouteImport.update({
-  id: '/me_/games',
-  path: '/me/games',
+const CaptureRoute = CaptureRouteImport.update({
+  id: '/capture',
+  path: '/capture',
   getParentRoute: () => rootRouteImport,
 } as any)
-const EventsManageRoute = EventsManageRouteImport.update({
-  id: '/events/manage',
-  path: '/events/manage',
+const DevPreviewRoute = DevPreviewRouteImport.update({
+  id: '/dev-preview',
+  path: '/dev-preview',
   getParentRoute: () => rootRouteImport,
 } as any)
-const EventsEventIdRoute = EventsEventIdRouteImport.update({
-  id: '/events/$eventId',
-  path: '/events/$eventId',
+const DogodkiRoute = DogodkiRouteImport.update({
+  id: '/dogodki',
+  path: '/dogodki',
   getParentRoute: () => rootRouteImport,
 } as any)
-const ApiSendReservationRoute = ApiSendReservationRouteImport.update({
-  id: '/api/send-reservation',
-  path: '/api/send-reservation',
+const EventsDoticsRoute = EventsDoticsRouteImport.update({
+  id: '/events.ics',
+  path: '/events.ics',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const FieldRoute = FieldRouteImport.update({
+  id: '/field',
+  path: '/field',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const FieldQrRoute = FieldQrRouteImport.update({
+  id: '/field-qr',
+  path: '/field-qr',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const IntelRoute = IntelRouteImport.update({
+  id: '/intel',
+  path: '/intel',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const JoinRoute = JoinRouteImport.update({
+  id: '/join',
+  path: '/join',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const KRoute = KRouteImport.update({
+  id: '/k',
+  path: '/k',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const LokacijaRoute = LokacijaRouteImport.update({
+  id: '/lokacija',
+  path: '/lokacija',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const MarshalAccountRoute = MarshalAccountRouteImport.update({
+  id: '/marshal-account',
+  path: '/marshal-account',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const MeRoute = MeRouteImport.update({
+  id: '/me',
+  path: '/me',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const MisijaRoute = MisijaRouteImport.update({
+  id: '/misija',
+  path: '/misija',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PricingRoute = PricingRouteImport.update({
+  id: '/pricing',
+  path: '/pricing',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PrintRoute = PrintRouteImport.update({
+  id: '/print',
+  path: '/print',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PrivacyRoute = PrivacyRouteImport.update({
+  id: '/privacy',
+  path: '/privacy',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const QrGeneratorRoute = QrGeneratorRouteImport.update({
+  id: '/qr-generator',
+  path: '/qr-generator',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ResetPasswordRoute = ResetPasswordRouteImport.update({
+  id: '/reset-password',
+  path: '/reset-password',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SRoute = SRouteImport.update({
+  id: '/s',
+  path: '/s',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ScanRoute = ScanRouteImport.update({
+  id: '/scan',
+  path: '/scan',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SitemapDotxmlRoute = SitemapDotxmlRouteImport.update({
+  id: '/sitemap.xml',
+  path: '/sitemap.xml',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SpartanopsRoute = SpartanopsRouteImport.update({
+  id: '/spartanops',
+  path: '/spartanops',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SpawnRoute = SpawnRouteImport.update({
+  id: '/spawn',
+  path: '/spawn',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const TermsRoute = TermsRouteImport.update({
+  id: '/terms',
+  path: '/terms',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const UpdatesRoute = UpdatesRouteImport.update({
+  id: '/updates',
+  path: '/updates',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ApiSendInquiryRoute = ApiSendInquiryRouteImport.update({
@@ -223,16 +198,41 @@ const ApiSendInquiryRoute = ApiSendInquiryRouteImport.update({
   path: '/api/send-inquiry',
   getParentRoute: () => rootRouteImport,
 } as any)
-const ApiPublicSpartanopsEventsCleanupRoute =
-  ApiPublicSpartanopsEventsCleanupRouteImport.update({
-    id: '/api/public/spartanops-events-cleanup',
-    path: '/api/public/spartanops-events-cleanup',
-    getParentRoute: () => rootRouteImport,
-  } as any)
+const ApiSendReservationRoute = ApiSendReservationRouteImport.update({
+  id: '/api/send-reservation',
+  path: '/api/send-reservation',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const EventsIndexRoute = EventsIndexRouteImport.update({
+  id: '/events/',
+  path: '/events/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const EventsEventIdRoute = EventsEventIdRouteImport.update({
+  id: '/events/$eventId',
+  path: '/events/$eventId',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const EventsManageRoute = EventsManageRouteImport.update({
+  id: '/events/manage',
+  path: '/events/manage',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const MeGamesRoute = MeGamesRouteImport.update({
+  id: '/me_/games',
+  path: '/me/games',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiPublicSpartanopsCronTickRoute =
   ApiPublicSpartanopsCronTickRouteImport.update({
     id: '/api/public/spartanops-cron-tick',
     path: '/api/public/spartanops-cron-tick',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const ApiPublicSpartanopsEventsCleanupRoute =
+  ApiPublicSpartanopsEventsCleanupRouteImport.update({
+    id: '/api/public/spartanops-events-cleanup',
+    path: '/api/public/spartanops-events-cleanup',
     getParentRoute: () => rootRouteImport,
   } as any)
 const ApiPublicFieldMediaSplatRoute =
@@ -529,193 +529,11 @@ export interface RootRouteChildren {
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    '/updates': {
-      id: '/updates'
-      path: '/updates'
-      fullPath: '/updates'
-      preLoaderRoute: typeof UpdatesRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/terms': {
-      id: '/terms'
-      path: '/terms'
-      fullPath: '/terms'
-      preLoaderRoute: typeof TermsRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/spawn': {
-      id: '/spawn'
-      path: '/spawn'
-      fullPath: '/spawn'
-      preLoaderRoute: typeof SpawnRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/spartanops': {
-      id: '/spartanops'
-      path: '/spartanops'
-      fullPath: '/spartanops'
-      preLoaderRoute: typeof SpartanopsRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/sitemap.xml': {
-      id: '/sitemap.xml'
-      path: '/sitemap.xml'
-      fullPath: '/sitemap.xml'
-      preLoaderRoute: typeof SitemapDotxmlRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/scan': {
-      id: '/scan'
-      path: '/scan'
-      fullPath: '/scan'
-      preLoaderRoute: typeof ScanRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/s': {
-      id: '/s'
-      path: '/s'
-      fullPath: '/s'
-      preLoaderRoute: typeof SRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/reset-password': {
-      id: '/reset-password'
-      path: '/reset-password'
-      fullPath: '/reset-password'
-      preLoaderRoute: typeof ResetPasswordRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/qr-generator': {
-      id: '/qr-generator'
-      path: '/qr-generator'
-      fullPath: '/qr-generator'
-      preLoaderRoute: typeof QrGeneratorRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/privacy': {
-      id: '/privacy'
-      path: '/privacy'
-      fullPath: '/privacy'
-      preLoaderRoute: typeof PrivacyRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/print': {
-      id: '/print'
-      path: '/print'
-      fullPath: '/print'
-      preLoaderRoute: typeof PrintRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/pricing': {
-      id: '/pricing'
-      path: '/pricing'
-      fullPath: '/pricing'
-      preLoaderRoute: typeof PricingRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/misija': {
-      id: '/misija'
-      path: '/misija'
-      fullPath: '/misija'
-      preLoaderRoute: typeof MisijaRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/me': {
-      id: '/me'
-      path: '/me'
-      fullPath: '/me'
-      preLoaderRoute: typeof MeRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/marshal-account': {
-      id: '/marshal-account'
-      path: '/marshal-account'
-      fullPath: '/marshal-account'
-      preLoaderRoute: typeof MarshalAccountRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/lokacija': {
-      id: '/lokacija'
-      path: '/lokacija'
-      fullPath: '/lokacija'
-      preLoaderRoute: typeof LokacijaRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/k': {
-      id: '/k'
-      path: '/k'
-      fullPath: '/k'
-      preLoaderRoute: typeof KRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/join': {
-      id: '/join'
-      path: '/join'
-      fullPath: '/join'
-      preLoaderRoute: typeof JoinRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/intel': {
-      id: '/intel'
-      path: '/intel'
-      fullPath: '/intel'
-      preLoaderRoute: typeof IntelRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/field-qr': {
-      id: '/field-qr'
-      path: '/field-qr'
-      fullPath: '/field-qr'
-      preLoaderRoute: typeof FieldQrRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/field': {
-      id: '/field'
-      path: '/field'
-      fullPath: '/field'
-      preLoaderRoute: typeof FieldRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/events.ics': {
-      id: '/events.ics'
-      path: '/events.ics'
-      fullPath: '/events.ics'
-      preLoaderRoute: typeof EventsDoticsRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/dogodki': {
-      id: '/dogodki'
-      path: '/dogodki'
-      fullPath: '/dogodki'
-      preLoaderRoute: typeof DogodkiRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/dev-preview': {
-      id: '/dev-preview'
-      path: '/dev-preview'
-      fullPath: '/dev-preview'
-      preLoaderRoute: typeof DevPreviewRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/capture': {
-      id: '/capture'
-      path: '/capture'
-      fullPath: '/capture'
-      preLoaderRoute: typeof CaptureRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/arhiv': {
-      id: '/arhiv'
-      path: '/arhiv'
-      fullPath: '/arhiv'
-      preLoaderRoute: typeof ArhivRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/archive': {
-      id: '/archive'
-      path: '/archive'
-      fullPath: '/archive'
-      preLoaderRoute: typeof ArchiveRouteImport
+    '/': {
+      id: '/'
+      path: '/'
+      fullPath: '/'
+      preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/admin-pregled': {
@@ -725,46 +543,193 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminPregledRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/': {
-      id: '/'
-      path: '/'
-      fullPath: '/'
-      preLoaderRoute: typeof IndexRouteImport
+    '/archive': {
+      id: '/archive'
+      path: '/archive'
+      fullPath: '/archive'
+      preLoaderRoute: typeof ArchiveRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/events/': {
-      id: '/events/'
-      path: '/events'
-      fullPath: '/events/'
-      preLoaderRoute: typeof EventsIndexRouteImport
+    '/arhiv': {
+      id: '/arhiv'
+      path: '/arhiv'
+      fullPath: '/arhiv'
+      preLoaderRoute: typeof ArhivRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/me_/games': {
-      id: '/me_/games'
-      path: '/me/games'
-      fullPath: '/me/games'
-      preLoaderRoute: typeof MeGamesRouteImport
+    '/capture': {
+      id: '/capture'
+      path: '/capture'
+      fullPath: '/capture'
+      preLoaderRoute: typeof CaptureRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/events/manage': {
-      id: '/events/manage'
-      path: '/events/manage'
-      fullPath: '/events/manage'
-      preLoaderRoute: typeof EventsManageRouteImport
+    '/dev-preview': {
+      id: '/dev-preview'
+      path: '/dev-preview'
+      fullPath: '/dev-preview'
+      preLoaderRoute: typeof DevPreviewRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/events/$eventId': {
-      id: '/events/$eventId'
-      path: '/events/$eventId'
-      fullPath: '/events/$eventId'
-      preLoaderRoute: typeof EventsEventIdRouteImport
+    '/dogodki': {
+      id: '/dogodki'
+      path: '/dogodki'
+      fullPath: '/dogodki'
+      preLoaderRoute: typeof DogodkiRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/api/send-reservation': {
-      id: '/api/send-reservation'
-      path: '/api/send-reservation'
-      fullPath: '/api/send-reservation'
-      preLoaderRoute: typeof ApiSendReservationRouteImport
+    '/events.ics': {
+      id: '/events.ics'
+      path: '/events.ics'
+      fullPath: '/events.ics'
+      preLoaderRoute: typeof EventsDoticsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/field': {
+      id: '/field'
+      path: '/field'
+      fullPath: '/field'
+      preLoaderRoute: typeof FieldRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/field-qr': {
+      id: '/field-qr'
+      path: '/field-qr'
+      fullPath: '/field-qr'
+      preLoaderRoute: typeof FieldQrRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/intel': {
+      id: '/intel'
+      path: '/intel'
+      fullPath: '/intel'
+      preLoaderRoute: typeof IntelRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/join': {
+      id: '/join'
+      path: '/join'
+      fullPath: '/join'
+      preLoaderRoute: typeof JoinRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/k': {
+      id: '/k'
+      path: '/k'
+      fullPath: '/k'
+      preLoaderRoute: typeof KRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/lokacija': {
+      id: '/lokacija'
+      path: '/lokacija'
+      fullPath: '/lokacija'
+      preLoaderRoute: typeof LokacijaRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/marshal-account': {
+      id: '/marshal-account'
+      path: '/marshal-account'
+      fullPath: '/marshal-account'
+      preLoaderRoute: typeof MarshalAccountRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/me': {
+      id: '/me'
+      path: '/me'
+      fullPath: '/me'
+      preLoaderRoute: typeof MeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/misija': {
+      id: '/misija'
+      path: '/misija'
+      fullPath: '/misija'
+      preLoaderRoute: typeof MisijaRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/pricing': {
+      id: '/pricing'
+      path: '/pricing'
+      fullPath: '/pricing'
+      preLoaderRoute: typeof PricingRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/print': {
+      id: '/print'
+      path: '/print'
+      fullPath: '/print'
+      preLoaderRoute: typeof PrintRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/privacy': {
+      id: '/privacy'
+      path: '/privacy'
+      fullPath: '/privacy'
+      preLoaderRoute: typeof PrivacyRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/qr-generator': {
+      id: '/qr-generator'
+      path: '/qr-generator'
+      fullPath: '/qr-generator'
+      preLoaderRoute: typeof QrGeneratorRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/reset-password': {
+      id: '/reset-password'
+      path: '/reset-password'
+      fullPath: '/reset-password'
+      preLoaderRoute: typeof ResetPasswordRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/s': {
+      id: '/s'
+      path: '/s'
+      fullPath: '/s'
+      preLoaderRoute: typeof SRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/scan': {
+      id: '/scan'
+      path: '/scan'
+      fullPath: '/scan'
+      preLoaderRoute: typeof ScanRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/sitemap.xml': {
+      id: '/sitemap.xml'
+      path: '/sitemap.xml'
+      fullPath: '/sitemap.xml'
+      preLoaderRoute: typeof SitemapDotxmlRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/spartanops': {
+      id: '/spartanops'
+      path: '/spartanops'
+      fullPath: '/spartanops'
+      preLoaderRoute: typeof SpartanopsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/spawn': {
+      id: '/spawn'
+      path: '/spawn'
+      fullPath: '/spawn'
+      preLoaderRoute: typeof SpawnRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/terms': {
+      id: '/terms'
+      path: '/terms'
+      fullPath: '/terms'
+      preLoaderRoute: typeof TermsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/updates': {
+      id: '/updates'
+      path: '/updates'
+      fullPath: '/updates'
+      preLoaderRoute: typeof UpdatesRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/send-inquiry': {
@@ -774,11 +739,39 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiSendInquiryRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/api/public/spartanops-events-cleanup': {
-      id: '/api/public/spartanops-events-cleanup'
-      path: '/api/public/spartanops-events-cleanup'
-      fullPath: '/api/public/spartanops-events-cleanup'
-      preLoaderRoute: typeof ApiPublicSpartanopsEventsCleanupRouteImport
+    '/api/send-reservation': {
+      id: '/api/send-reservation'
+      path: '/api/send-reservation'
+      fullPath: '/api/send-reservation'
+      preLoaderRoute: typeof ApiSendReservationRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/events/': {
+      id: '/events/'
+      path: '/events'
+      fullPath: '/events/'
+      preLoaderRoute: typeof EventsIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/events/$eventId': {
+      id: '/events/$eventId'
+      path: '/events/$eventId'
+      fullPath: '/events/$eventId'
+      preLoaderRoute: typeof EventsEventIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/events/manage': {
+      id: '/events/manage'
+      path: '/events/manage'
+      fullPath: '/events/manage'
+      preLoaderRoute: typeof EventsManageRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/me_/games': {
+      id: '/me_/games'
+      path: '/me/games'
+      fullPath: '/me/games'
+      preLoaderRoute: typeof MeGamesRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/public/spartanops-cron-tick': {
@@ -786,6 +779,13 @@ declare module '@tanstack/react-router' {
       path: '/api/public/spartanops-cron-tick'
       fullPath: '/api/public/spartanops-cron-tick'
       preLoaderRoute: typeof ApiPublicSpartanopsCronTickRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/public/spartanops-events-cleanup': {
+      id: '/api/public/spartanops-events-cleanup'
+      path: '/api/public/spartanops-events-cleanup'
+      fullPath: '/api/public/spartanops-events-cleanup'
+      preLoaderRoute: typeof ApiPublicSpartanopsEventsCleanupRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/public/field-media/$': {
