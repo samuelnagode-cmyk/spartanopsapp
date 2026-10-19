@@ -1,5 +1,6 @@
 import { createServerFn } from "@tanstack/react-start";
 import { setResponseHeader } from "@tanstack/react-start/server";
+import { FIELD_ATTEMPT_MAX_FAILURES, FIELD_ATTEMPT_WINDOW_SEC, FIELD_ATTEMPT_RETENTION_SEC, throttleState } from "./field-attempts";
 
 const LEGACY_FIELDS = new Set(["zeleni-raj", "field-1", "field-2", "field-3"]);
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -55,11 +56,6 @@ type CheckinInput = {
   useProfile?: boolean;
   sharePhone?: boolean;
 };
-
-// Field-entry guessing limits (per account + caller IP).
-const FIELD_ATTEMPT_MAX_FAILURES = 10;
-const FIELD_ATTEMPT_WINDOW_SEC = 10 * 60;
-const FIELD_ATTEMPT_RETENTION_SEC = 24 * 3600;
 
 /**
  * Registration gate: allowed if the lobby has no owning account, the caller is
@@ -640,10 +636,9 @@ export const spartanopsEnterField = createServerFn({ method: "POST" })
       .eq("account_id", data.accountId).eq("ip_hash", ipHash).gte("at", since)
       .order("at", { ascending: true })
       .limit(FIELD_ATTEMPT_MAX_FAILURES);
-    if ((recent?.length ?? 0) >= FIELD_ATTEMPT_MAX_FAILURES) {
-      const oldest = new Date((recent as any)[0].at).getTime();
-      const retryAfterSec = Math.max(1, Math.ceil((oldest + FIELD_ATTEMPT_WINDOW_SEC * 1000 - Date.now()) / 1000));
-      return { ok: false as const, throttled: true as const, retryAfterSec };
+    const throttle = throttleState(((recent ?? []) as unknown as { at: string }[]).map((attempt) => new Date(attempt.at).getTime()), Date.now());
+    if (throttle.throttled) {
+      return { ok: false as const, throttled: true as const, retryAfterSec: throttle.retryAfterSec };
     }
 
     const { data: ok } = await supabaseAdmin.rpc("spartanops_verify_field_password" as any, {

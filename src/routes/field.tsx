@@ -189,7 +189,8 @@ function FieldPage() {
       const r = await enter({ data: { accountId: info.accountId, password } });
       if (!r.ok) {
         if ("throttled" in r && r.throttled) {
-          setErr(en ? "Too many wrong attempts. Try again in a few minutes." : "Preveč napačnih poskusov. Poskusi znova čez nekaj minut.");
+          const minutes = Math.max(1, Math.ceil(r.retryAfterSec / 60));
+          setErr(en ? `Too many wrong attempts. Try again in ${minutes} min, or ask the marshal.` : `Preveč napačnih poskusov. Poskusi znova čez ${minutes} min ali vprašaj maršala.`);
         } else {
           setErr(en ? "Wrong password" : "Napačno geslo");
         }
