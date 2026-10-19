@@ -636,7 +636,7 @@ export const spartanopsEnterField = createServerFn({ method: "POST" })
       .eq("account_id", data.accountId).eq("ip_hash", ipHash).gte("at", since)
       .order("at", { ascending: true })
       .limit(FIELD_ATTEMPT_MAX_FAILURES);
-    const throttle = throttleState((recent ?? []).map((attempt: { at: string }) => new Date(attempt.at).getTime()), Date.now());
+    const throttle = throttleState(((recent ?? []) as unknown as { at: string }[]).map((attempt) => new Date(attempt.at).getTime()), Date.now());
     if (throttle.throttled) {
       return { ok: false as const, throttled: true as const, retryAfterSec: throttle.retryAfterSec };
     }
