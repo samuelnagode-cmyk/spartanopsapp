@@ -7,6 +7,7 @@ import { spartanopsSpartacusCapture } from "@/lib/spartanops-spartacus.functions
 import { spartanopsResolveSessionField, spartanopsGetOwnCheckinTeam } from "@/lib/spartanops-checkin.functions";
 import { supabase } from "@/integrations/supabase/client";
 import { useLang, useT } from "@/lib/i18n";
+import { isNetworkError } from "@/lib/network-error";
 
 export const Route = createFileRoute("/capture")({
   head: () => ({
@@ -507,7 +508,7 @@ function CapturePage() {
           };
 
           setIsGpsError(errCode === "gps_required");
-          setErrMsg(msg[errCode] ?? "Napaka."); setState("error"); return;
+          setErrMsg(msg[errCode] ?? (en ? "Something went wrong." : "Napaka.")); setState("error"); return;
         }
         
         setTeam((result as any).team ?? null);
@@ -521,7 +522,14 @@ function CapturePage() {
         // A network/server failure means the capture did not actually land —
         // clear the guard so the player can retry by re-scanning the QR.
         try { sessionStorage.removeItem(captureKey); } catch { /* ignore */ }
-        setErrMsg(e?.message ?? "Napaka pri shranjevanju zavzema."); setState("error");
+        if (isNetworkError(e, typeof navigator === "undefined" ? true : navigator.onLine)) {
+          setErrMsg(en
+            ? "No connection. Your capture was not saved. When the signal is back, scan the code again."
+            : "Ni povezave. Zavzetje ni bilo shranjeno. Ko se povezava vrne, poskeniraj kodo še enkrat.");
+        } else {
+          setErrMsg(e?.message || (en ? "Could not save the capture." : "Napaka pri shranjevanju zavzema."));
+        }
+        setState("error");
       }
     };
 
