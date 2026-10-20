@@ -895,6 +895,7 @@ function MisijaPageInner() {
       window.clearTimeout(reconcile);
       reconcile = window.setTimeout(() => { if (alive) load(); }, 600);
     };
+    let subscribedOnce = false;
     const ch = supabase
       .channel(`checkins:${field}`)
       // Anonymous table access is revoked; a DB trigger broadcasts a data-free
@@ -907,7 +908,6 @@ function MisijaPageInner() {
         if (subscribedOnce) scheduleReconcile();
         subscribedOnce = true;
       });
-    let subscribedOnce = false;
     // Team changes made during an outage are only visible after a reload.
     const onOnline = () => scheduleReconcile();
     const onVisible = () => { if (document.visibilityState === "visible") scheduleReconcile(); };
