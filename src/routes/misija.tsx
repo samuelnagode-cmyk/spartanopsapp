@@ -900,11 +900,28 @@ function MisijaPageInner() {
       // Anonymous table access is revoked; a DB trigger broadcasts a data-free
       // "roster changed" signal and we reload through the server function.
       .on("broadcast", { event: "roster_changed" }, () => scheduleReconcile())
-      .subscribe();
+      .subscribe((status) => {
+        // The first SUBSCRIBED is covered by the initial load; later ones mean
+        // the channel came back after a drop and may have missed broadcasts.
+        if (status !== "SUBSCRIBED") return;
+        if (subscribedOnce) scheduleReconcile();
+        subscribedOnce = true;
+      });
+    let subscribedOnce = false;
+    // Team changes made during an outage are only visible after a reload.
+    const onOnline = () => scheduleReconcile();
+    const onVisible = () => { if (document.visibilityState === "visible") scheduleReconcile(); };
+    const onPageShow = () => scheduleReconcile();
+    window.addEventListener("online", onOnline);
+    document.addEventListener("visibilitychange", onVisible);
+    window.addEventListener("pageshow", onPageShow);
     return () => {
       alive = false;
       window.clearTimeout(reconcile);
       retries.forEach((id) => window.clearTimeout(id));
+      window.removeEventListener("online", onOnline);
+      document.removeEventListener("visibilitychange", onVisible);
+      window.removeEventListener("pageshow", onPageShow);
       supabase.removeChannel(ch);
     };
 
