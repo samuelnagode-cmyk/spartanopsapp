@@ -8,11 +8,18 @@ import { spartanopsResolveSessionField, spartanopsGetOwnCheckinTeam } from "@/li
 import { supabase } from "@/integrations/supabase/client";
 import { useLang, useT } from "@/lib/i18n";
 import { isNetworkError } from "@/lib/network-error";
+import { useSlowAfter } from "@/lib/use-slow-after";
+import { Button } from "@/components/ui/button";
 
 export const Route = createFileRoute("/capture")({
   head: () => ({
     meta: [
       { title: "SpartanOps · Zavzem točke" },
+      { name: "description", content: "SpartanOps mission point capture and scan result." },
+      { property: "og:title", content: "SpartanOps · Zavzem točke" },
+      { property: "og:description", content: "SpartanOps mission point capture and scan result." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
       { name: "robots", content: "noindex,nofollow" },
     ],
   }),
@@ -245,6 +252,8 @@ function CapturePage() {
   const { lang } = useLang();
   const t = useT();
   const en = lang === "en";
+  const enRef = useRef(en);
+  enRef.current = en;
   const { point, field } = Route.useSearch();
   const resolvedField = useMemo(() => resolveQrField(field), [field]);
   const dbField = toDbField(resolvedField);
@@ -253,6 +262,8 @@ function CapturePage() {
   const resolveSessionField = useServerFn(spartanopsResolveSessionField);
   const getOwnCheckinTeam = useServerFn(spartanopsGetOwnCheckinTeam);
   const [state, setState] = useState<"loading" | "success" | "error" | "already_held">("loading");
+  // "loading" is this screen's existing scanning state.
+  const slow = useSlowAfter(state === "loading", 25000);
   const [errMsg, setErrMsg] = useState("");
   const [isGpsError, setIsGpsError] = useState(false);
   const [team, setTeam] = useState<string | null>(null);
@@ -377,7 +388,7 @@ function CapturePage() {
         }
       }
       if (!isValidFieldId(effectiveField)) {
-        setErrMsg(isQrPlaceholder(field) ? placeholderError(en) : (en ? "Invalid mission ID in QR code." : "Neveljaven ID misije v QR kodi."));
+        setErrMsg(isQrPlaceholder(field) ? placeholderError(enRef.current) : (enRef.current ? "Invalid mission ID in QR code." : "Neveljaven ID misije v QR kodi."));
         setState("error");
         return;
       }
@@ -386,6 +397,7 @@ function CapturePage() {
         setTimeout(() => navigate({ to: "/misija", search: { field: effectiveRouteField }, replace: true }), 2200);
         return;
       }
+      setResolvedRouteField(effectiveRouteField);
 
       // Preflight: block scans while the marshal has the match paused, and
       // check whether Spartacus is enabled so we know whether GPS is needed.
@@ -397,7 +409,7 @@ function CapturePage() {
           .eq("field_id", effectiveField)
           .maybeSingle();
         if ((gs as any)?.status === "paused") {
-          alert(en
+          alert(enRef.current
             ? "The Marshal has paused the match — QR scanning is suspended until the match resumes."
             : "Maršal je prekinil tekmo — skeniranje QR kod je onemogočeno, dokler se tekma ne nadaljuje.");
           navigate({ to: "/misija", search: { field: effectiveRouteField }, replace: true });
@@ -493,22 +505,22 @@ function CapturePage() {
           const dynRadius = Number((result as any)?.radius_m);
           const radiusLabel = Number.isFinite(dynRadius) ? Math.round(dynRadius) : 15;
           const msg: Record<string, string> = {
-            not_checked_in: "Niste prijavljeni v misijo.",
-            no_team: "Nimate dodeljene ekipe.",
-            invalid_point: "Neveljavna točka.",
-            out_of_range: en
+            not_checked_in: enRef.current ? "You are not checked in to the mission." : "Niste prijavljeni v misijo.",
+            no_team: enRef.current ? "You have not been assigned a team." : "Nimate dodeljene ekipe.",
+            invalid_point: enRef.current ? "Invalid point." : "Neveljavna točka.",
+            out_of_range: enRef.current
               ? `ERROR: Out of activation range (max ${radiusLabel}m)!`
               : `NAPAKA: Niste v dometu za aktiviranje te funkcije (največ ${radiusLabel}m)!`,
-            gps_required: en
+            gps_required: enRef.current
               ? "Spartacus protection requires active GPS to verify your capture. Please enable location services to proceed."
               : "Spartacus zaščita zahteva aktivno GPS povezavo za potrditev tvoje lokacije ob zavzetju. Prosimo, omogoči lokacijske storitve za nadaljevanje.",
-            spartacus_flagged: en
+            spartacus_flagged: enRef.current
               ? "⚠ Spartacus flagged this scan as suspicious. Awaiting marshal review."
               : "⚠ Spartacus je označil ta sken kot sumljiv. Čaka pregled maršala.",
           };
 
           setIsGpsError(errCode === "gps_required");
-          setErrMsg(msg[errCode] ?? (en ? "Something went wrong." : "Napaka.")); setState("error"); return;
+          setErrMsg(msg[errCode] ?? (enRef.current ? "Something went wrong." : "Napaka.")); setState("error"); return;
         }
         
         setTeam((result as any).team ?? null);
@@ -523,18 +535,46 @@ function CapturePage() {
         // clear the guard so the player can retry by re-scanning the QR.
         try { sessionStorage.removeItem(captureKey); } catch { /* ignore */ }
         if (isNetworkError(e, typeof navigator === "undefined" ? true : navigator.onLine)) {
-          setErrMsg(en
+          setErrMsg(enRef.current
             ? "No connection. Your capture was not saved. When the signal is back, scan the code again."
             : "Ni povezave. Zavzetje ni bilo shranjeno. Ko se povezava vrne, poskeniraj kodo še enkrat.");
         } else {
-          setErrMsg(e?.message || (en ? "Could not save the capture." : "Napaka pri shranjevanju zavzema."));
+          setErrMsg(e?.message || (enRef.current ? "Could not save the capture." : "Napaka pri shranjevanju zavzema."));
         }
         setState("error");
       }
     };
 
     run();
-  }, [point, field, resolvedField, dbField, navigate, applyCapture, resolveSessionField, en, retryNonce]);
+  }, [point, field, resolvedField, dbField, navigate, applyCapture, resolveSessionField, retryNonce]);
+
+  if (slow && state === "loading") {
+    return (
+      <div key="slow" style={{ background: BG, color: INK, minHeight: "100dvh" }} className="flex items-center justify-center p-6">
+        <div className="max-w-md w-full text-center rounded-xl p-8" style={{ background: `${ACCENT}0a`, border: `2px solid ${ACCENT}` }}>
+          <h2 style={{ color: ACCENT, fontFamily: "'Michroma', monospace", fontSize: 14 }}>
+            {en ? "Slow connection" : "Počasna povezava"}
+          </h2>
+          <p className="text-sm mt-3" style={{ color: MUTED }}>
+            {en
+              ? "Still waiting for an answer. If it does not come, check the score in the game. If the point is not yours, scan it again."
+              : "Še čakamo na odgovor. Če ga ne dobiš, preveri rezultat v igri. Če točka ni tvoja, jo poskeniraj znova."}
+          </p>
+          <Button
+            type="button"
+            className="mt-5 h-[52px] w-full whitespace-normal"
+            style={{ background: ACCENT, color: BG, fontFamily: "'Michroma', monospace", fontSize: 12 }}
+            onClick={() => {
+              try { sessionStorage.removeItem(`spartanops:capture:${toDbField(resolvedRouteField)}:${point}`); } catch { /* allow re-scan */ }
+              navigate({ to: "/misija", search: { field: resolvedRouteField }, replace: true });
+            }}
+          >
+            {en ? "BACK TO THE GAME" : "NAZAJ V IGRO"}
+          </Button>
+        </div>
+      </div>
+    );
+  }
 
   if (state === "error") {
     return (

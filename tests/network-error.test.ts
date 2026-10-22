@@ -6,10 +6,13 @@ describe("isNetworkError", () => {
     expect(isNetworkError(new TypeError("Failed to fetch"), true)).toBe(true);
   });
   it("Safari 'Load failed'", () => {
-    expect(isNetworkError(new Error("Load failed"), true)).toBe(true);
+    expect(isNetworkError(new TypeError("Load failed"), true)).toBe(true);
   });
   it("Firefox 'NetworkError when attempting to fetch resource'", () => {
-    expect(isNetworkError(new Error("NetworkError when attempting to fetch resource."), true)).toBe(true);
+    expect(isNetworkError(new TypeError("NetworkError when attempting to fetch resource."), true)).toBe(true);
+  });
+  it("a programming TypeError is not a network error while online", () => {
+    expect(isNetworkError(new TypeError("Cannot read properties of undefined"), true)).toBe(false);
   });
   it("offline flag with an unrelated error", () => {
     expect(isNetworkError(new Error("Point already captured"), false)).toBe(true);
