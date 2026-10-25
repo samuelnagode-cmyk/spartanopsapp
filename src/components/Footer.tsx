@@ -1,12 +1,22 @@
+import { useEffect, useState } from "react";
 import { Mail, Phone, MapPin, Instagram, Facebook, ExternalLink } from "lucide-react";
 import { useLocation, Link, useNavigate } from "@tanstack/react-router";
-import { useT } from "@/lib/i18n";
+import { useLang, useT } from "@/lib/i18n";
 import { clearMasterPw, useMasterAdmin } from "@/lib/master-admin";
+import { OPEN_INSTALL_HELP_EVENT } from "@/components/InstallHint";
+import { detectPlatform, isStandalone } from "@/lib/install-prompt";
 
 export default function Footer() {
   const t = useT();
+  const { lang } = useLang();
   const navigate = useNavigate();
   const isAdmin = useMasterAdmin();
+  // Mobile non-standalone visitors get an "install the app" help link.
+  const [showInstallLink, setShowInstallLink] = useState(false);
+  useEffect(() => {
+    if (typeof navigator === "undefined") return;
+    setShowInstallLink(detectPlatform(navigator.userAgent, navigator.maxTouchPoints || 0) !== "other" && !isStandalone());
+  }, []);
 
   useLocation();
   const isAirsoft = true;

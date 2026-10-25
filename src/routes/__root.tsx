@@ -6,6 +6,7 @@ import { LanguageProvider } from "@/lib/i18n";
 import { PremiumProvider } from "@/lib/premium";
 import { AmbientAudioProvider } from "@/components/AmbientAudio";
 import MissionInProgressModal from "@/components/MissionInProgressModal";
+import InstallHint from "@/components/InstallHint";
 import SpartacusGpsGate from "@/components/SpartacusGpsGate";
 import appCss from "../styles.css?url";
 
@@ -99,6 +100,7 @@ function RootComponent() {
           </main>
           {!hideFooter && <Footer />}
           <MissionInProgressModal />
+          <InstallHint />
           <SpartacusGpsGate />
         </AmbientAudioProvider>
       </PremiumProvider>
