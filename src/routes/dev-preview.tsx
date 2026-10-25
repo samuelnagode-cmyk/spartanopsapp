@@ -1,6 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
 import { MissionInProgressBackdrop, MissionInProgressCard } from "@/components/MissionInProgressModal";
+import { InstallHintCard, InstallSheet } from "@/components/InstallHint";
 import { CheckCircle2, AlertTriangle, Shield, Skull, WifiOff } from "lucide-react";
 
 export const Route = createFileRoute("/dev-preview")({
@@ -333,6 +334,37 @@ function DevPreviewPage() {
       </div>
     ) },
     { title: en ? "GAME PAUSED OVERLAY" : "IGRA PREKINJENA", el: () => <GamePausedMock en={en} /> },
+    { title: en ? "INSTALL HINT (CARD + SHEET)" : "NAMIG ZA NAMESTITEV (KARTICA + NAVODILA)", el: () => (
+      <div style={{ display: "grid", gap: 12 }}>
+        {(["ios", "android", "inapp"] as const).map((p) => (
+          <div key={p} style={{ position: "relative", height: 560, background: BG, border: `1px solid ${INK}18` }}>
+            <p style={{ position: "absolute", top: 8, left: 10, margin: 0, fontFamily: "monospace", fontSize: 9, color: MUTED, letterSpacing: "0.14em", textTransform: "uppercase" }}>
+              {p === "ios" ? "iPhone" : p === "android" ? (en ? "Android (no native prompt)" : "Android (brez samodejne namestitve)") : (en ? "In-app browser" : "Brskalnik v aplikaciji")}
+            </p>
+            <InstallSheet
+              en={en}
+              platform={p}
+              canPromptNatively={false}
+              onClose={() => {}}
+              fixed={false}
+              autoFocus={false}
+            />
+          </div>
+        ))}
+        <div style={{ position: "relative", height: 260, background: BG, border: `1px solid ${INK}18` }}>
+          <p style={{ position: "absolute", top: 8, left: 10, margin: 0, fontFamily: "monospace", fontSize: 9, color: MUTED, letterSpacing: "0.14em", textTransform: "uppercase" }}>
+            {en ? "Card (Android, native prompt → INSTALL)" : "Kartica (Android, samodejna namestitev → NAMESTI)"}
+          </p>
+          <InstallHintCard en={en} canPromptNatively onPrimary={() => {}} onDismiss={() => {}} fixed={false} />
+        </div>
+        <div style={{ position: "relative", height: 260, background: BG, border: `1px solid ${INK}18` }}>
+          <p style={{ position: "absolute", top: 8, left: 10, margin: 0, fontFamily: "monospace", fontSize: 9, color: MUTED, letterSpacing: "0.14em", textTransform: "uppercase" }}>
+            {en ? "Card (iPhone → SHOW ME HOW)" : "Kartica (iPhone → POKAŽI KAKO)"}
+          </p>
+          <InstallHintCard en={en} canPromptNatively={false} onPrimary={() => {}} onDismiss={() => {}} fixed={false} />
+        </div>
+      </div>
+    ) },
   ];
 
   return (
