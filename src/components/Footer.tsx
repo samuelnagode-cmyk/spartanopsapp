@@ -225,6 +225,16 @@ export default function Footer() {
           <Link to="/terms" className="text-[13.5px] leading-none opacity-90 hover:opacity-100" style={{ color: v.ivory }}>
             {t("legal.termsLink")}
           </Link>
+          {showInstallLink && (
+            <button
+              type="button"
+              onClick={() => window.dispatchEvent(new CustomEvent(OPEN_INSTALL_HELP_EVENT))}
+              className="text-[13.5px] leading-none opacity-90 hover:opacity-100"
+              style={{ color: v.ivory, background: "none", border: "none", padding: 0, cursor: "pointer", font: "inherit" }}
+            >
+              {lang === "en" ? "Install the app" : "Namesti aplikacijo"}
+            </button>
+          )}
         </div>
 
         {/* Social */}
