@@ -6,6 +6,8 @@ import {
 } from "./events";
 import { countsFor } from "./event-rsvps.functions";
 import { fieldMediaUrl } from "./field-media";
+import { diffEventChanges } from "./event-changes";
+import type { NoticeArgs, NoticeResult } from "./event-notify.server";
 
 /* ---------- shared ---------- */
 
@@ -47,7 +49,8 @@ export type EventFull = EventListItem & {
   locationRestricted: boolean;
 };
 /** Organiser's view: also carries the event's own stored point (null = use the field's). */
-export type EventMine = EventFull & { lat: number | null; lng: number | null };
+export type LastNotice = { kind: string; created_at: string; sent: number; failed: number };
+export type EventMine = EventFull & { lat: number | null; lng: number | null; last_notice?: LastNotice | null };
 
 const toField = (a: AccountJoin): EventField => ({ id: a.id, name: a.business_name, city: a.city, country: a.country });
 
@@ -246,11 +249,20 @@ export const eventsMine = createServerFn({ method: "POST" })
     const list = (rows ?? []) as unknown as Omit<EventMine, "field" | "location" | "locationRestricted">[];
     const counts = await countsFor(list.map((e) => e.id));
     const fp = (await fieldPoints([m.userId]))[m.userId];
+    const lastNotice: Record<string, LastNotice> = {};
+    if (list.length) {
+      const { data: ns } = await db.from("spartanops_event_notices").select("event_id, kind, created_at, sent, failed")
+        .in("event_id", list.map((e) => e.id)).order("created_at", { ascending: false }).limit(1000);
+      for (const n of (ns ?? []) as (LastNotice & { event_id: string })[]) {
+        if (!lastNotice[n.event_id]) lastNotice[n.event_id] = { kind: n.kind, created_at: n.created_at, sent: n.sent, failed: n.failed };
+      }
+    }
     return {
       events: list.map((e): EventMine => ({
         ...e, price_amount: e.price_amount === null ? null : Number(e.price_amount), field,
         location: effectivePoint(e as Record<string, unknown>, fp), locationRestricted: false,
         going: counts[e.id]?.going ?? 0, maybe: counts[e.id]?.maybe ?? 0,
+        last_notice: lastNotice[e.id] ?? null,
       })),
       fieldReady: r.ready, missing: r.missing, field, listedPublicly: m.account.listed_publicly !== false,
     };
@@ -328,15 +340,62 @@ export function validateEventInput(e: EventInput): { ok: true; build: (dateYmd: 
   };
 }
 
+export type EventChanges = { time: boolean; place: boolean };
+export type SaveResult =
+  | { ids: string[]; notice?: NoticeResult }
+  | { needsDecision: true; changes: EventChanges; recipients: number; answers: number };
+type EditDb = { from: (t: string) => any; rpc: (fn: string, a: Record<string, unknown>) => any }; // eslint-disable-line @typescript-eslint/no-explicit-any
+
+/** Edit flow: asks for a decision when players would be told about a time/place change. Exported for tests. */
+export async function saveEventEdit(
+  db: EditDb, userId: string, id: string, built: Record<string, unknown>,
+  notify: { send: boolean; note?: string } | undefined,
+  send: (a: NoticeArgs) => Promise<NoticeResult>,
+): Promise<SaveResult> {
+  const now = new Date().toISOString();
+  const { data: prev } = await db.from("spartanops_events").select("starts_at, ends_at, location_text, lat, lng, status").eq("id", id).single();
+  const changes = prev ? diffEventChanges(prev, built as never) : { time: false, place: false };
+  const published = prev?.status === "published";
+  let recipients = 0;
+  if (published && (changes.time || changes.place)) {
+    const { data: rec } = await db.rpc("spartanops_event_notice_recipients", { p_event: id });
+    recipients = Array.isArray(rec) ? rec.length : 0;
+    if (recipients > 0 && !notify) {
+      const counts = (await countsFor([id]))[id];
+      return { needsDecision: true, changes, recipients, answers: (counts?.going ?? 0) + (counts?.maybe ?? 0) };
+    }
+  }
+  // Unchanged rule: only a new start time with answers marks the schedule as changed.
+  let scheduleChanged = {};
+  if (prev && Date.parse(prev.starts_at) !== Date.parse(built.starts_at as string)) {
+    const { count } = await db.from("spartanops_event_rsvps").select("event_id", { count: "exact", head: true }).eq("event_id", id);
+    if ((count ?? 0) > 0) scheduleChanged = { schedule_changed_at: now };
+  }
+  const { data: row, error } = await db.from("spartanops_events")
+    .update({ ...built, ...scheduleChanged, updated_at: now } as never)
+    .eq("id", id).eq("account_id", userId).select("id").single();
+  if (error || !row) throw new Error("save_failed");
+  if (published && notify?.send && recipients > 0 && prev) {
+    const notice = await send({
+      eventId: id, kind: "moved", oldStartsAt: prev.starts_at, newStartsAt: built.starts_at as string,
+      placeChanged: changes.place, note: notify.note,
+    });
+    return { ids: [row.id as string], notice };
+  }
+  return { ids: [row.id as string] };
+}
+
 export const eventsSave = createServerFn({ method: "POST" })
   .inputValidator((d: unknown) => {
-    const o = (d ?? {}) as { accessToken?: unknown; id?: unknown; event?: unknown; repeatWeeks?: unknown };
+    const o = (d ?? {}) as { accessToken?: unknown; id?: unknown; event?: unknown; repeatWeeks?: unknown; notify?: unknown };
+    const n = o.notify as { send?: unknown; note?: unknown } | undefined;
     return {
       accessToken: String(o.accessToken ?? ""), id: typeof o.id === "string" && o.id ? o.id : null,
       event: (o.event ?? {}) as EventInput, repeatWeeks: Math.floor(Number(o.repeatWeeks) || 1),
+      notify: n && typeof n === "object" ? { send: n.send === true, note: clean(n.note, 140) || undefined } : undefined,
     };
   })
-  .handler(async ({ data }) => {
+  .handler(async ({ data }): Promise<SaveResult> => {
     const m = await requireMarshal(data.accessToken);
     const v = validateEventInput(data.event);
     if (!v.ok) throw new Error(v.error);
@@ -345,18 +404,8 @@ export const eventsSave = createServerFn({ method: "POST" })
 
     if (data.id) {
       await ownEvent(m.userId, data.id);
-      const built = v.build(data.event.date);
-      const { data: prev } = await db.from("spartanops_events").select("starts_at").eq("id", data.id).single();
-      let scheduleChanged = {};
-      if (prev && Date.parse(prev.starts_at) !== Date.parse(built.starts_at as string)) {
-        const { count } = await db.from("spartanops_event_rsvps").select("event_id", { count: "exact", head: true }).eq("event_id", data.id);
-        if ((count ?? 0) > 0) scheduleChanged = { schedule_changed_at: now };
-      }
-      const { data: row, error } = await db.from("spartanops_events")
-        .update({ ...built, ...scheduleChanged, updated_at: now } as never)
-        .eq("id", data.id).eq("account_id", m.userId).select("id").single();
-      if (error || !row) throw new Error("save_failed");
-      return { ids: [row.id as string] };
+      const { sendEventNotice } = await import("./event-notify.server");
+      return saveEventEdit(db as unknown as EditDb, m.userId, data.id, v.build(data.event.date), data.notify, sendEventNotice);
     }
 
     const r = readiness(m.account);
