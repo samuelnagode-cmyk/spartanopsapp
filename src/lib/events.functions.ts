@@ -379,8 +379,8 @@ export const eventsSave = createServerFn({ method: "POST" })
 
 export const eventsCancel = createServerFn({ method: "POST" })
   .inputValidator((d: unknown) => {
-    const o = (d ?? {}) as { accessToken?: unknown; id?: unknown; reason?: unknown };
-    return { accessToken: String(o.accessToken ?? ""), id: String(o.id ?? ""), reason: clean(o.reason, 140) || null };
+    const o = (d ?? {}) as { accessToken?: unknown; id?: unknown; reason?: unknown; notify?: unknown };
+    return { accessToken: String(o.accessToken ?? ""), id: String(o.id ?? ""), reason: clean(o.reason, 140) || null, notify: o.notify === true };
   })
   .handler(async ({ data }) => {
     const m = await requireMarshal(data.accessToken);
@@ -388,7 +388,11 @@ export const eventsCancel = createServerFn({ method: "POST" })
     if (ev.status === "hidden") throw new Error("not_found");
     const db = await admin();
     await db.from("spartanops_events").update({ status: "cancelled", cancel_reason: data.reason, updated_at: new Date().toISOString() } as never).eq("id", data.id).eq("account_id", m.userId);
-    return { ok: true };
+    if (!data.notify || ev.status !== "published") return { ok: true, notice: null };
+    // Email problems never undo the cancel: sendEventNotice never throws.
+    const { sendEventNotice } = await import("./event-notify.server");
+    const notice = await sendEventNotice({ eventId: data.id, kind: "cancelled" });
+    return { ok: true, notice };
   });
 
 export const eventsReopen = createServerFn({ method: "POST" })
