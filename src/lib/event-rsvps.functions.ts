@@ -63,7 +63,7 @@ async function visibleEvent(eventId: unknown): Promise<EventRow | null> {
   return { id: r.id, account_id: r.account_id, starts_at: r.starts_at, ends_at: r.ends_at, capacity: r.capacity, status: r.status };
 }
 
-export type MyRsvp = { status: "going" | "maybe"; phone_share: string; ride_role: string; ride_from: string | null; ride_seats: number | null; ride_note: string | null };
+export type MyRsvp = { status: "going" | "maybe"; phone_share: string; ride_role: string; ride_from: string | null; ride_seats: number | null; ride_note: string | null; notify_changes: boolean };
 export type ViewerInfo = { signedIn: boolean; hasProfile: boolean; adult: boolean; hasPhone: boolean; contactMethods: ContactMethod[]; needsReconsent: boolean; organiser: boolean };
 export type Attendance = Counts & {
   capacity: number | null;
@@ -113,7 +113,7 @@ export const eventAttendance = createServerFn({ method: "POST" })
     }
     let me: MyRsvp | null = null;
     if (userId) {
-      const { data: mine } = await db.from("spartanops_event_rsvps").select("status, phone_share, ride_role, ride_from, ride_seats, ride_note").eq("event_id", ev.id).eq("user_id", userId).maybeSingle();
+      const { data: mine } = await db.from("spartanops_event_rsvps").select("status, phone_share, ride_role, ride_from, ride_seats, ride_note, notify_changes").eq("event_id", ev.id).eq("user_id", userId).maybeSingle();
       me = (mine as MyRsvp | null) ?? null;
     }
     return { ...base, me, attendees, rides: buildRides(attendees) };
@@ -166,6 +166,24 @@ export const eventRsvpSet = createServerFn({ method: "POST" })
     });
     if (error) { console.error("[eventRsvpSet]", error.code); throw new Error("save_failed"); }
     if (res !== "ok") throw new Error(RPC_ERRORS.has(res as string) ? (res as string) : "save_failed");
+    return { ok: true };
+  });
+
+/** Player's own on/off switch for "email me if this event is moved or cancelled". */
+export const eventRsvpNotifySet = createServerFn({ method: "POST" })
+  .inputValidator((d: unknown) => {
+    const o = (d ?? {}) as { accessToken?: unknown; eventId?: unknown; on?: unknown };
+    return { accessToken: String(o.accessToken ?? ""), eventId: String(o.eventId ?? "").slice(0, 40), on: o.on === true };
+  })
+  .handler(async ({ data }) => {
+    const userId = await requireUserId(data.accessToken);
+    if (!UUID_RE.test(data.eventId)) throw new Error("not_found");
+    const db = await admin();
+    const { data: rows, error } = await db.from("spartanops_event_rsvps")
+      .update({ notify_changes: data.on, updated_at: new Date().toISOString() } as never)
+      .eq("event_id", data.eventId).eq("user_id", userId).select("event_id");
+    if (error) throw new Error("save_failed");
+    if (!rows || rows.length === 0) throw new Error("not_found");
     return { ok: true };
   });
 

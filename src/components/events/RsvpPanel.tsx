@@ -3,7 +3,7 @@ import { Link, useNavigate } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { Check, ChevronDown, Minus, Plus } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-import { eventAttendance, eventRsvpRemove, eventRsvpSet, type Attendance } from "@/lib/event-rsvps.functions";
+import { eventAttendance, eventRsvpNotifySet, eventRsvpRemove, eventRsvpSet, type Attendance } from "@/lib/event-rsvps.functions";
 import { playerGetMine, playerSaveMine } from "@/lib/player.functions";
 import { normalizePhone } from "@/lib/player-validation";
 import { SI_TOWNS } from "@/lib/si-towns";
@@ -68,6 +68,10 @@ export function RsvpPanel({ event, lang, onCounts }: { event: RsvpEvent; lang: L
   const attendanceFn = useServerFn(eventAttendance);
   const setFn = useServerFn(eventRsvpSet);
   const removeFn = useServerFn(eventRsvpRemove);
+  const notifyFn = useServerFn(eventRsvpNotifySet);
+  const [notifyBusy, setNotifyBusy] = useState(false);
+  const [myEmail, setMyEmail] = useState<string>("");
+  useEffect(() => { supabase.auth.getSession().then(({ data }) => setMyEmail(data.session?.user?.email ?? "")).catch(() => {}); }, []);
   const getMine = useServerFn(playerGetMine);
   const saveProfile = useServerFn(playerSaveMine);
 
@@ -262,6 +266,29 @@ export function RsvpPanel({ event, lang, onCounts }: { event: RsvpEvent; lang: L
                   <span style={{ fontFamily: "monospace", fontSize: 12.5, color: INK, textAlign: "left" }}>{summary}</span>
                   <ChevronDown size={16} style={{ flexShrink: 0, color: ACCENT, transform: open ? "rotate(180deg)" : "none" }} />
                 </button>
+              )}
+              {me && event.status === "published" && !over && (
+                <div style={{ marginBottom: 8 }}>
+                  <label style={{ display: "flex", alignItems: "center", gap: 10, minHeight: 44, cursor: notifyBusy ? "wait" : "pointer", fontFamily: "monospace", fontSize: 12.5, color: INK }}>
+                    <input type="checkbox" role="switch" className="ev-focus" checked={me.notify_changes !== false} disabled={notifyBusy}
+                      style={{ width: 20, height: 20, accentColor: ACCENT, flexShrink: 0 }}
+                      onChange={async (x) => {
+                        const on = x.target.checked;
+                        const prev = me.notify_changes !== false;
+                        setErr(null); setNotifyBusy(true);
+                        setAtt((a) => (a && a.me ? { ...a, me: { ...a.me, notify_changes: on } } : a));
+                        try { await notifyFn({ data: { accessToken: await token(), eventId: event.id, on } }); }
+                        catch (e) { setAtt((a) => (a && a.me ? { ...a, me: { ...a.me, notify_changes: prev } } : a)); setErr(errText(e, en)); }
+                        finally { setNotifyBusy(false); }
+                      }} />
+                    <span>{en ? "Email me if this event is moved or cancelled" : "Obvesti me po e-pošti, če se dogodek prestavi ali odpove"}</span>
+                  </label>
+                  {myEmail && (
+                    <p style={{ fontFamily: "monospace", fontSize: 11.5, color: MUTED, margin: "0 0 0 30px", wordBreak: "break-all" }}>
+                      {en ? `Sent to ${myEmail}. No ads, only changes to this event.` : `Pošljemo na ${myEmail}. Brez oglasov, samo spremembe tega dogodka.`}
+                    </p>
+                  )}
+                </div>
               )}
               {open && (
               <>

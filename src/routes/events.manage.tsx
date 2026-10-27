@@ -242,6 +242,8 @@ function Row({ e, lang, onChange, onEdit, onDuplicate }: { e: EventFull; lang: L
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
+  const [notifyOn, setNotifyOn] = useState(true);
+  const [noticeLine, setNoticeLine] = useState<string | null>(null);
   const url = `${SITE}/events/${e.id}`;
   const status = e.status === "cancelled" ? { t: en ? "Cancelled" : "Odpovedan", c: ERR } : e.status === "hidden" ? { t: en ? "Hidden by admin" : "Skril admin", c: ERR } : e.visibility === "link" ? { t: en ? "Link only" : "Samo s povezavo", c: "#7aa2f7" } : { t: en ? "Published" : "Objavljen", c: OK };
 
@@ -288,13 +290,28 @@ function Row({ e, lang, onChange, onEdit, onDuplicate }: { e: EventFull; lang: L
           )}
         </div>
       </div>
+      {noticeLine && <p role="status" style={{ fontFamily: "monospace", fontSize: 12, color: MUTED, marginTop: 10 }}>{noticeLine}</p>}
       {mode === "cancel" && (
         <div style={{ marginTop: 12, borderTop: `1px solid ${ACCENT}22`, paddingTop: 12 }}>
           <label style={{ display: "block", fontFamily: MICHROMA, fontSize: 9.5, letterSpacing: "0.16em", color: ACCENT, textTransform: "uppercase", marginBottom: 6 }} htmlFor={`r-${e.id}`}>{en ? "Reason (optional, shown publicly)" : "Razlog (neobvezno, javno)"}</label>
           <input id={`r-${e.id}`} className="ev-focus" maxLength={140} value={reason} onChange={(x) => setReason(x.target.value)} style={{ width: "100%", boxSizing: "border-box", background: "rgba(0,0,0,0.4)", color: INK, border: `1px solid ${ACCENT}55`, padding: "10px 12px", fontFamily: "monospace", fontSize: 16, marginBottom: 10 }} />
+          <label style={{ display: "flex", alignItems: "center", gap: 10, minHeight: 44, marginBottom: 10, fontFamily: "monospace", fontSize: 12.5, color: INK, cursor: "pointer" }}>
+            <input type="checkbox" className="ev-focus" checked={notifyOn} onChange={(x) => setNotifyOn(x.target.checked)} style={{ width: 20, height: 20, accentColor: ACCENT, flexShrink: 0 }} />
+            <span>{en ? `Email the players who asked to be notified (up to ${(e.going ?? 0) + (e.maybe ?? 0)})` : `Obvesti igralce po e-pošti (do ${(e.going ?? 0) + (e.maybe ?? 0)})`}</span>
+          </label>
           <div style={{ display: "flex", gap: 8 }}>
             <button type="button" className="ev-focus" style={{ ...btnOutline, flex: 1 }} onClick={() => setMode("none")}>{en ? "Back" : "Nazaj"}</button>
-            <button type="button" className="ev-focus" style={{ ...btnPrimary, flex: 1, background: ERR }} disabled={busy} onClick={() => run(async () => cancelFn({ data: { accessToken: await token(), id: e.id, reason } }))}>{en ? "Cancel event" : "Odpovej"}</button>
+            <button type="button" className="ev-focus" style={{ ...btnPrimary, flex: 1, background: ERR }} disabled={busy} onClick={() => run(async () => {
+              setNoticeLine(null);
+              const r = await cancelFn({ data: { accessToken: await token(), id: e.id, reason, notify: notifyOn } });
+              const n = r?.notice;
+              if (!n) return;
+              if (n.reason === "not_configured") { setNoticeLine(en ? "Email is not set up yet, please tell the players yourself" : "E-pošta še ni nastavljena, sporoči igralcem sam"); return; }
+              if (n.reason === "duplicate") return;
+              let line = en ? `Notice sent: ${n.sent} of ${n.recipients}` : `Obvestilo poslano: ${n.sent} od ${n.recipients}`;
+              if (n.failed > 0) line += en ? ` · ${n.failed} failed, please tell them yourself` : ` · ${n.failed} ni uspelo, sporoči jim sam`;
+              setNoticeLine(line);
+            })}>{en ? "Cancel event" : "Odpovej"}</button>
           </div>
         </div>
       )}

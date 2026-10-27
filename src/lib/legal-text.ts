@@ -24,7 +24,7 @@ export const PRIVACY: Record<Lang, { title: string; description: string; section
     sections: [
       { title: "Who is responsible", blocks: [{ kind: "controller" }, { kind: "p", text: "For anything about your data, write to info@spartanopsapp.com." }] },
       { title: "What we collect and why", blocks: [{ kind: "table", head: ["Data", "Purpose", "Legal basis (GDPR)"], rows: [
-        ["Email and password (the password is stored hashed by our sign-in provider)", "Create and secure your account", "Contract (Art. 6(1)(b))"],
+        ["Email and password (the password is stored hashed by our sign-in provider)", "Create and secure your account; send you a notice if an event you answered is moved or cancelled", "Contract (Art. 6(1)(b))"],
         ["Callsign, first name, an avatar (a picture you choose from our set)", "Show who is going to an event", "Contract (Art. 6(1)(b))"],
         ["Age group (16–17 / 18+)", "Decide which features are available to you", "Legitimate interest: protecting minors (Art. 6(1)(f))"],
         ["Surname (optional)", "Helps organisers know who is coming; other players see it only if you allow", "Consent (Art. 6(1)(a))"],
@@ -57,7 +57,7 @@ export const PRIVACY: Record<Lang, { title: string; description: string; section
     sections: [
       { title: "Kdo je odgovoren", blocks: [{ kind: "controller" }, { kind: "p", text: "Za vsa vprašanja o tvojih podatkih piši na info@spartanopsapp.com." }] },
       { title: "Katere podatke zbiramo in zakaj", blocks: [{ kind: "table", head: ["Podatek", "Namen", "Pravna podlaga (GDPR)"], rows: [
-        ["E-pošta in geslo (geslo ponudnik prijave shrani zgoščeno)", "Ustvarjanje in zaščita računa", "Izvajanje pogodbe (6(1)(b))"],
+        ["E-pošta in geslo (geslo ponudnik prijave shrani zgoščeno)", "Ustvarjanje in zaščita računa; obvestilo, če se dogodek, na katerega si odgovoril, prestavi ali odpove", "Izvajanje pogodbe (6(1)(b))"],
         ["Vzdevek, ime, avatar (sličica, ki jo izbereš iz našega nabora)", "Prikaz, kdo pride na dogodek", "Izvajanje pogodbe (6(1)(b))"],
         ["Starostna skupina (16–17 / 18+)", "Določa, katere funkcije so ti na voljo", "Zakoniti interes: varstvo mladoletnikov (6(1)(f))"],
         ["Priimek (neobvezno)", "Organizatorju pomaga vedeti, kdo pride; drugim igralcem je viden le, če dovoliš", "Privolitev (6(1)(a))"],

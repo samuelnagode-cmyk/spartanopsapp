@@ -500,10 +500,49 @@ export type Database = {
         }
         Relationships: []
       }
+      spartanops_event_notices: {
+        Row: {
+          created_at: string
+          event_id: string
+          failed: number
+          id: string
+          kind: string
+          recipients: number
+          sent: number
+        }
+        Insert: {
+          created_at?: string
+          event_id: string
+          failed: number
+          id?: string
+          kind: string
+          recipients: number
+          sent: number
+        }
+        Update: {
+          created_at?: string
+          event_id?: string
+          failed?: number
+          id?: string
+          kind?: string
+          recipients?: number
+          sent?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "spartanops_event_notices_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "spartanops_events"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       spartanops_event_rsvps: {
         Row: {
           created_at: string
           event_id: string
+          notify_changes: boolean
           phone_share: string
           ride_from: string | null
           ride_note: string | null
@@ -516,6 +555,7 @@ export type Database = {
         Insert: {
           created_at?: string
           event_id: string
+          notify_changes?: boolean
           phone_share?: string
           ride_from?: string | null
           ride_note?: string | null
@@ -528,6 +568,7 @@ export type Database = {
         Update: {
           created_at?: string
           event_id?: string
+          notify_changes?: boolean
           phone_share?: string
           ride_from?: string | null
           ride_note?: string | null
@@ -1329,6 +1370,13 @@ export type Database = {
       spartanops_delete_lobby_players: {
         Args: { p_lobby_id: string }
         Returns: undefined
+      }
+      spartanops_event_notice_recipients: {
+        Args: { p_event: string }
+        Returns: {
+          email: string
+          user_id: string
+        }[]
       }
       spartanops_fold: { Args: { p: string }; Returns: string }
       spartanops_generate_field_code: { Args: never; Returns: string }
