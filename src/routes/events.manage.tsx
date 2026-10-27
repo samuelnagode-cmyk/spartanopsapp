@@ -4,7 +4,7 @@ import { useCallback, useEffect, useRef, useState, type CSSProperties } from "re
 import { Check, MoreVertical, X } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useLang } from "@/lib/i18n";
-import { SITE, eventEndMs, shortDate, zonedToUtc, type Lang } from "@/lib/events";
+import { SITE, eventEndMs, shortDate, type Lang } from "@/lib/events";
 import {
   eventsCancel, eventsDelete, eventsMine, eventsReopen, eventsSave, type EventField, type EventFull, type EventInput,
 } from "@/lib/events.functions";
@@ -234,7 +234,7 @@ function EventList({ mine, lang, onChange, onNew, onEdit, onDuplicate }: {
   );
 }
 
-function Row({ e, lang, onChange, onEdit, onDuplicate }: { e: EventFull; lang: Lang; onChange: () => void; onEdit: (id: string) => void; onDuplicate: (id: string) => void }) {
+function Row({ e, lang, onChange, onEdit, onDuplicate }: { e: EventFull & { last_notice?: { kind: string; created_at: string; sent: number; failed: number } | null }; lang: Lang; onChange: () => void; onEdit: (id: string) => void; onDuplicate: (id: string) => void }) {
   const en = lang === "en";
   const cancelFn = useServerFn(eventsCancel);
   const reopenFn = useServerFn(eventsReopen);
