@@ -1,10 +1,10 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
-import { useCallback, useEffect, useState, type CSSProperties } from "react";
+import { useCallback, useEffect, useRef, useState, type CSSProperties } from "react";
 import { Check, MoreVertical, X } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useLang } from "@/lib/i18n";
-import { SITE, eventEndMs, zonedToUtc, type Lang } from "@/lib/events";
+import { SITE, eventEndMs, shortDate, zonedToUtc, type Lang } from "@/lib/events";
 import {
   eventsCancel, eventsDelete, eventsMine, eventsReopen, eventsSave, type EventField, type EventFull, type EventInput,
 } from "@/lib/events.functions";
@@ -54,7 +54,8 @@ function ManagePage() {
   const [mine, setMine] = useState<Mine | null>(null);
   const [busy, setBusy] = useState(false);
   const [serverError, setServerError] = useState<string | null>(null);
-  const [saved, setSaved] = useState<{ ids: string[] } | null>(null);
+  const [saved, setSaved] = useState<{ ids: string[]; notice?: NoticeResultLite } | null>(null);
+  const [decision, setDecision] = useState<{ input: EventInput; repeatWeeks: number; recipients: number; answers: number } | null>(null);
 
   const load = useCallback(async () => {
     const t = await token();
@@ -106,6 +107,7 @@ function ManagePage() {
         <h1 style={{ fontFamily: MICHROMA, fontSize: 14, letterSpacing: "0.14em", textTransform: "uppercase", marginBottom: 8 }}>
           {saved.ids.length > 1 ? (en ? `${saved.ids.length} events saved` : `Shranjenih dogodkov: ${saved.ids.length}`) : (en ? "Event saved" : "Dogodek shranjen")}
         </h1>
+        {saved.notice && <p role="status" style={{ fontFamily: "monospace", fontSize: 12.5, color: INK, marginBottom: 10 }}>{noticeLineText(saved.notice, en)}</p>}
         <p style={{ fontFamily: "monospace", fontSize: 12.5, wordBreak: "break-all", color: MUTED, marginBottom: 16 }}>{url}</p>
         <div style={{ display: "flex", gap: 10, flexWrap: "wrap", justifyContent: "center" }}>
           <CopyButton text={url} en={en} />
@@ -124,19 +126,14 @@ function ManagePage() {
     const source = isCreate ? (search.from ? mine.events.find((e) => e.id === search.from) ?? null : null) : mine.events.find((e) => e.id === editing) ?? null;
     if (!isCreate && !source) return notice(en ? "Event not found" : "Dogodka ni", SERVER_ERRORS.not_found[en ? 0 : 1], "/events/manage", en ? "Back" : "Nazaj");
     if (isCreate && !mine.fieldReady) { navigate({ search: {} }); return null; }
-    const submit = async (input: EventInput, repeatWeeks: number) => {
-      const answers = (source?.going ?? 0) + (source?.maybe ?? 0);
-      if (!isCreate && source && answers > 0 && Date.parse(zonedToUtc(input.date, input.startTime)) !== Date.parse(source.starts_at)) {
-        const msg = en
-          ? `${answers} players have answered. They are not notified automatically, please tell them the new time.`
-          : `Odgovorilo je ${answers} igralcev. Samodejno niso obveščeni, zato jim sporoči novi čas.`;
-        if (!window.confirm(msg)) return;
-      }
+    const submit = async (input: EventInput, repeatWeeks: number, notify?: { send: boolean; note?: string }) => {
       setBusy(true); setServerError(null);
       try {
-        const r = await saveFn({ data: { accessToken: await token(), id: isCreate ? undefined : editing, event: input, repeatWeeks } });
-        setSaved(r); navigate({ search: {} });
+        const r = await saveFn({ data: { accessToken: await token(), id: isCreate ? undefined : editing, event: input, repeatWeeks, notify } });
+        if ("needsDecision" in r) { setDecision({ input, repeatWeeks, recipients: r.recipients, answers: r.answers }); return; }
+        setDecision(null); setSaved(r); navigate({ search: {} });
       } catch (e) {
+        setDecision(null);
         setServerError(String((e as Error)?.message ?? "save_failed"));
       } finally { setBusy(false); }
     };
@@ -150,8 +147,14 @@ function ManagePage() {
           key={`${editing}-${search.from ?? ""}`}
           lang={lang} field={mine.field} listedPublicly={mine.listedPublicly}
           initial={initialForm(mine.field, source, isCreate ? (source ? "duplicate" : "new") : "edit")}
-          isCreate={isCreate} busy={busy} serverError={serverError} onSubmit={submit} onCancel={closeForm}
+          isCreate={isCreate} busy={busy} serverError={serverError} onSubmit={(i, w) => submit(i, w)} onCancel={closeForm}
         />
+        {decision && (
+          <DecisionPanel en={en} busy={busy} recipients={decision.recipients} answers={decision.answers}
+            onBack={() => setDecision(null)}
+            onNotify={(note) => submit(decision.input, decision.repeatWeeks, { send: true, note })}
+            onSkip={() => submit(decision.input, decision.repeatWeeks, { send: false })} />
+        )}
       </>,
       640,
     );
@@ -267,6 +270,11 @@ function Row({ e, lang, onChange, onEdit, onDuplicate }: { e: EventFull; lang: L
               {en ? `${e.going ?? 0} going · ${e.maybe ?? 0} maybe` : `${e.going ?? 0} pride · ${e.maybe ?? 0} morda`}
             </p>
           )}
+          {e.last_notice && (
+            <p style={{ fontFamily: "monospace", fontSize: 11.5, color: MUTED, margin: "0 0 2px" }}>
+              {en ? `Last notice: ${shortDate(e.last_notice.created_at, e.tz, lang)} · sent ${e.last_notice.sent}, failed ${e.last_notice.failed}` : `Zadnje obvestilo: ${shortDate(e.last_notice.created_at, e.tz, lang)} · poslano ${e.last_notice.sent}, neuspešno ${e.last_notice.failed}`}
+            </p>
+          )}
           {e.status === "cancelled" && e.cancel_reason && <p style={{ fontFamily: "monospace", fontSize: 11.5, color: MUTED }}>{e.cancel_reason}</p>}
         </div>
         <div style={{ position: "relative" }}>
@@ -333,6 +341,57 @@ function Row({ e, lang, onChange, onEdit, onDuplicate }: { e: EventFull; lang: L
         </div>
       ))}
       {err && <p role="alert" style={{ color: ERR, fontFamily: "monospace", fontSize: 12, marginTop: 8 }}>{err}</p>}
+    </div>
+  );
+}
+
+type NoticeResultLite = { recipients: number; sent: number; failed: number; reason?: string };
+
+function noticeLineText(n: NoticeResultLite, en: boolean): string {
+  if (n.reason === "not_configured") return en ? "Email is not set up yet, nobody was emailed. Please tell the players yourself." : "E-pošta še ni nastavljena, nihče ni dobil e-pošte. Sporoči igralcem sam.";
+  let line = en ? `Notice sent: ${n.sent} of ${n.recipients}` : `Obvestilo poslano: ${n.sent} od ${n.recipients}`;
+  if (n.failed > 0) line += en ? ` · ${n.failed} failed, please tell them yourself` : ` · ${n.failed} ni uspelo, sporoči jim sam`;
+  return line;
+}
+
+function DecisionPanel({ en, busy, recipients, answers, onBack, onNotify, onSkip }: {
+  en: boolean; busy: boolean; recipients: number; answers: number;
+  onBack: () => void; onNotify: (note: string) => void; onSkip: () => void;
+}) {
+  const [note, setNote] = useState("");
+  const boxRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const prev = document.activeElement as HTMLElement | null;
+    boxRef.current?.querySelector<HTMLElement>("input, button")?.focus();
+    const onKey = (k: KeyboardEvent) => { if (k.key === "Escape") onBack(); };
+    window.addEventListener("keydown", onKey);
+    return () => { window.removeEventListener("keydown", onKey); prev?.focus?.(); };
+  }, [onBack]);
+  const off = answers - recipients;
+  const btn: CSSProperties = { minHeight: 44, width: "100%" };
+  return (
+    <div style={{ position: "fixed", inset: 0, zIndex: 60, background: "rgba(0,0,0,0.85)", display: "flex", alignItems: "center", justifyContent: "center", padding: 16 }}
+      onClick={(x) => { if (x.target === x.currentTarget) onBack(); }}>
+      <div ref={boxRef} role="dialog" aria-modal="true" aria-labelledby="move-title"
+        style={{ width: "100%", maxWidth: 420, background: PANEL, border: `1px solid ${ACCENT}`, borderLeft: `3px solid ${ACCENT}`, padding: 20, boxSizing: "border-box" }}>
+        <h2 id="move-title" style={{ fontFamily: MICHROMA, fontSize: 13, letterSpacing: "0.12em", textTransform: "uppercase", margin: "0 0 10px", color: INK }}>
+          {en ? "Time or place changed" : "Termin ali kraj se je spremenil"}
+        </h2>
+        <p style={{ fontFamily: "monospace", fontSize: 13, color: INK, margin: "0 0 6px" }}>
+          {en ? `${recipients} players will get an email about the change.` : `${recipients} igralcev bo dobilo e-pošto s spremembo.`}
+        </p>
+        {off > 0 && <p style={{ fontFamily: "monospace", fontSize: 12, color: MUTED, margin: "0 0 6px" }}>{en ? `${off} switched notifications off.` : `${off} jih je obveščanje izklopilo.`}</p>}
+        <label htmlFor="move-note" style={{ display: "block", fontFamily: MICHROMA, fontSize: 9.5, letterSpacing: "0.16em", color: ACCENT, textTransform: "uppercase", margin: "12px 0 6px" }}>
+          {en ? "Message to players (optional)" : "Sporočilo igralcem (neobvezno)"}
+        </label>
+        <input id="move-note" className="ev-focus" maxLength={140} value={note} onChange={(x) => setNote(x.target.value)}
+          style={{ width: "100%", boxSizing: "border-box", background: "rgba(0,0,0,0.4)", color: INK, border: `1px solid ${ACCENT}55`, padding: "10px 12px", fontFamily: "monospace", fontSize: 16, minHeight: 44, marginBottom: 14 }} />
+        <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+          <button type="button" className="ev-focus" style={{ ...btnPrimary, ...btn }} disabled={busy} onClick={() => onNotify(note.trim())}>{en ? "SAVE AND NOTIFY" : "SHRANI IN OBVESTI"}</button>
+          <button type="button" className="ev-focus" style={{ ...btnOutline, ...btn }} disabled={busy} onClick={onSkip}>{en ? "Save without notifying" : "Shrani brez obvestila"}</button>
+          <button type="button" className="ev-focus" style={{ ...btn, background: "none", border: "none", color: ACCENT, fontFamily: "monospace", fontSize: 13, cursor: "pointer", textDecoration: "underline" }} onClick={onBack}>{en ? "Back" : "Nazaj"}</button>
+        </div>
+      </div>
     </div>
   );
 }
