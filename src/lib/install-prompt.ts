@@ -35,9 +35,7 @@ export function isStandalone(): boolean {
 // ============= Dismissal storage =============
 
 const HINT_KEY = "spartanops:install_hint";
-const DISMISS_MS = 30 * 24 * 60 * 60 * 1000; // 30 days
-
-export type InstallHintStore = { dismissedAt?: number; installed?: boolean };
+export type InstallHintStore = { dismissedAt?: number; installed?: boolean; shown?: boolean };
 
 export function readInstallHint(): InstallHintStore {
   if (typeof window === "undefined") return {};
@@ -58,20 +56,15 @@ export function writeInstallHint(patch: InstallHintStore) {
 }
 
 /** True when the reminder must stay hidden (dismissed recently or installed). */
-export function isHintSuppressed(store: InstallHintStore, now: number): boolean {
-  if (store.installed) return true;
-  if (typeof store.dismissedAt === "number" && now - store.dismissedAt < DISMISS_MS) return true;
-  return false;
+export function isHintSuppressed(store: InstallHintStore, _now: number): boolean {
+  return !!store.installed || !!store.shown || typeof store.dismissedAt === "number";
 }
 
 // ============= Route rule =============
 
 /** The reminder shows only on a few public pages, never during a game. */
 export function isInstallHintRoute(pathname: string): boolean {
-  if (pathname === "/spartanops" || pathname === "/me" || pathname === "/me/games") return true;
-  if (pathname === "/events") return true;
-  if (pathname.startsWith("/events/") && pathname !== "/events/manage") return true;
-  return false;
+  return pathname === "/field" || pathname === "/misija";
 }
 
 // ============= Visit timer (20 s rule) =============

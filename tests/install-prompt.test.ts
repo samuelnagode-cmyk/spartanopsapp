@@ -48,8 +48,9 @@ describe("isHintSuppressed", () => {
     expect(isHintSuppressed({ dismissedAt: now - 1000 }, now)).toBe(true);
     expect(isHintSuppressed({ dismissedAt: now - 29 * 24 * 60 * 60 * 1000 }, now)).toBe(true);
   });
-  it("shows again after 30 days", () => {
-    expect(isHintSuppressed({ dismissedAt: now - 31 * 24 * 60 * 60 * 1000 }, now)).toBe(false);
+  it("never repeats the one-time prompt after dismissal or display", () => {
+    expect(isHintSuppressed({ dismissedAt: now - 31 * 24 * 60 * 60 * 1000 }, now)).toBe(true);
+    expect(isHintSuppressed({ shown: true }, now)).toBe(true);
   });
   it("hides for good once installed", () => {
     expect(isHintSuppressed({ installed: true }, now)).toBe(true);
@@ -58,16 +59,13 @@ describe("isHintSuppressed", () => {
 });
 
 describe("isInstallHintRoute", () => {
-  it("allows the public pages from the list", () => {
-    expect(isInstallHintRoute("/spartanops")).toBe(true);
-    expect(isInstallHintRoute("/events")).toBe(true);
-    expect(isInstallHintRoute("/events/abc123")).toBe(true);
-    expect(isInstallHintRoute("/me")).toBe(true);
-    expect(isInstallHintRoute("/me/games")).toBe(true);
+  it("allows the joined field and player screen only", () => {
+    expect(isInstallHintRoute("/field")).toBe(true);
+    expect(isInstallHintRoute("/misija")).toBe(true);
   });
   it("blocks game, admin, legal and utility routes", () => {
     for (const p of [
-      "/join", "/field", "/misija", "/capture", "/scan", "/spawn",
+      "/join", "/spartanops", "/events", "/events/abc123", "/me", "/me/games", "/capture", "/scan", "/spawn",
       "/admin-pregled", "/events/manage", "/reset-password",
       "/privacy", "/terms", "/print", "/", "/k", "/s",
     ]) {
