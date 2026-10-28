@@ -15,9 +15,8 @@ import {
 } from "@/lib/install-prompt";
 
 /**
- * Soft, dismissible "add to home screen" reminder for new mobile visitors.
- * Appears late (20 s into the session), only on a few public pages, never
- * during a game, and goes away for 30 days (or for good once installed).
+ * One-time mobile installation reminder after field entry, reusing the
+ * existing instruction sheet and footer help action.
  */
 
 const PANEL = "#13160f";
@@ -251,7 +250,7 @@ export default function InstallHint() {
     return () => window.removeEventListener(ACTIVE_SESSION_EVENT, changed);
   }, []);
 
-  // Decide once per page load, after the 20 s session mark.
+  // Decide after field entry and the existing 20 s visit mark.
   useEffect(() => {
     if (typeof window === "undefined") return;
     if (shownThisLoad.current) return;

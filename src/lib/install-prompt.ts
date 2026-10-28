@@ -92,6 +92,8 @@ export function getVisitStart(now = Date.now()): number {
 export function hasActiveGameSession(): boolean {
   if (typeof window === "undefined") return false;
   try {
+    const entry = JSON.parse(localStorage.getItem("spartanops:field-entry") ?? "null");
+    if (typeof entry?.accountId === "string" && typeof entry?.token === "string" && entry.token) return true;
     const raw = localStorage.getItem("spartanops.active_session");
     if (!raw) return false;
     const s = JSON.parse(raw) as { lobbyId?: string; authenticated?: boolean };
