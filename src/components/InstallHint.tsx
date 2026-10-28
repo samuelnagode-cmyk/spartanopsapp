@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useLocation } from "@tanstack/react-router";
 import { useLang } from "@/lib/i18n";
+import { ACTIVE_SESSION_EVENT } from "@/lib/active-session";
 import {
   getVisitStart,
   hasActiveGameSession,
@@ -14,9 +15,8 @@ import {
 } from "@/lib/install-prompt";
 
 /**
- * Soft, dismissible "add to home screen" reminder for new mobile visitors.
- * Appears late (20 s into the session), only on a few public pages, never
- * during a game, and goes away for 30 days (or for good once installed).
+ * One-time mobile installation reminder after field entry, reusing the
+ * existing instruction sheet and footer help action.
  */
 
 const PANEL = "#13160f";
@@ -77,8 +77,8 @@ export function InstallSheet({ en, platform, canPromptNatively, onNativeInstall,
         </ol>
         <p style={{ ...step, color: MUTED, marginTop: 14 }}>
           {en
-            ? "The first time you open it, sign in again (on iPhone the app keeps its own sign-in). Install it before the game, not at the field and not during a game."
-            : "Ob prvem odprtju se v aplikaciji prijavi znova (na iPhonu ima svoj prostor za prijavo). Namesti jo pred igro, ne na terenu in ne med igro."}
+          ? "On iPhone, the installed app may have separate sign-in storage. If asked, join your field once in the installed app."
+            : "Na iPhonu ima nameščena aplikacija lahko ločeno prijavo. Če te vpraša, v nameščeni aplikaciji enkrat znova vstopi na poligon."}
         </p>
       </>
     );
@@ -193,8 +193,8 @@ export function InstallHintCard({ en, canPromptNatively, onPrimary, onDismiss, f
       </p>
       <p style={{ margin: 0, marginBottom: 12, fontSize: 14, lineHeight: 1.55, color: MUTED }}>
         {en
-          ? "The website works fine without installing. If you add it to your home screen it opens full screen and stays one tap away, even if you close the browser by accident in the forest."
-          : "Spletna stran deluje tudi brez namestitve. Če jo dodaš na začetni zaslon, se odpre čez cel zaslon in je vedno pri roki, tudi če v gozdu po nesreči zapreš brskalnik."}
+          ? "Install SpartanOps for quick access during the game"
+          : "Namesti SpartanOps za hiter dostop med igro"}
       </p>
       <div style={{ display: "grid", gap: 6 }}>
         <button
@@ -242,27 +242,35 @@ export default function InstallHint() {
   const [cardVisible, setCardVisible] = useState(false);
   const [sheetOpen, setSheetOpen] = useState(false);
   const shownThisLoad = useRef(false);
+  const [sessionRevision, setSessionRevision] = useState(0);
 
-  // Decide once per page load, after the 20 s session mark.
+  useEffect(() => {
+    const changed = () => setSessionRevision((n) => n + 1);
+    window.addEventListener(ACTIVE_SESSION_EVENT, changed);
+    return () => window.removeEventListener(ACTIVE_SESSION_EVENT, changed);
+  }, []);
+
+  // Decide after field entry and the existing 20 s visit mark.
   useEffect(() => {
     if (typeof window === "undefined") return;
     if (shownThisLoad.current) return;
     if (platform === "other" || standalone || installed) return;
     if (!isInstallHintRoute(pathname)) return;
     if (isHintSuppressed(readInstallHint(), Date.now())) return;
-    if (hasActiveGameSession()) return;
+    if (!hasActiveGameSession()) return;
 
     const wait = Math.max(0, getVisitStart() + VISIT_MIN_MS - Date.now());
     const timer = window.setTimeout(() => {
       if (shownThisLoad.current) return;
       // Re-check the volatile conditions at show time.
       if (isHintSuppressed(readInstallHint(), Date.now())) return;
-      if (hasActiveGameSession()) return;
+      if (!hasActiveGameSession()) return;
       shownThisLoad.current = true;
+      writeInstallHint({ shown: true });
       setCardVisible(true);
     }, wait);
     return () => window.clearTimeout(timer);
-  }, [pathname, platform, standalone, installed]);
+  }, [pathname, platform, standalone, installed, sessionRevision]);
 
   // Footer help event reopens the sheet on demand.
   useEffect(() => {

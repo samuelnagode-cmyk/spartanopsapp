@@ -9,6 +9,7 @@ import MissionInProgressModal from "@/components/MissionInProgressModal";
 import InstallHint from "@/components/InstallHint";
 import SpartacusGpsGate from "@/components/SpartacusGpsGate";
 import appCss from "../styles.css?url";
+import { registerPwa } from "@/lib/pwa-registration";
 
 function NotFoundComponent() {
   return (
@@ -83,6 +84,7 @@ function RootShell({ children }: { children: React.ReactNode }) {
 
 function RootComponent() {
   const { pathname } = useLocation();
+  useEffect(() => { void registerPwa(); }, []);
   useEffect(() => {
     if (typeof document === "undefined") return;
     document.body.classList.add("airsoft-route");
