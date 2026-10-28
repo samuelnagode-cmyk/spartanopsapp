@@ -121,6 +121,8 @@ export default function MissionInProgressModal() {
   const en = lang === "en";
   const [lobbyId, setLobbyId] = useState<string | null>(null);
   const [show, setShow] = useState(false);
+  // Only the app's cold entry point auto-resumes; ordinary navigation stays unchanged.
+  const coldEntry = useRef(["/", "/spartanops", "/join"].includes(pathname));
 
   const suppressed =
     pathname.startsWith("/misija") ||
@@ -129,7 +131,7 @@ export default function MissionInProgressModal() {
     pathname.startsWith("/spawn") ||
     pathname.startsWith("/admin-pregled") ||
     pathname.startsWith("/field") ||
-    pathname.startsWith("/join");
+    (pathname.startsWith("/join") && !coldEntry.current);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -146,7 +148,12 @@ export default function MissionInProgressModal() {
         .eq("field_id", lobbyId)
         .maybeSingle();
       if (cancelled) return;
-      if ((data as any)?.status === "active") {
+      if (data?.status === "active") {
+        if (coldEntry.current) {
+          coldEntry.current = false;
+          void navigate({ to: "/misija", search: { field: lobbyId }, replace: true });
+          return;
+        }
         // Session-scoped dismissal window: 5 minutes.
         try {
           const raw = sessionStorage.getItem(DISMISS_KEY);
@@ -157,7 +164,7 @@ export default function MissionInProgressModal() {
     };
     check();
     return () => { cancelled = true; };
-  }, [lobbyId, suppressed]);
+  }, [lobbyId, suppressed, navigate]);
 
   if (!show || !lobbyId) return null;
 

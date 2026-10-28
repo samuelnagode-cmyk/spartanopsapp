@@ -557,6 +557,11 @@ function MisijaPageInner() {
     try { localStorage.setItem(meCacheKey(field, sessionId), JSON.stringify(dbMe)); } catch { /* ignore */ }
   }, [dbMe, field, sessionId, preview]);
 
+  useEffect(() => {
+    if (preview || marshalMode || !dbMe || !meResolved || !stateFresh || !state) return;
+    saveActiveSession(field, { team: dbMe.assigned_team, currentGame: state.match_started_at, status: state.status });
+  }, [preview, marshalMode, field, dbMe, meResolved, stateFresh, state?.match_started_at, state?.status]);
+
 
   const syncServerClock = async () => {
     const before = Date.now();
