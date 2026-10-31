@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useLocation, useNavigate } from "@tanstack/react-router";
 import { supabase } from "@/integrations/supabase/client";
+import { isFreshActiveSession } from "@/lib/active-session";
 import { useLang } from "@/lib/i18n";
 
 const ACTIVE_SESSION_KEY = "spartanops.active_session";
@@ -11,7 +12,7 @@ const PANEL = "#13160f";
 const INK = "#ece3c4";
 const MUTED = "rgba(236,227,196,0.65)";
 
-type ActiveSession = { lobbyId: string; authenticated: boolean };
+type ActiveSession = { lobbyId: string; authenticated: boolean; at?: number };
 
 function loadLobbyId(): string | null {
   if (typeof window === "undefined") return null;
@@ -19,7 +20,9 @@ function loadLobbyId(): string | null {
     const raw = localStorage.getItem(ACTIVE_SESSION_KEY);
     if (!raw) return null;
     const s = JSON.parse(raw) as ActiveSession;
-    return s && s.authenticated && s.lobbyId ? s.lobbyId : null;
+    // Stale records are ignored, not deleted: other readers keep their behaviour.
+    if (!s || !s.authenticated || !s.lobbyId) return null;
+    return isFreshActiveSession(s, Date.now()) ? s.lobbyId : null;
   } catch { return null; }
 }
 
@@ -122,7 +125,7 @@ export default function MissionInProgressModal() {
   const [lobbyId, setLobbyId] = useState<string | null>(null);
   const [show, setShow] = useState(false);
   // Only the app's cold entry point auto-resumes; ordinary navigation stays unchanged.
-  const coldEntry = useRef(["/", "/spartanops", "/join"].includes(pathname));
+  const coldEntry = useRef(["/", "/spartanops"].includes(pathname));
 
   const suppressed =
     pathname.startsWith("/misija") ||
@@ -131,7 +134,7 @@ export default function MissionInProgressModal() {
     pathname.startsWith("/spawn") ||
     pathname.startsWith("/admin-pregled") ||
     pathname.startsWith("/field") ||
-    (pathname.startsWith("/join") && !coldEntry.current);
+    pathname.startsWith("/join");
 
   useEffect(() => {
     if (typeof window === "undefined") return;
