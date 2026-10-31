@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useLocation, useNavigate } from "@tanstack/react-router";
 import { supabase } from "@/integrations/supabase/client";
+import { isFreshActiveSession } from "@/lib/active-session";
 import { useLang } from "@/lib/i18n";
 
 const ACTIVE_SESSION_KEY = "spartanops.active_session";
