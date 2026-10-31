@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { saveActiveSession } from "../src/lib/active-session";
+import { ACTIVE_SESSION_MAX_AGE_MS, isFreshActiveSession, saveActiveSession } from "../src/lib/active-session";
 
 afterEach(() => vi.unstubAllGlobals());
 
