@@ -1,9 +1,10 @@
-import { useState, type CSSProperties, type FormEvent } from "react";
+import { useEffect, useRef, useState, type CSSProperties, type FormEvent } from "react";
 import { useNavigate } from "@tanstack/react-router";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
 import { useLang } from "@/lib/i18n";
 import { safeNext } from "@/lib/player-validation";
+import { friendlyAuthError } from "@/lib/auth-errors";
 
 const BG = "#0b0d09";
 const PANEL = "#13160f";
@@ -81,12 +82,48 @@ export function PlayerAuth({ next, onDone, initialTab = "signin", rsvp, asMarsha
   const [password, setPassword] = useState("");
   const [show, setShow] = useState(false);
   const [err, setErr] = useState<string | null>(null);
+  const [errKind, setErrKind] = useState<"unconfirmed" | "other">("other");
   const [msg, setMsg] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [justSignedUp, setJustSignedUp] = useState(false);
+  const [resendBusy, setResendBusy] = useState(false);
+  const [cooldown, setCooldown] = useState(0);
+  const cooldownRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  useEffect(() => () => { if (cooldownRef.current) clearInterval(cooldownRef.current); }, []);
+
+  // One helper for both sign-up paths and the resend, so the confirmation
+  // link stays byte-for-byte identical to what it was before.
+  const confirmRedirect = () => {
+    if (asMarshal) return `${window.location.origin}/marshal-account`;
+    const n = safeNext(next);
+    const qs = new URLSearchParams();
+    if (n) qs.set("next", n);
+    if (rsvp === "going" || rsvp === "maybe") qs.set("rsvp", rsvp);
+    const q = qs.toString();
+    return `${window.location.origin}/me${q ? `?${q}` : ""}`;
+  };
+
+  const resend = async () => {
+    const em = email.trim();
+    if (!em) { setErr(friendlyAuthError({ code: "email_address_invalid" }, en).text); return; }
+    setResendBusy(true); setErr(null); setMsg(null);
+    const { error } = await supabase.auth.resend({ type: "signup", email: em, options: { emailRedirectTo: confirmRedirect() } });
+    setResendBusy(false);
+    if (error) { setErr(friendlyAuthError(error, en).text); return; }
+    setMsg(en ? "Sent. If it does not arrive, check your spam folder." : "Poslano. Če je ni, poglej med neželeno pošto.");
+    setCooldown(60);
+    cooldownRef.current = setInterval(() => {
+      setCooldown((c) => {
+        if (c <= 1) { if (cooldownRef.current) clearInterval(cooldownRef.current); cooldownRef.current = null; return 0; }
+        return c - 1;
+      });
+    }, 1000);
+  };
 
   const submit = async (e: FormEvent) => {
     e.preventDefault();
-    setErr(null); setMsg(null);
+    setErr(null); setMsg(null); setErrKind("other"); setJustSignedUp(false);
     if (password.length < 8) { setErr(en ? "Password must be at least 8 characters." : "Geslo mora imeti vsaj 8 znakov."); return; }
     setBusy(true);
     try {
