@@ -129,7 +129,7 @@ export function PlayerAuth({ next, onDone, initialTab = "signin", rsvp, asMarsha
     try {
       if (tab === "signin") {
         const { data, error } = await supabase.auth.signInWithPassword({ email: email.trim(), password });
-        if (error) { setErr(error.message); return; }
+        if (error) { const f = friendlyAuthError(error, en); setErr(f.text); setErrKind(f.kind); return; }
         if (asMarshal && data.user) {
           const { data: acct } = await (supabase as unknown as SupabaseClient)
             .from("spartanops_accounts").select("field_password_changed_at").eq("id", data.user.id).maybeSingle();
@@ -141,39 +141,40 @@ export function PlayerAuth({ next, onDone, initialTab = "signin", rsvp, asMarsha
         if (!b) { setErr(en ? "Field / club name is required." : "Ime poligona / kluba je obvezno."); return; }
         const { data, error } = await supabase.auth.signUp({
           email: email.trim(), password,
-          options: { emailRedirectTo: `${window.location.origin}/marshal-account`, data: { business_name: b } },
+          options: { emailRedirectTo: confirmRedirect(), data: { business_name: b } },
         });
-        if (error) { setErr(error.message); return; }
+        if (error) { const f = friendlyAuthError(error, en); setErr(f.text); setErrKind(f.kind); return; }
         if (data.session && data.user) {
           const { error: insErr } = await (supabase as unknown as SupabaseClient)
             .from("spartanops_accounts").insert({ id: data.user.id, business_name: b });
-          if (insErr) { setErr(insErr.message); return; }
+          if (insErr) { setErr(friendlyAuthError(insErr, en).text); return; }
           onDone?.();
-        } else setMsg(en
-          ? "Account created. Check your email and click the confirmation link before signing in."
-          : "Račun ustvarjen. Preveri e-pošto in klikni potrditveno povezavo, preden se prijaviš.");
+        } else {
+          setJustSignedUp(true);
+          setMsg(en
+            ? "Account created. Check your email and click the confirmation link before signing in. No email? Check your spam folder."
+            : "Račun ustvarjen. Preveri e-pošto in klikni potrditveno povezavo, preden se prijaviš. Ni e-pošte? Poglej med neželeno pošto.");
+        }
       } else {
-        const n = safeNext(next);
-        const qs = new URLSearchParams();
-        if (n) qs.set("next", n);
-        if (rsvp === "going" || rsvp === "maybe") qs.set("rsvp", rsvp);
-        const q = qs.toString();
         // No business_name in metadata: a player sign-up never creates a field.
         const { data, error } = await supabase.auth.signUp({
           email: email.trim(), password,
-          options: { emailRedirectTo: `${window.location.origin}/me${q ? `?${q}` : ""}` },
+          options: { emailRedirectTo: confirmRedirect() },
         });
-        if (error) { setErr(error.message); return; }
+        if (error) { const f = friendlyAuthError(error, en); setErr(f.text); setErrKind(f.kind); return; }
         if (data.session) onDone?.();
-        else setMsg(en
-          ? "Account created. Check your email and click the confirmation link before signing in."
-          : "Račun ustvarjen. Preveri e-pošto in klikni potrditveno povezavo, preden se prijaviš.");
+        else {
+          setJustSignedUp(true);
+          setMsg(en
+            ? "Account created. Check your email and click the confirmation link before signing in. No email? Check your spam folder."
+            : "Račun ustvarjen. Preveri e-pošto in klikni potrditveno povezavo, preden se prijaviš. Ni e-pošte? Poglej med neželeno pošto.");
+        }
       }
     } finally { setBusy(false); }
   };
 
   const tabBtn = (id: "signin" | "signup", label: string) => (
-    <button type="button" onClick={() => { setTab(id); setErr(null); setMsg(null); }} aria-pressed={tab === id}
+    <button type="button" onClick={() => { setTab(id); setErr(null); setMsg(null); setErrKind("other"); setJustSignedUp(false); }} aria-pressed={tab === id}
       style={{ flex: 1, padding: "10px 6px", background: tab === id ? `${ACCENT}22` : "transparent", color: tab === id ? ACCENT : INK,
         border: `1px solid ${tab === id ? ACCENT : `${ACCENT}33`}`, fontFamily: "'Michroma', monospace", fontSize: 10, letterSpacing: "0.14em", textTransform: "uppercase", cursor: "pointer" }}>
       {label}
@@ -203,6 +204,16 @@ export function PlayerAuth({ next, onDone, initialTab = "signin", rsvp, asMarsha
         )}
         {err && <p style={{ color: ERR, fontSize: 12, marginBottom: 10, textAlign: "center" }}>{err}</p>}
         {msg && <p style={{ color: OK, fontSize: 12, marginBottom: 10, textAlign: "center", fontFamily: "monospace" }}>{msg}</p>}
+        {(justSignedUp || errKind === "unconfirmed") && (
+          <div style={{ textAlign: "center", marginBottom: 12 }}>
+            <button type="button" onClick={resend} disabled={resendBusy || cooldown > 0}
+              style={{ ...linkBtn, minHeight: 44, padding: "10px 0", opacity: resendBusy || cooldown > 0 ? 0.6 : 1 }}>
+              {cooldown > 0
+                ? (en ? `Again in ${cooldown} s` : `Znova čez ${cooldown} s`)
+                : (en ? "Send the confirmation email again" : "Pošlji potrditveno e-pošto znova")}
+            </button>
+          </div>
+        )}
         <button type="submit" disabled={busy} style={{ ...btnStyle, opacity: busy ? 0.6 : 1 }}>
           {tab === "signin" ? (en ? "Sign in" : "Prijava") : (en ? "Create account" : "Ustvari račun")}
         </button>
