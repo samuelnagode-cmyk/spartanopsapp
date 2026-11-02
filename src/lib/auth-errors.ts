@@ -35,11 +35,9 @@ export function friendlyAuthError(
     );
   if (
     code === "weak_password" ||
-    has("weak password") ||
-    has("password is weak") ||
     has("leaked") ||
     has("known password") ||
-    (has("password") && has("strength"))
+    (has("password") && (has("weak") || has("strength")))
   )
     return pick(
       "Geslo je prešibko ali preveč znano. Izberi daljše, manj običajno geslo (vsaj 8 znakov).",
