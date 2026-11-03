@@ -4,7 +4,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
 import { useLang } from "@/lib/i18n";
 import { safeNext } from "@/lib/player-validation";
-import { friendlyAuthError } from "@/lib/auth-errors";
+import { friendlyAuthError, isExistingAccountSignup } from "@/lib/auth-errors";
 
 const BG = "#0b0d09";
 const PANEL = "#13160f";
@@ -144,6 +144,11 @@ export function PlayerAuth({ next, onDone, initialTab = "signin", rsvp, asMarsha
           options: { emailRedirectTo: confirmRedirect(), data: { business_name: b } },
         });
         if (error) { const f = friendlyAuthError(error, en); setErr(f.text); setErrKind(f.kind); return; }
+        if (!data.session && isExistingAccountSignup(data.user)) {
+          setErr(friendlyAuthError({ code: "user_already_exists" }, en).text);
+          setJustSignedUp(false);
+          return;
+        }
         if (data.session && data.user) {
           const { error: insErr } = await (supabase as unknown as SupabaseClient)
             .from("spartanops_accounts").insert({ id: data.user.id, business_name: b });
@@ -162,6 +167,11 @@ export function PlayerAuth({ next, onDone, initialTab = "signin", rsvp, asMarsha
           options: { emailRedirectTo: confirmRedirect() },
         });
         if (error) { const f = friendlyAuthError(error, en); setErr(f.text); setErrKind(f.kind); return; }
+        if (!data.session && isExistingAccountSignup(data.user)) {
+          setErr(friendlyAuthError({ code: "user_already_exists" }, en).text);
+          setJustSignedUp(false);
+          return;
+        }
         if (data.session) onDone?.();
         else {
           setJustSignedUp(true);

@@ -4,6 +4,10 @@
 
 export type FriendlyAuthError = { text: string; kind: "unconfirmed" | "other" };
 
+export function isExistingAccountSignup(user: { identities?: unknown } | null | undefined): boolean {
+  return user !== null && typeof user === "object" && Array.isArray(user.identities) && user.identities.length === 0;
+}
+
 export function friendlyAuthError(
   err: { code?: string; message?: string; status?: number } | null | undefined,
   en: boolean,

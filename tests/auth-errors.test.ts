@@ -1,5 +1,35 @@
 import { describe, it, expect } from "vitest";
-import { friendlyAuthError } from "../src/lib/auth-errors";
+import { friendlyAuthError, isExistingAccountSignup } from "../src/lib/auth-errors";
+
+describe("isExistingAccountSignup", () => {
+  it("recognizes an empty identities array", () => {
+    expect(isExistingAccountSignup({ identities: [] })).toBe(true);
+  });
+
+  it("does not flag a user with one identity", () => {
+    expect(isExistingAccountSignup({ identities: [{}] })).toBe(false);
+  });
+
+  it("does not flag missing identities", () => {
+    expect(isExistingAccountSignup({})).toBe(false);
+  });
+
+  it("does not flag null identities", () => {
+    expect(isExistingAccountSignup({ identities: null })).toBe(false);
+  });
+
+  it("does not flag non-array identities", () => {
+    expect(isExistingAccountSignup({ identities: "x" })).toBe(false);
+  });
+
+  it("does not flag a null user", () => {
+    expect(isExistingAccountSignup(null)).toBe(false);
+  });
+
+  it("does not flag an undefined user", () => {
+    expect(isExistingAccountSignup(undefined)).toBe(false);
+  });
+});
 
 const RAW_SNIPPETS = [
   "Invalid login credentials",
