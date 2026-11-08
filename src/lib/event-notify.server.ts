@@ -10,7 +10,8 @@ export const NOTIFY_FROM = "SpartanOps <notify@spartanopsapp.com>";
 const GATEWAY_URL = "https://connector-gateway.lovable.dev/resend";
 export const BATCH_SIZE = 100;
 const TIMEOUT_MS = 8000;
-const DUPLICATE_WINDOW_MS = 2 * 60 * 1000;
+// Protects only against a double-tap or automatic retry, not a deliberate second change.
+export const DUPLICATE_WINDOW_MS = 20 * 1000;
 
 export type NoticeKind = "cancelled" | "moved";
 export type NoticeArgs = {

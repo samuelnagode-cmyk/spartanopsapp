@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { buildNoticeEmail, sendEventNotice, BATCH_SIZE } from "../src/lib/event-notify.server";
+import { buildNoticeEmail, sendEventNotice, BATCH_SIZE, DUPLICATE_WINDOW_MS } from "../src/lib/event-notify.server";
 
 const EV = { id: "11111111-1111-1111-1111-111111111111", title: "Night <b>op</b>", tz: "Europe/Ljubljana", status: "cancelled", cancel_reason: "Rain & <script>x</script>" };
 const env = { LOVABLE_API_KEY: "k1", RESEND_API_KEY: "k2" };
@@ -9,6 +9,7 @@ type Rsvp = { email: string; status: "going" | "maybe"; notify: boolean };
 /** Fake db: the recipients RPC mimics the SQL filter (going/maybe + notify on). */
 function fakeDb(rsvps: Rsvp[], recentNotice = false) {
   const inserts: unknown[] = [];
+  const gte = vi.fn();
   const chain = (table: string) => {
     const q: Record<string, unknown> = {};
     const self = new Proxy(q, {
@@ -16,6 +17,7 @@ function fakeDb(rsvps: Rsvp[], recentNotice = false) {
         if (prop === "insert") return (row: unknown) => { inserts.push(row); return Promise.resolve({ error: null }); };
         if (prop === "maybeSingle") return () => Promise.resolve({ data: table === "spartanops_events" ? EV : null });
         if (prop === "limit") return () => Promise.resolve({ data: recentNotice ? [{ id: "x" }] : [] });
+        if (prop === "gte") return (column: string, value: string) => { gte(column, value); return self; };
         return () => self;
       },
     });
@@ -25,7 +27,7 @@ function fakeDb(rsvps: Rsvp[], recentNotice = false) {
     data: rsvps.filter((r) => r.notify && (r.status === "going" || r.status === "maybe")).map((r, i) => ({ user_id: String(i), email: r.email })),
     error: null,
   }));
-  return { db: { from: chain, rpc }, inserts, rpc };
+  return { db: { from: chain, rpc }, inserts, rpc, gte };
 }
 
 const okFetch = () => vi.fn(async () => new Response("{}", { status: 200 }));
@@ -80,12 +82,28 @@ describe("sendEventNotice", () => {
     expect(rpc).not.toHaveBeenCalled();
   });
 
-  it("duplicate within 2 minutes sends nothing", async () => {
+  it("duplicate inside the window sends nothing", async () => {
     const { db } = fakeDb([{ email: "a@x.test", status: "going", notify: true }], true);
     const f = okFetch();
     const r = await sendEventNotice({ eventId: EV.id, kind: "cancelled" }, { db, fetch: f as never, env });
     expect(r.reason).toBe("duplicate");
     expect(f).not.toHaveBeenCalled();
+  });
+
+  it("uses a 20000 ms duplicate window", () => {
+    expect(DUPLICATE_WINDOW_MS).toBe(20000);
+  });
+
+  it("looks up notices with a cutoff 20 seconds in the past", async () => {
+    vi.useFakeTimers();
+    try {
+      vi.setSystemTime(new Date("2026-11-08T17:51:00Z"));
+      const { db, gte } = fakeDb([], true);
+      await sendEventNotice({ eventId: EV.id, kind: "moved" }, { db, fetch: okFetch() as never, env });
+      expect(gte).toHaveBeenCalledExactlyOnceWith("created_at", "2026-11-08T17:50:40.000Z");
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   it("a failing send is counted as failed and does not throw", async () => {

@@ -348,7 +348,9 @@ function Row({ e, lang, onChange, onEdit, onDuplicate }: { e: EventFull & { last
 type NoticeResultLite = { recipients: number; sent: number; failed: number; reason?: string };
 
 function noticeLineText(n: NoticeResultLite, en: boolean): string {
+  if (n.reason === "duplicate") return en ? "No notice sent: another one for this event went out a moment ago. Wait 20 seconds and save again, or tell the players yourself." : "Obvestilo ni bilo poslano: pred trenutkom je že odšlo drugo za ta dogodek. Počakaj 20 sekund in shrani znova, ali pa igralcem sporoči sam.";
   if (n.reason === "not_configured") return en ? "Email is not set up yet, nobody was emailed. Please tell the players yourself." : "E-pošta še ni nastavljena, nihče ni dobil e-pošte. Sporoči igralcem sam.";
+  if (n.recipients === 0) return en ? "Nobody was emailed: none of the players has notifications on." : "Nihče ni bil obveščen: nobeden od igralcev nima vklopljenih obvestil.";
   let line = en ? `Notice sent: ${n.sent} of ${n.recipients}` : `Obvestilo poslano: ${n.sent} od ${n.recipients}`;
   if (n.failed > 0) line += en ? ` · ${n.failed} failed, please tell them yourself` : ` · ${n.failed} ni uspelo, sporoči jim sam`;
   return line;
