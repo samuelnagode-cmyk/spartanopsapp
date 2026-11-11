@@ -51,6 +51,7 @@ import {
 import { spartanopsUpsertCheckin, spartanopsAdminGetRoster, spartanopsGetServerTime } from "@/lib/spartanops-checkin.functions";
 import { spartanopsAdminVerify, spartanopsAdminReassignTeam } from "@/lib/spartanops-admin.functions";
 import { isStaleState } from "@/lib/game-state-sync";
+import { spartanopsTickScores } from "@/lib/spartanops-game.functions";
 import { matchClock } from "@/lib/match-clock";
 import { MatchClockCard } from "@/components/MatchClockCard";
 
@@ -2057,6 +2058,18 @@ function MarshalLobbyConsole({ lobby: initialLobby, marshalPassword, lobbyPasswo
     const t = setInterval(() => syncServerClock().catch(() => {}), 15000);
     return () => clearInterval(t);
   }, [gameState?.status, gameState?.match_started_at, getServerTimeFn]);
+
+  // Marshal screen drives the score tick so a match ends on target/time even when every player phone is dark.
+  const tickScores = useServerFn(spartanopsTickScores);
+  useEffect(() => {
+    if (gameState?.status !== "active" || !gameState.match_started_at || !lobby.id) return;
+    const tick = () => {
+      tickScores({ data: { fieldId: lobby.id } }).catch((error) => { console.warn("score tick failed", error); });
+    };
+    tick();
+    const t = setInterval(tick, 5000);
+    return () => clearInterval(t);
+  }, [gameState?.status, gameState?.match_started_at, lobby.id, tickScores]);
 
 
 
