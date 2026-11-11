@@ -20,7 +20,7 @@ import { MissionRulesAccordion, MissionDescriptionCard, CollapsibleCard } from "
 
 import { OfflineBanner } from "@/components/OfflineBanner";
 import { TacticalCompass } from "@/components/TacticalCompass";
-import { Crosshair, Shield, Phone, QrCode, MapPin, Headphones, Check, Users } from "lucide-react";
+import { Crosshair, Shield, Phone, QrCode, MapPin, Headphones, Check, Users, Lock, Skull } from "lucide-react";
 import { useLang, useT } from "@/lib/i18n";
 import { HudNotificationStack, useHudNotices, fillTemplate } from "@/components/HudNotificationStack";
 import { HudHistoryLog } from "@/components/HudHistoryLog";
@@ -47,7 +47,7 @@ export const Route = createFileRoute("/misija")({
       { name: "robots", content: "noindex,nofollow" },
     ],
   }),
-  validateSearch: (s: Record<string, unknown>): { field: string; point?: string; preview?: boolean; marshal?: boolean; preset?: string; pts?: string; deaths?: string; vis?: string; rsp?: string; teams?: string; big?: string } => {
+  validateSearch: (s: Record<string, unknown>): { field: string; point?: string; preview?: boolean; marshal?: boolean; preset?: string; pts?: string; deaths?: string; vis?: string; rsp?: string; teams?: string; big?: string; dead?: string } => {
     return {
       field: typeof s.field === "string" ? s.field : (typeof s.field_id === "string" ? s.field_id : "zeleni-raj"),
       point: typeof s.point === "string" || typeof s.point === "number" ? String(s.point) : undefined,
@@ -61,6 +61,8 @@ export const Route = createFileRoute("/misija")({
       rsp: s.rsp === 0 || s.rsp === "0" ? "0" : undefined,
       teams: s.teams === 3 || s.teams === "3" ? "3" : undefined,
       big: s.big === 1 || s.big === "1" ? "1" : undefined,
+      // Preview-only: dead=1 simulates a respawn lock ending 90 s after load.
+      dead: s.dead === 1 || s.dead === "1" ? "1" : undefined,
     };
   },
 
@@ -285,7 +287,7 @@ type PreviewFlags = { ptsOff?: boolean; deathsOff?: boolean; visTeam?: boolean; 
 function makePreviewState(field: string, preset?: string, flags?: PreviewFlags): GameState {
   const now = Date.now();
   const ended = preset === "ended";
-  const active = preset === "hud" || preset === "paused";
+  const active = preset === "hud" || preset === "active" || preset === "paused";
   const prestart = preset === "prestart";
   return {
     field_id: field,
@@ -510,7 +512,9 @@ function MisijaPageInner() {
   const { lang } = useLang();
   const t = useT();
   const en = lang === "en";
-  const { field: rawField, point: targetPoint, preview, marshal: marshalMode, preset, pts: previewPts, deaths: previewDeaths, vis: previewVis, rsp: previewRsp, teams: previewTeams, big: previewBig } = Route.useSearch();
+  const { field: rawField, point: targetPoint, preview, marshal: marshalMode, preset, pts: previewPts, deaths: previewDeaths, vis: previewVis, rsp: previewRsp, teams: previewTeams, big: previewBig, dead: previewDead } = Route.useSearch();
+  // Preview-only simulated respawn lock (?preview=1&dead=1): unlocks 90 s after load.
+  const [previewDeadUntil] = useState(() => (preview && previewDead === "1" ? Date.now() + 90_000 : 0));
 
   // Anti-cheat security alert: /scan sets this flag when a QR is opened
   // outside the in-app scanner. Surface a tactical warning on arrival.
@@ -1229,24 +1233,14 @@ function MisijaPageInner() {
 
   // 2) ACTIVE MATCH — only if the player already has a team. Otherwise fall through to team select.
   if ((state.status === "active" || state.status === "paused") && me.assigned_team !== "none" && !timerExpired) {
-    if (!preview && respawnUntil > currentTime) {
-      return (
-        <div style={{ background: BG, color: INK, minHeight: "100dvh" }}>
-          <OfflineBanner />
-          {reassignedBanner}
-        {warningOverlay}
-          <RespawnLockScreen until={respawnUntil} field={field} sessionId={sessionId} serverOffset={serverOffset} en={en} />
-          <AbortMissionButton field={field} en={en} settings={state.settings} />
-        </div>
-      );
-    }
+    const liveRespawnUntil = preview ? previewDeadUntil : (respawnUntil > currentTime ? respawnUntil : 0);
     return (
       <div style={{ background: BG, color: INK, minHeight: "100dvh" }}>
         <OfflineBanner />
         {reassignedBanner}
         {warningOverlay}
         {pauseOverlay}
-        <LiveMatch state={state} captures={captures} now={currentTime} roster={roster} myTeam={me.assigned_team} meId={me.id} meCallsign={me.callsign ?? ""} />
+        <LiveMatch state={state} captures={captures} now={currentTime} roster={roster} myTeam={me.assigned_team} meId={me.id} meCallsign={me.callsign ?? ""} respawnUntil={liveRespawnUntil} />
         <AbortMissionButton field={field} en={en} settings={state.settings} />
         {preview && <PreviewReturnButton />}
       </div>
@@ -1535,57 +1529,6 @@ function MarshalHudOverlay({ fieldId, en }: { fieldId: string; en: boolean }) {
     </>
   );
 }
-
-function RespawnLockScreen({ until, field, sessionId, serverOffset, en }: { until: number; field: string; sessionId: string; serverOffset: number; en: boolean }) {
-  const [left, setLeft] = useState(() => Math.max(0, Math.ceil((until - (Date.now() - serverOffset)) / 1000)));
-
-  useEffect(() => {
-    const tick = () => {
-      const next = Math.max(0, Math.ceil((until - (Date.now() - serverOffset)) / 1000));
-      setLeft(next);
-      if (next <= 0) {
-        try { localStorage.removeItem(respawnLockKey(field, sessionId)); } catch { /* ignore */ }
-      }
-    };
-    tick();
-    const timer = setInterval(tick, 1000);
-    return () => clearInterval(timer);
-  }, [until, field, sessionId, serverOffset]);
-
-  const mm = String(Math.floor(left / 60)).padStart(2, "0");
-  const ss = String(left % 60).padStart(2, "0");
-
-  return (
-    <div
-      className="fixed inset-0 z-[1100] flex flex-col items-center justify-center p-5 text-center"
-      style={{ background: "radial-gradient(circle at 50% 0%, rgba(224,176,78,0.16), rgba(11,13,9,0.98) 42%, #050604 100%)", color: INK }}
-    >
-      <p style={{ color: ACCENT, fontFamily: "monospace", fontSize: 11, letterSpacing: "0.32em", textTransform: "uppercase", marginBottom: 10 }}>
-        SpartanOps
-      </p>
-      <h2 style={{ fontFamily: "'Michroma', monospace", color: ACCENT, fontSize: "clamp(24px, 8vw, 54px)", letterSpacing: "0.12em", lineHeight: 1.1, textShadow: `0 0 28px ${ACCENT}66` }}>
-        {en ? "RESPAWN LOCK" : "RESPAWN ZAKLEP"}
-      </h2>
-      <p className="mt-4 max-w-lg font-mono text-[12px] uppercase tracking-[0.18em]" style={{ color: MUTED, lineHeight: 1.8 }}>
-        {left > 0
-          ? (en ? "Remain on this mission screen until your cooldown expires." : "Ostanite na tem zaslonu misije, dokler se cooldown ne izteče.")
-          : (en ? "Cooldown complete, rejoining the mission." : "Cooldown zaključen, vračanje v misijo.")}
-      </p>
-      <div className="my-7 font-bold" style={{ fontFamily: "'Michroma', monospace", fontSize: "clamp(72px, 22vw, 150px)", color: ACCENT, lineHeight: 0.95, textShadow: `0 0 34px ${ACCENT}55` }}>
-        {mm}:{ss}
-      </div>
-      <div style={{ width: "min(520px, 100%)", border: `1px solid ${ACCENT}55`, background: "rgba(0,0,0,0.35)", padding: "12px 14px" }}>
-        <p className="font-mono text-[11px]" style={{ color: INK, lineHeight: 1.7, margin: 0 }}>
-          {en
-            ? "Leaving and re-entering the mission will not bypass this timer. SpartanOps keeps the lock on this mission until re-entry is authorized."
-            : "Zapustitev strani in ponovni vstop v misijo ne obideta tega časovnika. SpartanOps zaklep drži na tej misiji do dovoljenega vstopa."}
-        </p>
-      </div>
-    </div>
-  );
-}
-
-
 
 function MissionFieldSubline({ missionName, fieldName, en }: { missionName: string; fieldName: string; en: boolean }) {
   const missionPart = missionName || fieldName || (en ? "Active Operation" : "Aktivna operacija");
@@ -3114,13 +3057,90 @@ function TacticalMap({ state, captures, en, hasPositions, missionName, timeLabel
 
 
 
-function ScanCodeButton({ paused, en }: { paused: boolean; en: boolean }) {
+function fmtMmSs(sec: number) {
+  return `${String(Math.floor(sec / 60)).padStart(2, "0")}:${String(sec % 60).padStart(2, "0")}`;
+}
+
+/** Seconds left until `until` (ms, server clock), ticking once a second. */
+function useRespawnSecondsLeft(until: number, skew: number) {
+  const calc = () => (until > 0 ? Math.max(0, Math.ceil((until - (Date.now() + skew)) / 1000)) : 0);
+  const [left, setLeft] = useState(calc);
+  const skewRef = useRef(skew);
+  skewRef.current = skew;
+  useEffect(() => {
+    const tick = () => setLeft(until > 0 ? Math.max(0, Math.ceil((until - (Date.now() + skewRef.current)) / 1000)) : 0);
+    tick();
+    if (until <= 0) return;
+    const id = setInterval(tick, 1000);
+    return () => clearInterval(id);
+  }, [until]);
+  return left;
+}
+
+const RESPAWN_READY = "#3ddc84";
+
+function RespawnBanner({ until, skew, en }: { until: number; skew: number; en: boolean }) {
+  // Remember the last running lock so the "ready" state survives the parent
+  // clearing the lock to 0 once it expires.
+  const [lastUntil, setLastUntil] = useState(0);
+  useEffect(() => { if (until > 0) setLastUntil(until); }, [until]);
+  const target = until > 0 ? until : lastUntil;
+  const left = useRespawnSecondsLeft(target, skew);
+  const [readyShown, setReadyShown] = useState(false);
+  const [hidden, setHidden] = useState(false);
+  useEffect(() => { setHidden(false); setReadyShown(false); }, [target]);
+  useEffect(() => {
+    if (target <= 0 || left > 0) return;
+    // Only show "ready" if the lock ended within the last few seconds.
+    if (Date.now() + skew - target > 5000) { setHidden(true); return; }
+    setReadyShown(true);
+    const id = setTimeout(() => setHidden(true), 5000);
+    return () => clearTimeout(id);
+  }, [left, target]); // eslint-disable-line react-hooks/exhaustive-deps
+  if (target <= 0 || hidden) return null;
+  if (left > 0) {
+    return (
+      <div className="mb-5 p-4 text-center" style={{ border: "1px solid #e05a3a", background: "rgba(224,90,58,0.08)" }}>
+        <p className="flex items-center justify-center gap-2 font-mono text-[12px] font-bold uppercase" style={{ color: "#f0a04b", letterSpacing: "0.2em", margin: 0 }}>
+          <Skull size={16} aria-hidden /> {en ? "WAIT TO RESPAWN" : "POČAKAJ NA RESPAWN"}
+        </p>
+        <div role="timer" className="my-2" style={{ fontFamily: "'Michroma', monospace", fontSize: 40, color: ACCENT, lineHeight: 1.1 }}>
+          {fmtMmSs(left)}
+        </div>
+        <p className="font-mono text-[11px]" style={{ color: MUTED, margin: 0, lineHeight: 1.6 }}>
+          {en ? "Scanning is locked until the timer ends." : "Skeniranje je zaklenjeno, dokler se čas ne izteče."}
+        </p>
+      </div>
+    );
+  }
+  if (!readyShown) return null;
+  return (
+    <div className="mb-5 p-4 text-center" style={{ border: `1px solid ${RESPAWN_READY}`, background: "rgba(61,220,132,0.08)" }}>
+      <div role="status">
+        <p className="font-mono text-[12px] font-bold uppercase" style={{ color: RESPAWN_READY, letterSpacing: "0.2em", margin: 0 }}>
+          {en ? "RESPAWN READY" : "RESPAWN PRIPRAVLJEN"}
+        </p>
+        <p className="font-mono text-[11px] mt-1" style={{ color: INK, margin: 0, lineHeight: 1.6 }}>
+          {en ? "You can scan sectors again." : "Spet lahko skeniraš sektorje."}
+        </p>
+      </div>
+    </div>
+  );
+}
+
+function ScanCodeButton({ paused, en, lockedUntil = 0, skew = 0 }: { paused: boolean; en: boolean; lockedUntil?: number; skew?: number }) {
   const t = useT();
   const navigate = useNavigate();
   const [open, setOpen] = useState(false);
+  const lockLeft = useRespawnSecondsLeft(lockedUntil, skew);
+  const locked = lockLeft > 0;
+  const lockedRef = useRef(locked);
+  lockedRef.current = locked;
+  useEffect(() => { if (locked) setOpen(false); }, [locked]);
 
   const handleDecode = useCallback((payload: ScanPayload) => {
     setOpen(false);
+    if (lockedRef.current) return;
     // King of the Hill reserved codes — no scan ticket, no field id.
     if (payload.kind === "koth_board") {
       navigate({ to: "/k", replace: true });
@@ -3148,6 +3168,33 @@ function ScanCodeButton({ paused, en }: { paused: boolean; en: boolean }) {
     navigate({ to: "/capture", search: { field: payload.fieldId, point: payload.point } as any, replace: true });
   }, [navigate]);
 
+
+  if (locked) {
+    const clock = fmtMmSs(lockLeft);
+    return (
+      <button
+        type="button"
+        aria-disabled="true"
+        aria-label={en ? `Scanning locked, respawn in ${clock}` : `Skeniranje zaklenjeno, respawn čez ${clock}`}
+        onClick={(e) => e.preventDefault()}
+        style={{
+          position: "fixed",
+          bottom: "calc(16px + env(safe-area-inset-bottom, 0px))",
+          right: "calc(16px + env(safe-area-inset-right, 0px))",
+          zIndex: 55,
+          display: "flex", alignItems: "center", gap: 8, minHeight: 48,
+          background: "rgba(11,13,9,0.85)", backdropFilter: "blur(8px)",
+          color: "rgba(224,176,78,0.45)", border: "1px solid rgba(224,176,78,0.28)",
+          borderRadius: 999, padding: "14px 20px",
+          fontFamily: "'Michroma', monospace", fontSize: 12, letterSpacing: "0.18em",
+          fontWeight: 700, cursor: "not-allowed", boxShadow: "none",
+        }}
+      >
+        <Lock size={18} aria-hidden />
+        <span aria-hidden>{clock}</span>
+      </button>
+    );
+  }
 
   return (
     <>
@@ -3189,7 +3236,9 @@ function ScanCodeButton({ paused, en }: { paused: boolean; en: boolean }) {
   );
 }
 
-function LiveMatch({ state, captures, now, roster, myTeam, meId, meCallsign }: { state: GameState; captures: Capture[]; now: number; roster: Checkin[]; myTeam: string; meId?: string; meCallsign?: string }) {
+function LiveMatch({ state, captures, now, roster, myTeam, meId, meCallsign, respawnUntil = 0 }: { state: GameState; captures: Capture[]; now: number; roster: Checkin[]; myTeam: string; meId?: string; meCallsign?: string; respawnUntil?: number }) {
+  // Offset between the server-corrected clock and this device clock.
+  const skew = now - Date.now();
 
   const deathLog = useDeathLog(state.field_id ?? "", roster);
   const deathsPublic = deathsEffectivelyPublic(state.settings);
@@ -3289,6 +3338,8 @@ function LiveMatch({ state, captures, now, roster, myTeam, meId, meCallsign }: {
         </button>
       )}
 
+      <RespawnBanner until={respawnUntil} skew={skew} en={en} />
+
       <h1
         className="text-center"
         style={{ fontFamily: "'Michroma', monospace", fontSize: 18, color: ACCENT, letterSpacing: "0.14em", textTransform: "uppercase", marginTop: 2 }}
@@ -3353,7 +3404,7 @@ function LiveMatch({ state, captures, now, roster, myTeam, meId, meCallsign }: {
       )}
 
       {/* In-app Scan Code button — the ONLY sanctioned capture path */}
-      <ScanCodeButton paused={state.status === "paused"} en={en} />
+      <ScanCodeButton paused={state.status === "paused"} en={en} lockedUntil={respawnUntil} skew={skew} />
 
       {/* Events | Players panel */}
       <div className="mt-6">

@@ -386,6 +386,17 @@ function SpawnPage() {
                     }}
                   />
                 </div>
+                <button
+                  type="button"
+                  onClick={() => navigate({ to: "/misija", search: { field: returnField }, replace: true })}
+                  className="mt-5 px-5 py-3 font-mono text-[11px] uppercase tracking-[0.22em]"
+                  style={{ background: "transparent", color: c, border: `1px solid ${c}`, cursor: "pointer", minHeight: 44 }}
+                >
+                  {en ? "SEE THE FIELD" : "POGLEJ STANJE NA POLIGONU"}
+                </button>
+                <p className="text-[11px] mt-3 font-mono" style={{ color: MUTED, lineHeight: 1.6 }}>
+                  {en ? "The timer keeps running. Scanning stays locked until it ends." : "Časovnik teče naprej. Skeniranje ostane zaklenjeno, dokler se ne izteče."}
+                </p>
               </>
             ) : (
               <>
