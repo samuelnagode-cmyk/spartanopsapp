@@ -98,7 +98,7 @@ export function HudHistoryLog({
         }}
       >
         <span>▌ {t("hudLog.title")}</span>
-        {showDeaths && (
+        {showDeaths && deaths.length > 0 && (
           <div style={{ marginLeft: "auto", display: "inline-flex", border: `1px solid ${ACCENT}55` }}>
             {(["all", "sectors"] as const).map((f) => {
               const active = filter === f;
@@ -200,13 +200,6 @@ export function HudHistoryLog({
           >
             {showAll ? (en ? "Hide" : "Skrij") : `${en ? "Show all" : "Pokaži vse"} (${rows.length})`}
           </button>
-        )}
-        {showDeaths && (
-          <p style={{ color: MUTED, fontFamily: "monospace", fontSize: 10, lineHeight: 1.5, padding: "6px 12px 8px", margin: 0, borderTop: "1px solid rgba(236,227,196,0.05)" }}>
-            {en
-              ? "Deaths shown are those this phone saw live; some may be missing if the app was closed."
-              : "Prikazane so smrti, ki jih je ta telefon videl v živo; če je bila aplikacija zaprta, katera manjka."}
-          </p>
         )}
 
       </div>

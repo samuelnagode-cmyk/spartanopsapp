@@ -500,6 +500,41 @@ export type Database = {
         }
         Relationships: []
       }
+      spartanops_death_events: {
+        Row: {
+          callsign: string
+          checkin_id: string
+          died_at: string
+          field_id: string
+          id: string
+          team: string
+        }
+        Insert: {
+          callsign: string
+          checkin_id: string
+          died_at?: string
+          field_id: string
+          id?: string
+          team: string
+        }
+        Update: {
+          callsign?: string
+          checkin_id?: string
+          died_at?: string
+          field_id?: string
+          id?: string
+          team?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "spartanops_death_events_checkin_id_fkey"
+            columns: ["checkin_id"]
+            isOneToOne: false
+            referencedRelation: "spartanops_checkins"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       spartanops_event_notices: {
         Row: {
           created_at: string

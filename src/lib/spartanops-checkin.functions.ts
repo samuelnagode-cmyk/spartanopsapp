@@ -371,9 +371,22 @@ export const spartanopsSetRespawnLock = createServerFn({ method: "POST" })
     if (data.seconds > 0) {
       const { data: current } = await supabaseAdmin
         .from("spartanops_checkins")
-        .select("death_count")
+        .select("death_count, callsign, assigned_team")
         .eq("id", (secret as any).checkin_id)
         .maybeSingle();
+      // Shared death log for the History Log. Never allowed to affect respawning.
+      try {
+        const who = current as { callsign?: string | null; assigned_team?: string | null } | null;
+        const { error: logErr } = await supabaseAdmin.from("spartanops_death_events").insert({
+          field_id: data.fieldId,
+          checkin_id: String((secret as unknown as { checkin_id: string }).checkin_id),
+          callsign: String(who?.callsign ?? "—"),
+          team: String(who?.assigned_team ?? "none"),
+        });
+        if (logErr) console.error("death event log failed", logErr.message);
+      } catch (e) {
+        console.error("death event log failed", e instanceof Error ? e.message : "unknown");
+      }
       const next = Number((current as any)?.death_count ?? 0) + 1;
       await supabaseAdmin
         .from("spartanops_checkins")
@@ -548,6 +561,54 @@ export const spartanopsGetParticipantRoster = createServerFn({ method: "POST" })
           respawn_unlock_at: s?.respawn_unlock_at ?? null,
         };
       }),
+    };
+  });
+
+/** Participant-scoped death events of the current match (from match start). */
+export const spartanopsGetDeathEvents = createServerFn({ method: "POST" })
+  .inputValidator((d: { fieldId: string; sessionId: string }) => {
+    if (!isField(String(d?.fieldId ?? ""))) throw new Error("Invalid field");
+    const sid = String(d?.sessionId ?? "");
+    if (!sid || sid.length > 100) throw new Error("Invalid session");
+    return { fieldId: d.fieldId, sessionId: sid };
+  })
+  .handler(async ({ data }) => {
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data: ownSecret } = await supabaseAdmin
+      .from("spartanops_checkin_secrets" as any)
+      .select("checkin_id")
+      .eq("session_id", data.sessionId)
+      .maybeSingle();
+    if (!ownSecret) return { ok: false as const, rows: [] };
+    const { data: ownRow } = await supabaseAdmin
+      .from("spartanops_checkins")
+      .select("id")
+      .eq("id", (ownSecret as any).checkin_id)
+      .eq("field_id", data.fieldId)
+      .maybeSingle();
+    if (!ownRow) return { ok: false as const, rows: [] };
+
+    const { data: gs } = await supabaseAdmin
+      .from("spartanops_game_state")
+      .select("match_started_at")
+      .eq("field_id", data.fieldId)
+      .maybeSingle();
+    const startedAt = gs?.match_started_at ?? null;
+    if (!startedAt) return { ok: true as const, rows: [] };
+
+    const { data: rows, error } = await supabaseAdmin
+      .from("spartanops_death_events")
+      .select("id, checkin_id, callsign, team, died_at")
+      .eq("field_id", data.fieldId)
+      .gte("died_at", startedAt)
+      .order("died_at", { ascending: false })
+      .limit(300);
+    if (error) throw new Error(error.message);
+    return {
+      ok: true as const,
+      rows: (rows ?? []).map((r) => ({
+        id: String(r.id), checkin_id: String(r.checkin_id), callsign: String(r.callsign), team: String(r.team), died_at: String(r.died_at),
+      })),
     };
   });
 

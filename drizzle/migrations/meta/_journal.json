@@ -113,6 +113,13 @@
       "when": 1793138191138,
       "tag": "0015_event_change_notices",
       "breakpoints": true
+    },
+    {
+      "idx": 16,
+      "version": "7",
+      "when": 1794402587340,
+      "tag": "0016_spartanops_death_events",
+      "breakpoints": true
     }
   ]
 }

@@ -1,10 +1,8 @@
 /**
  * Persistent player-death event log for the tactical History Log.
  *
- * Captures live in the database, but respawn/death events are only observable
- * as transient `respawn_unlock_at` transitions on the roster. We persist them
- * per mission in localStorage so the History Log can be replayed on the
- * debriefing screen after the match ends.
+ * Deaths are recorded on the server at the respawn scan; this module keeps the
+ * last good copy in localStorage so the debrief survives an offline reload.
  */
 
 export type DeathEvent = {
@@ -32,17 +30,21 @@ export function readDeathEvents(fieldId: string): DeathEvent[] {
   }
 }
 
-export function appendDeathEvents(fieldId: string, events: DeathEvent[]): DeathEvent[] {
-  if (typeof window === "undefined" || !fieldId || events.length === 0) return readDeathEvents(fieldId);
-  const existing = readDeathEvents(fieldId);
-  const seen = new Set(existing.map((e) => e.id));
-  const merged = [...existing, ...events.filter((e) => !seen.has(e.id))].slice(-MAX_EVENTS);
+/** Replace the stored list (last good server copy, for offline debrief reloads). */
+export function writeDeathEvents(fieldId: string, events: DeathEvent[]) {
+  if (typeof window === "undefined" || !fieldId) return;
   try {
-    window.localStorage.setItem(key(fieldId), JSON.stringify(merged));
+    window.localStorage.setItem(key(fieldId), JSON.stringify(events.slice(0, MAX_EVENTS)));
   } catch {
     /* ignore quota */
   }
-  return merged;
+}
+
+export type DeathEventRow = { id: string; checkin_id: string; callsign: string; team: string; died_at: string };
+
+/** Server row -> DeathEvent. The `<checkinId>-` prefix keeps canSeeDeath's own-death check working. */
+export function mapDeathRow(r: DeathEventRow): DeathEvent {
+  return { id: `${r.checkin_id}-${r.id}`, callsign: r.callsign, team: r.team, at: Date.parse(r.died_at) || 0 };
 }
 
 export function clearDeathEvents(fieldId: string) {

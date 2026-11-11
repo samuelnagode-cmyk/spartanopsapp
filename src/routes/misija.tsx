@@ -12,7 +12,7 @@ import { currentUrl, readSharePhone, useGateAuth, writeSharePhone } from "@/comp
 import { isStaleState } from "@/lib/game-state-sync";
 
 import { spartanopsAckTeamChange, spartanopsSelectTeam, spartanopsTickScores } from "@/lib/spartanops-game.functions";
-import { spartanopsUpsertCheckin, spartanopsGetMyCheckin, spartanopsDeleteMyCheckin, spartanopsGetParticipantRoster, spartanopsGetServerTime, spartanopsGetRespawnLock } from "@/lib/spartanops-checkin.functions";
+import { spartanopsUpsertCheckin, spartanopsGetMyCheckin, spartanopsDeleteMyCheckin, spartanopsGetParticipantRoster, spartanopsGetServerTime, spartanopsGetRespawnLock, spartanopsGetDeathEvents } from "@/lib/spartanops-checkin.functions";
 import { spartanopsAcknowledgeWarning } from "@/lib/spartanops-spartacus.functions";
 import { spartanopsGetLobbyAccountId } from "@/lib/spartanops-lobbies.functions";
 import { SpartacusAlerts } from "@/components/SpartanOpsConsole";
@@ -25,7 +25,7 @@ import { useLang, useT } from "@/lib/i18n";
 import { HudNotificationStack, useHudNotices, fillTemplate } from "@/components/HudNotificationStack";
 import { HudHistoryLog } from "@/components/HudHistoryLog";
 import { scoreboardColumns, deathsEffectivelyPublic } from "@/lib/scoreboard-columns";
-import { appendDeathEvents, readDeathEvents, clearDeathEvents, type DeathEvent } from "@/lib/hud-history";
+import { readDeathEvents, clearDeathEvents, writeDeathEvents, mapDeathRow, type DeathEvent } from "@/lib/hud-history";
 import { QRScanner, type ScanPayload } from "@/components/QRScanner";
 import { useAmbientAudio } from "@/components/AmbientAudio";
 import { DebriefShareButton } from "@/components/DebriefShareCard";
@@ -3152,7 +3152,7 @@ function ScanCodeButton({ paused, en }: { paused: boolean; en: boolean }) {
 
 function LiveMatch({ state, captures, now, roster, myTeam, meId, meCallsign }: { state: GameState; captures: Capture[]; now: number; roster: Checkin[]; myTeam: string; meId?: string; meCallsign?: string }) {
 
-  const deathLog = useDeathLog(state.field_id ?? "");
+  const deathLog = useDeathLog(state.field_id ?? "", roster);
   const deathsPublic = deathsEffectivelyPublic(state.settings);
   const teamOnly = state.settings?.respawn?.visibility === "team";
   const visibleHudDeaths = deathLog.filter((d) => canSeeDeath(d, { deathsPublic, teamOnly, myTeam, meId, meCallsign }));
@@ -3502,7 +3502,7 @@ function EndgameReport({ state, roster, captures, en, now, myTeam, meId, showSav
   }, [state.field_id, state.match_started_at]);
 
   const t = useT();
-  const deathLog = useDeathLog(state.field_id ?? "");
+  const deathLog = useDeathLog(state.field_id ?? "", roster);
   const respawnEnabled = !!state.settings?.respawn?.enabled;
   const deathsPublic = deathsEffectivelyPublic(state.settings);
   const showDeaths = deathsPublic;
@@ -3843,14 +3843,55 @@ function canSeeDeath(
   return true;
 }
 
-export function useDeathLog(fieldId: string): DeathEvent[] {
+export function useDeathLog(fieldId: string, roster: Checkin[]): DeathEvent[] {
+  const { preview, preset } = Route.useSearch();
+  const demo = !!(preview && preset);
+  const getDeathsFn = useServerFn(spartanopsGetDeathEvents);
   const [events, setEvents] = useState<DeathEvent[]>(() => readDeathEvents(fieldId));
+  const deathSum = roster.reduce((n, p) => n + Number(p.death_count ?? 0), 0);
+  const demoKey = demo ? roster.slice(0, 5).map((p) => p.id).join(",") : "";
+
   useEffect(() => {
+    if (demo || !fieldId) return;
     setEvents(readDeathEvents(fieldId));
     const onUpdate = () => setEvents(readDeathEvents(fieldId));
     window.addEventListener("spartanops:deathlog", onUpdate);
     return () => window.removeEventListener("spartanops:deathlog", onUpdate);
-  }, [fieldId]);
+  }, [fieldId, demo]);
+
+  useEffect(() => {
+    if (demo || !fieldId) return;
+    let sessionId = "";
+    try { sessionId = window.localStorage.getItem(SESSION_KEY) ?? ""; } catch { /* ignore */ }
+    if (!sessionId) return;
+    let cancelled = false;
+    getDeathsFn({ data: { fieldId, sessionId } })
+      .then((res) => {
+        if (cancelled || !res?.ok) return;
+        const list = res.rows.map(mapDeathRow);
+        setEvents(list);
+        writeDeathEvents(fieldId, list);
+      })
+      .catch(() => { /* keep last good list */ });
+    return () => { cancelled = true; };
+  }, [fieldId, deathSum, demo, getDeathsFn]);
+
+  // Preview only: fixed demo deaths from the preview roster, never in production mode.
+  useEffect(() => {
+    if (!demo) return;
+    const now = Date.now();
+    const offsetsMin = [1, 3, 5, 7, 9];
+    setEvents(
+      roster.slice(0, 5).map((p, i) => ({
+        id: `${p.id}-demo${i}`,
+        callsign: String(p.callsign ?? "—"),
+        team: p.assigned_team,
+        at: now - offsetsMin[i] * 60_000,
+      })),
+    );
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [demo, demoKey]);
+
   return events;
 }
 
@@ -3932,18 +3973,6 @@ function HudNoticeFeed({
     if (!deathPrimedRef.current) {
       deathPrimedRef.current = true;
       return;
-    }
-    if (fresh.length > 0) {
-      appendDeathEvents(
-        fieldId,
-        fresh.map((p) => ({
-          id: `${p.id}-${p.respawn_unlock_at}`,
-          callsign: String(p.callsign ?? "—"),
-          team: p.assigned_team,
-          at: Date.now(),
-        })),
-      );
-      try { window.dispatchEvent(new Event("spartanops:deathlog")); } catch { /* ignore */ }
     }
     fresh.slice(-3).forEach((p) => {
       const color = TEAM_COLOR[p.assigned_team] ?? ACCENT;
