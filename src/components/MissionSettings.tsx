@@ -225,6 +225,7 @@ export function MissionSettingsTabs({
   missingRequired = [],
   tab: tabProp,
   hideTabBar = false,
+  spawnRotationLocked = false,
 }: {
   en: boolean;
   value: MissionSettingsValue;
@@ -235,6 +236,8 @@ export function MissionSettingsTabs({
   /** Controlled tab (the live console renders its own tab bar). */
   tab?: MissionTabKey;
   hideTabBar?: boolean;
+  /** Live console: block spawn rotation while a match runs or is paused. */
+  spawnRotationLocked?: boolean;
 }) {
   void mode;
   const [innerTab, setTab] = useState<MissionTabKey>("mission");
@@ -543,6 +546,7 @@ export function MissionSettingsTabs({
             onChange={(p) => onChange({ nodePositions: p })}
             en={en}
             teamCount={Number(s.teamCount ?? 2)}
+            spawnRotationLocked={spawnRotationLocked}
           />
         </Pane>
       )}

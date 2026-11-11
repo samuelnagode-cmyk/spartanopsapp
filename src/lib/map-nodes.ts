@@ -34,3 +34,32 @@ export function mapNodesFor(teamCount?: number): MapNodeDef[] {
   const teams = new Set<string>(TEAM_ORDER.slice(0, n));
   return MAP_NODES.filter((m) => m.type !== "spawn" || (m.team && teams.has(m.team)));
 }
+
+export type NodePositions = Record<string, { x: number; y: number } | null>;
+
+/**
+ * Move spawn markers only; teams never change. 2 teams swap, 3 teams rotate one
+ * place clockwise on screen (y axis points down). Returns null when not possible.
+ */
+export function rotateSpawns(positions: NodePositions, teamCount: number): NodePositions | null {
+  const n = Math.floor(Number(teamCount) || 0);
+  if (n < 2) return null;
+  const teams = TEAM_ORDER.slice(0, Math.min(n, TEAM_ORDER.length));
+  const keys = teams.map((t) => `spawn_${t}`);
+  const pts = keys.map((k) => positions[k]);
+  if (pts.some((p) => !p)) return null;
+  const next: NodePositions = { ...positions };
+  if (keys.length === 2) {
+    next[keys[0]] = { ...pts[1]! };
+    next[keys[1]] = { ...pts[0]! };
+    return next;
+  }
+  const [A, B, C] = pts as { x: number; y: number }[];
+  const cross = (B.x - A.x) * (C.y - A.y) - (B.y - A.y) * (C.x - A.x);
+  if (cross >= 0) {
+    next.spawn_modra = { ...B }; next.spawn_rdeca = { ...C }; next.spawn_rumena = { ...A };
+  } else {
+    next.spawn_modra = { ...C }; next.spawn_rumena = { ...B }; next.spawn_rdeca = { ...A };
+  }
+  return next;
+}

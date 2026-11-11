@@ -1,5 +1,5 @@
 import { memo, useEffect, useRef, useState } from "react";
-import { mapNodesFor } from "@/lib/map-nodes";
+import { mapNodesFor, rotateSpawns } from "@/lib/map-nodes";
 import { useServerFn } from "@tanstack/react-start";
 import { Award, ChevronUp, ChevronsUp, Compass, Pause, Play, RotateCcw, Trash2, Upload, MapPin, Copy, Check, AlertTriangle, ShieldOff, ShieldCheck, ArrowLeftRight, Info } from "lucide-react";
 import { QRCodeSVG } from "qrcode.react";
@@ -965,8 +965,23 @@ function MapUploader({ fieldId, password, currentUrl, onUploaded, en }: { fieldI
   );
 }
 
-export function NodePlacer({ mapUrl, positions, onChange, en, teamCount }: { mapUrl: string | null; positions: Record<string, { x: number; y: number } | null>; onChange: (p: Record<string, { x: number; y: number } | null>) => void; en: boolean; teamCount?: number }) {
+export function NodePlacer({ mapUrl, positions, onChange, en, teamCount, spawnRotationLocked = false }: { mapUrl: string | null; positions: Record<string, { x: number; y: number } | null>; onChange: (p: Record<string, { x: number; y: number } | null>) => void; en: boolean; teamCount?: number; spawnRotationLocked?: boolean }) {
   const [selected, setSelected] = useState<string>("1");
+  const [rotatedNote, setRotatedNote] = useState(false);
+  const rotTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(() => () => { if (rotTimer.current) clearTimeout(rotTimer.current); }, []);
+  const showRotate = teamCount != null && teamCount >= 2;
+  const rotated = showRotate ? rotateSpawns(positions, teamCount!) : null;
+  const rotateDisabled = spawnRotationLocked || !rotated;
+  const onRotate = () => {
+    if (spawnRotationLocked) return;
+    const next = rotateSpawns(positions, teamCount ?? 0);
+    if (!next) return;
+    onChange(next);
+    setRotatedNote(true);
+    if (rotTimer.current) clearTimeout(rotTimer.current);
+    rotTimer.current = setTimeout(() => setRotatedNote(false), 3000);
+  };
   const wrapRef = useRef<HTMLDivElement>(null);
   const NODES = mapNodesFor(teamCount).map((n) => ({ key: n.key, label: en ? n.labelEn : n.labelSl, color: n.type === "capture" ? ACCENT : n.color, type: n.type }));
 
@@ -998,6 +1013,26 @@ export function NodePlacer({ mapUrl, positions, onChange, en, teamCount }: { map
           );
         })}
       </div>
+      {showRotate && (
+        <div style={{ marginBottom: 8 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+            <button type="button" onClick={onRotate} disabled={rotateDisabled}
+              style={{ minHeight: 40, background: "transparent", color: ACCENT, border: `1px solid ${ACCENT}`, padding: "6px 12px", fontFamily: "monospace", fontSize: 10, letterSpacing: "0.14em", textTransform: "uppercase", cursor: rotateDisabled ? "not-allowed" : "pointer", opacity: rotateDisabled ? 0.45 : 1 }}>
+              ⟳ {en ? "ROTATE SPAWNS" : "ZAVRTI SPAWNE"}
+            </button>
+            {rotatedNote && <span style={{ fontFamily: "monospace", fontSize: 10, color: ACCENT }}>{en ? "✓ Spawns rotated" : "✓ Spawni zavrteni"}</span>}
+          </div>
+          <p style={{ fontSize: 10.5, color: MUTED, marginTop: 4 }}>
+            {spawnRotationLocked
+              ? (en ? "Available between matches, not while a match is running or paused." : "Na voljo med igrami, ne med tekočo ali zaustavljeno igro.")
+              : !rotated
+                ? (en ? "Place every team spawn on the map first." : "Najprej postavi spawne vseh ekip na zemljevid.")
+                : teamCount === 2
+                  ? (en ? "Teams stay the same. The two spawns swap places." : "Ekipi ostaneta enaki. Spawna zamenjata mesti.")
+                  : (en ? "Teams stay the same. Each spawn moves one place clockwise." : "Ekipe ostanejo enake. Vsak spawn se premakne eno mesto v smeri urnega kazalca.")}
+          </p>
+        </div>
+      )}
       <div ref={wrapRef} onClick={mapUrl ? onClickMap : undefined}
         style={{ position: "relative", background: "#0c0e09", border: `1px solid rgba(236,227,196,0.12)`, cursor: mapUrl ? "crosshair" : "default", userSelect: "none" }}>
         {mapUrl ? <img src={mapUrl} alt="map" style={{ width: "100%", display: "block", pointerEvents: "none" }} loading="eager" fetchPriority="high" decoding="async" /> :

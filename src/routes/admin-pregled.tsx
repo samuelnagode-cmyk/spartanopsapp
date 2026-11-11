@@ -2546,6 +2546,7 @@ function MarshalLobbyConsole({ lobby: initialLobby, marshalPassword, lobbyPasswo
           existingEvents={existingEvents}
           tab={lobbyTab}
           hideTabBar
+          spawnRotationLocked={state === "active" || state === "paused"}
         />
       )}
 
