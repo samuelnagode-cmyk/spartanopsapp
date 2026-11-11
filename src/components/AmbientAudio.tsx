@@ -1,6 +1,9 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { useLocation } from "@tanstack/react-router";
 import { Music, Volume2, VolumeX, Waves } from "lucide-react";
+import { useLang } from "@/lib/i18n";
+import { Button } from "@/components/ui/button";
+import { showAudioControl } from "@/lib/audio-routes";
 import songMain from "@/assets/SONG_MAIN.mp3.asset.json";
 import songLobby from "@/assets/SONG_LOBBY.mp3.asset.json";
 import songDebrief from "@/assets/SONG_DEBRIEFING.mp3.asset.json";
@@ -506,20 +509,29 @@ export function AmbientAudioProvider({ children }: { children: ReactNode }) {
   return (
     <AudioCtx.Provider value={value}>
       {children}
-      <AudioFab />
+      <AudioFab track={activeTrack} />
     </AudioCtx.Provider>
   );
 }
 
-function AudioFab() {
-  const { musicEnabled, sfxEnabled, toggleMusic, toggleSfx, unlock } = useAmbientAudio();
+function AudioFab({ track }: { track: Track }) {
+  const { musicEnabled, sfxEnabled, toggleMusic, toggleSfx, setMusicEnabled, unlock } = useAmbientAudio();
+  const { pathname } = useLocation();
+  const { lang } = useLang();
+  const en = lang === "en";
   const [open, setOpen] = useState(false);
   const wrapRef = useRef<HTMLDivElement | null>(null);
-  const anythingOn = musicEnabled || sfxEnabled;
+  const debrief = track === "debrief";
+  const anythingOn = debrief ? musicEnabled : track === "silent" ? sfxEnabled : musicEnabled || sfxEnabled;
 
   const onFabClick = () => {
     unlock();
-    setOpen((v) => !v);
+    if (debrief) {
+      setOpen(false);
+      setMusicEnabled(!musicEnabled);
+    } else {
+      setOpen((v) => !v);
+    }
   };
 
   // Close the music/SFX card when clicking (or tapping) anywhere else.
@@ -538,122 +550,107 @@ function AudioFab() {
     };
   }, [open]);
 
+  if (!showAudioControl(pathname, musicEnabled)) return null;
+
   return (
-    <div ref={wrapRef} style={{ position: "fixed", bottom: 24, left: 24, zIndex: 900, isolation: "isolate" }}>
-      {open && (
-        <div
-          role="menu"
-          style={{
-            position: "absolute",
-            bottom: 62,
-            left: 0,
-            minWidth: 190,
-            background: "rgba(11,13,10,0.94)",
-            border: "1px solid rgba(224,176,78,0.55)",
-            boxShadow: "0 18px 40px -12px rgba(0,0,0,0.75), 0 0 24px -6px rgba(224,176,78,0.45)",
-            padding: 8,
-            display: "flex",
-            flexDirection: "column",
-            gap: 6,
-            animation: "sop-slideup 180ms ease-out",
-          }}
-        >
-          <FabRow
-            active={musicEnabled}
-            onClick={() => {
-              unlock();
-              toggleMusic();
-            }}
-            icon={<Music size={14} />}
-            label="MUSIC"
-          />
+    <div ref={wrapRef} className="audio-control">
+      <style>{`
+        .audio-control {
+          --audio-background: rgba(11,13,10,0.72);
+          --audio-panel: rgba(11,13,10,0.94);
+          --audio-border: rgba(224,176,78,0.35);
+          --audio-gold: #E0B04E;
+          --audio-active: rgba(224,176,78,0.16);
+          --audio-muted: rgba(236,227,196,0.75);
+          --audio-off: rgba(236,227,196,0.25);
+          --audio-on: #3ddc84;
+          --audio-shadow: 0 18px 40px -12px rgba(0,0,0,0.75);
+          position: fixed; bottom: calc(16px + env(safe-area-inset-bottom, 0px));
+          left: calc(16px + env(safe-area-inset-left, 0px)); z-index: 900; isolation: isolate;
+        }
+        .audio-control .audio-button {
+          width: 44px; height: 44px; border-radius: 999px; padding: 0;
+          background: var(--audio-background); border: 1px solid var(--audio-border);
+          color: var(--audio-gold); box-shadow: none; cursor: pointer; letter-spacing: 0;
+        }
+        .audio-control .audio-button svg { width: 18px; height: 18px; opacity: 0.8; }
+        .audio-control .audio-pill { width: auto; padding: 0 14px; font-size: 10px; font-family: 'Michroma', monospace; }
+        .audio-control .audio-pill[aria-pressed="true"] { border-color: var(--audio-gold); }
+        .audio-control .audio-menu {
+          position: absolute; bottom: 52px; left: 0; width: 260px;
+          max-width: calc(100vw - 32px - env(safe-area-inset-left, 0px) - env(safe-area-inset-right, 0px));
+          background: var(--audio-panel); border: 1px solid var(--audio-border);
+          box-shadow: var(--audio-shadow); padding: 8px; border-radius: 8px;
+          display: flex; flex-direction: column; gap: 6px;
+        }
+        .audio-control .audio-row {
+          justify-content: flex-start; gap: 10px; padding: 8px 10px; height: auto; min-height: 44px;
+          background: transparent; border: 1px solid var(--audio-border); color: var(--audio-muted);
+          font-family: 'Michroma', monospace; font-size: 10px; letter-spacing: 0; text-align: left;
+        }
+        .audio-control .audio-row[aria-checked="true"] { background: var(--audio-active); border-color: var(--audio-gold); color: var(--audio-gold); }
+        .audio-control .audio-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--audio-off); }
+        .audio-control .audio-row[aria-checked="true"] .audio-dot { background: var(--audio-on); }
+        .audio-control button:focus-visible { outline: 2px solid var(--audio-gold); outline-offset: 3px; box-shadow: none; }
+        @media (prefers-reduced-motion: reduce) { .audio-control *, .audio-control *::before, .audio-control *::after { transition: none !important; animation: none !important; } }
+      `}</style>
+      {open && !debrief && (
+        <div role="menu" aria-label={en ? "Sound" : "Zvok"} className="audio-menu">
+          {track !== "silent" && (
+            <FabRow
+              active={musicEnabled}
+              onClick={() => { unlock(); toggleMusic(); }}
+              icon={<Music size={14} />}
+              label={en ? "MUSIC" : "GLASBA"}
+            />
+          )}
           <FabRow
             active={sfxEnabled}
-            onClick={() => {
-              unlock();
-              toggleSfx();
-            }}
+            onClick={() => { unlock(); toggleSfx(); }}
             icon={<Waves size={14} />}
-            label="SFX"
+            label={en ? "SOUND EFFECTS" : "ZVOČNI EFEKTI"}
           />
-          <style>{`@keyframes sop-slideup { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }`}</style>
         </div>
       )}
-      <button
+      <Button
         type="button"
+        variant="ghost"
         onClick={onFabClick}
-        aria-label="Audio controls"
-        aria-expanded={open}
-        style={{
-          width: 52,
-          height: 52,
-          borderRadius: 999,
-          background: "rgba(11,13,10,0.85)",
-          border: "1px solid rgba(224,176,78,0.55)",
-          boxShadow: "0 0 24px -4px rgba(224,176,78,0.55)",
-          color: "#E0B04E",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          cursor: "pointer",
-          position: "relative",
-        }}
+        aria-label={en ? "Sound" : "Zvok"}
+        aria-expanded={debrief ? undefined : open}
+        aria-haspopup={debrief ? undefined : "menu"}
+        aria-pressed={debrief ? musicEnabled : undefined}
+        className={`audio-button${debrief ? " audio-pill" : ""}`}
       >
         {anythingOn ? (
-          <Volume2 size={20} strokeWidth={1.8} className={musicEnabled ? "animate-pulse" : ""} />
+          <Volume2 size={18} strokeWidth={1.8} fill={debrief ? "currentColor" : "none"} />
         ) : (
-          <VolumeX size={20} strokeWidth={1.8} />
+          <VolumeX size={18} strokeWidth={1.8} />
         )}
-      </button>
+        {debrief && <span>{en ? "MUSIC" : "GLASBA"}</span>}
+      </Button>
     </div>
   );
 }
 
-function FabRow({
-  active,
-  onClick,
-  icon,
-  label,
-}: {
+function FabRow({ active, onClick, icon, label }: {
   active: boolean;
   onClick: () => void;
   icon: ReactNode;
   label: string;
 }) {
   return (
-    <button
+    <Button
       type="button"
+      variant="ghost"
       role="menuitemcheckbox"
       aria-checked={active}
       onClick={onClick}
-      style={{
-        display: "flex",
-        alignItems: "center",
-        gap: 10,
-        padding: "8px 10px",
-        background: active ? "rgba(224,176,78,0.16)" : "transparent",
-        border: `1px solid ${active ? "#E0B04E" : "rgba(224,176,78,0.25)"}`,
-        color: active ? "#E0B04E" : "rgba(236,227,196,0.75)",
-        fontFamily: "'Michroma', monospace",
-        fontSize: 10,
-        letterSpacing: "0.22em",
-        textTransform: "uppercase",
-        cursor: "pointer",
-        textAlign: "left",
-      }}
+      className="audio-row"
     >
-      <span style={{ display: "inline-flex" }}>{icon}</span>
-      <span style={{ flex: 1 }}>{label}</span>
-      <span
-        aria-hidden
-        style={{
-          width: 8,
-          height: 8,
-          borderRadius: "50%",
-          background: active ? "#3ddc84" : "rgba(236,227,196,0.25)",
-          boxShadow: active ? "0 0 8px #3ddc84" : "none",
-        }}
-      />
-    </button>
+      <span className="inline-flex">{icon}</span>
+      <span className="flex-1">{label}</span>
+      <span aria-hidden className="audio-dot" />
+    </Button>
   );
 }

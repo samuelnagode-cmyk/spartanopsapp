@@ -179,7 +179,7 @@ export function InstallHintCard({ en, canPromptNatively, onPrimary, onDismiss, f
         bottom: "max(12px, env(safe-area-inset-bottom))",
         maxWidth: 420,
         margin: "0 auto",
-        zIndex: fixed ? 900 : undefined,
+        zIndex: fixed ? 910 : undefined,
         background: PANEL,
         border: `1px solid ${ACCENT}`,
         borderLeft: `3px solid ${ACCENT}`,

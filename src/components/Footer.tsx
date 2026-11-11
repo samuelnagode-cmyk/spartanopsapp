@@ -69,6 +69,7 @@ export default function Footer() {
         position: "relative",
         overflow: "visible",
         isolation: "isolate",
+        paddingBottom: 72,
       }}
     >
       {/* Top border separator above the footer (airsoft only) */}

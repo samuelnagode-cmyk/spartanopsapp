@@ -36,7 +36,15 @@ import { setLocationCheckOn } from "@/lib/location-check";
 
 export const Route = createFileRoute("/misija")({
   head: () => ({
-    meta: [{ title: "SpartanOps · Misija" }, { name: "robots", content: "noindex,nofollow" }],
+    meta: [
+      { title: "SpartanOps · Misija" },
+      { name: "description", content: "SpartanOps: prijava v misijo, potek igre in končni rezultati." },
+      { property: "og:title", content: "SpartanOps · Misija" },
+      { property: "og:description", content: "SpartanOps: prijava v misijo, potek igre in končni rezultati." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
+      { name: "robots", content: "noindex,nofollow" },
+    ],
   }),
   validateSearch: (s: Record<string, unknown>): { field: string; point?: string; preview?: boolean; marshal?: boolean; preset?: string; pts?: string; deaths?: string; vis?: string; rsp?: string; teams?: string; big?: string } => {
     return {
@@ -2518,8 +2526,8 @@ function PreMatchCountdown({ seconds, polygon, eventName, gamemode, pointTarget,
   const hasDescription = !!description?.trim();
   return (
     <div
-      className="fixed inset-0 z-[1100] flex flex-col items-center justify-start overflow-y-auto p-4 text-center"
-      style={{ background: "radial-gradient(circle at 50% 0%, rgba(224,176,78,0.14), rgba(11,13,9,0.99) 34%, #050604 100%)", color: INK, paddingTop: 96, paddingBottom: 40 }}
+      className="fixed inset-0 z-[880] flex flex-col items-center justify-start overflow-y-auto p-4 text-center"
+      style={{ background: "radial-gradient(circle at 50% 0%, rgba(224,176,78,0.14), rgba(11,13,9,0.99) 34%, #050604 100%)", color: INK, paddingTop: 96, paddingBottom: 96 }}
     >
       {/* 1) Mode line */}
       <p style={{ color: ACCENT, fontFamily: "monospace", fontSize: 11, letterSpacing: "0.32em", textTransform: "uppercase", marginBottom: 8 }}>

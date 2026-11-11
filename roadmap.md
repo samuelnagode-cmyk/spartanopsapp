@@ -1,5 +1,8 @@
 # Beta-day safety
 
+# Sound control
+- [x] Apply the focused sound-control presentation and visibility changes; verify mobile controls, overlap and unit tests. Cold ended preview remains on lobby; the debrief pill was verified with the existing synthetic match-end signal. Real playback and phones remain untested.
+
 - [x] Extract the field-attempt policy, update the wait message, and test the helper.
 - [x] Report framework, field-plan and offline checks; clearly identify checks unavailable in this sandbox.
 
