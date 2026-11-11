@@ -51,6 +51,8 @@ import {
 import { spartanopsUpsertCheckin, spartanopsAdminGetRoster, spartanopsGetServerTime } from "@/lib/spartanops-checkin.functions";
 import { spartanopsAdminVerify, spartanopsAdminReassignTeam } from "@/lib/spartanops-admin.functions";
 import { isStaleState } from "@/lib/game-state-sync";
+import { matchClock } from "@/lib/match-clock";
+import { MatchClockCard } from "@/components/MatchClockCard";
 
 
 export const Route = createFileRoute("/admin-pregled")({
@@ -2350,27 +2352,17 @@ function MarshalLobbyConsole({ lobby: initialLobby, marshalPassword, lobbyPasswo
       <div style={{ display: lobbyTab === "match" ? "block" : "none" }}>
       {/* MATCH CONTROLS */}
       <Pane title={en ? "MATCH CONTROLS" : "NADZOR MISIJE"}>
-        {(() => {
-          if (!gameState?.match_started_at) return null;
-          const startMs = new Date(gameState.match_started_at).getTime();
-          const remaining = Math.max(0, Math.ceil((startMs - now) / 1000));
-          if (remaining <= 0) return null;
-          const mm = String(Math.floor(remaining / 60)).padStart(2, "0");
-          const ss = String(remaining % 60).padStart(2, "0");
-          return (
-            <div style={{
-              marginBottom: 12, padding: "14px 12px", textAlign: "center",
-              border: `1px solid ${ACCENT}`, background: "rgba(224,176,78,0.08)",
-            }}>
-              <p style={{ fontFamily: "monospace", fontSize: 10, letterSpacing: "0.24em", color: ACCENT, textTransform: "uppercase", marginBottom: 6 }}>
-                // {en ? "MATCH STARTS IN" : "MISIJA SE ZAČNE ČEZ"}
-              </p>
-              <p style={{ fontFamily: "'Michroma', monospace", fontSize: 28, letterSpacing: "0.14em", color: ACCENT, fontWeight: 700 }}>
-                {mm}:{ss}
-              </p>
-            </div>
-          );
-        })()}
+        <MatchClockCard
+          en={en}
+          target={target}
+          clock={matchClock({
+            status: gameState?.status ?? (state === "pending" ? "lobby" : state),
+            matchStartedAtMs: gameState?.match_started_at ? new Date(gameState.match_started_at).getTime() : null,
+            durationMin: gameState?.match_duration_minutes ?? lobby.matchDurationMinutes,
+            nowMs: now,
+            pausedAtMs: gameState?.updated_at ? new Date(gameState.updated_at).getTime() : null,
+          })}
+        />
         <button
           onClick={handleMatchPrimaryAction}
           style={{
