@@ -1,5 +1,9 @@
 # Beta-day safety
 
+# Debrief totals and labels
+- [x] Fetch debrief captures separately without changing the live feed, and test deterministic privacy-aware ranking (254 tests passed).
+- [x] Rename player capture labels and the one settings description; both languages fit at 375px. Real >50-capture match and non-preview fetch flow remain untested.
+
 # Respawn and sound beta fixes
 - [x] Replace the respawn rescan guard and test its timing boundaries (250 tests passed).
 - [x] Update bilingual spawn confirmation, respawn banner and locked scan pill; inspect 375px controls in both languages. Spawn success card reviewed from code only.

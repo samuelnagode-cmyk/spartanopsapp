@@ -450,7 +450,7 @@ export function MissionSettingsTabs({
 
           <SwitchCard
             title={en ? "Player scoring display" : "Prikaz točk igralcev"}
-            desc={en ? "Show every player's points and, at the end, show the top three of the winning team." : "Prikaži točke vseh igralcev in ob koncu prikaži najboljše tri na zmagovalni ekipi."}
+            desc={en ? "Show how many sectors each player captured and, at the end, the top three of the winning team." : "Prikaži število zavzetih sektorjev vsakega igralca in ob koncu najboljše tri zmagovalne ekipe."}
             on={!!s.capturePointsScoring}
             onToggle={() => patchSettings({ ...s, capturePointsScoring: !s.capturePointsScoring })}
           />

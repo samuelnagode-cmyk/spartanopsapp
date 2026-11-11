@@ -26,6 +26,7 @@ import { HudNotificationStack, useHudNotices, fillTemplate } from "@/components/
 import { HudHistoryLog } from "@/components/HudHistoryLog";
 import { scoreboardColumns, deathsEffectivelyPublic } from "@/lib/scoreboard-columns";
 import { scoreTickBaseMs, isScoreTickDue } from "@/lib/score-tick";
+import { compareDebriefPlayers } from "@/lib/debrief-ranking";
 import { readDeathEvents, clearDeathEvents, writeDeathEvents, mapDeathRow, type DeathEvent } from "@/lib/hud-history";
 import { QRScanner, type ScanPayload } from "@/components/QRScanner";
 import { useAmbientAudio } from "@/components/AmbientAudio";
@@ -3492,7 +3493,7 @@ function PlayerScoreboard({ roster, captures, settings, en = false, myTeam, meId
         const visible = showAll ? players : players.slice(0, 10);
         const totalCaps = players.reduce((s, p) => s + p.pts, 0);
         const totalDeaths = players.reduce((s, p) => s + (p.death_count ?? 0), 0);
-        const grid = `24px minmax(0,1fr)${cols.points ? " 48px" : ""}${cols.deaths ? " 48px" : ""}${cols.respawnStatus ? " 64px" : ""}`;
+        const grid = `24px minmax(0,1fr)${cols.points ? " 60px" : ""}${cols.deaths ? " 48px" : ""}${cols.respawnStatus ? " 64px" : ""}`;
         const extra = cols.points || cols.deaths || cols.respawnStatus;
         return (
           <div key={t} className="w-full" style={{ background: PANEL, border: `1px solid ${TEAM_COLOR[t]}66` }}>
@@ -3518,7 +3519,7 @@ function PlayerScoreboard({ roster, captures, settings, en = false, myTeam, meId
                   <div className="grid gap-1.5 px-3 py-1 text-[9px] font-mono uppercase tracking-widest" style={{ color: MUTED, gridTemplateColumns: grid }}>
                     <span></span>
                     <span>Callsign</span>
-                    {cols.points && <span style={{ textAlign: "right", letterSpacing: "0.04em" }}>{en ? "Points" : "Točke"}</span>}
+                    {cols.points && <span style={{ textAlign: "right", letterSpacing: "0.04em" }}>{en ? "Captures" : "Zavzetja"}</span>}
                     {cols.deaths && <span style={{ textAlign: "right", letterSpacing: "0.04em" }}>{en ? "Deaths" : "Smrti"}</span>}
                     {cols.respawnStatus && <span style={{ textAlign: "right", letterSpacing: "0.04em" }}>Respawn</span>}
                   </div>
@@ -3583,6 +3584,32 @@ function EndgameSoundtrackTrigger() {
 }
 
 function EndgameReport({ state, roster, captures, en, now, myTeam, meId, showSaveCard }: { state: GameState; roster: Checkin[]; captures: Capture[]; en: boolean; now: number; myTeam?: string; meId?: string; showSaveCard?: boolean }) {
+  const { preview } = Route.useSearch();
+  const [allCaptures, setAllCaptures] = useState<Capture[] | null>(null);
+  useEffect(() => {
+    setAllCaptures(null);
+    const fieldId = state.field_id;
+    const startedAt = state.match_started_at;
+    if (preview || !fieldId || !startedAt) return;
+    let alive = true;
+    const load = async () => {
+      try {
+        const { data, error } = await supabase
+          .from("spartanops_captures")
+          .select("id, point_number, team, player_callsign, captured_at")
+          .eq("field_id", fieldId)
+          .eq("suspicious", false)
+          .gte("captured_at", startedAt)
+          .order("captured_at", { ascending: true })
+          .range(0, 999);
+        if (alive && !error && data) setAllCaptures(data as Capture[]);
+      } catch { /* Keep the last successful result or the live-list fallback. */ }
+    };
+    void load();
+    const retry = window.setTimeout(() => { void load(); }, 5000);
+    return () => { alive = false; window.clearTimeout(retry); };
+  }, [preview, state.field_id, state.match_started_at]);
+
   useEffect(() => {
     // Mission completed — counted once per mission run (deduped server-side).
     bumpTelemetryClient("mission_complete", `${state.field_id ?? "unknown"}:${state.match_started_at ?? "na"}`);
@@ -3601,11 +3628,11 @@ function EndgameReport({ state, roster, captures, en, now, myTeam, meId, showSav
   const visibleDeathLog = deathLog.filter((d) => canSeeDeath(d, { deathsPublic, teamOnly: state.settings?.respawn?.visibility === "team", myTeam, meId, meCallsign }));
   const teamLabelFor = (tm: string) => teamName(tm, state.settings, en);
   const counts: Record<string, number> = {};
-  for (const c of captures) counts[c.player_callsign ?? "—"] = (counts[c.player_callsign ?? "—"] ?? 0) + 1;
+  for (const c of (preview ? captures : allCaptures ?? captures)) counts[c.player_callsign ?? "—"] = (counts[c.player_callsign ?? "—"] ?? 0) + 1;
 
   const enriched = roster
     .map((r) => ({ ...r, pts: counts[r.callsign] ?? 0 }))
-    .sort((a, b) => b.pts - a.pts);
+    .sort((a, b) => compareDebriefPlayers(a, b, deathsPublic));
 
   // Determine winner from dynamic team scores (falls back to DB state).
   const startMs = state.match_started_at ? new Date(state.match_started_at).getTime() : null;
@@ -3806,6 +3833,9 @@ function EndgameReport({ state, roster, captures, en, now, myTeam, meId, showSav
                     >
                       {p.pts}
                     </div>
+                    <div className="font-mono text-[9px] mt-1" style={{ color: MUTED }}>
+                      {en ? "CAPTURES" : "ZAVZETJA"}
+                    </div>
                   </>
                 ) : (
                   <div className="font-mono text-[10px]" style={{ color: MUTED }}>—</div>
@@ -3854,7 +3884,7 @@ function EndgameReport({ state, roster, captures, en, now, myTeam, meId, showSav
           const members = enriched.filter((p) => p.assigned_team === team);
           const teamDeaths = members.reduce((sum, p) => sum + (p.death_count ?? 0), 0);
           const tableDeaths = scoreboardColumns(state.settings, team, myTeam).deaths;
-          const cols = `minmax(0,1fr)${pointsOn ? " 44px" : ""}${tableDeaths ? " 48px" : ""}`;
+          const cols = `minmax(0,1fr)${pointsOn ? " 60px" : ""}${tableDeaths ? " 48px" : ""}`;
           return (
             <div key={team} style={{ background: PANEL, border: `1px solid ${teamCol}66` }}>
               <div style={{ padding: "10px 14px", borderBottom: `1px solid ${teamCol}44`, fontFamily: "'Michroma', monospace", fontSize: 12, letterSpacing: "0.16em", color: teamCol, textTransform: "uppercase" }}>
@@ -3862,7 +3892,7 @@ function EndgameReport({ state, roster, captures, en, now, myTeam, meId, showSav
               </div>
               <div className="grid gap-1.5 px-3 py-2 text-[9px] font-mono uppercase tracking-widest" style={{ color: MUTED, gridTemplateColumns: cols }}>
                 <span>Callsign</span>
-                {pointsOn && <span style={{ textAlign: "right", letterSpacing: "0.04em" }}>{en ? "Points" : "Točke"}</span>}
+                {pointsOn && <span style={{ textAlign: "right", letterSpacing: "0.04em" }}>{en ? "Captures" : "Zavzetja"}</span>}
                 {tableDeaths && <span style={{ textAlign: "right", letterSpacing: "0.04em" }}>{en ? "Deaths" : "Smrti"}</span>}
               </div>
               {members.length === 0 ? (
