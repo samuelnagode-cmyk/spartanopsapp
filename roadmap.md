@@ -1,5 +1,9 @@
 # Beta-day safety
 
+# Personal mission share image
+- [x] Build safe-zone map report with matching podium, personal strip, guarded map loading and on-screen preview.
+- [x] Test sector/rank helpers (260 total tests); verify bilingual 375px preview and real 1080x1920 PNG export plus blocked-map/scoring-off fallback. Native share sheets, Instagram, phones and real matches untested.
+
 # Debrief totals and labels
 - [x] Fetch debrief captures separately without changing the live feed, and test deterministic privacy-aware ranking (254 tests passed).
 - [x] Rename player capture labels and the one settings description; both languages fit at 375px. Real >50-capture match and non-preview fetch flow remain untested.

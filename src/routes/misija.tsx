@@ -27,6 +27,7 @@ import { HudHistoryLog } from "@/components/HudHistoryLog";
 import { scoreboardColumns, deathsEffectivelyPublic } from "@/lib/scoreboard-columns";
 import { scoreTickBaseMs, isScoreTickDue } from "@/lib/score-tick";
 import { compareDebriefPlayers } from "@/lib/debrief-ranking";
+import { shareNodes, shareSpawns, rankInShareTeam } from "@/lib/debrief-share";
 import { readDeathEvents, clearDeathEvents, writeDeathEvents, mapDeathRow, type DeathEvent } from "@/lib/hud-history";
 import { QRScanner, type ScanPayload } from "@/components/QRScanner";
 import { useAmbientAudio } from "@/components/AmbientAudio";
@@ -48,7 +49,7 @@ export const Route = createFileRoute("/misija")({
       { name: "robots", content: "noindex,nofollow" },
     ],
   }),
-  validateSearch: (s: Record<string, unknown>): { field: string; point?: string; preview?: boolean; marshal?: boolean; preset?: string; pts?: string; deaths?: string; vis?: string; rsp?: string; teams?: string; big?: string; dead?: string } => {
+  validateSearch: (s: Record<string, unknown>): { field: string; point?: string; preview?: boolean; marshal?: boolean; preset?: string; pts?: string; deaths?: string; vis?: string; rsp?: string; teams?: string; big?: string; dead?: string; sharecard?: string } => {
     return {
       field: typeof s.field === "string" ? s.field : (typeof s.field_id === "string" ? s.field_id : "zeleni-raj"),
       point: typeof s.point === "string" || typeof s.point === "number" ? String(s.point) : undefined,
@@ -64,6 +65,7 @@ export const Route = createFileRoute("/misija")({
       big: s.big === 1 || s.big === "1" ? "1" : undefined,
       // Preview-only: dead=1 simulates a respawn lock ending 90 s after load.
       dead: s.dead === 1 || s.dead === "1" ? "1" : undefined,
+      sharecard: s.sharecard === 1 || s.sharecard === "1" ? "1" : undefined,
     };
   },
 
@@ -3584,7 +3586,7 @@ function EndgameSoundtrackTrigger() {
 }
 
 function EndgameReport({ state, roster, captures, en, now, myTeam, meId, showSaveCard }: { state: GameState; roster: Checkin[]; captures: Capture[]; en: boolean; now: number; myTeam?: string; meId?: string; showSaveCard?: boolean }) {
-  const { preview } = Route.useSearch();
+  const { preview, sharecard } = Route.useSearch();
   const [allCaptures, setAllCaptures] = useState<Capture[] | null>(null);
   useEffect(() => {
     setAllCaptures(null);
@@ -3676,8 +3678,48 @@ function EndgameReport({ state, roster, captures, en, now, myTeam, meId, showSav
   const winnerColor = winner ? TEAM_COLOR[winner] ?? ACCENT : "#eab308";
   const afterGameInstructions = state.settings?.afterGameInstructions?.trim();
 
+  const showSharePreview = !!preview && sharecard === "1";
+  const shareReport = (() => {
+        const row = enriched.find((r) => r.id === meId);
+        const rank = row ? rankInShareTeam(enriched, row.id) : undefined;
+        const me = row && row.assigned_team !== "none" && rank ? {
+          callsign: row.callsign, teamKey: row.assigned_team, teamName: teamLabelFor(row.assigned_team),
+          color: TEAM_COLOR[row.assigned_team] ?? ACCENT, pts: row.pts, deaths: row.death_count ?? 0,
+          ...rank, isMvp: !!winner && top3[0]?.id === row.id,
+        } : undefined;
+        const positions = showSharePreview ? {
+          ...state.node_positions, spawn_modra: { x: 9, y: 82 }, spawn_rdeca: { x: 89, y: 14 },
+        } : state.node_positions;
+        const shareTop3 = top3.map((p) => ({ callsign: p.callsign, pts: p.pts, deaths: p.death_count ?? 0, color: TEAM_COLOR[p.assigned_team] ?? ACCENT }));
+        // This extra sample belongs only to the on-screen share design preview.
+        if (showSharePreview && shareTop3.length === 2) shareTop3.push({ callsign: "Raven_Six", pts: 0, deaths: 2, color: TEAM_COLOR[winner ?? "modra"] ?? ACCENT });
+        return <DebriefShareButton
+        previewCard={showSharePreview}
+        accentColor={winnerColor}
+        data={{
+          missionName: missionTitleFromState(state, state.field_id ?? "SPARTANOPS"),
+          fieldName: fieldTitleFromState(state, state.field_id ?? ""),
+          en,
+          // Share image is public: team-only deaths stay off it.
+          showDeaths: showDeaths && state.settings?.respawn?.visibility !== "team",
+          showPlayers: pointsOn,
+          winnerKey: winner,
+          isTie,
+          teams: activeTeams.map((tm) => ({ key: tm, name: teamLabelFor(tm), color: TEAM_COLOR[tm] ?? ACCENT, score: teamScoresFinal[tm] ?? 0 })),
+          top3: !pointsOn ? [] : shareTop3,
+          nodes: shareNodes(positions, state.node_holders),
+          spawns: shareSpawns(positions),
+          mapUrl: state.compressed_map_url ?? null,
+          matchDate: state.match_started_at ?? null,
+          myTeamKey: myTeam,
+          me,
+        }}
+      />;
+      })();
+
   return (
     <div className="max-w-4xl mx-auto px-4 py-10" style={{ paddingTop: 112 }}>
+      {showSharePreview && shareReport}
       <div className="text-center mb-6">
         <h1
           className="mt-1"
@@ -3847,31 +3889,7 @@ function EndgameReport({ state, roster, captures, en, now, myTeam, meId, showSav
       </div>
 
       </>)}
-      <DebriefShareButton
-        accentColor={winnerColor}
-        data={{
-          missionName: missionTitleFromState(state, state.field_id ?? "SPARTANOPS"),
-          fieldName: fieldTitleFromState(state, state.field_id ?? ""),
-          marshalName: state.settings?.marshalName?.trim() || undefined,
-          en,
-          // Share image is public: team-only deaths stay off it.
-          showDeaths: showDeaths && state.settings?.respawn?.visibility !== "team",
-          showPlayers: pointsOn,
-          winnerKey: winner,
-          isTie,
-          teams: activeTeams.map((tm) => ({ key: tm, name: teamLabelFor(tm), color: TEAM_COLOR[tm] ?? ACCENT, score: teamScoresFinal[tm] ?? 0 })),
-          top3: !pointsOn ? [] : enriched.slice(0, 3).map((p) => ({ callsign: p.callsign, pts: p.pts, deaths: p.death_count ?? 0, color: TEAM_COLOR[p.assigned_team] ?? ACCENT })),
-          leaderboard: !pointsOn ? [] : enriched.slice(0, 8).map((p) => ({ callsign: p.callsign, pts: p.pts, deaths: p.death_count ?? 0, color: TEAM_COLOR[p.assigned_team] ?? ACCENT, team: p.assigned_team })),
-          nodes: Object.entries(state.node_positions ?? {})
-            .filter(([, pos]) => !!pos)
-            .map(([k, pos]) => ({
-              n: Number(k),
-              x: (pos as { x: number; y: number }).x,
-              y: (pos as { x: number; y: number }).y,
-              color: TEAM_COLOR[state.node_holders?.[k] ?? ""] ?? NEUTRAL_NODE,
-            })),
-        }}
-      />
+      {!showSharePreview && shareReport}
 
       {showSaveCard && (() => {
         const row = enriched.find((r) => r.id === meId);
