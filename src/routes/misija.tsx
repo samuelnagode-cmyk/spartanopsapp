@@ -25,6 +25,7 @@ import { useLang, useT } from "@/lib/i18n";
 import { HudNotificationStack, useHudNotices, fillTemplate } from "@/components/HudNotificationStack";
 import { HudHistoryLog } from "@/components/HudHistoryLog";
 import { scoreboardColumns, deathsEffectivelyPublic } from "@/lib/scoreboard-columns";
+import { scoreTickBaseMs, isScoreTickDue } from "@/lib/score-tick";
 import { readDeathEvents, clearDeathEvents, writeDeathEvents, mapDeathRow, type DeathEvent } from "@/lib/hud-history";
 import { QRScanner, type ScanPayload } from "@/components/QRScanner";
 import { useAmbientAudio } from "@/components/AmbientAudio";
@@ -137,6 +138,7 @@ type GameState = {
   compressed_map_url: string | null;
   countdown_seconds: number;
   match_started_at: string | null;
+  score_ticked_at?: string | null;
   match_duration_minutes: number;
   team_scores: Record<string, number>;
   node_holders: Record<string, string | null>;
@@ -596,6 +598,11 @@ function MisijaPageInner() {
     return () => clearInterval(timer);
   }, [state?.status, state?.match_started_at, getServerTimeFn]);
 
+  const stateRef = useRef(state);
+  stateRef.current = state;
+  const serverOffsetRef = useRef(serverOffset);
+  serverOffsetRef.current = serverOffset;
+
   // Domination scoring: +1 point per held sector every 30 seconds. The RPC is
   // idempotent and timestamp-driven, so every connected client can safely
   // drive it — whoever fires first advances the shared scoreboard. Players tick
@@ -605,15 +612,33 @@ function MisijaPageInner() {
   useEffect(() => {
     if (preview || !field) return;
     if (state?.status !== "active" || !state.match_started_at) return;
-    const run = () => { tickScoresFn({ data: { fieldId: field } }).catch(() => {}); };
+    const run = () => {
+      tickScoresFn({ data: { fieldId: field } }).catch((error) => { console.warn("score tick failed", error); });
+    };
     run();
-    const timer = setInterval(() => {
+    let lastFire = Date.now();
+    let jitter = Math.floor(Math.random() * 4000);
+    const check = () => {
       if (document.visibilityState !== "visible") return;
+      const st = stateRef.current;
+      const base = scoreTickBaseMs(st?.score_ticked_at, st?.match_started_at);
+      if (!isScoreTickDue(base, Date.now() - serverOffsetRef.current, jitter)) return;
+      if (Date.now() - lastFire < 8000) return;
+      lastFire = Date.now();
+      jitter = Math.floor(Math.random() * 4000);
       run();
-    }, 25000 + Math.floor(Math.random() * 10000));
-    const onFocus = () => run();
-    window.addEventListener("focus", onFocus);
-    return () => { clearInterval(timer); window.removeEventListener("focus", onFocus); };
+    };
+    const timer = setInterval(check, 2000);
+    const onVisible = () => { if (document.visibilityState === "visible") check(); };
+    document.addEventListener("visibilitychange", onVisible);
+    window.addEventListener("pageshow", check);
+    window.addEventListener("focus", check);
+    return () => {
+      clearInterval(timer);
+      document.removeEventListener("visibilitychange", onVisible);
+      window.removeEventListener("pageshow", check);
+      window.removeEventListener("focus", check);
+    };
   }, [field, preview, state?.status, state?.match_started_at, tickScoresFn]);
 
 
