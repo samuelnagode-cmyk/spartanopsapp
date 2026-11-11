@@ -2522,6 +2522,9 @@ function TeamSelectModal({
 
 
 
+// Start the voice this many milliseconds before on-screen "14" to cancel phone audio delay; change to retune.
+const COUNTDOWN_VOICE_LEAD_MS = 500;
+
 function PreMatchCountdown({ seconds, polygon, eventName, gamemode, pointTarget, settings, en = false, state, roster, myTeam, meCallsign }: { myTeam?: string; meCallsign?: string; seconds: number; polygon: string | null; eventName?: string | null; gamemode?: "domination" | "search_destroy" | null; pointTarget?: number; settings?: GameSettings | null; en?: boolean; state?: GameState; roster?: Checkin[] }) {
   const mm = String(Math.floor(seconds / 60)).padStart(2, "0");
   const ss = String(seconds % 60).padStart(2, "0");
@@ -2531,17 +2534,28 @@ function PreMatchCountdown({ seconds, polygon, eventName, gamemode, pointTarget,
   const missionName = (eventName?.trim() || configuredMission?.trim() || polygon?.trim() || (en ? "ACTIVE MISSION" : "AKTIVNA MISIJA")).toUpperCase();
   const fieldName = (polygon?.trim() || state?.field_label?.trim() || "").toUpperCase();
   const duration = state?.match_duration_minutes ?? 0;
-  // The supplied countdown cue is ~28 seconds long. Start it at T-28 (or at
-  // the first received tick below that threshold) so its ending aligns with
-  // 00:00 even when a mobile client wakes between timer ticks.
   const firedRef = useRef(false);
+  const voiceTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   useEffect(() => {
     if (firedRef.current) return;
-    if (seconds <= 14) {
+    const fire = () => {
+      if (firedRef.current) return;
       firedRef.current = true;
       try { window.dispatchEvent(new Event("spartanops:countdown")); } catch { /* ignore */ }
+    };
+    if (seconds === 15 && voiceTimeoutRef.current === null) {
+      const lead = Math.min(1000, Math.max(0, COUNTDOWN_VOICE_LEAD_MS));
+      voiceTimeoutRef.current = setTimeout(fire, 1000 - lead);
+    } else if (seconds <= 14) {
+      fire();
     }
   }, [seconds]);
+  useEffect(() => () => {
+    if (voiceTimeoutRef.current !== null) {
+      clearTimeout(voiceTimeoutRef.current);
+      voiceTimeoutRef.current = null;
+    }
+  }, []);
   const players = roster ?? [];
   const teamKeys = (["modra", "rdeca", "rumena"] as const).filter(
     (k) => k !== "rumena" || (settings as any)?.teamCount === 3 || players.some((r) => r.assigned_team === "rumena"),
