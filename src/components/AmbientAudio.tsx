@@ -418,6 +418,17 @@ export function AmbientAudioProvider({ children }: { children: ReactNode }) {
     };
   }, [sfxEnabled]);
 
+  // Cut one-shots immediately when effects are disabled or the match ends.
+  useEffect(() => {
+    if (sfxEnabled && missionPhase !== "debrief") return;
+    [countdownRef.current, sectorRef.current, teamCapRef.current, enemyCapRef.current, respawnRef.current].forEach((a) => {
+      if (!a) return;
+      a.pause();
+      try { a.currentTime = 0; } catch { /* not seekable yet */ }
+      writeLevel(a, 0);
+    });
+  }, [sfxEnabled, missionPhase]);
+
   // Unlock: on first user interaction, resume the AudioContext and prime every
   // node with a truly silent play (gain 0, not el.volume 0 — iOS ignores that)
   // so later programmatic playback is accepted. Never touches a playing node.
@@ -442,11 +453,12 @@ export function AmbientAudioProvider({ children }: { children: ReactNode }) {
       enemyCapRef.current,
       respawnRef.current,
     ];
+    const priming: Promise<void>[] = [];
     nodes.forEach((a) => {
       if (!a || !a.paused) return;
       try {
         writeLevel(a, 0);
-        a.play()
+        priming.push(a.play()
           .then(() => {
             try {
               a.pause();
@@ -457,7 +469,7 @@ export function AmbientAudioProvider({ children }: { children: ReactNode }) {
           })
           .catch(() => {
             /* still locked; the next gesture retries */
-          });
+          }));
       } catch {
         /* ignore */
       }
@@ -465,6 +477,7 @@ export function AmbientAudioProvider({ children }: { children: ReactNode }) {
     // Autoplay was likely refused before this gesture, so re-run the music
     // effect to actually start the track the route asks for.
     setUnlockTick((n) => n + 1);
+    void Promise.allSettled(priming).then(() => setUnlockTick((n) => n + 1));
   }, []);
 
   // Any first tap anywhere counts as the unlock gesture — a player who enabled

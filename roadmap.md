@@ -1,5 +1,10 @@
 # Beta-day safety
 
+# Respawn and sound beta fixes
+- [x] Replace the respawn rescan guard and test its timing boundaries (250 tests passed).
+- [x] Update bilingual spawn confirmation, respawn banner and locked scan pill; inspect 375px controls in both languages. Spawn success card reviewed from code only.
+- [x] Re-drive music after priming and stop one-shots on effects-off/debrief; browser playback-state checks passed. No audio heard or real phone, second scan or match tested.
+
 # Sound control
 - [x] Apply the focused sound-control presentation and visibility changes; verify mobile controls, overlap and unit tests. Cold ended preview remains on lobby; the debrief pill was verified with the existing synthetic match-end signal. Real playback and phones remain untested.
 

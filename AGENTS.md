@@ -4,3 +4,4 @@
 - Use one preview-guarded PWA registrar and generated worker; never cache server calls, scan results, OAuth or live game data, because cached answers cannot authorize gameplay.
 - Store recovery metadata in the existing active-session record and reuse the existing check-in lookup; local team and game values are convenience metadata, never authority.
 - Keep audio-control route visibility in an import-free helper, separate from playback routing, so visibility tests cannot alter sound behavior.
+- Keep respawn rescan timing in the import-free `respawn-scan` helper so the route and tests share the guard without importing a screen.

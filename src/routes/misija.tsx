@@ -3108,7 +3108,7 @@ function RespawnBanner({ until, skew, en }: { until: number; skew: number; en: b
           {fmtMmSs(left)}
         </div>
         <p className="font-mono text-[11px]" style={{ color: MUTED, margin: 0, lineHeight: 1.6 }}>
-          {en ? "Scanning is locked until the timer ends." : "Skeniranje je zaklenjeno, dokler se čas ne izteče."}
+          {en ? "When the timer ends, you may return to the game." : "Ko se časovnik izteče, se lahko vrneš v igro."}
         </p>
       </div>
     );
@@ -3121,7 +3121,7 @@ function RespawnBanner({ until, skew, en }: { until: number; skew: number; en: b
           {en ? "RESPAWN READY" : "RESPAWN PRIPRAVLJEN"}
         </p>
         <p className="font-mono text-[11px] mt-1" style={{ color: INK, margin: 0, lineHeight: 1.6 }}>
-          {en ? "You can scan sectors again." : "Spet lahko skeniraš sektorje."}
+          {en ? "You may return to the game." : "Lahko se vrneš v igro."}
         </p>
       </div>
     </div>
@@ -3186,12 +3186,12 @@ function ScanCodeButton({ paused, en, lockedUntil = 0, skew = 0 }: { paused: boo
           background: "rgba(11,13,9,0.85)", backdropFilter: "blur(8px)",
           color: "rgba(224,176,78,0.45)", border: "1px solid rgba(224,176,78,0.28)",
           borderRadius: 999, padding: "14px 20px",
-          fontFamily: "'Michroma', monospace", fontSize: 12, letterSpacing: "0.18em",
+          fontFamily: "'Michroma', monospace", fontSize: 12, letterSpacing: 0, whiteSpace: "nowrap",
           fontWeight: 700, cursor: "not-allowed", boxShadow: "none",
         }}
       >
         <Lock size={18} aria-hidden />
-        <span aria-hidden>{clock}</span>
+        <span aria-hidden>{en ? "LOCKED" : "ZAKLEP"} {clock}</span>
       </button>
     );
   }

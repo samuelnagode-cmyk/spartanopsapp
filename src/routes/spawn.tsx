@@ -6,6 +6,7 @@ import { AlertTriangle, Skull } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { spartanopsGetMyCheckin, spartanopsResolveSessionField, spartanopsSetRespawnLock } from "@/lib/spartanops-checkin.functions";
 import { useLang } from "@/lib/i18n";
+import { shouldIgnoreRespawnScan } from "@/lib/respawn-scan";
 
 /**
  * Universal Spawn Link.
@@ -22,6 +23,11 @@ export const Route = createFileRoute("/spawn")({
   head: () => ({
     meta: [
       { title: "SpartanOps · Respawn" },
+      { name: "description", content: "SpartanOps team spawn confirmation and respawn countdown." },
+      { property: "og:title", content: "SpartanOps · Respawn" },
+      { property: "og:description", content: "SpartanOps team spawn confirmation and respawn countdown." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
       { name: "robots", content: "noindex,nofollow" },
     ],
   }),
@@ -40,6 +46,7 @@ const MUTED = "rgba(236,227,196,0.55)";
 const ACCENT = "#E0B04E";
 const TEAM_COLOR: Record<string, string> = { modra: "#3b82f6", rdeca: "#ef4444", rumena: "#eab308" };
 const TEAM_LABEL: Record<string, string> = { modra: "BLUE", rdeca: "RED", rumena: "YELLOW" };
+const TEAM_LABEL_SL: Record<string, string> = { modra: "MODRA", rdeca: "RDEČA", rumena: "RUMENA" };
 const LEGACY_FIELDS = new Set(["zeleni-raj", "field-1", "field-2", "field-3"]);
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
@@ -55,8 +62,14 @@ type SpawnGameState = {
   status?: string | null;
   match_started_at: string | null;
   match_duration_minutes: number | null;
-  settings?: { respawn?: RespawnSettings } | null;
+  settings?: { respawn?: RespawnSettings; teamNames?: Record<string, string> } | null;
 };
+
+function teamName(team: string, settings: SpawnGameState["settings"], en: boolean): string {
+  const custom = settings?.teamNames?.[team];
+  if (typeof custom === "string" && custom.trim()) return custom.trim().toUpperCase();
+  return (en ? TEAM_LABEL[team] : TEAM_LABEL_SL[team]) ?? team.toUpperCase();
+}
 
 function toDbField(raw: string): string {
   const v = raw.toLowerCase().trim();
@@ -151,6 +164,7 @@ function SpawnPage() {
   const setRespawnLockFn = useServerFn(spartanopsSetRespawnLock);
   const [state, setState] = useState<"loading" | "success" | "unassigned" | "error">("loading");
   const [team, setTeam] = useState<string | null>(null);
+  const [settings, setSettings] = useState<SpawnGameState["settings"]>(null);
   const [errMsg, setErrMsg] = useState("");
   const [respawnLeft, setRespawnLeft] = useState<number | null>(null);
   const [respawnTotal, setRespawnTotal] = useState<number>(0);
@@ -231,17 +245,18 @@ function SpawnPage() {
         setTimeout(() => navigate({ to: "/misija", search: { field: effectiveRouteField }, replace: true }), 2200);
         return;
       }
-      // Back-button / history-navigation guard: if the browser re-loads this
-      // route with the exact same respawn payload we just processed, redirect
-      // silently to /misija instead of re-arming the respawn lock.
+      // Ignore duplicate navigation and scans during an existing lock, but
+      // allow a new respawn once the lock and short double-tap guard have ended.
       const spawnKey = `spartanops:spawn:${effectiveField}:${session}`;
       try {
         const last = Number(sessionStorage.getItem(spawnKey) ?? 0);
-        if (last && Date.now() - last < 60000) {
+        const storedLock = Number(localStorage.getItem(respawnLockKey(effectiveField, session)) ?? 0);
+        const nowMs = Date.now();
+        if (shouldIgnoreRespawnScan({ lastScanMs: last, lockUntilMs: Number.isFinite(storedLock) ? storedLock : 0, nowMs })) {
           navigate({ to: "/misija", search: { field: effectiveRouteField }, replace: true });
           return;
         }
-        sessionStorage.setItem(spawnKey, String(Date.now()));
+        sessionStorage.setItem(spawnKey, String(nowMs));
       } catch { /* ignore */ }
       try {
         const res = await getMyCheckin({ data: { fieldId: effectiveField, sessionId: session } });
@@ -280,6 +295,7 @@ function SpawnPage() {
           return;
         }
         const waitSeconds = respawnSeconds((gs as unknown as SpawnGameState | null) ?? null);
+        setSettings((gs as unknown as SpawnGameState | null)?.settings ?? null);
         setRespawnEnabled(waitSeconds > 0);
         setRespawnTotal(waitSeconds);
         setRespawnLeft(waitSeconds);
@@ -344,7 +360,10 @@ function SpawnPage() {
   }
 
   const c = team ? TEAM_COLOR[team] : ACCENT;
-  const label = team ? TEAM_LABEL[team] : "";
+  const label = team ? teamName(team, settings, en) : "";
+  const teamWord = en ? "TEAM" : "EKIPA";
+  const hasTeamWord = new RegExp(`\\b${teamWord}\\b`, "i").test(label);
+  const heading = `${label}${hasTeamWord ? "" : ` ${teamWord}`} SPAWN`;
   const ready = state === "success" && (respawnLeft ?? 0) <= 0;
   const mm = String(Math.floor((respawnLeft ?? 0) / 60)).padStart(2, "0");
   const ss = String((respawnLeft ?? 0) % 60).padStart(2, "0");
@@ -360,10 +379,12 @@ function SpawnPage() {
         ) : (
           <>
             <Skull size={56} style={{ color: c }} className="mx-auto mb-3" />
-            <p className="font-mono uppercase text-[11px] tracking-[0.22em]" style={{ color: c }}>▌ {en ? "RESPAWN AUTHORIZED" : "RESPAWN POTRJEN"}</p>
-            <h2 style={{ fontFamily: "'Michroma', monospace", fontSize: 18, color: INK, fontWeight: 700, marginTop: 10 }}>
-              {label} {en ? "TEAM SPAWN" : "EKIPA SPAWN"}
+            <h2 style={{ fontFamily: "'Michroma', monospace", fontSize: heading.length > 22 ? 15 : 18, color: c, fontWeight: 700, marginTop: 10, overflowWrap: "anywhere" }}>
+              {heading}
             </h2>
+            <p className="mt-3 font-mono font-bold uppercase text-[12px] tracking-[0.22em]" style={{ color: ready ? "#3ddc84" : c }}>
+              {ready ? (en ? "RESPAWN READY" : "RESPAWN PRIPRAVLJEN") : (en ? "RESPAWN AUTHORIZED" : "RESPAWN POTRJEN")}
+            </p>
             {respawnEnabled && !ready ? (
               <>
                 <p className="text-xs mt-4 font-mono uppercase tracking-[0.2em]" style={{ color: MUTED }}>
@@ -395,7 +416,7 @@ function SpawnPage() {
                   {en ? "SEE THE FIELD" : "POGLEJ STANJE NA POLIGONU"}
                 </button>
                 <p className="text-[11px] mt-3 font-mono" style={{ color: MUTED, lineHeight: 1.6 }}>
-                  {en ? "The timer keeps running. Scanning stays locked until it ends." : "Časovnik teče naprej. Skeniranje ostane zaklenjeno, dokler se ne izteče."}
+                  {en ? "The timer keeps running. You may return to the game when it ends." : "Časovnik teče naprej. Ko se izteče, se lahko vrneš v igro."}
                 </p>
               </>
             ) : (
