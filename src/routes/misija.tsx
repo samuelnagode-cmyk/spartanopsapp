@@ -27,6 +27,7 @@ import { HudHistoryLog } from "@/components/HudHistoryLog";
 import { scoreboardColumns, deathsEffectivelyPublic } from "@/lib/scoreboard-columns";
 import { scoreTickBaseMs, isScoreTickDue } from "@/lib/score-tick";
 import { compareDebriefPlayers } from "@/lib/debrief-ranking";
+import { audioPhaseSignals } from "@/lib/audio-phase";
 import { shareNodes, shareSpawns, rankInShareTeam } from "@/lib/debrief-share";
 import { readDeathEvents, clearDeathEvents, writeDeathEvents, mapDeathRow, type DeathEvent } from "@/lib/hud-history";
 import { QRScanner, type ScanPayload } from "@/components/QRScanner";
@@ -1058,16 +1059,15 @@ function MisijaPageInner() {
   useEffect(() => {
     if (typeof window === "undefined") return;
     if (!state) return;
-    const isTeamSetup = !me || me.assigned_team === "none";
-    const isLobby = state.status === "lobby" || state.status === "closed" || isTeamSetup;
-    window.dispatchEvent(new CustomEvent("spartanops:lobby", { detail: { active: isLobby } }));
-    if (state.status === "active" && !isTeamSetup) {
+    const signals = audioPhaseSignals({ status: state.status, hasTeam: !!me && me.assigned_team !== "none", marshalView: !!marshalMode });
+    window.dispatchEvent(new CustomEvent("spartanops:lobby", { detail: { active: signals.lobby } }));
+    if (signals.matchStart) {
       window.dispatchEvent(new Event("spartanops:match-start"));
     }
     return () => {
       window.dispatchEvent(new CustomEvent("spartanops:lobby", { detail: { active: false } }));
     };
-  }, [state?.status, me?.assigned_team]);
+  }, [state?.status, me?.assigned_team, marshalMode]);
 
   // Guard against accidental swipe-to-refresh / hard reload while a match is
   // live. The browser shows its standard confirmation dialog; the custom

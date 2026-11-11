@@ -1,5 +1,8 @@
 # Beta-day safety
 
+# Mission audio phase
+- [x] Correct only the mission audio bridge; 280 tests passed and active preview shows effects only. Cold-ended preview still shows music/effects instead of the pill; report unchanged listener timing and local-clock risks. Real marshal session, audio hearing and matches untested.
+
 # Personal mission share image
 - [x] Build safe-zone map report with matching podium, personal strip, guarded map loading and on-screen preview.
 - [x] Test sector/rank helpers (260 total tests); verify bilingual 375px preview and real 1080x1920 PNG export plus blocked-map/scoring-off fallback. Native share sheets, Instagram, phones and real matches untested.
