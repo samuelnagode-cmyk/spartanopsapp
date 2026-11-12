@@ -136,14 +136,32 @@ function writeLevel(el: HTMLAudioElement, v: number) {
   }
 }
 
-type Fadable = HTMLAudioElement & { __fadeToken?: number };
+type Fadable = HTMLAudioElement & {
+  __fadeToken?: number;
+  __stopTimer?: ReturnType<typeof setTimeout>;
+};
 function fade(el: HTMLAudioElement, to: number, ms = FADE_MS) {
   const node = el as Fadable;
   // Cancel any in-flight fade on this node so ramps never fight each other.
   const token = (node.__fadeToken ?? 0) + 1;
   node.__fadeToken = token;
+  clearTimeout(node.__stopTimer);
   const from = readLevel(el);
   if (from === to && (to === 0 ? el.paused : !el.paused)) return;
+  // requestAnimationFrame is frozen while the phone screen is locked or the app
+  // is backgrounded, so the ramp below may never run and the element would keep
+  // playing. Timers still fire there, so guarantee the pause with one.
+  if (to === 0) {
+    node.__stopTimer = setTimeout(() => {
+      if (node.__fadeToken !== token) return;
+      writeLevel(el, 0);
+      try {
+        el.pause();
+      } catch {
+        /* already stopped */
+      }
+    }, ms + 150);
+  }
   const start = performance.now();
   if (to > 0 && el.paused) {
     writeLevel(el, 0);
