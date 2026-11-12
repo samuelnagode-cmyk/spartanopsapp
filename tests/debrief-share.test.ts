@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { shareNodes, shareSpawns, rankInShareTeam } from "@/lib/debrief-share";
+import { shareNodes, shareSpawns, rankInShareTeam, shareMapCrop } from "@/lib/debrief-share";
 
 describe("share sectors", () => {
   it("includes only sector keys 1 through 5, never spawns or other keys", () => {
@@ -29,5 +29,24 @@ describe("personal team rank", () => {
   it("omits spectators and missing players", () => {
     expect(rankInShareTeam(players, "spectator")).toBeUndefined();
     expect(rankInShareTeam(players, "missing")).toBeUndefined();
+  });
+});
+
+describe("share map crop", () => {
+  it("pads a normal cluster by 15% of the box, at least 6 points", () => {
+    expect(shareMapCrop([{ x: 20, y: 20 }, { x: 40, y: 60 }])).toEqual({ x: 14, y: 14, w: 32, h: 52 });
+  });
+  it("clamps the padded box to the image edges", () => {
+    expect(shareMapCrop([{ x: 2, y: 30 }, { x: 8, y: 40 }])).toEqual({ x: 0, y: 24, w: 14, h: 22 });
+    expect(shareMapCrop([{ x: 10, y: 10 }, { x: 90, y: 10 }])).toEqual({ x: 0, y: 4, w: 100, h: 12 });
+    expect(shareMapCrop([{ x: 0, y: 0 }, { x: 100, y: 100 }])).toEqual({ x: 0, y: 0, w: 100, h: 100 });
+  });
+  it("returns the full image for a single point or an empty list", () => {
+    expect(shareMapCrop([{ x: 45, y: 55 }])).toEqual({ x: 0, y: 0, w: 100, h: 100 });
+    expect(shareMapCrop([])).toEqual({ x: 0, y: 0, w: 100, h: 100 });
+  });
+  it("returns the full image when any point is invalid", () => {
+    expect(shareMapCrop([{ x: 10, y: 10 }, { x: NaN, y: 20 }])).toEqual({ x: 0, y: 0, w: 100, h: 100 });
+    expect(shareMapCrop([{ x: 10, y: 10 }, { x: 20 } as { x: number; y: number }])).toEqual({ x: 0, y: 0, w: 100, h: 100 });
   });
 });

@@ -1,7 +1,7 @@
 import { Component, useEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import { Share2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { SHARE_NEUTRAL_COLOR, type ShareNode, type ShareSpawn } from "@/lib/debrief-share";
+import { SHARE_NEUTRAL_COLOR, shareMapCrop, type ShareNode, type ShareSpawn } from "@/lib/debrief-share";
 
 export type ShareTeam = { key: string; name: string; color: string; score: number };
 export type SharePlayer = { callsign: string; pts: number; deaths?: number | null; color: string; team?: string };
@@ -180,10 +180,21 @@ function ShareCard({ ref, data, mapSource }: { ref: React.Ref<HTMLDivElement>; d
   const podiumOrder = [podium[1] && { player: podium[1], rank: 2 }, podium[0] && { player: podium[0], rank: 1 }, podium[2] && { player: podium[2], rank: 3 }].filter((p): p is { player: SharePlayer; rank: number } => !!p);
   const mapH = podium.length ? 420 : 700;
   const mapLoaded = !!mapSource && loadedMap?.source === mapSource;
-  const naturalRatio = mapLoaded && loadedMap ? loadedMap.width / loadedMap.height : 1;
-  const imageWidth = Math.min(948, (mapH - 48) * naturalRatio);
-  const imageHeight = imageWidth / naturalRatio;
   const nodes = data.nodes.length ? data.nodes : [1, 2, 3, 4, 5].map((n) => ({ n, name: ["ALPHA", "BETA", "GAMMA", "DELTA", "EPSILON"][n - 1], color: SHARE_NEUTRAL_COLOR, team: null, x: n * 16, y: 50 }));
+  const innerH = mapH - 48;
+  const rawCrop = shareMapCrop([...nodes, ...data.spawns].map((p) => ({ x: p.x, y: p.y })));
+  const crop = rawCrop.w > 0 && rawCrop.h > 0 ? rawCrop : { x: 0, y: 0, w: 100, h: 100 };
+  const cropPxW = loadedMap ? (crop.w / 100) * loadedMap.width : 1;
+  const cropPxH = loadedMap ? (crop.h / 100) * loadedMap.height : 1;
+  const cropFit = Math.min(innerH / cropPxH, 560 / cropPxW);
+  const viewW = Math.max(1, Math.round(cropPxW * cropFit));
+  const viewH = Math.max(1, Math.round(cropPxH * cropFit));
+  const imgW = loadedMap ? loadedMap.width * cropFit : 0;
+  const imgH = loadedMap ? loadedMap.height * cropFit : 0;
+  const imgLeft = loadedMap ? -((crop.x / 100) * loadedMap.width) * cropFit : 0;
+  const imgTop = loadedMap ? -((crop.y / 100) * loadedMap.height) * cropFit : 0;
+  const inCrop = (value: number, origin: number, span: number) => `${((value - origin) / span) * 100}%`;
+  const teamNameFor = (key: string | null) => (key ? data.teams.find((t) => t.key === key)?.name ?? key : "-");
   const resultLabel = draw ? (en ? "DRAW" : "NEODLOČENO") : !winner ? (en ? "OPERATION COMPLETED" : "OPERACIJA KONČANA") : data.me && data.myTeamKey === winner.key ? (en ? "VICTORY" : "ZMAGA") : (en ? "WINNER" : "ZMAGOVALEC");
   const bigTitle = draw ? (en ? "DRAW" : "NEODLOČENO") : winner?.name ?? "SPARTANOPS";
   const date = matchDate(data.matchDate, en);
@@ -219,14 +230,23 @@ function ShareCard({ ref, data, mapSource }: { ref: React.Ref<HTMLDivElement>; d
       <section data-share-block="map" style={{ flexShrink: 0 }}>
         <div style={{ height: mapH, position: "relative", border: `2px solid ${theme.gold}88`, background: theme.panel, display: "flex", justifyContent: "center", alignItems: "center" }}>
           <p style={{ position: "absolute", top: -12, left: 22, padding: "7px 16px", fontFamily: mono, fontSize: 16, color: theme.gold, background: theme.base, zIndex: 4 }}>{en ? "FINAL SECTOR CONTROL" : "KONČNI NADZOR SEKTORJEV"}</p>
-          {mapSource && <img src={mapSource} alt="" onLoad={(e) => setLoadedMap({ source: mapSource, width: e.currentTarget.naturalWidth, height: e.currentTarget.naturalHeight })} onError={() => setLoadedMap(null)} style={{ position: "absolute", width: imageWidth, height: imageHeight, objectFit: "contain", opacity: mapLoaded ? 1 : 0 }} />}
-          {mapLoaded ? <div data-share-map-geometry style={{ position: "relative", width: imageWidth, height: imageHeight }}>
-            <div style={{ position: "absolute", inset: 0, background: "linear-gradient(180deg, rgba(0,0,0,0.2), rgba(0,0,0,0.42))" }} />
-            {nodes.map((n) => <div key={n.n} data-share-sector={n.n} style={{ position: "absolute", left: `${n.x}%`, top: `${n.y}%`, transform: "translate(-50%,-32px)", width: 100, textAlign: "center" }}>
-              <div style={{ width: 64, height: 64, margin: "0 auto", border: `6px solid ${n.color}`, borderRadius: "50%", background: `${n.color}33`, color: n.color, boxShadow: `0 0 22px ${n.color}77`, fontFamily: mono, fontSize: 25, display: "grid", placeItems: "center", textShadow: "0 2px 4px #000" }}>{n.n}</div>
-              <p style={{ fontFamily: mono, fontSize: 13, marginTop: 5, color: theme.ink, textShadow: "0 2px 5px #000, 0 0 6px #000" }}>{n.name}</p>
-            </div>)}
-            {data.spawns.map((spawn) => <div key={spawn.team} style={{ position: "absolute", left: `${spawn.x}%`, top: `${spawn.y}%`, transform: "translate(-50%,-50%)", width: 38, height: 32, border: `3px solid ${spawn.color}`, background: theme.base, color: spawn.color, display: "grid", placeItems: "center", fontFamily: mono, fontSize: 12 }}>HQ</div>)}
+          {mapSource && !mapLoaded && <img src={mapSource} alt="" onLoad={(e) => setLoadedMap({ source: mapSource, width: e.currentTarget.naturalWidth, height: e.currentTarget.naturalHeight })} onError={() => setLoadedMap(null)} style={{ position: "absolute", left: 0, top: 0, width: 1, height: 1, opacity: 0 }} />}
+          {mapLoaded ? <div style={{ width: "100%", height: "100%", display: "flex", alignItems: "center", gap: 24, padding: 24 }}>
+            <div data-share-map-geometry style={{ position: "relative", width: viewW, height: viewH, flexShrink: 0, overflow: "hidden", background: theme.panel }}>
+              <img src={mapSource} alt="" style={{ position: "absolute", left: imgLeft, top: imgTop, width: imgW, height: imgH }} />
+              <div style={{ position: "absolute", inset: 0, background: "linear-gradient(180deg, rgba(0,0,0,0.2), rgba(0,0,0,0.42))" }} />
+              {nodes.map((n) => <div key={n.n} data-share-sector={n.n} style={{ position: "absolute", left: inCrop(n.x, crop.x, crop.w), top: inCrop(n.y, crop.y, crop.h), transform: "translate(-50%,-50%)" }}>
+                <div style={{ width: 52, height: 52, border: `6px solid ${n.color}`, borderRadius: "50%", background: `${n.color}33`, color: n.color, boxShadow: `0 0 22px ${n.color}77`, fontFamily: mono, fontSize: 21, display: "grid", placeItems: "center", textShadow: "0 2px 4px #000" }}>{n.n}</div>
+              </div>)}
+              {data.spawns.map((spawn) => <div key={spawn.team} style={{ position: "absolute", left: inCrop(spawn.x, crop.x, crop.w), top: inCrop(spawn.y, crop.y, crop.h), transform: "translate(-50%,-50%)", width: 38, height: 32, border: `3px solid ${spawn.color}`, background: theme.base, color: spawn.color, display: "grid", placeItems: "center", fontFamily: mono, fontSize: 12 }}>HQ</div>)}
+            </div>
+            <div data-share-map-legend style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", justifyContent: "center", gap: 16 }}>
+              {nodes.map((n) => <div key={n.n} style={{ display: "flex", alignItems: "center", gap: 16, minWidth: 0 }}>
+                <span style={{ width: 18, height: 18, borderRadius: "50%", background: n.color, boxShadow: `0 0 12px ${n.color}66`, flexShrink: 0 }} />
+                <span style={{ fontFamily: mono, fontSize: 22, color: theme.ink, letterSpacing: "0.06em", whiteSpace: "nowrap", flexShrink: 0 }}>{n.n} {n.name}</span>
+                <span style={{ marginLeft: "auto", minWidth: 0, fontFamily: mono, fontSize: 20, color: n.team ? n.color : theme.muted, textTransform: "uppercase", overflow: "hidden", whiteSpace: "nowrap", textOverflow: "ellipsis", textAlign: "right" }}>{teamNameFor(n.team)}</span>
+              </div>)}
+            </div>
           </div> : <div data-share-map-fallback style={{ display: "flex", justifyContent: "center", gap: 30, width: "100%" }}>
             {[1, 2, 3, 4, 5].map((n) => {
               const sector = nodes.find((node) => node.n === n);

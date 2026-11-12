@@ -1,5 +1,8 @@
 # Beta-day safety
 
+# Share card map panel
+- [x] Crop the map to the sector/HQ cluster and move sector names into a right-hand legend; test the crop helper (284 tests). Verified bilingual on-screen card and real 1080x1920 exports for landscape and portrait maps; blocked-map fallback kept. Real matches and phones untested.
+
 # Mission audio phase
 - [x] Correct only the mission audio bridge; 280 tests passed and active preview shows effects only. Cold-ended preview still shows music/effects instead of the pill; report unchanged listener timing and local-clock risks. Real marshal session, audio hearing and matches untested.
 
