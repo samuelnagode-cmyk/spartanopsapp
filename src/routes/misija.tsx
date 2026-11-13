@@ -1220,7 +1220,7 @@ function MisijaPageInner() {
   // 1a) PRE-MATCH WINDOW — marshal has scheduled a start in the future.
   // Only players who have already selected a team enter the HUD/countdown.
   const preMatchSecEarly = startMsForEnd && clockNow < startMsForEnd ? Math.ceil((startMsForEnd - clockNow) / 1000) : 0;
-  if (preMatchSecEarly > 0) {
+  if (preMatchSecEarly > 0 && (me.assigned_team !== "none" || preview || marshalMode)) {
     return (
       <div style={{ background: BG, color: INK, minHeight: "100dvh" }}>
         <OfflineBanner />
@@ -1275,7 +1275,7 @@ function MisijaPageInner() {
       <OfflineBanner />
       {reassignedBanner}
         {warningOverlay}
-      {preMatchSec > 0 && <PreMatchCountdown seconds={preMatchSec} polygon={fieldTitleFromState(state, field)} eventName={missionTitleFromState(state, field)} gamemode={state.gamemode} pointTarget={state.point_target} settings={state.settings} en={en} state={state} roster={roster} myTeam={me.assigned_team} meCallsign={me.callsign} /> }
+      {(preMatchSec > 0 && (me.assigned_team !== "none" || preview || marshalMode)) && <PreMatchCountdown seconds={preMatchSec} polygon={fieldTitleFromState(state, field)} eventName={missionTitleFromState(state, field)} gamemode={state.gamemode} pointTarget={state.point_target} settings={state.settings} en={en} state={state} roster={roster} myTeam={me.assigned_team} meCallsign={me.callsign} /> }
       <style>{`@keyframes soPulse{0%,100%{opacity:1}50%{opacity:.25}}.so-pulse{animation:soPulse 1.6s ease-in-out infinite}@media (prefers-reduced-motion: reduce){.so-pulse{animation:none}}`}</style>
       <div className="max-w-5xl mx-auto px-4 pt-1 pb-4">
         <h1
@@ -1293,6 +1293,13 @@ function MisijaPageInner() {
           <span className="so-pulse" aria-hidden="true" style={{ width: 6, height: 6, borderRadius: "50%", background: ACCENT, display: "inline-block" }} />
           {en ? "Waiting for the marshal's command…" : "Čakanje na maršalovo komando…"}
         </p>
+        {preMatchSec > 0 && me.assigned_team === "none" && !preview && !marshalMode && (
+          <p className="text-center font-mono text-[11px] mb-4" style={{ color: ACCENT }}>
+            {en
+              ? `Match starts in ${fmtMmSs(preMatchSec)} - pick your team now`
+              : `Tekma se začne čez ${fmtMmSs(preMatchSec)} - izberi ekipo zdaj`}
+          </p>
+        )}
         {me.assigned_team === "none" ? (
           <div className="text-center mb-4">
             <ChooseFactionButton onClick={() => setShowTeamSelect(true)} en={en} />

@@ -1,5 +1,8 @@
 # Beta-day safety
 
+# No-team pre-match
+- [x] Team-less players now see team selection first during the pre-match countdown, with one live "pick your team now" line in both languages; picking a team hands over to the countdown. Verified at 375px against a scheduled start; real matches and phones untested.
+
 # Share card map panel
 - [x] Crop the map to the sector/HQ cluster and move sector names into a right-hand legend; test the crop helper (284 tests). Verified bilingual on-screen card and real 1080x1920 exports for landscape and portrait maps; blocked-map fallback kept. Real matches and phones untested.
 
